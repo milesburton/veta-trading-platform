@@ -102,7 +102,7 @@ export function BasketOrderPanel() {
   function distributeEvenly() {
     const n = legs.value.length;
     if (n === 0) return;
-    const w = Math.floor(10000 / n) / 100;
+    const w = Math.floor(10_000 / n) / 100;
     const remainder = 100 - w * n;
     legs.value = legs.value.map((l, i) => ({
       ...l,

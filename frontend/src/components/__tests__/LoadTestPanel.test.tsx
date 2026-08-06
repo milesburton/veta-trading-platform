@@ -34,8 +34,8 @@ function renderPanel(role: "admin" | "viewer" = "admin") {
           avatar_emoji: "📈",
         },
         limits: {
-          max_order_qty: 10000,
-          max_daily_notional: 1000000,
+          max_order_qty: 10_000,
+          max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
           allowed_desks: ["equity"],
           dark_pool_access: false,

@@ -81,7 +81,7 @@ describe("buildTrade", () => {
         isOptions: true,
         optionType: "put",
         optionStrikeNum: 200,
-        optionExpirySecs: 30 * 86400,
+        optionExpirySecs: 30 * 86_400,
         optionPremium: 5.25,
       })
     );
@@ -95,7 +95,7 @@ describe("buildTrade", () => {
       optionSpec: {
         optionType: "put",
         strike: 200,
-        expirySecs: 30 * 86400,
+        expirySecs: 30 * 86_400,
         premium: 5.25,
       },
     });

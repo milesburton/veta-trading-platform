@@ -12,8 +12,8 @@ import type { OptionType } from "./types.ts";
 export function makeLcg(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
-    s = Math.imul(s, 1664525) + 1013904223;
-    return (s >>> 0) / 0xffffffff;
+    s = Math.imul(s, 1_664_525) + 1_013_904_223;
+    return (s >>> 0) / 0xff_ff_ff_ff;
   };
 }
 

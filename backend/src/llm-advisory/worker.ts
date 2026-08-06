@@ -6,26 +6,17 @@ import { createProducer } from "@veta/messaging";
 import { createJobStore } from "./job-store.ts";
 import { handleParseTicket } from "./parse-ticket-handler.ts";
 import { isWorkerAllowed, loadPolicy } from "./policy.ts";
-import {
-  buildPrompt,
-  computeSystemPromptHash,
-  SYSTEM_PROMPT,
-} from "./prompt-builder.ts";
+import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
 import { createAnthropicProvider } from "./providers/anthropic.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 import { createMockProvider } from "./providers/mock.ts";
 import { createOllamaProvider } from "./providers/ollama.ts";
-import {
-  createRuntimeConfigStore,
-  resolveEffectivePolicy,
-} from "./runtime-config-store.ts";
+import { createRuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
 
 const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_033;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
-const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||
-  "http://localhost:5017";
-const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") ||
-  "http://localhost:5018";
+const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
+const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_RETRIES = 3;
 
@@ -33,10 +24,7 @@ const basePolicy = loadPolicy();
 const store = createJobStore(llmAdvisoryPool);
 const runtimeConfig = await createRuntimeConfigStore(llmAdvisoryPool);
 
-const effectivePolicy = resolveEffectivePolicy(
-  basePolicy,
-  await runtimeConfig.getConfig(),
-);
+const effectivePolicy = resolveEffectivePolicy(basePolicy, await runtimeConfig.getConfig());
 
 if (!isWorkerAllowed(effectivePolicy)) {
   logger.info("LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
@@ -48,10 +36,7 @@ const MAX_JOBS_PER_SESSION = effectivePolicy.workerMaxJobsPerSession;
 
 function buildProvider(): ILlmProvider {
   if (effectivePolicy.provider === "ollama") {
-    return createOllamaProvider(
-      effectivePolicy.modelId,
-      effectivePolicy.ollamaBaseUrl,
-    );
+    return createOllamaProvider(effectivePolicy.modelId, effectivePolicy.ollamaBaseUrl);
   }
   if (effectivePolicy.provider === "anthropic") {
     return createAnthropicProvider(effectivePolicy.modelId);
@@ -63,9 +48,7 @@ const provider = buildProvider();
 
 const available = await provider.isAvailable();
 if (!available) {
-  logger.warn(
-    `Provider '${effectivePolicy.provider}' is not available — exiting`,
-  );
+  logger.warn(`Provider '${effectivePolicy.provider}' is not available — exiting`);
   Deno.exit(0);
 }
 
@@ -86,7 +69,7 @@ const sessionId = await store.insertWorkerSession({
 });
 
 logger.info(
-  `Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`,
+  `Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`
 );
 
 producer
@@ -104,12 +87,10 @@ let jobsFailed = 0;
 
 async function fetchRecentCloses(symbol: string): Promise<number[]> {
   try {
-    const url = `${JOURNAL_URL}/candles?instrument=${
-      encodeURIComponent(
-        symbol,
-      )
-    }&interval=1m&limit=5`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(3_000) });
+    const url = `${JOURNAL_URL}/candles?instrument=${encodeURIComponent(
+      symbol
+    )}&interval=1m&limit=5`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return [];
     const candles = (await res.json()) as Array<{ close: number }>;
     return candles.map((c) => c.close).filter((v) => v > 0);
@@ -154,7 +135,7 @@ async function processJob(jobId: string): Promise<boolean> {
     ]);
 
     const signalSnapshot = JSON.stringify(
-      signal ?? { symbol: job.symbol, contextHash: job.contextHash },
+      signal ?? { symbol: job.symbol, contextHash: job.contextHash }
     );
     const resolvedSignal = signal ?? {
       symbol: job.symbol,
@@ -261,28 +242,25 @@ async function processJob(jobId: string): Promise<boolean> {
   }
 }
 
-const server = Deno.serve(
-  { port: PORT },
-  async (req: Request): Promise<Response> => {
-    const url = new URL(req.url);
-    if (req.method === "POST" && url.pathname === "/parse-ticket") {
-      return await handleParseTicket(req, { provider });
-    }
-    return new Response(
-      JSON.stringify({
-        service: "llm-worker",
-        version: VERSION,
-        status: "ok",
-        sessionId,
-        jobsProcessed,
-        jobsFailed,
-        provider: provider.providerId,
-        modelId: provider.modelId,
-      }),
-      { headers: { "Content-Type": "application/json" } },
-    );
-  },
-);
+const server = Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+  const url = new URL(req.url);
+  if (req.method === "POST" && url.pathname === "/parse-ticket") {
+    return await handleParseTicket(req, { provider });
+  }
+  return new Response(
+    JSON.stringify({
+      service: "llm-worker",
+      version: VERSION,
+      status: "ok",
+      sessionId,
+      jobsProcessed,
+      jobsFailed,
+      provider: provider.providerId,
+      modelId: provider.modelId,
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  );
+});
 
 logger.info(`Entering work loop`);
 
@@ -292,17 +270,13 @@ const sessionStart = Date.now();
 outer: while (true) {
   if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
     exitReason = "max-jobs-per-session";
-    logger.info(
-      `Reached max jobs per session (${MAX_JOBS_PER_SESSION}) — exiting`,
-    );
+    logger.info(`Reached max jobs per session (${MAX_JOBS_PER_SESSION}) — exiting`);
     break;
   }
 
   const job = await store.claimNextJob(sessionId);
   if (!job) {
-    logger.info(
-      `Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`,
-    );
+    logger.info(`Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`);
     const deadline = Date.now() + IDLE_TIMEOUT_MS;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 2_000));
@@ -313,9 +287,7 @@ outer: while (true) {
           exitReason = "max-jobs-per-session";
           break outer;
         }
-        logger.info(
-          `Processing job ${next.id} for ${next.symbol} (${next.triggerReason})`,
-        );
+        logger.info(`Processing job ${next.id} for ${next.symbol} (${next.triggerReason})`);
         await processJob(next.id);
         continue outer;
       }
@@ -325,9 +297,7 @@ outer: while (true) {
     break;
   }
 
-  logger.info(
-    `Processing job ${job.id} for ${job.symbol} (${job.triggerReason})`,
-  );
+  logger.info(`Processing job ${job.id} for ${job.symbol} (${job.triggerReason})`);
   await processJob(job.id);
 }
 
@@ -346,7 +316,7 @@ producer
   .catch(() => {});
 
 logger.info(
-  `Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`,
+  `Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`
 );
 await server.shutdown();
 Deno.exit(0);

@@ -378,7 +378,7 @@ describe("gatewayMiddleware", () => {
               role: "trader",
               avatar_emoji: ":t:",
             },
-            limits: { maxOrderSize: 10000 },
+            limits: { maxOrderSize: 10_000 },
           },
         }),
       } as MessageEvent);
@@ -601,7 +601,7 @@ describe("gatewayMiddleware", () => {
       ws.onmessage?.({
         data: JSON.stringify({
           event: "orderRejected",
-          data: { reason: 12345 },
+          data: { reason: 12_345 },
         }),
       } as MessageEvent);
 

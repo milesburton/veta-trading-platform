@@ -73,7 +73,7 @@ describe("useTicketResolution", () => {
       "limits.max_order_qty",
       {
         limits: {
-          max_order_qty: 99999,
+          max_order_qty: 99_999,
           max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
           allowed_desks: ["equity"],

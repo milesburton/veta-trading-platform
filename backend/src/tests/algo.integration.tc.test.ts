@@ -411,8 +411,8 @@ Deno.test({
           let fired = false;
           while (Date.now() < deadline) {
             const [b, s] = await Promise.all([
-              pollForOrder(J, buy.clientOrderId, 5_000),
-              pollForOrder(J, sell.clientOrderId, 5_000),
+              pollForOrder(J, buy.clientOrderId, 5000),
+              pollForOrder(J, sell.clientOrderId, 5000),
             ]);
             if ((b && b.children.length >= 1) || (s && s.children.length >= 1)) {
               fired = true;

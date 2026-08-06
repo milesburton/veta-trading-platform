@@ -42,7 +42,7 @@ export function priceFan(
 ): PriceFanStep[] {
   // Ensure paths is even for antithetic pairing
   const n = paths % 2 === 0 ? paths : paths + 1;
-  const dt = stepSecs / (365 * 86400);
+  const dt = stepSecs / (365 * 86_400);
   const drift = (r - 0.5 * sigma * sigma) * dt;
   const diffusion = sigma * Math.sqrt(dt);
 

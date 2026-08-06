@@ -360,9 +360,9 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
       counterparty: quote.dealerId,
       liquidityFlag: "TAKER",
       commissionUSD: 0,
-      secFeeUSD: rfq.side === "SELL" ? parseFloat((quote.notional * 0.000008).toFixed(4)) : 0,
+      secFeeUSD: rfq.side === "SELL" ? parseFloat((quote.notional * 0.000_008).toFixed(4)) : 0,
       finraTafUSD: 0,
-      totalFeeUSD: rfq.side === "SELL" ? parseFloat((quote.notional * 0.000008).toFixed(4)) : 0,
+      totalFeeUSD: rfq.side === "SELL" ? parseFloat((quote.notional * 0.000_008).toFixed(4)) : 0,
       settlementDate: sd,
       desk: rfq.desk,
       marketType: "otc",
@@ -729,8 +729,8 @@ Deno.serve({ port: PORT }, async (req) => {
       const dealerPrice = rfq.dealerBestPrice ?? 0;
       const clientPrice =
         rfq.side === "BUY"
-          ? dealerPrice * (1 + markupBps / 10000)
-          : dealerPrice * (1 - markupBps / 10000);
+          ? dealerPrice * (1 + markupBps / 10_000)
+          : dealerPrice * (1 - markupBps / 10_000);
       rfq.salesMarkupBps = markupBps;
       rfq.clientQuotedPrice = parseFloat(clientPrice.toFixed(4));
       rfq.state = "CLIENT_CONFIRMATION";

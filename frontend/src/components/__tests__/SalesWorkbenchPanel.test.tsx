@@ -18,7 +18,7 @@ function makeStore() {
           avatar_emoji: "S",
         },
         limits: {
-          max_order_qty: 10000,
+          max_order_qty: 10_000,
           max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT"],
           allowed_desks: ["equity"],
@@ -47,8 +47,8 @@ function makeRfq(overrides: Partial<SellSideRfq> = {}): SellSideRfq {
     asset: "AAPL",
     side: "BUY",
     quantity: 100,
-    createdAt: Date.now() - 5_000,
-    ts: Date.now() - 5_000,
+    createdAt: Date.now() - 5000,
+    ts: Date.now() - 5000,
     ...overrides,
   };
 }

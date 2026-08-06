@@ -40,7 +40,7 @@ function makeStore(
   if (role === "trader") {
     store.dispatch(
       authSlice.actions.setLimits({
-        max_order_qty: 10000,
+        max_order_qty: 10_000,
         max_daily_notional: 1_000_000,
         allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
         allowed_desks: ["equity"],

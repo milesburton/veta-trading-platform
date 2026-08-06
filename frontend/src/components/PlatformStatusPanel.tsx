@@ -14,8 +14,8 @@ type TicketKind = (typeof TICKET_KINDS)[number];
 
 function formatUptime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h ${minutes}m`;
@@ -30,8 +30,8 @@ function relativeTime(now: number, ts: number): string {
   const ago = Math.floor((now - ts) / 1000);
   if (ago < 60) return `${ago}s ago`;
   if (ago < 3600) return `${Math.floor(ago / 60)}m ago`;
-  if (ago < 86400) return `${Math.floor(ago / 3600)}h ago`;
-  return `${Math.floor(ago / 86400)}d ago`;
+  if (ago < 86_400) return `${Math.floor(ago / 3600)}h ago`;
+  return `${Math.floor(ago / 86_400)}d ago`;
 }
 
 function describeError(error: unknown): string {

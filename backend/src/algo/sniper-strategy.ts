@@ -14,8 +14,8 @@ import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { availableSniperQty } from "./sniper-math.ts";
 
-const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5_022;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
+const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5022;
+const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 

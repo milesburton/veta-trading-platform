@@ -35,8 +35,8 @@ export const VALID_VENUES = new Set(Object.keys(VENUE_SPREAD_MULT));
 export const PARTICIPATION_CAP_DEFAULT = 0.2;
 export const IMPACT_PER_1000_DEFAULT = 1.0;
 export const COMMISSION_PER_SHARE = 0.005;
-export const SEC_FEE_RATE = 0.000008;
-export const FINRA_TAF_PER_SHARE = 0.000119;
+export const SEC_FEE_RATE = 0.000_008;
+export const FINRA_TAF_PER_SHARE = 0.000_119;
 export const FINRA_TAF_CAP_USD = 5.95;
 export const MAKER_REBATE_PER_SHARE = -0.002;
 

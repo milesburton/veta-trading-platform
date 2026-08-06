@@ -80,8 +80,8 @@ describe("ThroughputGaugesPanel", () => {
     const now = Date.now();
     renderPanel({
       orders: [
-        makeOrder("o1", now - 1_000, "TWAP", 2, 4),
-        makeOrder("o2", now - 2_000, "VWAP", 1, 3),
+        makeOrder("o1", now - 1000, "TWAP", 2, 4),
+        makeOrder("o2", now - 2000, "VWAP", 1, 3),
       ],
       events: [{ type: "orders.submitted", ts: now - 500 }],
     });

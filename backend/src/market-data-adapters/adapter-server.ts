@@ -96,23 +96,23 @@ serveJsonService({
   // fallow-ignore-next-line complexity
   handler: async (req, url, path) => {
     if (path === "/events" && req.method === "GET") {
-    const ticker = url.searchParams.get("ticker") ?? undefined;
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? 50), 500);
-    const now = Date.now();
-    const fromTs = now - 7 * 24 * 60 * 60 * 1000;
-    const toTs = now + 90 * 24 * 60 * 60 * 1000;
+      const ticker = url.searchParams.get("ticker") ?? undefined;
+      const limit = Math.min(Number(url.searchParams.get("limit") ?? 50), 500);
+      const now = Date.now();
+      const fromTs = now - 7 * 24 * 60 * 60 * 1000;
+      const toTs = now + 90 * 24 * 60 * 60 * 1000;
 
-    // Serve from DB (survives restarts); fall back to in-memory on DB error
-    const dbEvents = await eventStore.getEvents(fromTs, toTs, ticker).catch(() => null);
-    if (dbEvents !== null) {
-      return json(dbEvents.slice(0, limit));
-    }
+      // Serve from DB (survives restarts); fall back to in-memory on DB error
+      const dbEvents = await eventStore.getEvents(fromTs, toTs, ticker).catch(() => null);
+      if (dbEvents !== null) {
+        return json(dbEvents.slice(0, limit));
+      }
 
-    let filtered = events.filter((e) => e.scheduledAt >= fromTs && e.scheduledAt <= toTs);
-    if (ticker) {
-      filtered = filtered.filter((e) => e.ticker === ticker || !e.ticker);
-    }
-    filtered.sort((a, b) => a.scheduledAt - b.scheduledAt);
+      let filtered = events.filter((e) => e.scheduledAt >= fromTs && e.scheduledAt <= toTs);
+      if (ticker) {
+        filtered = filtered.filter((e) => e.ticker === ticker || !e.ticker);
+      }
+      filtered.sort((a, b) => a.scheduledAt - b.scheduledAt);
       return json(filtered.slice(0, limit));
     }
 

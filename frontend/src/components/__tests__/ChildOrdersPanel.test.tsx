@@ -126,7 +126,7 @@ describe("ChildOrdersPanel", () => {
           },
           {
             id: "child-3-bbbbbb",
-            submittedAt: Date.now() - 10000,
+            submittedAt: Date.now() - 10_000,
             quantity: 100,
             limitPrice: 150,
             filled: 100,
@@ -137,7 +137,7 @@ describe("ChildOrdersPanel", () => {
           },
           {
             id: "child-4-cccccc",
-            submittedAt: Date.now() - 15000,
+            submittedAt: Date.now() - 15_000,
             quantity: 100,
             limitPrice: 150,
             filled: 0,

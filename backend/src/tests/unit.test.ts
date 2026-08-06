@@ -69,12 +69,12 @@ function parseTick(data: unknown): {
 Deno.test("[marketSimClient] parseTick handles new enriched format", () => {
   const raw = {
     prices: { AAPL: 189.3 },
-    volumes: { AAPL: 12345 },
+    volumes: { AAPL: 12_345 },
     marketMinute: 42,
   };
   const tick = parseTick(raw);
   assertEquals(tick.prices.AAPL, 189.3);
-  assertEquals(tick.volumes.AAPL, 12345);
+  assertEquals(tick.volumes.AAPL, 12_345);
   assertEquals(tick.marketMinute, 42);
 });
 

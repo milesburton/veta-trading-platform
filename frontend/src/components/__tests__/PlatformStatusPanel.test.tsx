@@ -290,7 +290,7 @@ describe("PlatformStatusPanel", () => {
     useGetPlatformStatusQueryMock.mockReturnValue({
       data: {
         ...baseStatus,
-        uptimeMs: (2 * 86400 + 3 * 3600 + 5 * 60) * 1000,
+        uptimeMs: (2 * 86_400 + 3 * 3600 + 5 * 60) * 1000,
       },
     });
     render(<PlatformStatusPanel />);

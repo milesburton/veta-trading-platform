@@ -219,7 +219,7 @@ Deno.test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
   const c = {
     version: "v",
     environment: "test",
-    startedAt: baseNow - (2 * 86400 + 3 * 3600 + 7 * 60) * 1000,
+    startedAt: baseNow - (2 * 86_400 + 3 * 3600 + 7 * 60) * 1000,
     getStats: () => stats.snapshot(baseNow),
     getServices: () => null,
   };

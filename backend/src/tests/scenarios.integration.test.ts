@@ -69,7 +69,7 @@ Deno.test({
   async fn() {
     const token = await loginAsVerified("alice");
     const name = `det-replay-${Date.now()}`;
-    const scenarioId = await createScenario(token, name, 12345);
+    const scenarioId = await createScenario(token, name, 12_345);
 
     try {
       const a = await runOnce(token, scenarioId);
@@ -118,8 +118,8 @@ Deno.test({
   async fn() {
     const token = await loginAsVerified("alice");
     const ts = Date.now();
-    const idA = await createScenario(token, `det-A-${ts}`, 11111);
-    const idB = await createScenario(token, `det-B-${ts}`, 22222);
+    const idA = await createScenario(token, `det-A-${ts}`, 11_111);
+    const idB = await createScenario(token, `det-B-${ts}`, 22_222);
 
     try {
       const a = await runOnce(token, idA);

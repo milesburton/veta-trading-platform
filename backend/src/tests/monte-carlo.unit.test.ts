@@ -32,14 +32,14 @@ function assertNonNegativeQuantiles(result: ReturnType<typeof runMonteCarlo>) {
 }
 
 Deno.test("[monte-carlo] makeLcg generates valid random numbers", () => {
-  const rand = makeLcg(12345);
+  const rand = makeLcg(12_345);
   const values = Array.from({ length: 100 }, () => rand());
 
   for (const value of values) {
     assert(value >= 0 && value <= 1);
   }
 
-  assertAlmostEquals(makeLcg(12345)(), makeLcg(12345)());
+  assertAlmostEquals(makeLcg(12_345)(), makeLcg(12_345)());
 });
 
 Deno.test("[monte-carlo] hashSeed generates valid seeds", () => {
@@ -52,7 +52,7 @@ Deno.test("[monte-carlo] hashSeed generates valid seeds", () => {
 });
 
 Deno.test("[monte-carlo] boxMuller generates normal samples", () => {
-  const rand = makeLcg(12345);
+  const rand = makeLcg(12_345);
   const samples = Array.from({ length: 1000 }, () => boxMuller(rand(), rand()));
 
   for (const sample of samples) {

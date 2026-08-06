@@ -388,8 +388,8 @@ async function handle(req: Request): Promise<Response> {
 
   if (req.method === "GET" && path === "/metrics/latency") {
     const windowMs = Math.min(
-      Math.max(Number(url.searchParams.get("windowMs") ?? 60_000), 1_000),
-      24 * 60 * 60 * 1_000
+      Math.max(Number(url.searchParams.get("windowMs") ?? 60_000), 1000),
+      24 * 60 * 60 * 1000
     );
     return json(await computeLatencyMetrics(windowMs));
   }

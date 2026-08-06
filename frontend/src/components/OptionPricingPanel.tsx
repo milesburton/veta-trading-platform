@@ -20,9 +20,11 @@ import {
 
 function normCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;
-  const t = 1.0 / (1.0 + 0.3275911 * Math.abs(x));
+  const t = 1.0 / (1.0 + 0.327_591_1 * Math.abs(x));
   const y =
-    ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
+    ((((1.061_405_429 * t - 1.453_152_027) * t + 1.421_413_741) * t - 0.284_496_736) * t +
+      0.254_829_592) *
+    t;
   return 0.5 * (1.0 + sign * (1.0 - y * Math.exp(-x * x)));
 }
 
@@ -58,11 +60,11 @@ function bsGreeks(
 }
 
 const EXPIRY_OPTIONS = [
-  { label: "7d", secs: 7 * 86400 },
-  { label: "14d", secs: 14 * 86400 },
-  { label: "30d", secs: 30 * 86400 },
-  { label: "60d", secs: 60 * 86400 },
-  { label: "90d", secs: 90 * 86400 },
+  { label: "7d", secs: 7 * 86_400 },
+  { label: "14d", secs: 14 * 86_400 },
+  { label: "30d", secs: 30 * 86_400 },
+  { label: "60d", secs: 60 * 86_400 },
+  { label: "90d", secs: 90 * 86_400 },
 ];
 
 function fmt(n: number, dp = 4): string {
@@ -97,7 +99,7 @@ export function OptionPricingPanel() {
   const symbol = useSignal(symbols[0] ?? "AAPL");
   const optionType = useSignal<OptionType>("call");
   const strike = useSignal("");
-  const expirySecs = useSignal(30 * 86400);
+  const expirySecs = useSignal(30 * 86_400);
   const customDate = useSignal("");
   const result = useSignal<OptionQuoteResponse | null>(null);
 
@@ -126,7 +128,7 @@ export function OptionPricingPanel() {
     customDate.value = dateStr;
     if (!dateStr) return;
     const days = Math.max(1, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86_400_000));
-    expirySecs.value = days * 86400;
+    expirySecs.value = days * 86_400;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -149,7 +151,7 @@ export function OptionPricingPanel() {
   const sensitivityData = useMemo(() => {
     const r0 = result.value;
     if (!r0) return [];
-    const T = r0.expirySecs / (365 * 86400);
+    const T = r0.expirySecs / (365 * 86_400);
     const r = 0.05;
     return Array.from({ length: 25 }, (_, i) => {
       const S = r0.spotPrice * (0.7 + i * (0.6 / 24));

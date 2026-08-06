@@ -30,8 +30,8 @@ function makeStore(role: "admin" | "trader" = "admin") {
           avatar_emoji: role === "admin" ? "A" : "T",
         },
         limits: {
-          max_order_qty: 10000,
-          max_daily_notional: 1000000,
+          max_order_qty: 10_000,
+          max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT"],
           allowed_desks: ["equity"],
           dark_pool_access: false,

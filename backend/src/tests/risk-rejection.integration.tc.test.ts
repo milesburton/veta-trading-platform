@@ -54,13 +54,11 @@ Deno.test({
         quantity: number;
         limitPrice: number;
       },
-      watchMs = 20_000,
+      watchMs = 20_000
     ): Promise<{ acked: boolean; rejected: boolean; rejectReason?: string }> {
       const token = await login(stack, user);
       const wsUrl = `${GW.replace(/^http/, "ws")}/ws`;
-      const clientOrderId = `risk-${Date.now()}-${
-        Math.random().toString(36).slice(2, 6)
-      }`;
+      const clientOrderId = `risk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const ws = new WebSocket(wsUrl);
       const closed = new Promise<void>((r) => {
         ws.onclose = () => r();
@@ -77,9 +75,7 @@ Deno.test({
             resolve();
           }, watchMs);
           ws.onopen = () => {
-            ws.send(
-              JSON.stringify({ type: "authenticate", payload: { token } }),
-            );
+            ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
           };
           ws.onmessage = (ev) => {
             const msg = JSON.parse(ev.data as string) as {
@@ -101,16 +97,14 @@ Deno.test({
                     strategy: "LIMIT",
                     algoParams: { strategy: "LIMIT" },
                   },
-                }),
+                })
               );
             }
             if (msg.event === "orderAck") outcome.acked = true;
-            const isRejectEvent = msg.event === "orderRejected" ||
+            const isRejectEvent =
+              msg.event === "orderRejected" ||
               (msg.event === "orderEvent" && msg.topic === "orders.rejected");
-            if (
-              isRejectEvent &&
-              (msg.data?.clientOrderId ?? clientOrderId) === clientOrderId
-            ) {
+            if (isRejectEvent && (msg.data?.clientOrderId ?? clientOrderId) === clientOrderId) {
               outcome.rejected = true;
               outcome.rejectReason = msg.data?.reason;
               clearTimeout(timer);
@@ -131,50 +125,42 @@ Deno.test({
     }
 
     try {
-      await t.step(
-        "risk-engine /health is ok with pre-trade checks enabled",
-        async () => {
-          const res = await fetch(`${url(stack, "risk-engine")}/health`, {
-            signal: T(),
-          });
-          assertEquals(res.status, 200);
-          assertEquals(((await res.json()) as { status: string }).status, "ok");
-        },
-      );
+      await t.step("risk-engine /health is ok with pre-trade checks enabled", async () => {
+        const res = await fetch(`${url(stack, "risk-engine")}/health`, {
+          signal: T(),
+        });
+        assertEquals(res.status, 200);
+        assertEquals(((await res.json()) as { status: string }).status, "ok");
+      });
 
-      await t.step(
-        "risk-engine /check rejects a fat-finger limit price",
-        async () => {
-          const mid = await midPrice("AAPL");
-          const res = await fetch(`${url(stack, "risk-engine")}/check`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: "direct-fatfinger",
-              userId: "alice",
-              userRole: "trader",
-              symbol: "AAPL",
-              side: "BUY",
-              quantity: 10,
-              limitPrice: mid * 2,
-              strategy: "LIMIT",
-            }),
-            signal: T(),
-          });
-          assertEquals(res.status, 200);
-          const result = (await res.json()) as {
-            allowed: boolean;
-            reasons: string[];
-          };
-          assertEquals(result.allowed, false);
-          assert(
-            result.reasons.some((r) => r.toLowerCase().includes("mid")),
-            `expected a fat-finger reason, got: ${
-              JSON.stringify(result.reasons)
-            }`,
-          );
-        },
-      );
+      await t.step("risk-engine /check rejects a fat-finger limit price", async () => {
+        const mid = await midPrice("AAPL");
+        const res = await fetch(`${url(stack, "risk-engine")}/check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: "direct-fatfinger",
+            userId: "alice",
+            userRole: "trader",
+            symbol: "AAPL",
+            side: "BUY",
+            quantity: 10,
+            limitPrice: mid * 2,
+            strategy: "LIMIT",
+          }),
+          signal: T(),
+        });
+        assertEquals(res.status, 200);
+        const result = (await res.json()) as {
+          allowed: boolean;
+          reasons: string[];
+        };
+        assertEquals(result.allowed, false);
+        assert(
+          result.reasons.some((r) => r.toLowerCase().includes("mid")),
+          `expected a fat-finger reason, got: ${JSON.stringify(result.reasons)}`
+        );
+      });
 
       await t.step(
         "risk-engine /check does not flag an at-market price for fat-finger",
@@ -202,11 +188,11 @@ Deno.test({
           };
           assert(
             !result.reasons.some((r) => r.toLowerCase().includes("mid")),
-            `at-market price should not trip the fat-finger check, reasons: ${
-              JSON.stringify(result.reasons)
-            }`,
+            `at-market price should not trip the fat-finger check, reasons: ${JSON.stringify(
+              result.reasons
+            )}`
           );
-        },
+        }
       );
 
       await t.step("OMS rejects a fat-finger order end-to-end", async () => {
@@ -217,35 +203,28 @@ Deno.test({
           quantity: 10,
           limitPrice: mid * 2,
         });
-        assert(
-          outcome.acked,
-          "gateway should ack the submission before risk evaluates it",
-        );
+        assert(outcome.acked, "gateway should ack the submission before risk evaluates it");
         assert(
           outcome.rejected,
-          `fat-finger order should be rejected by the risk-engine, outcome: ${
-            JSON.stringify(outcome)
-          }`,
+          `fat-finger order should be rejected by the risk-engine, outcome: ${JSON.stringify(
+            outcome
+          )}`
         );
       });
 
-      await t.step(
-        "an at-market order is not rejected for fat-finger (control)",
-        async () => {
-          const mid = await midPrice("AAPL");
-          const outcome = await submitAndWatch(
-            "alice",
-            { asset: "AAPL", side: "BUY", quantity: 10, limitPrice: mid },
-            8_000,
-          );
-          assert(outcome.acked, "gateway should ack the at-market submission");
-          assert(
-            !(outcome.rejected &&
-              (outcome.rejectReason ?? "").toLowerCase().includes("mid")),
-            `at-market order must not be fat-finger-rejected, reason: ${outcome.rejectReason}`,
-          );
-        },
-      );
+      await t.step("an at-market order is not rejected for fat-finger (control)", async () => {
+        const mid = await midPrice("AAPL");
+        const outcome = await submitAndWatch(
+          "alice",
+          { asset: "AAPL", side: "BUY", quantity: 10, limitPrice: mid },
+          8000
+        );
+        assert(outcome.acked, "gateway should ack the at-market submission");
+        assert(
+          !(outcome.rejected && (outcome.rejectReason ?? "").toLowerCase().includes("mid")),
+          `at-market order must not be fat-finger-rejected, reason: ${outcome.rejectReason}`
+        );
+      });
     } finally {
       await stack.teardown();
     }

@@ -16,10 +16,10 @@ import { describe, expect, it } from "vitest";
 // ── Test data ──────────────────────────────────────────────────────────────────
 
 const rows = [
-  { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled" },
-  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "working" },
+  { id: "1", asset: "AAPL", side: "BUY", quantity: 10_000, status: "filled" },
+  { id: "2", asset: "MSFT", side: "SELL", quantity: 50_000, status: "working" },
   { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "pending" },
-  { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired" },
+  { id: "4", asset: "TSLA", side: "SELL", quantity: 100_000, status: "expired" },
 ] as const;
 
 type Row = (typeof rows)[number];
@@ -77,7 +77,7 @@ describe("applyFilters", () => {
         id: "1",
         field: "quantity",
         op: ">",
-        value: 10000,
+        value: 10_000,
       },
     ];
     const result = applyFilters([...rows], criteria);
@@ -91,7 +91,7 @@ describe("applyFilters", () => {
         id: "1",
         field: "quantity",
         op: "<",
-        value: 10000,
+        value: 10_000,
       },
     ];
     expect(applyFilters([...rows], criteria)).toHaveLength(1);
@@ -103,7 +103,7 @@ describe("applyFilters", () => {
         id: "1",
         field: "quantity",
         op: ">=",
-        value: 10000,
+        value: 10_000,
       },
     ];
     expect(applyFilters([...rows], criteria)).toHaveLength(3);
@@ -115,7 +115,7 @@ describe("applyFilters", () => {
         id: "1",
         field: "quantity",
         op: "<=",
-        value: 10000,
+        value: 10_000,
       },
     ];
     expect(applyFilters([...rows], criteria)).toHaveLength(2);
@@ -137,7 +137,7 @@ describe("applyFilters", () => {
 
   it("filters with between", () => {
     const criteria: FilterCriteria[] = [
-      { id: "1", field: "quantity", op: "between", value: [5000, 50000] },
+      { id: "1", field: "quantity", op: "between", value: [5000, 50_000] },
     ];
     const result = applyFilters([...rows], criteria);
     expect(result).toHaveLength(3); // 5000, 10000, 50000
@@ -199,12 +199,12 @@ describe("applySort", () => {
 
   it("sorts numbers ascending", () => {
     const result = applySort([...rows] as Row[], "quantity", "asc");
-    expect(result.map((r) => r.quantity)).toEqual([5000, 10000, 50000, 100000]);
+    expect(result.map((r) => r.quantity)).toEqual([5000, 10_000, 50_000, 100_000]);
   });
 
   it("sorts numbers descending", () => {
     const result = applySort([...rows] as Row[], "quantity", "desc");
-    expect(result.map((r) => r.quantity)).toEqual([100000, 50000, 10000, 5000]);
+    expect(result.map((r) => r.quantity)).toEqual([100_000, 50_000, 10_000, 5000]);
   });
 
   it("does not mutate the input array", () => {
@@ -465,7 +465,7 @@ describe("applyCfRules", () => {
               id: "rr1",
               field: "quantity",
               op: ">",
-              value: 90000,
+              value: 90_000,
             },
           ],
         },
@@ -484,7 +484,7 @@ const exprRows = [
     id: "1",
     asset: "AAPL",
     side: "BUY",
-    quantity: 10000,
+    quantity: 10_000,
     status: "filled",
     note: null,
   },
@@ -492,7 +492,7 @@ const exprRows = [
     id: "2",
     asset: "MSFT",
     side: "SELL",
-    quantity: 50000,
+    quantity: 50_000,
     status: "working",
     note: "large",
   },
@@ -508,7 +508,7 @@ const exprRows = [
     id: "4",
     asset: "TSLA",
     side: "SELL",
-    quantity: 100000,
+    quantity: 100_000,
     status: "expired",
     note: "",
   },
@@ -544,7 +544,7 @@ describe("evalExprGroup – OR group", () => {
       join: "OR",
       rules: [
         { kind: "rule", id: "r1", field: "side", op: "=", value: "BUY" },
-        { kind: "rule", id: "r2", field: "quantity", op: ">=", value: 100000 },
+        { kind: "rule", id: "r2", field: "quantity", op: ">=", value: 100_000 },
       ],
     };
     const result = applyExprGroup(exprRows, g);
@@ -712,7 +712,7 @@ describe("exprGroupToDisplay", () => {
       join: "AND",
       rules: [
         { kind: "rule", id: "r1", field: "side", op: "=", value: "BUY" },
-        { kind: "rule", id: "r2", field: "quantity", op: ">", value: 50000 },
+        { kind: "rule", id: "r2", field: "quantity", op: ">", value: 50_000 },
       ],
     };
     expect(exprGroupToDisplay(g, fields)).toBe("Side = BUY AND Qty > 50000");

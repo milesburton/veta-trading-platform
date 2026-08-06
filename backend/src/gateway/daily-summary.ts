@@ -19,8 +19,8 @@ export interface DailySummaryOptions extends DailySummaryContext {
 
 function formatUptime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h ${minutes}m`;
@@ -92,7 +92,7 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
     }
     lines.push(`**Alerts (last 24h):** ${totalAlerts} total · ${parts.join(", ")}`);
     if (stats.lastCritical) {
-      const ago = Math.round((nowMs - stats.lastCritical.ts) / 60000);
+      const ago = Math.round((nowMs - stats.lastCritical.ts) / 60_000);
       lines.push(
         `Last critical: ${ago}m ago — \`${stats.lastCritical.source}\` ${stats.lastCritical.message.slice(0, 100)}`
       );

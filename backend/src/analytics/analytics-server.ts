@@ -52,11 +52,7 @@ import type {
   YieldCurveResponse,
 } from "./types.ts";
 import { buildVolSurface } from "./vol-surface.ts";
-import {
-  estimateVol,
-  estimateVolProfile,
-  fetchSpotPrice,
-} from "./volatility-estimator.ts";
+import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
 import { buildYieldCurveResponse } from "./yield-curve.ts";
 
 const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
@@ -115,12 +111,9 @@ serveJsonService({
         return err("Invalid JSON body");
       }
 
-      const { symbol, optionType, strike, expirySecs, riskFreeRate = 0.05 } =
-        body;
+      const { symbol, optionType, strike, expirySecs, riskFreeRate = 0.05 } = body;
       if (!symbol || !optionType || !strike || !expirySecs) {
-        return err(
-          "Missing required fields: symbol, optionType, strike, expirySecs",
-        );
+        return err("Missing required fields: symbol, optionType, strike, expirySecs");
       }
 
       const spot = await resolveSpot(symbol);
@@ -129,15 +122,8 @@ serveJsonService({
       }
 
       const sigma = await estimateVol(JOURNAL_URL, symbol);
-      const T = expirySecs / (365 * 86400);
-      const { price, greeks } = blackScholes(
-        optionType,
-        spot,
-        strike,
-        T,
-        riskFreeRate,
-        sigma,
-      );
+      const T = expirySecs / (365 * 86_400);
+      const { price, greeks } = blackScholes(optionType, spot, strike, T, riskFreeRate, sigma);
 
       const response: OptionQuoteResponse = {
         symbol,
@@ -190,7 +176,7 @@ serveJsonService({
       }
 
       const sigma = await estimateVol(JOURNAL_URL, symbol);
-      const baseT = expirySecs / (365 * 86400);
+      const baseT = expirySecs / (365 * 86_400);
       const timeElapsed = timeDays / 365;
       const adjustedT = Math.max(0, baseT - timeElapsed);
 
@@ -200,7 +186,7 @@ serveJsonService({
         strike,
         baseT,
         riskFreeRate,
-        sigma,
+        sigma
       );
 
       const cells: ScenarioCell[][] = spotShocks.map((spotPct) => {
@@ -213,15 +199,13 @@ serveJsonService({
             strike,
             adjustedT,
             riskFreeRate,
-            shockedSigma,
+            shockedSigma
           );
           const pnl = optionPrice - baselinePrice;
           const pnlPct = baselinePrice > 0 ? pnl / baselinePrice : 0;
-          const seedKey = `${symbol}-${optionType}-${strike}-${expirySecs}-${
-            spotPct.toFixed(
-              3,
-            )
-          }-${volPct.toFixed(3)}`;
+          const seedKey = `${symbol}-${optionType}-${strike}-${expirySecs}-${spotPct.toFixed(
+            3
+          )}-${volPct.toFixed(3)}`;
           const mc = monteCarlo(
             optionType,
             shockedSpot,
@@ -230,7 +214,7 @@ serveJsonService({
             riskFreeRate,
             shockedSigma,
             paths,
-            seedKey,
+            seedKey
           );
           return { spotPct, volPct, optionPrice, pnl, pnlPct, ...mc };
         });
@@ -281,18 +265,10 @@ serveJsonService({
       const recommendations = [];
       for (const K of strikes) {
         for (const expirySecs of expiries) {
-          const T = expirySecs / (365 * 86400);
+          const T = expirySecs / (365 * 86_400);
           for (const optionType of ["call", "put"] as const) {
             const rec = signal
-              ? scoreOptionWithSignal(
-                optionType,
-                spot,
-                K,
-                T,
-                riskFreeRate,
-                sigma,
-                signal,
-              )
+              ? scoreOptionWithSignal(optionType, spot, K, T, riskFreeRate, sigma, signal)
               : scoreOption(optionType, spot, K, T, riskFreeRate, sigma);
             recommendations.push(rec);
           }
@@ -335,39 +311,28 @@ serveJsonService({
       const symbol = decodeURIComponent(path.slice("/greeks-surface/".length));
       if (!symbol) return err("Missing symbol");
 
-      const expirySecs = Number(url.searchParams.get("expirySecs")) ||
-        30 * 86400;
+      const expirySecs = Number(url.searchParams.get("expirySecs")) || 30 * 86_400;
       const riskFreeRate = Number(url.searchParams.get("riskFreeRate")) || 0.05;
 
       const spot = await resolveSpot(symbol);
       if (!spot) return err(`Cannot resolve spot for ${symbol}`, 404);
 
       const sigma = await estimateVol(JOURNAL_URL, symbol);
-      const T = expirySecs / (365 * 86400);
+      const T = expirySecs / (365 * 86_400);
 
-      const strikePoints: GreeksSurfacePoint[] = Array.from(
-        { length: 25 },
-        (_, i) => {
-          const K = spot * (0.7 + i * (0.6 / 24));
-          const { price: callPrice, greeks } = blackScholes(
-            "call",
-            spot,
-            K,
-            T,
-            riskFreeRate,
-            sigma,
-          );
-          return {
-            strike: K,
-            moneyness: K / spot,
-            callDelta: greeks.delta,
-            gamma: greeks.gamma,
-            theta: greeks.theta,
-            vega: greeks.vega,
-            callPrice,
-          };
-        },
-      );
+      const strikePoints: GreeksSurfacePoint[] = Array.from({ length: 25 }, (_, i) => {
+        const K = spot * (0.7 + i * (0.6 / 24));
+        const { price: callPrice, greeks } = blackScholes("call", spot, K, T, riskFreeRate, sigma);
+        return {
+          strike: K,
+          moneyness: K / spot,
+          callDelta: greeks.delta,
+          gamma: greeks.gamma,
+          theta: greeks.theta,
+          vega: greeks.vega,
+          callPrice,
+        };
+      });
 
       const response: GreeksSurfaceResponse = {
         symbol,
@@ -390,9 +355,7 @@ serveJsonService({
 
       const { couponRate, totalPeriods, yieldAnnual } = body;
       if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
-        return err(
-          "Missing required fields: couponRate, totalPeriods, yieldAnnual",
-        );
+        return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
       }
 
       const response: BondPriceResponse = priceBond(body);
@@ -415,18 +378,9 @@ serveJsonService({
       const symbol = decodeURIComponent(path.slice("/price-fan/".length));
       if (!symbol) return err("Missing symbol");
 
-      const steps = Math.max(
-        1,
-        Math.min(200, Number(url.searchParams.get("steps")) || 24),
-      );
-      const stepSecs = Math.max(
-        60,
-        Number(url.searchParams.get("stepSecs")) || 3600,
-      );
-      const paths = Math.max(
-        100,
-        Math.min(2000, Number(url.searchParams.get("paths")) || 500),
-      );
+      const steps = Math.max(1, Math.min(200, Number(url.searchParams.get("steps")) || 24));
+      const stepSecs = Math.max(60, Number(url.searchParams.get("stepSecs")) || 3600);
+      const paths = Math.max(100, Math.min(2000, Number(url.searchParams.get("paths")) || 500));
       const riskFreeRate = Number(url.searchParams.get("riskFreeRate")) || 0.05;
 
       const spot = await resolveSpot(symbol);
@@ -437,15 +391,7 @@ serveJsonService({
       const sigma = await estimateVol(JOURNAL_URL, symbol);
       const seedKey = `fan-${symbol}-${steps}-${stepSecs}`;
 
-      const fanSteps = priceFan(
-        spot,
-        sigma,
-        riskFreeRate,
-        steps,
-        stepSecs,
-        paths,
-        seedKey,
-      );
+      const fanSteps = priceFan(spot, sigma, riskFreeRate, steps, stepSecs, paths, seedKey);
 
       const response: PriceFanResponse = {
         symbol,
@@ -467,9 +413,7 @@ serveJsonService({
       }
       const { couponRate, totalPeriods, yieldAnnual } = body;
       if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
-        return err(
-          "Missing required fields: couponRate, totalPeriods, yieldAnnual",
-        );
+        return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
       }
       return json(computeSpreadAnalysis(body));
     }

@@ -47,8 +47,8 @@ function makeRfq(overrides: Partial<SellSideRfq> = {}): SellSideRfq {
     asset: "AAPL",
     side: "BUY",
     quantity: 100,
-    createdAt: Date.now() - 1_000,
-    ts: Date.now() - 1_000,
+    createdAt: Date.now() - 1000,
+    ts: Date.now() - 1000,
     ...overrides,
   };
 }

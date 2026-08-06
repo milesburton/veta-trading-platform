@@ -31,7 +31,7 @@ export const AUCTION_SESSION: SessionState = {
 export const VALID_OPTION = {
   optionType: "call" as const,
   strike: 150,
-  expirySecs: 86400,
+  expirySecs: 86_400,
   hasQuote: true,
   isFetching: false,
 };

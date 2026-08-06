@@ -53,8 +53,8 @@ Deno.test("identical follow-up tick produces an empty diff", () => {
   const state = createTickDiffState();
   const payload = makePayload({ AAPL: 190, MSFT: 400 });
 
-  const { nextState: afterFull } = buildTickDiff(payload, state, 1_000);
-  const { diff } = buildTickDiff(payload, afterFull, 1_250);
+  const { nextState: afterFull } = buildTickDiff(payload, state, 1000);
+  const { diff } = buildTickDiff(payload, afterFull, 1250);
 
   assert(!diff.full);
   assert(isEmptyDiff(diff));
@@ -66,8 +66,8 @@ Deno.test("only moved symbols appear in subsequent diff", () => {
   const { nextState: afterFull } = buildTickDiff(initial, state, 1_000);
 
   const moved = makePayload({ AAPL: 191, MSFT: 400, GOOG: 170 });
-  moved.volumes = { AAPL: 2_000, MSFT: 1_000, GOOG: 1_000 };
-  const { diff } = buildTickDiff(moved, afterFull, 1_250);
+  moved.volumes = { AAPL: 2000, MSFT: 1000, GOOG: 1000 };
+  const { diff } = buildTickDiff(moved, afterFull, 1250);
 
   assertEquals(diff.prices, { AAPL: 191 });
   assertEquals(diff.volumes, { AAPL: 2_000 });
@@ -81,8 +81,8 @@ Deno.test("sub-epsilon noise does not trigger a diff entry", () => {
   const initial = makePayload({ AAPL: 190.0 });
   const { nextState } = buildTickDiff(initial, state, 1_000);
 
-  const jitter = makePayload({ AAPL: 190.00001 });
-  const { diff } = buildTickDiff(jitter, nextState, 1_250);
+  const jitter = makePayload({ AAPL: 190.000_01 });
+  const { diff } = buildTickDiff(jitter, nextState, 1250);
 
   assert(diff.prices === undefined);
   assert(isEmptyDiff(diff));
@@ -117,8 +117,8 @@ Deno.test("periodic full snapshot fires after the interval elapses", () => {
   const state = createTickDiffState();
   const payload = makePayload({ AAPL: 190 });
 
-  const { nextState: afterFull } = buildTickDiff(payload, state, 1_000);
-  const dueAt = 1_000 + FULL_SNAPSHOT_INTERVAL_MS;
+  const { nextState: afterFull } = buildTickDiff(payload, state, 1000);
+  const dueAt = 1000 + FULL_SNAPSHOT_INTERVAL_MS;
   const { diff } = buildTickDiff(payload, afterFull, dueAt);
 
   assert(diff.full === true);
@@ -168,8 +168,8 @@ function jitterPrices(prices: Record<string, number>, rng: () => number): Record
 function seededRng(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0x1_0000_0000;
+    s = (s * 1_664_525 + 1_013_904_223) >>> 0;
+    return s / 0x1_00_00_00_00;
   };
 }
 
@@ -318,12 +318,12 @@ Deno.test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () 
 Deno.test("volumes diff is independent of price movement", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 100 });
-  initial.volumes = { AAPL: 1_000 };
-  const { nextState } = buildTickDiff(initial, state, 1_000);
+  initial.volumes = { AAPL: 1000 };
+  const { nextState } = buildTickDiff(initial, state, 1000);
 
   const samePrice = makePayload({ AAPL: 100 });
-  samePrice.volumes = { AAPL: 2_500 };
-  const { diff } = buildTickDiff(samePrice, nextState, 1_250);
+  samePrice.volumes = { AAPL: 2500 };
+  const { diff } = buildTickDiff(samePrice, nextState, 1250);
 
   assert(diff.prices === undefined, "price unchanged should produce no prices diff");
   assertEquals(diff.volumes, { AAPL: 2_500 });
@@ -477,11 +477,7 @@ Deno.test("symbolsNeedingFreshBook includes a symbol if any venue's book is stal
     1_250
   );
 
-  const needed = symbolsNeedingFreshBook(
-    { AAPL: movedOnce },
-    afterVenuelessMove,
-    1_500
-  );
+  const needed = symbolsNeedingFreshBook({ AAPL: movedOnce }, afterVenuelessMove, 1500);
 
   assertEquals(needed, ["AAPL"]);
 });

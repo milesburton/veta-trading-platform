@@ -7,12 +7,12 @@
 
 import type { Greeks, OptionType } from "./types.ts";
 
-const A1 = 0.254829592;
-const A2 = -0.284496736;
-const A3 = 1.421413741;
-const A4 = -1.453152027;
-const A5 = 1.061405429;
-const P = 0.3275911;
+const A1 = 0.254_829_592;
+const A2 = -0.284_496_736;
+const A3 = 1.421_413_741;
+const A4 = -1.453_152_027;
+const A5 = 1.061_405_429;
+const P = 0.327_591_1;
 
 /** Cumulative standard normal distribution N(x) via N(x) = 0.5·(1 + erf(x/√2)). */
 export function normCdf(x: number): number {

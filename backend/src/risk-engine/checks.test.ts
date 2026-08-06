@@ -144,7 +144,7 @@ Deno.test("[risk-engine] checkSelfCross: rejects when opposite working order exi
 
 Deno.test("[risk-engine] checkOrderSizeVsAdv: small order passes", () => {
   const state = createTestState();
-  state.volumes.AAPL = 100000;
+  state.volumes.AAPL = 100_000;
   const req = createTestRequest({ quantity: 10 });
   const result = checkOrderSizeVsAdv(state, req);
   assertEquals(result, null);
@@ -152,8 +152,8 @@ Deno.test("[risk-engine] checkOrderSizeVsAdv: small order passes", () => {
 
 Deno.test("[risk-engine] checkOrderSizeVsAdv: oversized order is rejected", () => {
   const state = createTestState({ maxAdvPct: 0.001 });
-  state.volumes.AAPL = 100000;
-  const req = createTestRequest({ quantity: 50000 });
+  state.volumes.AAPL = 100_000;
+  const req = createTestRequest({ quantity: 50_000 });
   const result = checkOrderSizeVsAdv(state, req);
   assert(result !== null);
   assert(result?.code === "ORDER_SIZE_VS_ADV");
@@ -226,7 +226,7 @@ Deno.test("[risk-engine] checkConcentration: allows diverse book", () => {
     symbol: "MSFT",
     netQty: 1000,
     avgPrice: 300,
-    costBasis: 300000,
+    costBasis: 300_000,
     realisedPnl: 0,
     fillCount: 0,
   });
@@ -234,7 +234,7 @@ Deno.test("[risk-engine] checkConcentration: allows diverse book", () => {
     symbol: "NVDA",
     netQty: 1000,
     avgPrice: 300,
-    costBasis: 300000,
+    costBasis: 300_000,
     realisedPnl: 0,
     fillCount: 0,
   });
@@ -242,7 +242,7 @@ Deno.test("[risk-engine] checkConcentration: allows diverse book", () => {
     symbol: "GOOGL",
     netQty: 1000,
     avgPrice: 300,
-    costBasis: 300000,
+    costBasis: 300_000,
     realisedPnl: 0,
     fillCount: 0,
   });
@@ -292,7 +292,7 @@ Deno.test("[risk-engine] checkMaxPositionSize: rejects oversized existing positi
     symbol: "AAPL",
     netQty: 100,
     avgPrice: 100,
-    costBasis: 10000,
+    costBasis: 10_000,
     realisedPnl: 0,
     fillCount: 0,
   });
@@ -310,13 +310,13 @@ Deno.test("[risk-engine] userGrossNotional: calculates correctly", () => {
     symbol: "AAPL",
     netQty: 100,
     avgPrice: 192.0,
-    costBasis: 19200,
+    costBasis: 19_200,
     realisedPnl: 0,
     fillCount: 0,
   });
   state.positions.set("test-user", userPositions);
   const result = userGrossNotional(state, "test-user");
-  assertEquals(result, 19200);
+  assertEquals(result, 19_200);
 });
 
 Deno.test("[risk-engine] userTotalPnl: calculates correctly", () => {
@@ -326,7 +326,7 @@ Deno.test("[risk-engine] userTotalPnl: calculates correctly", () => {
     symbol: "AAPL",
     netQty: 100,
     avgPrice: 192.0,
-    costBasis: 19200,
+    costBasis: 19_200,
     realisedPnl: 0,
     fillCount: 0,
   });
@@ -342,25 +342,25 @@ Deno.test("[risk-engine] userSymbolNotional: calculates correctly", () => {
     symbol: "AAPL",
     netQty: 100,
     avgPrice: 192.0,
-    costBasis: 19200,
+    costBasis: 19_200,
     realisedPnl: 0,
     fillCount: 0,
   });
   state.positions.set("test-user", userPositions);
   const result = userSymbolNotional(state, "test-user", "AAPL");
-  assertEquals(result, 19200);
+  assertEquals(result, 19_200);
 });
 
 Deno.test("[risk-engine] orderNotional: calculates correctly", () => {
   const req = createTestRequest({ quantity: 100, limitPrice: 192.0 });
   const result = orderNotional(req);
-  assertEquals(result, 19200);
+  assertEquals(result, 19_200);
 });
 
 Deno.test("[risk-engine] runChecks: all checks pass", () => {
   const state = createTestState({ maxConcentrationPct: 100 });
   state.prices.AAPL = 192.0;
-  state.volumes.AAPL = 100000;
+  state.volumes.AAPL = 100_000;
   // Set up user positions to avoid concentration limit issues
   const userPositions = new Map();
   userPositions.set("AAPL", {
@@ -381,8 +381,8 @@ Deno.test("[risk-engine] runChecks: all checks pass", () => {
 Deno.test("[risk-engine] runChecks: some checks fail", () => {
   const state = createTestState({ maxAdvPct: 0.001, maxGrossNotional: 1000 });
   state.prices.AAPL = 192.0;
-  state.volumes.AAPL = 100000;
-  const req = createTestRequest({ quantity: 50000, limitPrice: 192.0 });
+  state.volumes.AAPL = 100_000;
+  const req = createTestRequest({ quantity: 50_000, limitPrice: 192.0 });
   const result = runChecks(state, req);
   assertEquals(result.allowed, false);
   assert(result.reasons.length > 0);

@@ -68,7 +68,7 @@ Deno.test("MARKET_SIM_SEED env applies a deterministic seed at module load (subp
   });
   const { stdout } = await cmd.output();
   const out = JSON.parse(new TextDecoder().decode(stdout));
-  if (out.seed !== 12345) {
+  if (out.seed !== 12_345) {
     throw new Error(`expected seed 12345, got ${out.seed}`);
   }
   if (typeof out.first !== "number" || out.first < 0 || out.first >= 1) {
