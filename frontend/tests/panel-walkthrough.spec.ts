@@ -85,6 +85,8 @@ const ALL_PANEL_IDS = [
   "dev-tools",
   "data-depth",
   "scenarios",
+  "order-routing-sankey",
+  "world-clocks",
 ] as const;
 
 type PanelVerdict = {

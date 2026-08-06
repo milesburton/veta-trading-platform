@@ -6,6 +6,9 @@ import { canAccessPanel } from "./dashboard/panelRegistry.ts";
 import { clearDraggedPanelId, setDraggedPanelId } from "./panelDragState.ts";
 
 const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
+  "world-clocks": "Live clocks for major trading market timezones",
+  "order-routing-sankey":
+    "Sankey diagram showing order flow from strategy through to execution venue",
   "market-ladder": "Live bid/ask ladder for any asset",
   "order-ticket": "Submit buy/sell orders",
   "order-blotter": "Live view of all open orders",

@@ -28,7 +28,7 @@ graph TD
 
 ## Component Inventory
 
-`207` components analysed.
+`211` components analysed.
 
 | Component | Path | Imports | Imported By |
 | --- | --- | --- | --- |
@@ -99,6 +99,7 @@ graph TD
 | OptionPricingPanel | `components/OptionPricingPanel.tsx` | 0 (—) | 0 (—) |
 | OrderBlotter | `components/OrderBlotter.tsx` | 6 (ContextMenu, panelRegistry, CfRuleEditor, FilterBar, ResizableHeader, PopOutButton) | 1 (PopOutHost) |
 | OrderProgressPanel | `components/OrderProgressPanel.tsx` | 0 (—) | 1 (PopOutHost) |
+| OrderRoutingSankeyPanel | `components/OrderRoutingSankeyPanel.tsx` | 0 (—) | 0 (—) |
 | OrderTicket | `components/OrderTicket.tsx` | 8 (AssetSelector, AssetInfoBar, buildAlgoParams, buildTrade, constants, OptionPreview, +2 more) | 1 (PopOutHost) |
 | AssetInfoBar | `components/OrderTicket/AssetInfoBar.tsx` | 0 (—) | 1 (OrderTicket) |
 | buildAlgoParams | `components/OrderTicket/buildAlgoParams.ts` | 0 (—) | 1 (OrderTicket) |
@@ -145,13 +146,16 @@ graph TD
 | VolSurfacePanel | `components/VolSurfacePanel.tsx` | 0 (—) | 0 (—) |
 | WorkspaceBar | `components/WorkspaceBar.tsx` | 3 (DashboardLayout, SharedWorkspaceBrowser, WorkspaceListItem) | 2 (App, WorkspaceListItem) |
 | WorkspaceListItem | `components/WorkspaceBar/WorkspaceListItem.tsx` | 1 (WorkspaceBar) | 1 (WorkspaceBar) |
+| WorldClocksPanel | `components/WorldClocksPanel.tsx` | 0 (—) | 0 (—) |
 | YieldCurvePanel | `components/YieldCurvePanel.tsx` | 0 (—) | 0 (—) |
 | TradingContext | `context/TradingContext.tsx` | 0 (—) | 2 (App, main) |
 | ChannelContext | `contexts/ChannelContext.tsx` | 0 (—) | 0 (—) |
 | bondUniverse | `data/bondUniverse.ts` | 0 (—) | 0 (—) |
+| financial-centers | `domain/market/financial-centers.ts` | 0 (—) | 0 (—) |
 | market-session | `domain/market/market-session.ts` | 0 (—) | 1 (trading-calendar) |
 | trading-calendar | `domain/market/trading-calendar.ts` | 1 (market-session) | 0 (—) |
 | venue-capabilities | `domain/market/venue-capabilities.ts` | 0 (—) | 0 (—) |
+| sankeyData | `domain/orderRouting/sankeyData.ts` | 0 (—) | 0 (—) |
 | parse | `domain/quickTrade/parse.ts` | 0 (—) | 0 (—) |
 | async-risk | `domain/ticket/async-risk.ts` | 1 (ticket-types) | 1 (useAsyncRisk) |
 | field-definitions | `domain/ticket/field-definitions.ts` | 0 (—) | 1 (resolve-ticket) |
