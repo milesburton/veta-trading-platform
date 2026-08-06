@@ -6,8 +6,7 @@
 ### Bug Fixes
 
 * **sniper:** guard against silent null-producer routing failure ([becd5eb](https://github.com/milesburton/veta-trading-platform/commit/becd5eb0bccbdf5d2a0debd64e8594b5fb0d2871))
-* **sniper:** prevent duplicate in-flight routing ([a93da02](https://github.com/milesburton/veta-trading-platform/commit/a93da024cc0478a21301d144d7193e01687d519f))
-* **sniper:** prevent duplicate in-flight routing ([d8f79a1](https://github.com/milesburton/veta-trading-platform/commit/d8f79a1f0b3cd137af7c88811c701e4d8b75c740))
+* **sniper:** prevent duplicate in-flight routing ([a93da02](https://github.com/milesburton/veta-trading-platform/commit/a93da024cc0478a21301d144d7193e01687d519f)), ([d8f79a1](https://github.com/milesburton/veta-trading-platform/commit/d8f79a1f0b3cd137af7c88811c701e4d8b75c740))
 
 ## [1.56.9](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.8...veta-trading-platform-v1.56.9) (2026-08-01)
 
