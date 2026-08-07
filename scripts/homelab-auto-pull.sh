@@ -133,14 +133,25 @@ print(len(d.get("check_runs",[])))
 # a commit that has real code changes and IS waiting on CI. (Caught live
 # on d62a45a5, the squash-merge of the PR that introduced this check.)
 #
-# Ask GitHub directly instead: a SHA that GitHub Actions skipped has
-# *zero* check-runs of any kind, not just zero Publish ones. That's an
-# unambiguous, content-independent signal.
+# Ask GitHub directly instead: query the CI workflow's own runs filtered
+# by head_sha. A SHA that GitHub Actions skipped (native [skip ci]) never
+# gets a CI workflow run at all, so total_count is 0 — an unambiguous,
+# content-independent signal.
+#
+# This used to check total_count of /commits/<sha>/check-runs instead
+# (i.e. check-runs from ANY workflow, not just CI). That broke in
+# practice: other push/workflow_run-triggered workflows (Dependabot
+# Updates, Notify Discord's deploy-success/ci-failure/pr-merged jobs)
+# still post check-runs against a [skip ci] commit even though CI itself
+# never ran, so total_count was never 0 and publish_checks_ready blocked
+# forever waiting for Publish runs that could never appear. (Caught live
+# on bf883581 — a badge-update [skip ci] commit — which stuck the gate
+# for ~23h.) Querying the CI workflow specifically sidesteps that.
 has_no_check_runs() {
   local sha="$1"
   local resp
   resp=$(curl -sf --max-time 10 \
-    "https://api.github.com/repos/$REPO_SLUG/commits/$sha/check-runs?per_page=1") \
+    "https://api.github.com/repos/$REPO_SLUG/actions/workflows/ci.yml/runs?head_sha=$sha") \
     || return 1
   local total
   total=$(echo "$resp" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total_count", -1))' 2>/dev/null) \
