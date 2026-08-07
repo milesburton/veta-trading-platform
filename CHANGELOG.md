@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.56.11](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.10...veta-trading-platform-v1.56.11) (2026-08-07)
+
+
+### Bug Fixes
+
+* **deploy:** detect skip-ci commits via CI workflow runs, not check-run count ([#531](https://github.com/milesburton/veta-trading-platform/issues/531)) ([922e95d](https://github.com/milesburton/veta-trading-platform/commit/922e95d513a2d75d8e915e471bc73cce4bb0fe07))
+* **deploy:** exempt secrets/ from the ownership drift guard ([#533](https://github.com/milesburton/veta-trading-platform/issues/533)) ([ccacd07](https://github.com/milesburton/veta-trading-platform/commit/ccacd0791b682faf204c00038b7bdcb58c7182a8))
+
 ## [1.56.10](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.9...veta-trading-platform-v1.56.10) (2026-08-06)
 
 
