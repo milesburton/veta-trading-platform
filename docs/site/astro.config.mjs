@@ -120,6 +120,7 @@ export default defineConfig({
                 { label: "Overview", slug: "platform/decisions" },
                 { label: "0001 Zero-downtime deploys on plain compose", slug: "platform/decisions/0001-rolling-deploys-on-plain-compose" },
                 { label: "0002 Blue-green deploys", slug: "platform/decisions/0002-blue-green-deploys" },
+                { label: "0003 Market-session and auction enforcement", slug: "platform/decisions/0003-market-session-and-auction-enforcement" },
               ],
             },
             {

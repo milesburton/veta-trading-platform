@@ -1,495 +1,247 @@
 ---
 title: FIX protocol
-description: "The Financial Information eXchange protocol layer: session management, message dictionary, gateway routing, and archive service."
+description: "A minimal FIX 4.4 session layer: a WebSocket-to-TCP bridge, a standalone simulated exchange, and a Postgres-backed execution archive."
 sidebar:
   order: 13
 ---
 
 ## Overview
 
-VETA implements a **FIX 4.4** session layer on top of its internal event-driven
-architecture. The gateway exposes a single TCP listener (`:9100`) that accepts
-FIX sessions from external brokers, market data feeds, and the internal exchange
-engine.
+VETA runs a small, self-contained FIX 4.4 stack as a second, parallel order-entry path
+alongside the HTTP/OMS path used by the rest of the platform. It is three independent
+services:
 
-The gateway's role is threefold:
-
-1. **Session management** — TCP keepalive, sequence number reconciliation,
-   logon/logout, and reconnection handling.
-2. **Message translation** — FIX → internal JSON → internal → FIX, with
-   dictionary validation on both sides.
-3. **Archive** — every inbound and outbound FIX message is persisted to the
-   archive service for replay and audit.
+1. **`fix-gateway`** — a WebSocket-to-TCP proxy. It has no knowledge of FIX message
+   content; it exists so a browser client can hold a TCP-like connection without a raw
+   TCP socket.
+2. **`fix-exchange`** — the actual FIX endpoint. It owns FIX session state (logon,
+   heartbeat, sequence numbers) and processes `NewOrderSingle`, synthesizing fills from
+   the live market-sim price feed.
+3. **`fix-archive`** — a Postgres-backed store with an HTTP query API for FIX execution
+   reports.
 
 ```mermaid
 sequenceDiagram
-    participant B as Broker / Feed
-    participant G as Gateway
-    participant E as Exchange Engine
-    participant A as Archive
+    participant B as Browser client
+    participant GW as fix-gateway (WS↔TCP proxy)
+    participant EX as fix-exchange (FIX session + fills)
+    participant MS as market-sim
 
-    B->>G: TCP connect
-    G->>A: persist connection event
-    B->>G: 9=Len...35=A (Logon)
-    G->>G: validate seqNum, encrypt password
-    G->>A: persist Logon
-    G->>E: internal logon event
-    E->>G: internal logon ack
-    G->>B: 9=Len...35=A (Logon) + encrypt seqNum=1
-    G->>A: persist Logon (outbound)
+    B->>GW: WebSocket connect (/ws/fix)
+    GW->>EX: TCP connect (:9880)
+    B->>GW: raw FIX bytes (35=A Logon)
+    GW->>EX: forward bytes unchanged
+    EX->>EX: FixSession state → ACTIVE
+    EX->>GW: 35=A Logon (ack)
+    GW->>B: forward bytes unchanged
 
-    B->>G: 35=D (NewOrderSingle)
-    G->>G: validate tag 55 (Symbol), 54 (Side), etc.
-    G->>A: persist NewOrderSingle
-    G->>E: internal new-order event
-    E->>G: internal order-accepted
-    G->>B: 35=8 (ExecutionReport)
-    G->>A: persist ExecutionReport
+    B->>GW: 35=D NewOrderSingle
+    GW->>EX: forward bytes unchanged
+    EX->>GW: 35=8 ExecutionReport (New)
+    EX->>MS: getLatest() price/volume
+    EX->>GW: 35=8 ExecutionReport (Fill/PartialFill × up to 3)
+    GW->>B: forward bytes unchanged
 ```
+
+**This is deliberately not the architecture a production FIX gateway would have.** There
+is no message translation layer, no dictionary validation at the gateway, and no
+persistence of every message in transit. It is scoped to be a realistic-enough FIX 4.4
+wire protocol for a client to practise against, backed by a simulated fill engine that
+shares logic with `ems-server.ts`'s participation-cap model. See
+[Known gaps](#known-gaps-and-not-yet-implemented) below for what a closer-to-production
+version would need.
 
 ## Wire format
 
-FIX messages use the standard **tag=value** format with `0x01` (SOH / ASCII 1)
-as the field separator. Every message begins with a length header:
+Standard FIX tag=value format with `0x01` (SOH) as the field separator, implemented in
+`backend/src/fix/fix-parser.ts`:
 
 ```
-9=|MessageLength|<SOH>8=|Timestamp|<SOH>35=|MsgType|<SOH>...
+8=FIX.4.4␁9=<BodyLength>␁35=<MsgType>␁...␁10=<CheckSum>␁
 ```
 
-The gateway enforces the following constraints on all inbound messages:
-
-- Maximum message length: **65 535 bytes** (configurable, default 32 KB)
-- Required tags per message type (per FIX 4.4 spec)
-- Sequence numbers must be monotonically increasing within a session
-- No duplicate `MsgSeqNum` values
-- `TargetCompID` must match a registered counterparty
-- `HeartBtInt` must be between 10 and 120 seconds
+- `BodyLength` (tag 9) is computed as the byte length of everything between the tag-9
+  field and the tag-10 field, per spec.
+- `CheckSum` (tag 10) is the sum of all preceding bytes modulo 256, zero-padded to 3
+  digits.
+- `encode()`/`decode()` are pure functions with no external state — `decode()` returns a
+  `Map<number, string>` of every tag present, `encode()` takes an ordered array of body
+  tags and prepends/appends the header and checksum.
 
 ### Tag dictionary
 
-The gateway carries a **subset** of the FIX 4.4 dictionary. Only tags relevant
-to the supported message types are validated. Unsupported tags are silently
-stripped on outbound messages.
+`backend/src/fix/fix-dictionary.ts` defines a **minimal subset** of FIX 4.4 tags — only
+what the session layer and `NewOrderSingle`/`ExecutionReport` flow need. There is no
+tag-level validation (unknown tags are neither rejected nor stripped; `decode()` simply
+includes whatever tags were present).
 
-| Tag | Name | Type | Required? | Notes |
-| --- | --- | --- | --- | --- |
-| 8 | BeginString | String | Always | `"FIX.4.4"` |
-| 9 | BodyLength | int | Always | Length of message after this tag |
-| 35 | MsgType | String | Always | `A`, `D`, `F`, `8`, `W`, etc. |
-| 34 | MsgSeqNum | int | Always | Monotonically increasing |
-| 43 | PossDupFlag | Boolean | Conditional | `Y` for replayed messages |
-| 49 | SenderCompID | String | Always | VETA gateway ID |
-| 50 | SenderSubID | String | Optional | Sub-account identifier |
-| 52 | SendingTime | UTCTimestamp | Always | |
-| 56 | TargetCompID | String | Always | Counterparty ID |
-| 95 | PossResend | Boolean | Conditional | `Y` on resend request |
-| 96 | EncryptMethod | int | Conditional | `0` = plaintext (production) |
-| 108 | HeartBtInt | int | Conditional | Seconds between heartbeats |
-| 123 | LastMsgSeqNumProcessed | int | Conditional | On gap-fill messages |
-| 141 | ResetSequence | Boolean | Conditional | `Y` on logon for full reset |
-| 453 | NoSides | int | Conditional | Number of legs in multi-leg orders |
+| Tag | Name | Used for |
+| --- | --- | --- |
+| 8 | BeginString | Always `FIX.4.4` |
+| 9 | BodyLength | Computed by `encode()` |
+| 35 | MsgType | See message types below |
+| 34 | MsgSeqNum | Tracked per session by `FixSession` |
+| 49 / 56 | SenderCompID / TargetCompID | Fixed to `EXCHANGE`/`GATEWAY` — see [Known gaps](#known-gaps-and-not-yet-implemented) |
+| 52 | SendingTime | Set by `utcTimestamp()` on every outbound message |
+| 108 | HeartBtInt | Defaults to 30s |
+| 98 | EncryptMethod | Always `0` (none) — this is a simulator, not a production link |
+| 112 | TestReqID | Round-tripped for heartbeat liveness checks |
+| 7 / 16 | BeginSeqNo / EndSeqNo | Used in ResendRequest / gap-fill |
+| 36 | NewSeqNo | Used in SequenceReset |
+| 11 | ClOrdID | Client order ID, echoed on every ExecutionReport |
+| 55 / 54 / 38 / 44 / 40 / 59 | Symbol / Side / OrderQty / Price / OrdType / TimeInForce | Order fields |
+| 17 / 150 / 39 | ExecID / ExecType / OrdStatus | Execution report fields |
+| 151 / 14 / 6 / 32 / 31 | LeavesQty / CumQty / AvgPx / LastQty / LastPx | Fill quantities |
+| 100 / 21 / 1 | ExDestination / HandlInst / Account | **Defined but never read** — see [Known gaps](#known-gaps-and-not-yet-implemented) |
 
 ### Supported message types
 
-| MsgType | Name | Direction | Description |
+| MsgType | Name | Direction | Handled by |
 | --- | --- | --- | --- |
-| A | Logon | Both | Session establishment |
-| D | NewOrderSingle | Inbound | Client order submission |
-| 8 | ExecutionReport | Outbound | Order fill / reject / cancel |
-| W | CancelRequest | Inbound | Client order cancellation |
-| 9 | CancelReject | Outbound | Rejected cancellation |
-| F | OrderCancelReplaceRequest | Inbound | Replace an existing order |
-| 5 | OrderCancelReject | Outbound | Rejected replace |
-| 0 | Heartbeat | Both | Keepalive |
-| 3 | ResendRequest | Both | Gap-fill request |
-| 2 | SequenceReset | Both | Gap-fill / reset |
-| 5f | Logout | Both | Session termination |
+| A | Logon | Both | `FixSession` |
+| 5 | Logout | Both | `FixSession` |
+| 0 | Heartbeat | Both | `FixSession` |
+| 1 | TestRequest | Both | `FixSession` (liveness probe) |
+| 2 | SequenceReset | Both | `FixSession` (gap-fill) |
+| 3 | ResendRequest | Both | `FixSession` |
+| D | NewOrderSingle | Inbound only | `fix-exchange.ts`'s `handleApplicationMessage` |
+| 8 | ExecutionReport | Outbound only | `fix-exchange.ts` |
+
+Every other `MsgType` value is accepted at the parser level but produces no application
+response — `handleApplicationMessage` returns immediately if `msgType !== NewOrderSingle`
+(`fix-exchange.ts`). There is no `OrderCancelRequest`, `OrderCancelReplaceRequest`, or
+`OrderCancelReject` handling despite tags/constants existing for some of these in earlier
+drafts of the dictionary; a cancel sent today is silently ignored.
 
 ## Session management
 
-### Logon flow
+`FixSession` (`backend/src/fix/fix-session.ts`) is a small state machine independent of
+transport — it is constructed once per TCP connection in `fix-exchange.ts` and driven by
+raw bytes via `handleInbound()`.
 
 ```mermaid
-sequenceDiagram
-    participant C as Client
-    participant G as Gateway
-    participant S as SessionStore
-
-    C->>G: TCP connect
-    G->>S: create session (pending)
-    C->>G: 35=A (Logon)
-    G->>G: validate credentials
-    G->>G: check max sessions per counterparty
-    G->>S: set state=active, seqNum=1
-    G->>C: 35=A (Logon) + seqNum=1
-    G->>S: persist session state
+stateDiagram-v2
+    [*] --> DISCONNECTED
+    DISCONNECTED --> ACTIVE: Logon received (acceptor)
+    DISCONNECTED --> LOGON_SENT: sendLogon() (initiator)
+    LOGON_SENT --> ACTIVE: Logon received (ack)
+    ACTIVE --> LOGOUT_SENT: sendLogout()
+    ACTIVE --> DISCONNECTED: Logout received
+    LOGOUT_SENT --> DISCONNECTED: Logout received
 ```
 
-The gateway supports **one active session per counterparty**. If a new logon
-arrives while a session is active, the old session is terminated with a Logout
-and the new session takes its place.
-
-### Sequence number reconciliation
-
-The gateway tracks both `MsgSeqNum` (outbound) and `TargetMsgSeqNum`
-(inbound) per session. On receipt of a message with an unexpected sequence
-number:
-
-1. If the gap is **≤ 1000**, the gateway sends a `ResendRequest` (35=3)
-   covering the missing range.
-2. If the gap is **> 1000**, the gateway sends a `SequenceReset` (35=2)
-   with `PossDupFlag=N` and resets both sequence numbers to the received
-   value.
-3. If the received sequence is **behind** the expected value, the gateway
-   sends a `GapFill` (35=2) with `LastMsgSeqNumProcessed` set to the
-   received value and discards the out-of-order message.
-
-### Heartbeat and keepalive
-
-The gateway enforces a **3× heartbeat interval** timeout. If no message is
-received within this window, the session is terminated and the TCP connection
-is closed.
-
-The gateway sends a Heartbeat (35=0) at **half the HeartBtInt interval**.
-Clients must respond with a Heartbeat or any other message within the timeout
-window.
-
-### Logout flow
-
-```mermaid
-sequenceDiagram
-    participant A as Initiator
-    participant G as Gateway
-    participant B as Acceptor
-
-    A->>G: 35=f (Logout) + text="Goodbye"
-    G->>G: stop sending heartbeats
-    G->>B: 35=f (Logout)
-    B->>G: 35=f (Logout)
-    G->>A: 35=f (Logout)
-    G->>G: close TCP, destroy session
-```
-
-The gateway **does not** send a Logout on TCP close. It relies on the
-heartbeat timeout to detect disconnections.
-
-## Gateway routing
-
-The gateway routes messages to internal services based on `MsgType`:
-
-| MsgType | Internal service | Queue |
-| --- | --- | --- |
-| D (NewOrderSingle) | Order Management Service | `orders.inbound` |
-| W (CancelRequest) | Order Management Service | `orders.inbound` |
-| F (OrderCancelReplaceRequest) | Order Management Service | `orders.inbound` |
-| 8 (ExecutionReport) | Portfolio Service | `portfolio.executions` |
-| 5 (OrderCancelReject) | Order Management Service | `orders.inbound` |
-| 35=2 (SequenceReset) | Session store | internal |
-| 35=3 (ResendRequest) | Session store | internal |
-
-### Internal message format
-
-The gateway translates FIX messages to an internal JSON format before publishing
-to the event bus:
-
-```json
-{
-  "type": "new_order_single",
-  "version": 1,
-  "payload": {
-    "clOrdId": "VETA-20260617-001",
-    "symbol": "AAPL",
-    "side": "Buy",
-    "ordType": "Limit",
-    "price": 185.50,
-    "quantity": 100,
-    "timeInForce": "Day",
-    "senderCompID": "BROKER01",
-    "targetCompID": "VETA",
-    "msgSeqNum": 42,
-    "timestamp": "2026-06-17T10:30:00.123Z"
-  }
-}
-```
-
-The reverse translation (internal → FIX) follows the same mapping in the
-opposite direction, with required tags added and optional tags omitted if
-unset.
-
-## Archive service
-
-Every FIX message that passes through the gateway is persisted to the archive
-service. The archive provides:
-
-- **Full message replay** — replay a session from any sequence number
-- **Audit trail** — every order, fill, and cancellation with exact timestamps
-- **Compliance** — regulatory retention (7 years for order data)
-- **Debugging** — reproduce issues by replaying exact message sequences
-
-### Archive storage
-
-Messages are stored in **two** locations:
-
-1. **Hot storage** — Redpanda topic `fix-messages` with 7-day retention.
-   Provides sub-millisecond read latency for active replay.
-2. **Cold storage** — S3-compatible object storage with 7-year retention.
-   Messages are archived daily as compressed JSONL files partitioned by
-   counterparty and date.
-
-### Archive query API
-
-The archive exposes a gRPC API for querying persisted messages:
-
-```protobuf
-service ArchiveService {
-  rpc Replay(ReplayRequest) returns (stream FixMessage);
-  rpc Search(SearchRequest) returns (stream FixMessage);
-  rpc GetSessionState(SessionStateRequest) returns (SessionState);
-}
-
-message ReplayRequest {
-  string sender_comp_id = 1;
-  string target_comp_id = 2;
-  uint32 from_seq_num = 3;
-  uint32 to_seq_num = 4;
-  google.protobuf.Timestamp from_time = 5;
-  google.protobuf.Timestamp to_time = 6;
-}
-
-message SearchRequest {
-  string sender_comp_id = 1;
-  string target_comp_id = 2;
-  string cl_ord_id = 3;
-  google.protobuf.Timestamp from_time = 4;
-  google.protobuf.Timestamp to_time = 5;
-  uint32 page_size = 6;
-}
-
-message FixMessage {
-  bytes raw_message = 1;
-  uint32 seq_num = 2;
-  google.protobuf.Timestamp timestamp = 3;
-  string direction = 4; // "inbound" or "outbound"
-}
-
-message SessionState {
-  string sender_comp_id = 1;
-  string target_comp_id = 2;
-  uint32 next_expected_seq_num = 3;
-  uint32 last_received_seq_num = 4;
-  google.protobuf.Timestamp last_logon = 5;
-  google.protobuf.Timestamp last_logout = 6;
-}
-```
-
-### Archive retention policy
-
-| Data type | Hot retention | Cold retention |
-| --- | --- | --- |
-| Order messages | 7 days | 7 years |
-| Session state | 30 days | 7 years |
-| Heartbeats | 1 day | 1 year |
-| Sequence resets | 7 days | 7 years |
-
-## Error handling
-
-### FIX-level errors
-
-The gateway sends FIX-level errors (35=5, OrderCancelReject) for:
-
-- Invalid tag number (tag 321)
-- Unknown MsgType (tag 354)
-- Required tag missing (tag 353)
-- Tag specified out of required group (tag 375)
-- Incorrectly formatted value (tag 326)
-
-### Internal errors
-
-When an internal service is unavailable:
-
-- **OMS down** — gateway publishes `orders.rejected` with reason
-  `"OMS unavailable"` and sends a FIX ExecutionReport (35=8) with
-  `OrdRejReason=5` (BrokerOption) and `Text="OMS unavailable"`
-- **Risk engine down** — gateway publishes `orders.rejected` with reason
-  `"Risk engine unavailable. All orders are blocked until the risk service
-  is restored"`
-- **Archive down** — gateway continues processing but logs warnings; messages
-  are buffered in memory (max 10 000) until the archive recovers
-
-### TCP-level errors
-
-| Error | Action |
-| --- | --- |
-| TCP close from client | Send Logout, destroy session |
-| TCP close from gateway | No Logout sent; client detects via heartbeat timeout |
-| TCP connect failure | Retry with exponential backoff (1s → 30s max) |
-| Read timeout | Terminate session, log error |
-| Write timeout | Terminate session, log error |
-
-## Security
-
-### Authentication
-
-Logon credentials are validated against a **hashed password store**. The
-password is transmitted as plaintext (EncryptMethod=0) in production, but the
-connection is always over TLS.
-
-### TLS
-
-The gateway accepts TLS connections on port `:9101` (in addition to plaintext
-`:9100`). TLS configuration:
-
-- Minimum TLS version: **1.2**
-- Cipher suites: ECDHE-ECDSA-AES256-GCM-SHA384, ECDHE-RSA-AES256-GCM-SHA384
-- Client certificate: **optional** (mTLS for high-value counterparties)
-- Certificate rotation: automatic via Let's Encrypt (90-day certs)
-
-### Rate limiting
-
-Per-counterparty rate limits:
-
-| Metric | Limit |
-| --- | --- |
-| Messages per second | 100 |
-| New orders per second | 20 |
-| Connections per counterparty | 1 |
-| Messages per session | 1 000 000 (then force logout) |
-
-### Audit logging
-
-Every FIX message is logged to the audit trail with:
-
-- Raw message bytes (hex)
-- Parsed tag-value pairs
-- Source/destination IP
-- Session state at time of processing
-- Processing latency (microseconds)
-
-## Configuration
-
-The gateway is configured via environment variables and a YAML config file:
-
-```yaml
-gateway:
-  listen_addr: ":9100"
-  tls_listen_addr: ":9101"
-  tls_cert: "/etc/ssl/veta-gateway.crt"
-  tls_key: "/etc/ssl/veta-gateway.key"
-  heartbeat_interval: 30
-  resend_window: 1000
-  max_message_size: 32768
-  max_sessions_per_counterparty: 1
-  archive:
-    hot_retention_days: 7
-    cold_retention_years: 7
-    s3_bucket: "veta-fix-archive"
-    s3_prefix: "fix-messages"
-  rate_limit:
-    messages_per_second: 100
-    new_orders_per_second: 20
-  counterparties:
-    - comp_id: "BROKER01"
-      password_hash: "$2b$12$..."
-      allowed_ips: ["203.0.113.0/24"]
-      max_message_size: 65535
-    - comp_id: "FEED01"
-      password_hash: "$2b$12$..."
-      allowed_ips: ["198.51.100.0/24"]
-      max_message_size: 131072
-```
-
-## Testing
-
-### Session tests
-
-The gateway includes a comprehensive test suite for session management:
-
-```typescript
-describe("FIX session lifecycle", () => {
-  it("completes logon with sequence reconciliation", async () => {
-    const client = await connectToGateway();
-    await client.logon({ senderCompID: "TEST", targetCompID: "VETA" });
-    expect(client.session.state).toBe("active");
-    expect(client.session.nextSeqNum).toBe(1);
-  });
-
-  it("rejects duplicate sessions from same counterparty", async () => {
-    const c1 = await connectToGateway();
-    const c2 = await connectToGateway();
-    await c1.logon({ senderCompID: "DUP", targetCompID: "VETA" });
-    await c2.logon({ senderCompID: "DUP", targetCompID: "VETA" });
-    // c1 should be disconnected
-    expect(c1.session.state).toBe("terminated");
-  });
-
-  it("handles gap-fill on sequence gap", async () => {
-    const client = await connectToGateway();
-    await client.logon({ senderCompID: "GAP", targetCompID: "VETA" });
-    // Send message with seqNum=50 (gap from 1)
-    await client.send({ msgType: "D", msgSeqNum: 50, symbol: "AAPL" });
-    // Gateway should send ResendRequest for [2..49]
-    const resend = await client.receiveNext();
-    expect(resend.msgType).toBe("3"); // ResendRequest
-  });
-});
-```
-
-### Message validation tests
-
-```typescript
-describe("FIX message validation", () => {
-  it("rejects message with missing required tag", async () => {
-    const client = await connectToGateway();
-    await client.logon({ senderCompID: "VAL", targetCompID: "VETA" });
-    // NewOrderSingle without Symbol (tag 55)
-    const msg = "8=FIX.4.4|9=...|35=D|34=2|49=VAL|56=VETA|52=...|";
-    await client.sendRaw(msg);
-    const reject = await client.receiveNext();
-    expect(reject.msgType).toBe("8"); // ExecutionReport
-    expect(reject.ordRejReason).toBe("3"); // Missing required tag
-  });
-
-  it("strips unsupported tags on outbound", async () => {
-    const client = await connectToGateway();
-    await client.logon({ senderCompID: "STRIP", targetCompID: "VETA" });
-    // Gateway sends ExecutionReport with custom tag 9999
-    const report = await client.receiveNext();
-    expect(report.raw).not.toContain("9999=");
-  });
-});
-```
-
-## Deployment
-
-The gateway runs as a single Docker container on the server. It is deployed
-via the same compose stack as the other platform services:
-
-```yaml
-services:
-  fix-gateway:
-    image: veta/fix-gateway:latest
-    ports:
-      - "9100:9100"
-      - "9101:9101"
-    environment:
-      - GATEWAY_CONFIG_PATH=/etc/veta/gateway.yaml
-      - REDPANDA_BROKERS=redpanda-0:9092
-      - ARCHIVE_S3_BUCKET=veta-fix-archive
-    volumes:
-      - ./gateway.yaml:/etc/veta/gateway.yaml:ro
-      - ./tls.crt:/etc/ssl/veta-gateway.crt:ro
-      - ./tls.key:/etc/ssl/veta-gateway.key:ro
-    restart: unless-stopped
-    depends_on:
-      - redpanda
-```
+`fix-exchange.ts` always plays the acceptor role — every inbound TCP connection starts a
+fresh `FixSession` in `DISCONNECTED` and transitions straight to `ACTIVE` on receiving the
+client's Logon.
+
+### Sequence numbers and gap-fill
+
+- Inbound and outbound `MsgSeqNum` are tracked independently (`inSeq`/`outSeq`), starting
+  at 1.
+- If an inbound message's sequence number is **greater** than expected, `FixSession`
+  sends a `ResendRequest` covering the gap and does not process the out-of-order message
+  further.
+- On receiving a `ResendRequest`, the session does not actually resend prior messages (it
+  keeps no message history) — it responds with a `SequenceReset`/gap-fill jumping straight
+  to the requested end sequence. This is sufficient to keep both sides' counters in sync
+  but means a client that genuinely needs replay of missed application messages cannot get
+  them from `fix-exchange` itself.
+- `SequenceReset` on the inbound side simply overwrites `inSeq` to the new value with no
+  further checks.
+
+### Heartbeat and liveness
+
+`startHeartbeat(intervalSecs)` runs on a `setInterval` at the negotiated `HeartBtInt`. Each
+tick: if a `TestRequest` sent on the previous tick was never acknowledged, the session logs
+a timeout and disconnects; otherwise it sends a fresh `TestRequest` and waits for the next
+tick to check the reply arrived. There is no separate "send Heartbeat at half the interval"
+behavior — liveness is entirely TestRequest/Heartbeat-response driven, once per
+`heartBtInt`.
+
+## fix-exchange: order handling and simulated fills
+
+`fix-exchange.ts` listens on TCP `:9880` (configurable via `FIX_EXCHANGE_PORT`) and a
+separate plain-HTTP health endpoint on `:9879` (hardcoded as `FIX_EXCHANGE_PORT - 1`).
+
+On a `NewOrderSingle`:
+
+1. Sends an immediate `ExecutionReport` with `ExecType=New`, `OrdStatus=New`,
+   `LeavesQty=<full order qty>`.
+2. Waits a randomized 10–50ms to simulate exchange latency.
+3. Reads the current mid-price and volume for the order's symbol from
+   `marketClient.getLatest()` — a live WebSocket connection to `market-sim`, the same
+   `@veta/market-client` library every algo strategy and `ems-server.ts` use.
+4. Synthesizes up to 3 partial fills via `computeFill()`, which caps each fill at
+   `tickVolume × EMS_PARTICIPATION_CAP` (default 20%) and applies a market-impact price
+   adjustment of `(filledQty / 1000) × EMS_IMPACT_PER_1000_BPS` basis points, worse for the
+   order's side. This mirrors the participation-cap fill model used elsewhere in the
+   platform's EMS, not a separate implementation.
+5. Sends one `ExecutionReport` per fill slice (`ExecType=PartialFill` until the last,
+   `Fill` on the slice that exhausts the order), with a 50–150ms gap between partials.
+
+There is **no order book and no counterparty matching** — every fill is synthesized
+against a snapshot price, not matched against another FIX client's resting order. Two
+FIX clients trading the same symbol at the same time do not interact with each other.
+
+## fix-archive
+
+A Postgres-backed HTTP service (`fix_archive.executions` table) exposing:
+
+- `GET /health` — includes a live row count.
+- `GET /executions?symbol=&from=&to=&limit=` — filtered, time-ranged query, newest first.
+- `GET /executions/:execId` — single execution lookup.
+
+Writes are batched: it consumes the Kafka topic `fix.execution` and flushes up to 50
+pending rows every 50ms in a single transaction, upserting on `exec_id` so a repeated
+partial-fill update (same `execId`, later `ordStatus`/`leavesQty`) overwrites in place
+rather than duplicating rows.
+
+## Known gaps and not-yet-implemented
+
+This is an honest list, not aspirational — each item below is confirmed absent from the
+current implementation, not merely undocumented:
+
+- **`fix-exchange` never publishes to `fix.execution`.** `fix-archive` is fully
+  implemented and consumes that topic correctly, but nothing in `fix-exchange.ts` sends to
+  it — the topic is currently populated by `rfq-service.ts`, `dark-pool-server.ts`, and
+  `ems-server.ts` instead. FIX executions are not archived today. Wiring
+  `fix-exchange.ts` to publish an `ExecReport`-shaped message to `fix.execution` after
+  each fill would close this gap with no schema change needed on the archive side.
+- **No risk-engine or OMS integration.** A `NewOrderSingle` accepted by `fix-exchange`
+  never touches `risk-engine`'s pre-trade checks (fat-finger, position limits,
+  concentration, etc.) or creates an OMS order record. It is a fully separate simulated
+  venue from the HTTP order path, not a second entry point into the same risk-managed
+  pipeline.
+- **No market-hours or auction-session awareness**, matching the gap across the rest of
+  the order-entry surface — see
+  [ADR 0003: market-session and auction enforcement](../decisions/0003-market-session-and-auction-enforcement/).
+  A `NewOrderSingle` is accepted and filled at any time, with no reference to
+  `MarketPhase`/`sessionPhase`.
+- **No per-client identity or venue routing.** Every session is hardcoded to
+  `SenderCompID=EXCHANGE`/`TargetCompID=GATEWAY` — there is no counterparty table, no
+  credential check on Logon, and no concept of routing a FIX session to a specific
+  simulated venue (the frontend's `venue-capabilities.ts` registry has no FIX-side
+  counterpart).
+- **`ExDestination`, `HandlInst`, and `Account` tags are defined but never read.** A
+  client can send them; `fix-exchange.ts` ignores them.
+- **No cancel/replace handling.** `OrderCancelRequest`, `OrderCancelReplaceRequest`, and
+  `OrderCancelReject` have no application-level handler — a cancel is silently dropped.
+- **No backend test coverage.** There is no test file for any of the 6
+  `backend/src/fix/*.ts` modules today.
+- **No TLS.** The TCP listener and WebSocket bridge are both plaintext.
+- **No rate limiting.** Nothing bounds messages-per-second or orders-per-second on a FIX
+  session, unlike the HTTP gateway's IP-based rate limiter.
+
+None of this is a defect relative to what the platform currently promises — the FIX stack
+is explicitly a minimal, self-contained simulator, not a production gateway. This section
+exists so future work starts from an accurate baseline rather than the previous version of
+this page, which described a gRPC/S3-backed architecture that was never implemented.
 
 ## See also
 
-- [Edge architecture](/veta-trading-platform/platform/edge-architecture/) — how the gateway fits into the
-  overall platform topology
-- [Service map](/veta-trading-platform/platform/services/) — the gateway's position in the service mesh
-- [Risk architecture](/veta-trading-platform/platform/risk-architecture/) — how the gateway integrates with
-  pre-trade risk checks
-- [Archive service](/veta-trading-platform/platform/supporting-services/) — the archive service that persists
-  all FIX messages
+- [Service map](../services/) — the FIX services' position in the service mesh.
+- [Risk architecture](../risk-architecture/) — how the HTTP order path integrates
+  pre-trade risk checks; the FIX path currently does not.
+- [ADR 0003: market-session and auction enforcement](../decisions/0003-market-session-and-auction-enforcement/) —
+  covers the FIX path's lack of session awareness alongside the rest of the order-entry
+  surface.

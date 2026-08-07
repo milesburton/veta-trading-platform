@@ -1,0 +1,280 @@
+---
+title: "ADR 0003: Market-session and auction enforcement"
+description: "The platform displays a live market-session phase but does not enforce it anywhere in the order pipeline, and has no auction matching. Records the phased plan to make session state authoritative server-side, extend it to the FIX order-entry path, and add a minimal auction model."
+---
+
+**Status:** Proposed (work in progress; no phase below has landed yet)
+
+**Date:** 2026-08-07
+
+## Context
+
+VETA has a real `MarketPhase` concept (`PRE_OPEN | OPENING_AUCTION | CONTINUOUS |
+CLOSING_AUCTION | HALTED | CLOSED`, `frontend/src/domain/market/market-session.ts`) that
+`market-sim` broadcasts live over the WebSocket tick stream, and that the order-ticket UI
+already uses to disable submission and warn about auction-only strategy restrictions
+(`frontend/src/domain/ticket/rules/session-rules.ts`,
+`frontend/src/domain/ticket/resolve-ticket.ts`). This is not a stub: it is wired,
+tested, and does what it claims for the one path it covers.
+
+That path is the browser order ticket only. An audit of the rest of the order-entry
+surface found the session concept stops there:
+
+- **No backend enforcement anywhere.** `oms-server.ts`, `ems-server.ts`, `gateway.ts`, and
+  every check in `risk-engine/checks.ts` (`checkFatFingerPrice`, `checkDuplicateOrder`,
+  `checkMaxOpenOrders`, `checkSelfCross`, `checkOrderSizeVsAdv`, `checkRateLimit`,
+  `checkPositionNotional`, `checkDailyPnlStop`, `checkConcentration`,
+  `checkMaxPositionSize`) have zero session/hours/halted awareness. A direct API call, or
+  any of the 9 algo engines, bypasses the UI gate entirely.
+- **No algo strategy respects session boundaries.** All 9 strategies
+  (`backend/src/algo/*-strategy.ts`) slice purely off `Date.now()` and their own
+  `expiresAt` window. A TWAP order submitted at 15:55 with a 300-second duration slices
+  straight through the close, or through a halt, with no pause or clip.
+- **No auction matching exists.** `OPENING_AUCTION`/`CLOSING_AUCTION` are enum labels plus
+  advisory UI copy ("orders will queue for the opening auction") describing behavior the
+  platform does not implement. Orders placed during an auction phase are accepted and
+  filled exactly like continuous-session orders.
+- **The FIX order-entry path has the same gap, independently.** `fix-exchange.ts` (see
+  [FIX protocol](../../fix-protocol/)) is a fully separate simulated venue from the HTTP
+  path — it never calls risk-engine or OMS at all, so a session-hours check added only to
+  `risk-engine` would not cover FIX. It needs its own path to the same session-phase
+  source of truth.
+- **`market-sim`'s own hours gate is unused by default.** `marketHours.ts`'s
+  `isUsEquityRegularSession()` check exists and can stop the tick loop outside NYSE hours,
+  but `MARKET_SIM_ALLOW_OUT_OF_HOURS` defaults unset, so the simulator runs 24/7 out of the
+  box. The session *phase* it broadcasts is derived from a simulated 390-minute loop, not
+  real calendar time — no holiday or early-close awareness feeds it, even though a
+  calendar model (`frontend/src/domain/market/trading-calendar.ts`) already exists and is
+  wired to nothing.
+
+None of this was previously documented as scoped work — no ADR, backlog item, or roadmap
+entry mentioned it before this one.
+
+## Decision
+
+Make session-phase state authoritative on the server (never trust a client-supplied
+phase), enforce it at the one chokepoint every HTTP-path order already passes through
+(`risk-engine`), extend the same enforcement to the FIX path independently, make the 9
+algo strategies session-aware, and add the smallest auction model that makes
+`OPENING_AUCTION`/`CLOSING_AUCTION` functionally true rather than labels. Land it in seven
+independently-shippable phases, ordered so the highest-risk step (changing what orders
+get accepted) is isolated to a single flag flip that is a one-line revert if it causes
+problems.
+
+### Phase 1 — Consolidate the calendar, no behavior change
+
+Three places currently hand-maintain the same NYSE-hours fact:
+`market-session.ts`'s phase model, `trading-calendar.ts`'s unused holiday/early-close
+schedule, and `marketHours.ts`'s hardcoded weekday/09:30–16:00 check. Promote
+`trading-calendar.ts`'s calendar (holidays, early closes) to the source of truth; extend
+`marketHours.ts`'s `isUsEquityRegularSession()` to consult it. Since the Deno backend and
+the Vite frontend build separately, this means porting an equivalent minimal calendar
+object into a new `backend/src/market-sim/tradingCalendar.ts` with the same values, plus a
+test asserting the two lists match, rather than a literal shared import — a cheap guard
+against the two drifting again.
+
+Keep `market-sim.ts`'s simulated 390-minute loop for phase *cycling* (it compresses a
+trading day into about 90 seconds of ticks, which is a deliberate demo/UX choice, not a
+simplification to fix) — layer the calendar-aware holiday/weekend gate on top as the
+real-world eligibility check, orthogonal to the loop's pacing. Document this split
+explicitly in code comments so it is not later "fixed" into wall-clock-only and the demo
+pacing is lost.
+
+**Files:** `backend/src/market-sim/tradingCalendar.ts` (new), `marketHours.ts`,
+`market-sim.ts` (comment only). **Complexity:** small–medium. **Test risk:** low —
+purely additive; check existing `marketHours.test.ts` doesn't hardcode a date that is now
+also a holiday.
+
+### Phase 2 — Plumb `sessionPhase` into the shared market client
+
+`@veta/market-client`'s `MarketTick` interface (`backend/src/lib/marketSimClient.ts`) does
+not carry `sessionPhase` at all, even though `market-sim.ts`'s WebSocket payload includes
+it. No backend process outside `market-sim.ts` itself can observe session phase today.
+Add `sessionPhase` as an optional field to `MarketTick`/`mergeTick()`, and have
+`risk-engine.ts`'s existing `consumeMarketTicks()` (already the ingestion path for
+`prices`/`openPrices`/`volumes`) track the latest phase into `RiskState`. Expose it on
+`/health` for observability. No enforcement in this phase.
+
+**Files:** `backend/src/lib/marketSimClient.ts`, `backend/src/risk-engine/checks.ts`
+(`RiskState` shape), `risk-engine.ts`. **Complexity:** small. **Test risk:** low — new
+field is optional everywhere; watch for any test doing exact-shape snapshot comparison on
+the full tick object rather than field-by-field assertions.
+
+### Phase 3 — Risk-engine session check, off by default
+
+Add `checkMarketSession` to `risk-engine/checks.ts`, following the file's existing
+`(state, req) => CheckHit` shape used by every other check. Gate it behind a new
+`RiskConfig.enforceMarketHours: boolean`, defaulted `false`, settable via the existing
+`PUT /config` endpoint the same way `selfCrossEnabled`/`breakersEnabled` already work.
+Reject on `HALTED`/`CLOSED`; during `PRE_OPEN`/auction phases, allow only the same
+strategies `market-session.ts`'s `AUCTION_STRATEGIES` allow-list already permits, so the
+server never enforces a stricter rule than what the UI already promised.
+
+This lands as `risk-engine`, not `gateway`, deliberately: gateway's only existing
+relationship to risk-engine is a health-check ping, and every other order-blocking
+business rule already lives in `risk-engine`. Introducing a first-class blocking
+responsibility in gateway would be new architecture where an existing pattern already
+fits.
+
+With the flag off, this phase is a complete no-op for every existing test suite —
+only new tests are added.
+
+**Files:** `backend/src/schemas/risk.ts`, `risk-engine/checks.ts`, `risk-engine.ts`.
+**Complexity:** medium. **Test risk:** none while the flag is off.
+
+### Phase 4 — Flip the flag on (the breaking-change phase, isolated)
+
+A config-default change only (`enforceMarketHours` defaults `true`), kept as its own PR
+so it is a one-line revert if it causes unexpected rejections. This is the phase that
+actually changes observable behavior: orders submitted during `HALTED`/`CLOSED`, or
+non-auction-eligible strategies submitted during an auction phase, start being rejected
+where they previously succeeded.
+
+Two things ship with it, not after:
+
+- A log line on rejection (matching the existing `MARKET_SIM_ALLOW_OUT_OF_HOURS`
+  precedent at `market-sim.ts`), so a rejection is diagnosable, not silent.
+- Explicit documentation of the interaction with `market-sim`'s own
+  `MARKET_SIM_ALLOW_OUT_OF_HOURS` flag: if that stays at its default (`true`, ticking
+  24/7) while `enforceMarketHours` is `true`, price discovery continues out of hours but
+  order entry does not. That is a legitimate combination, not a bug, but it needs to be a
+  documented interaction rather than a surprise.
+
+Since the simulated day cycles through every phase repeatedly, any existing Playwright or
+k6 load-test flow that submits orders without regard to phase will start intermittently
+failing once this lands — it will eventually catch a `HALTED`/`CLOSED`/wrong-strategy
+window. Audit `frontend/tests/` and `k6/` order-submission flows before flipping, and pin
+them to a known-`CONTINUOUS` window using market-sim's existing `/seed` reset route
+(extended to accept a starting `marketMinute` if it does not already).
+
+**Files:** `backend/src/schemas/risk.ts` (default only), docs. **Complexity:** small
+change, treated as a separate deploy step regardless. **Test risk:** the real risk in this
+whole plan — flagged explicitly above.
+
+### Phase 5 — Session-aware algo strategies
+
+Add one shared predicate to `backend/src/algo/common-http.ts` (the file that already hosts
+cross-strategy helpers like `serveAlgoHealth` and `startExpirySweep`) — e.g.
+`isSessionOpenForSlicing(tick: MarketTick): boolean` — built on Phase 2's plumbing.
+Recommended behavior per slice: skip-and-continue (not abort) on `HALTED`, so a short halt
+pauses execution rather than losing a partial fill to a hard error; clip remaining slices
+to session end on `CLOSED`/closing-auction boundary. This is a design recommendation to
+review, not a mandate — a hard-reject-at-submission alternative is simpler but loses
+in-flight work on any halt, however brief.
+
+Wire the predicate into each of the 9 strategies' per-slice loops individually, not behind
+a new base-class abstraction — the loop shapes are similar but not identical (TWAP/VWAP/POV
+are fixed-interval; sniper and momentum are signal-driven and need a different insertion
+point). Land after Phase 4, not before, so the entry gate is validated stable first.
+
+**Files:** `backend/src/algo/common-http.ts`, all 9 `*-strategy.ts` files.
+**Complexity:** large — not architecturally hard, but nine files with individually-reviewed
+loop shapes. Budget as one PR per strategy or one PR with per-strategy commits.
+**Test risk:** if any algo test mocks `marketClient.getLatest()` with a fixed tick
+missing `sessionPhase`, decide the undefined-phase fallback as permissive
+(`CONTINUOUS`-equivalent), not restrictive — otherwise every existing algo test silently
+starts behaving as if the market were closed.
+
+### Phase 6 — FIX path: same enforcement, independent wiring
+
+`fix-exchange.ts` is a standalone Deno process with its own `@veta/market-client`
+WebSocket connection to market-sim (see [FIX protocol](../../fix-protocol/)) — it does not
+call risk-engine or OMS, so Phase 3's check does not cover it by construction. Phase 2's
+`MarketTick.sessionPhase` field is already available to it via the same client library, so
+extending `handleApplicationMessage`'s `NewOrderSingle` handler to reject
+(`ExecType=Rejected`, `OrdStatus=Rejected`) on `HALTED`/`CLOSED` reuses existing plumbing
+rather than requiring a new connection or a Kafka consumer.
+
+This phase is independent of, and should not block on, whether FIX orders are ever routed
+through risk-engine — that is a separate, larger architectural gap noted in
+[FIX protocol's known gaps](../../fix-protocol/#known-gaps-and-not-yet-implemented) and
+out of scope here. This phase only closes the session-hours gap on the FIX side to match
+Phase 4's HTTP-side behavior; it does not make FIX orders risk-checked.
+
+**Files:** `backend/src/fix/fix-exchange.ts`. **Complexity:** small — one check inserted
+before the existing fill logic. **Test risk:** none currently, since there is no existing
+backend test coverage for any FIX module (also noted as a gap in the FIX protocol page) —
+this phase should add the first ones.
+
+### Phase 7 — Minimal auction model
+
+The smallest viable implementation, deliberately not a real uncrossing/imbalance engine:
+queue LIMIT orders (the only strategy already allowed during auction phases) submitted
+while `sessionPhase` is `OPENING_AUCTION`/`CLOSING_AUCTION`, and release them as ordinary
+child orders at the first observed `CONTINUOUS` tick. This makes the auction phases
+functionally real in the sense that matters most — an order submitted during one no
+longer behaves identically to a continuous-session order — without building the order
+book, matching algorithm, and imbalance calculation a true single-price cross needs, which
+is a separate, larger project in its own right. MOC/LOC order types are explicit future
+scope, not a dependency of this phase: they need new `Strategy`/order-type schema entries
+and OMS routing changes.
+
+Existing frontend copy in `session-rules.ts` ("orders will queue for the opening auction")
+already sets this exact expectation — no frontend change needed if implemented as
+described.
+
+**Files:** `backend/src/oms/oms-server.ts` or a new `backend/src/oms/auctionQueue.ts`
+(needs OMS to also consume `sessionPhase`, extending Phase 2's plumbing to OMS).
+**Complexity:** medium. **Test risk:** low — new code path only exercised during auction
+phases; only a collision risk for E2E/load tests already flagged under Phase 4.
+
+## Consequences
+
+- Session-phase state becomes something the server, not just the browser, can trust —
+  closing the gap where a direct API call or an algo engine could always bypass the UI
+  gate.
+- Phase 4 is a genuine behavior change for anyone relying on today's "orders always
+  succeed regardless of session" default. It is isolated to one flag and one PR
+  specifically so it can be reverted without touching Phases 1–3, 5, 6, or 7.
+- The FIX path gets session enforcement independently of the HTTP path (Phase 6), because
+  it is architecturally a separate venue, not a second entry point into the same pipeline.
+  It does not gain risk-engine checks as a side effect — that remains a separate, larger
+  gap.
+- The auction model landed here (Phase 7) is intentionally the weakest viable version.
+  Anyone expecting real price-time-priority uncrossing or MOC/LOC order types should treat
+  this ADR as not covering that; it would be a new ADR.
+- `financial-centers.ts` (a per-financial-centre reference clock display on the
+  `feat/order-routing-sankey-and-world-clocks` branch, not yet merged) is a related but
+  separate concept — global reference clocks for markets VETA does not trade, versus this
+  platform's own single tradable session. It is out of scope for this ADR; reconciling its
+  duplicated NYC hours with `market-session.ts`'s real session truth should land with that
+  branch's own merge, not be gated on this plan.
+
+## Alternatives considered
+
+- **Enforce session hours at the gateway instead of risk-engine.** Rejected: gateway's
+  only current relationship to risk-engine is a health-check ping, and every other
+  order-blocking rule already lives in risk-engine. Adding blocking logic to gateway would
+  be new architecture where an existing, consistent pattern already fits.
+- **Hard-reject in-flight algo slices on any session change (Phase 5).** Considered
+  instead of pause-and-resume. Rejected as the default recommendation because it discards
+  partial execution progress on a halt that might last seconds, but flagged in the phase
+  as a simpler alternative worth reviewing rather than a closed decision.
+- **Real auction uncrossing in Phase 7.** Rejected for this pass as disproportionate scope
+  — a genuine single-price cross needs a separate order book, matching algorithm, and
+  imbalance calculation distinct from EMS's existing continuous-fill math. Left as future
+  work, not a prerequisite.
+- **Unify `financial-centers.ts` with `market-session.ts` into one model.** Considered and
+  rejected: the five non-US reference clocks (London, Tokyo, etc.) have no tradable-session
+  equivalent on this platform, so forcing them through the same `MarketPhase` model would
+  be the kind of premature generalization that does not serve either concept well. Only
+  the NYC entry's duplication is worth resolving, and only when that branch merges.
+
+## Rollout
+
+Sequenced safest to riskiest, each phase an independently-mergeable PR:
+
+1. Phase 1 (calendar consolidation) — no behavior change.
+2. Phase 2 (`sessionPhase` plumbing) — no behavior change, observability only.
+3. Phase 3 (risk-engine check, flag off) — no behavior change, fully inert.
+4. Phase 4 (flip the flag) — first real breaking change, isolated for a fast revert.
+5. Phase 5 (algo self-checks) — second behavior change, larger surface, after Phase 4 is
+   validated stable in practice.
+6. Phase 6 (FIX path enforcement) — independent of Phase 5, can land any time after
+   Phase 2.
+7. Phase 7 (auction queue-and-release stub) — optional, independent, can land any time
+   after Phase 2's `sessionPhase` plumbing reaches OMS.
+
+Phases 1–3 could reasonably be a single PR given their combined low risk. Phase 4's
+flag-flip should stay strictly separate regardless, given it is the one phase with real,
+currently-untested behavior-change blast radius across the Playwright and k6 suites.
