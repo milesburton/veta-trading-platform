@@ -88,6 +88,15 @@ services:
       # rather than silently inheriting the well-known credential.
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-CHANGE_ME_IN_DOTENV}"
+      # SQLite defaults to rollback-journal mode, which serialises writers
+      # against the whole database file. With the alerting scheduler
+      # evaluating multiple rules concurrently alongside API requests and
+      # dashboard provisioning, that produced continuous "database is
+      # locked" errors (grafana.db-journal churning, alert rules failing
+      # to evaluate and firing as DatasourceError instead of real
+      # conditions, which then paged Discord with false alerts). WAL mode
+      # allows concurrent readers alongside a single writer instead.
+      GF_DATABASE_WAL: "true"
       GF_FEATURE_TOGGLES_ENABLE: "traceToMetrics,traceToLogs"
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
