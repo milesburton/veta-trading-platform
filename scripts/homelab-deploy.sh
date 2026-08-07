@@ -32,8 +32,15 @@ check_ownership() {
     # caused by /opt/stacks/veta/observability/ being root-owned from an
     # earlier setup, leaving the auto-pull unable to sync compose changes
     # for ~3 days.
+    #
+    # secrets/ is exempt: github_ticketing_token is deliberately root:1993
+    # (matching the gateway's unprivileged deno user) so the credential is
+    # never readable outside the container that needs it. This check exists
+    # to catch accidental drift, not to fight an intentional security
+    # boundary — deploy.sh never writes into secrets/, so ownership there
+    # is irrelevant to the rsync failure mode this guard protects against.
     local foreign
-    foreign=$(find "$STACK_DIR" -not -user "$(id -un)" 2>/dev/null | head -10)
+    foreign=$(find "$STACK_DIR" -not -path "$STACK_DIR/secrets/*" -not -user "$(id -un)" 2>/dev/null | head -10)
     if [[ -n "$foreign" ]]; then
         log "❌ ERROR: files in $STACK_DIR are not owned by $(id -un):"
         echo "$foreign" | sed 's/^/  /'
