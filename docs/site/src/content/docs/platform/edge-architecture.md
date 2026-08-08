@@ -18,7 +18,7 @@ liveness probe that watches this chain see
 ```mermaid
 graph TD
     USER["Internet user"]:::client
-    EDGE["<edge-server> (edge server)<br/><i>Traefik v3.3 host-mode<br/>Let's Encrypt TLS<br/>backend: https://localhost:18443</i>"]:::edge
+    EDGE["<edge-server> (edge server)<br/><i>Traefik v3.4 host-mode<br/>Let's Encrypt TLS<br/>backend: https://localhost:18443</i>"]:::edge
     LOCAL["localhost:18443<br/><i>sshd reverse-forward listener</i>"]:::edge
     TUNNEL["autossh on the server dialled OUT<br/><i>ssh -R 18443:localhost:443 veta-tunnel@edge</i>"]:::edge
     HL["Server Traefik :443<br/><i>private LAN address<br/>reads Docker labels<br/>matches by PathPrefix</i>"]:::gateway
@@ -66,52 +66,66 @@ Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-tradi
 ### Offline holding page
 
 When the secure tunnel is down or the server's backend returns a 5xx, the edge
-Traefik falls back to a static "VETA is temporarily offline" page instead of a
-bare 502, using Traefik's built-in `errors` middleware:
+Traefik redirects the visitor to a "VETA is temporarily offline" page instead
+of a bare 502, using Traefik's built-in `errors` middleware:
 
 ```yaml
 services:
   veta-status-fallback:
     loadBalancer:
       servers:
-        - url: "https://milesburton.github.io"
-      passHostHeader: false
+        - url: "http://127.0.0.1:8081"
 
 middlewares:
   offline-holding-page:
     errors:
       status:
         - "500-599"
+      statusRewrites:
+        "500-599": 302
       service: veta-status-fallback
-      query: "/veta-trading-platform/status/"
+      query: "/"
 ```
 
 The fallback target is the [status page](/veta-trading-platform/status/) published as
 part of this Astro docs site — it deploys to GitHub Pages independently of the
-server, so it stays reachable exactly when the primary origin is not. No
-additional webserver runs on the edge box; the docs site GitHub Pages already
-publishes is reused as-is.
+server, so it stays reachable exactly when the primary origin is not.
 
-Two details that make this work correctly:
+Two separate problems had to be solved to make this actually redirect a
+real browser, not just look correct in a spot-check:
 
-- **`passHostHeader: false`** on the fallback service. GitHub Pages routes by
-  Host header; forwarding `veta.mnetcs.com` through unchanged would 404.
-  Traefik must send its own request with the fallback service's own Host
-  (`milesburton.github.io`).
-- **The status page must actually be published** before this does anything
-  useful. If the errors middleware's fallback request itself fails (a path
-  that returns a redirect rather than 2xx, for example — this happened during
-  rollout, before the status page had been merged and deployed, since GitHub
-  Pages serves a fallback 301 to the account's other domain for unpublished
-  paths), Traefik does not treat that as a successful error-page render and
-  the client still sees the original 5xx. The middleware degrades safely: at
-  worst, visitors see what they'd have seen without it.
+**1. `errors` proxies a body, it does not redirect on its own.** There is no
+config option for it to emit a 3xx directly
+([traefik/traefik#9356](https://github.com/traefik/traefik/issues/9356),
+closed unimplemented). Proxying the status page's HTML directly under
+`veta.mnetcs.com` was tried first and does not work: the page's CSS/JS/image
+references are host-relative (correct for a site that must work from either
+`milesburton.com` or the raw `github.io` domain), so they resolve against
+`veta.mnetcs.com` when proxied in place and 502 too, leaving an unstyled page.
+The fix is one extra, minimal container — `status-redirect` in
+[`edge/compose.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/compose.yml),
+a stock `nginx:1.27-alpine` running
+[`edge/status-redirect.conf`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/status-redirect.conf)
+whose only job is `return 302` to the real status page URL. `errors` proxies
+to this nginx instead of the docs site directly.
+
+**2. `errors` preserves the *original* status code by default.** Proxying to
+the nginx redirect above is not sufficient on its own: without
+`statusRewrites`, the client receives the triggering request's original 5xx
+status with the fallback's `Location` header attached — and browsers do not
+act on a `Location` header unless the status is 3xx, so nothing visibly
+happens; the visitor still sees a blank error. This is documented, intentional
+Traefik behaviour prior to `statusRewrites`
+([traefik/traefik#10720](https://github.com/traefik/traefik/issues/10720)),
+and `statusRewrites` itself only exists from **Traefik v3.4** onward
+(added in [#11520](https://github.com/traefik/traefik/pull/11520)) — this is
+why the edge box runs v3.4.5 rather than v3.3. Both failure modes shipped to
+production once each during rollout before being caught; if this section is
+ever simplified, keep the `statusRewrites` line.
 
 This is a browser-facing convenience only — it changes nothing about the
 underlying failure modes below, and does not paper over the tunnel or backend
-actually needing to be restored. The visitor's URL bar stays on
-`veta.mnetcs.com` throughout (Traefik proxies the fallback content rather than
-redirecting).
+actually needing to be restored.
 
 ### Why `insecureSkipVerify: true` is correct here
 

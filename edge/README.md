@@ -53,7 +53,7 @@ curl -v https://veta.mnetcs.com/ 2>&1 | grep -E "issuer|HTTP"
 If `:18443` is missing on the OVH side, check the homelab:
 
 ```bash
-ssh miles@192.168.1.245 'systemctl status veta-tunnel.service'
+ssh <user>@<homelab-host> 'systemctl status veta-tunnel.service'
 ```
 
 See [veta-tunnel](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-tunnel/)
