@@ -1,7 +1,7 @@
 {
   "totalPanels": 53,
-  "rendered": 52,
-  "skipped": 1,
+  "rendered": 51,
+  "skipped": 2,
   "panels": [
     {
       "panelId": "market-ladder",
@@ -16,7 +16,7 @@
       "title": "Order Ticket (place trades)",
       "description": "Submit buy/sell orders",
       "rendered": true,
-      "notes": "captured by trader walkthrough",
+      "notes": null,
       "screenshot": "screenshots/panels/order-ticket.png"
     },
     {
@@ -112,7 +112,7 @@
       "title": "News Sources (mission control)",
       "description": "Enable or disable news feed sources",
       "rendered": true,
-      "notes": "singleton already in default layout",
+      "notes": null,
       "screenshot": "screenshots/panels/news-sources.png"
     },
     {
@@ -168,7 +168,7 @@
       "title": "Market Data Sources (provider config)",
       "description": "Configure per-symbol market data sources — synthetic or Alpha Vantage",
       "rendered": true,
-      "notes": "singleton already in default layout",
+      "notes": null,
       "screenshot": "screenshots/panels/market-data-sources.png"
     },
     {
@@ -176,7 +176,7 @@
       "title": "Market Feed Control (feed health)",
       "description": "Global feed pause/resume, market hours, and per-symbol source overview",
       "rendered": true,
-      "notes": "singleton already in default layout",
+      "notes": null,
       "screenshot": "screenshots/panels/market-feed-control.png"
     },
     {
@@ -234,6 +234,14 @@
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/load-test.png"
+    },
+    {
+      "panelId": "load-gen",
+      "title": "Load Generator (sustained synthetic load)",
+      "description": "Admin/oncall sustained load generator — toggle on/off, configurable rate, auto-stop safety cap",
+      "rendered": false,
+      "notes": "not yet captured by walkthrough",
+      "screenshot": null
     },
     {
       "panelId": "llm-subsystem",
@@ -320,7 +328,7 @@
       "title": "Basket Order (multi-leg)",
       "description": "Multi-leg basket order builder — set target notional, assign weights, and submit all legs at once",
       "rendered": true,
-      "notes": "captured by trader walkthrough",
+      "notes": null,
       "screenshot": "screenshots/panels/basket-order.png"
     },
     {
@@ -328,7 +336,7 @@
       "title": "Client RFQ (request for quote)",
       "description": "Submit RFQs and track quotes from the sales desk",
       "rendered": true,
-      "notes": "captured by external-client walkthrough",
+      "notes": null,
       "screenshot": "screenshots/panels/client-rfq.png"
     },
     {
@@ -336,7 +344,7 @@
       "title": "Sales Workbench (RFQ routing)",
       "description": "Review client RFQs, route to pricing, apply markup, confirm to client",
       "rendered": true,
-      "notes": "captured by sales walkthrough",
+      "notes": null,
       "screenshot": "screenshots/panels/sales-workbench.png"
     },
     {
@@ -351,9 +359,9 @@
       "panelId": "product-book",
       "title": "Product Book (issued products)",
       "description": "Browse issued products and initiate client sales via RFQ",
-      "rendered": false,
-      "notes": "error markers after mount: flexlayout render error",
-      "screenshot": null
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/product-book.png"
     },
     {
       "panelId": "session-replay",
@@ -412,20 +420,12 @@
       "screenshot": "screenshots/panels/scenarios.png"
     },
     {
-      "panelId": "order-routing-sankey",
-      "title": "order-routing-sankey",
-      "description": "",
-      "rendered": true,
-      "notes": null,
-      "screenshot": "screenshots/panels/order-routing-sankey.png"
-    },
-    {
-      "panelId": "world-clocks",
-      "title": "world-clocks",
-      "description": "",
-      "rendered": true,
-      "notes": null,
-      "screenshot": "screenshots/panels/world-clocks.png"
+      "panelId": "platform-status",
+      "title": "Platform Status (CI/CD, alerts, bugs)",
+      "description": "Last 24h: services, alerts, tickets. Raise a ticket from here.",
+      "rendered": false,
+      "notes": "not yet captured by walkthrough",
+      "screenshot": null
     }
   ]
 }

@@ -60,6 +60,58 @@ Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-tradi
   (`ipStrategy.depth: 0` trusts no proxies; correct when Cloudflare
   proxy is in DNS-only mode)
 - Security-headers middleware: HSTS preload, CSP, frame-deny, etc.
+- Offline-holding-page middleware: catches 5xx from the backend and
+  serves a fallback page (see below)
+
+### Offline holding page
+
+When the secure tunnel is down or the server's backend returns a 5xx, the edge
+Traefik falls back to a static "VETA is temporarily offline" page instead of a
+bare 502, using Traefik's built-in `errors` middleware:
+
+```yaml
+services:
+  veta-status-fallback:
+    loadBalancer:
+      servers:
+        - url: "https://milesburton.github.io"
+      passHostHeader: false
+
+middlewares:
+  offline-holding-page:
+    errors:
+      status:
+        - "500-599"
+      service: veta-status-fallback
+      query: "/veta-trading-platform/status/"
+```
+
+The fallback target is the [status page](/veta-trading-platform/status/) published as
+part of this Astro docs site — it deploys to GitHub Pages independently of the
+server, so it stays reachable exactly when the primary origin is not. No
+additional webserver runs on the edge box; the docs site GitHub Pages already
+publishes is reused as-is.
+
+Two details that make this work correctly:
+
+- **`passHostHeader: false`** on the fallback service. GitHub Pages routes by
+  Host header; forwarding `veta.mnetcs.com` through unchanged would 404.
+  Traefik must send its own request with the fallback service's own Host
+  (`milesburton.github.io`).
+- **The status page must actually be published** before this does anything
+  useful. If the errors middleware's fallback request itself fails (a path
+  that returns a redirect rather than 2xx, for example — this happened during
+  rollout, before the status page had been merged and deployed, since GitHub
+  Pages serves a fallback 301 to the account's other domain for unpublished
+  paths), Traefik does not treat that as a successful error-page render and
+  the client still sees the original 5xx. The middleware degrades safely: at
+  worst, visitors see what they'd have seen without it.
+
+This is a browser-facing convenience only — it changes nothing about the
+underlying failure modes below, and does not paper over the tunnel or backend
+actually needing to be restored. The visitor's URL bar stays on
+`veta.mnetcs.com` throughout (Traefik proxies the fallback content rather than
+redirecting).
 
 ### Why `insecureSkipVerify: true` is correct here
 
@@ -148,6 +200,12 @@ edge nodes and break per-IP rate limiting.
   but the request hangs or returns connection-reset
 - **Server gateway / user-service dead**: tunnel works, Traefik routes,
   service returns 5xx or doesn't respond
+
+Of these, "secure tunnel down" and "server gateway / user-service dead" both
+present to a browser as a 5xx from `veta-origin`, so both are caught by the
+[offline holding page](#offline-holding-page) above — the probe still alerts
+on the underlying failure, but visitors see the status page instead of a bare
+502 while it's investigated.
 
 Each of these surfaces within 3 probe cycles (~3 min) as a webhook
 alert. See [Synthetic probe](../supporting/synthetic-probe) for the alert
