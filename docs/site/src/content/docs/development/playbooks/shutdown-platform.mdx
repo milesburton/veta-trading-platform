@@ -1,0 +1,94 @@
+---
+title: Shut down the platform on the homelab
+description: Stop the running VETA stack for a maintenance window without losing data — pause auto-pull first, stop both compose scopes, and confirm named volumes (Postgres, journal, feature/signal-engine state) survive the teardown.
+---
+
+## When to use
+
+You need the platform offline for a period — a major upgrade, a homelab maintenance
+window, or an incident that needs the stack quiet while you investigate. This is a
+temporary, reversible shutdown, not decommissioning: the goal is zero data loss and a
+clean restart.
+
+## How it works
+
+`docker compose down` removes containers but not named volumes. Postgres data, journal
+records, and per-service state (feature-engine, signal-engine, LLM advisory) live in
+named volumes, not in a container's writable layer, so they survive teardown as long as
+you never pass `-v`/`--volumes`. The steps below stop everything without touching data.
+
+### 1. Pause auto-pull first
+
+[`veta-auto-pull.timer`](/veta-trading-platform/platform/supporting/veta-auto-pull/)
+polls `origin/main` every 5 minutes and brings the stack back up on any SHA change. Stop
+it before stopping the stack, or the next tick undoes your shutdown:
+
+```bash
+sudo systemctl stop veta-auto-pull.timer
+systemctl is-active veta-auto-pull.timer   # expect: inactive
+```
+
+### 2. Stop both compose scopes
+
+Most services are gated behind the `trading` profile in `compose.yml`; a bare
+`docker compose down` only tears down the profile-less core group (gateway, ems, oms,
+frontend, traefik, journal, market-sim, user-service, postgres, redpanda). Stop both:
+
+```bash
+cd /opt/stacks/veta
+docker compose down
+docker compose --profile trading down
+```
+
+These can be slow (multi-minute) on constrained hardware — run them under `nohup … &
+disown` over SSH rather than a foreground session that might time out mid-teardown, and
+poll for completion instead of assuming a silent SSH drop means it finished.
+
+You will see `Network veta_trading-net Resource is still in use` at the end of the
+second command. That is expected: [`veta_trading-net` is shared with stacks outside this
+repo](/veta-trading-platform/platform/supporting/) (Caddy, the LGTM Grafana stack) and
+must never be removed.
+
+### 3. Confirm nothing is left running
+
+```bash
+docker ps -a --format "{{.Names}}: {{.Status}}" | grep veta
+```
+
+No output means every VETA container is stopped and removed. Non-VETA containers on the
+shared host (Caddy, MediaWiki, the LGTM stack, Guacamole) are unaffected.
+
+### 4. Confirm the data survived
+
+`docker compose down` does not remove named volumes unless you pass `-v`/`--volumes` —
+this procedure never does. Verify the volumes are still present:
+
+```bash
+docker volume ls | grep veta
+```
+
+Expect to see `veta_postgres-data` (Postgres — journal, orders, user accounts,
+preferences), plus `veta_feature-engine-data`, `veta_signal-engine-data`,
+`veta_market-data-state`, `veta_llm-advisory-data`. None of these are removed by this
+procedure.
+
+## Bringing it back
+
+```bash
+cd /opt/stacks/veta
+docker compose --profile trading up -d
+sudo systemctl start veta-auto-pull.timer
+```
+
+`up -d` recreates containers fresh but re-attaches to the same named volumes, so
+Postgres starts with all prior data intact — journal history, user accounts, and saved
+preferences are exactly as they were before the shutdown. Run the
+[smoke-check](../smoke-check/) afterwards to confirm the platform actually serves
+traffic again, not just that containers report healthy.
+
+## Reporting
+
+State which containers were stopped, confirm the timer was paused, and confirm the
+volume list post-shutdown matches the pre-shutdown list. If a volume is unexpectedly
+missing, stop and investigate before doing anything else — do not assume it will
+reappear on the next `up`.
