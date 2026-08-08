@@ -192,6 +192,7 @@ export default defineConfig({
                 { label: "Debug a Grafana panel", slug: "development/playbooks/debug-grafana-panel" },
                 { label: "Smoke-check the platform", slug: "development/playbooks/smoke-check" },
                 { label: "Triage an incident", slug: "development/playbooks/incident-triage" },
+                { label: "Shut down the platform", slug: "development/playbooks/shutdown-platform" },
               ],
             },
           ],

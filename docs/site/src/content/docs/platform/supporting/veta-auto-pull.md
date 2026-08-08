@@ -121,3 +121,4 @@ This is **expected, not a drift bug**.
 - [veta-tunnel](../veta-tunnel/): the secure tunnel that exposes the server publicly
 - [veta-host-prune](../veta-host-prune/): weekly cleanup of dangling images
 - [Synthetic probe](../synthetic-probe/): closes the loop with a post-deploy check
+- [Shut down the platform](../../../development/playbooks/shutdown-platform/): pause this timer before a manual maintenance shutdown
