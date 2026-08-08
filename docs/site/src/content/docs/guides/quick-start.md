@@ -14,6 +14,19 @@ description: Run VETA locally in under five minutes.
 3. The MOTD lists the available commands.
 4. Run `cd frontend && npm run dev` for the browser UI.
 
+### Offline-ready setup
+
+VS Code downloads the VS Code Server for each VS Code commit before container hooks run. If that commit is not already cached, opening the dev container while offline fails.
+
+Pre-warm the cache while online:
+
+1. Open a shell in your WSL or Linux environment at the repository root.
+2. Run `./scripts/prewarm-devcontainer-offline.sh`.
+3. If auto-detection cannot find your commit, run `code --version` and pass the second line using `--commit <sha>`.
+4. Re-run this after VS Code updates to a new commit.
+
+The pre-warm script caches the server tarball, installs the VS Code Server into `~/.vscode-server/bin/<commit>`, and when running from WSL also seeds `%LOCALAPPDATA%\\Temp\\vsch\\serverCache\\<commit>` on Windows. It also pulls the devcontainer base image and primes Docker build cache for `.devcontainer/Dockerfile`.
+
 The dev container starts the full backend stack via `docker compose up -d` on attach. To restart it inside the container: `docker compose --profile trading up -d`. The frontend dev server proxies API calls to the gateway at port 5011 (dev container only; production traffic enters via Traefik).
 
 ## Default credentials

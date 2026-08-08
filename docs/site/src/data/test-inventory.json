@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 68,
-      "cases": 783,
+      "cases": 784,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -40,7 +40,7 @@
         "prompt-builder.unit.test.ts": 15,
         "trigger-rules.unit.test.ts": 17,
         "volatility-estimator.unit.test.ts": 9,
-        "devcontainer.unit.test.ts": 6,
+        "devcontainer.unit.test.ts": 7,
         "docs-drift.unit.test.ts": 8,
         "credentials.unit.test.ts": 8,
         "bug-report-route.unit.test.ts": 11,

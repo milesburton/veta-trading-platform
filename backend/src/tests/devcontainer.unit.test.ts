@@ -3,6 +3,7 @@ import { parse as parseJsonc } from "jsr:@std/jsonc@0.224";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const DEVCONTAINER_JSON = `${REPO_ROOT}.devcontainer/devcontainer.json`;
+const POST_CREATE_SH = `${REPO_ROOT}.devcontainer/post-create.sh`;
 const POST_START_SH = `${REPO_ROOT}.devcontainer/post-start.sh`;
 
 type DevcontainerConfig = {
@@ -60,6 +61,16 @@ Deno.test("[devcontainer] post-start.sh is syntactically valid bash", async () =
   );
 });
 
+Deno.test("[devcontainer] post-create.sh is syntactically valid bash", async () => {
+  const cmd = new Deno.Command("bash", { args: ["-n", POST_CREATE_SH] });
+  const { code, stderr } = await cmd.output();
+  assertEquals(
+    code,
+    0,
+    `bash -n reported syntax errors in post-create.sh:\n${new TextDecoder().decode(stderr)}`
+  );
+});
+
 Deno.test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so the script does not need to hardcode it", async () => {
   const cfg = await loadDevcontainer();
   const cmd = cfg.postStartCommand ?? "";
@@ -73,6 +84,16 @@ Deno.test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so 
 Deno.test("[devcontainer] postCreateCommand does not use husky's deprecated 'install <dir>' form", async () => {
   const cfg = await loadDevcontainer();
   const cmd = cfg.postCreateCommand ?? "";
+  assertStringIncludes(
+    cmd,
+    `CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder}`,
+    `postCreateCommand should pass CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder} into post-create.sh.`
+  );
+  assertStringIncludes(
+    cmd,
+    `.devcontainer/post-create.sh`,
+    "postCreateCommand should invoke .devcontainer/post-create.sh"
+  );
   assert(
     !/husky\s+install\b/.test(cmd),
     `postCreateCommand uses 'husky install ...' — this is deprecated in husky v9 and removed in v10. ` +
@@ -83,7 +104,11 @@ Deno.test("[devcontainer] postCreateCommand does not use husky's deprecated 'ins
 Deno.test("[devcontainer] postCreateCommand and postStartCommand reference paths that exist", async () => {
   const cfg = await loadDevcontainer();
   const checks = [
-    { hook: "postCreateCommand", cmd: cfg.postCreateCommand ?? "", paths: ["frontend", ".husky"] },
+    {
+      hook: "postCreateCommand",
+      cmd: cfg.postCreateCommand ?? "",
+      paths: [".devcontainer/post-create.sh"],
+    },
     {
       hook: "postStartCommand",
       cmd: cfg.postStartCommand ?? "",
