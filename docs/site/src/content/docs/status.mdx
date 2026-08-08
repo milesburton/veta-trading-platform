@@ -12,18 +12,25 @@ head:
 
 import { Card } from "@astrojs/starlight/components";
 import StatusBackdrop from "@docs/components/StatusBackdrop.astro";
+import StatusScreenshots from "@docs/components/StatusScreenshots.astro";
 
 <StatusBackdrop>
 
 <Card title="Nothing has been lost" icon="warning">
-This could be a planned maintenance window or an infrastructure issue on our
-side. Your trades, orders, and configuration are stored separately from the
-parts that are down. Check back shortly.
+We're either mid-deploy or something's misbehaving on our end. Either way,
+your trades, orders and settings are stored separately from whatever's down,
+so there's nothing to worry about. Give it a few minutes and refresh.
 </Card>
 
-## Contact
+## Get in touch
 
-- [Discord](https://discord.gg/tSGgsKnz): status updates and community discussion
-- [GitHub Issues](https://github.com/milesburton/veta-trading-platform/issues): the same ticketing system used by the platform's in-app "Raise ticket" feature
+Want to know what's going on, or found something worth flagging? Drop by
+[Discord](https://discord.gg/tSGgsKnz) or open a ticket on
+[GitHub](https://github.com/milesburton/veta-trading-platform/issues), the
+same place the in-app "Raise ticket" button sends things.
+
+## While you wait
+
+<StatusScreenshots />
 
 </StatusBackdrop>
