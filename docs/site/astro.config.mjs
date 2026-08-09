@@ -182,6 +182,8 @@ export default defineConfig({
             { label: "Shared modules", slug: "development/shared-modules" },
             { label: "Source references", slug: "development/source-references" },
             { label: "Contributing", slug: "development/contributing" },
+            { label: "Style guide", slug: "development/style-guide" },
+            { label: "Component kitchen sink", slug: "development/components" },
             { label: "Component dependency graph", slug: "development/components/component-dependency-graph" },
             {
               label: "AI playbooks",

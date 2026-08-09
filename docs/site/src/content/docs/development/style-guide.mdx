@@ -1,0 +1,157 @@
+---
+title: Style guide
+description: The colour tokens, gray scale, and typography VETA's frontend and docs site are built from, so new panels and pages stay visually consistent without guessing.
+---
+
+import ColorSwatches from "@docs/components/ColorSwatches.astro";
+import Source from "@docs/components/Source.astro";
+
+This page documents the design tokens. For live, interactive UI primitives (buttons, menus, status dots), see the [component kitchen sink](../components/) instead. This page is about colour, type, and spacing; that one is about components built from them.
+
+Everything here is sourced from CSS custom properties, not hardcoded per-component. If a new panel needs a colour, it should reference one of these tokens rather than picking a fresh hex value.
+
+<Source path="frontend/src/index.css" label="frontend/src/index.css" />
+<Source path="frontend/src/tokens.ts" label="frontend/src/tokens.ts" />
+
+## Gray scale
+
+Eleven steps, each with a documented purpose and contrast ratio against the page background. Tailwind exposes these under purpose-named aliases (`text-primary`, `bg-panel`, `border-divider`, etc.) rather than numbered ones, so a change to the palette doesn't require renaming every usage.
+
+<ColorSwatches
+  columns={4}
+  swatches={[
+    { name: "strong", cssVar: "--gray-50 / text-strong", rgb: "255 255 255", note: "pure white, high-emphasis headings" },
+    { name: "primary", cssVar: "--gray-100 / text-primary", rgb: "241 245 249", note: "primary text (~18:1)" },
+    { name: "secondary", cssVar: "--gray-200 / text-secondary", rgb: "214 224 236", note: "strong secondary text (~12:1)" },
+    { name: "default", cssVar: "--gray-300 / text-default", rgb: "182 196 212", note: "body / value text (~8:1)" },
+    { name: "label", cssVar: "--gray-400 / text-label", rgb: "152 165 182", note: "secondary labels (~5.5:1)" },
+    { name: "muted", cssVar: "--gray-500 / text-muted", rgb: "142 156 175", note: "muted labels (AA on panel)" },
+    { name: "subtle", cssVar: "--gray-600 / text-subtle", rgb: "78 90 106", note: "disabled/decorative, fails AA by design" },
+    { name: "divider", cssVar: "--gray-700 / border-divider", rgb: "52 64 80", note: "subtle borders" },
+    { name: "panel", cssVar: "--gray-800 / bg-panel", rgb: "30 41 55", note: "panel backgrounds" },
+    { name: "surface", cssVar: "--gray-900 / bg-surface", rgb: "15 23 38", note: "surface backgrounds" },
+    { name: "page", cssVar: "--gray-950 / bg-page", rgb: "3 7 18", note: "page background" },
+  ]}
+/>
+
+`--gray-600` is deliberately below AA contrast. It marks disabled or purely decorative content, never a value a trader needs to read.
+
+## Semantic trading colours
+
+Meaning-carrying colours used consistently across the platform: P&L direction, order-flow role, and one colour per algo strategy so a strategy is recognisable by colour alone across every panel that shows it (order blotter, Sankey diagram, algo monitor).
+
+<ColorSwatches
+  columns={3}
+  swatches={[
+    { name: "up", cssVar: "--semantic-up", rgb: "52 211 153", note: "P&L positive, buy fills" },
+    { name: "down", cssVar: "--semantic-down", rgb: "248 113 113", note: "P&L negative, sell fills" },
+    { name: "neutral", cssVar: "--semantic-neutral", rgb: "156 163 175", note: "flat / unchanged" },
+    { name: "maker", cssVar: "--semantic-maker", rgb: "16 185 129", note: "resting liquidity" },
+    { name: "taker", cssVar: "--semantic-taker", rgb: "245 158 11", note: "aggressing liquidity" },
+    { name: "cross", cssVar: "--semantic-cross", rgb: "56 189 248", note: "dark-pool / internal cross" },
+  ]}
+/>
+
+### Algo strategy colours
+
+One colour per strategy, used everywhere that strategy appears: the order blotter's strategy column, the order-routing Sankey panel, the algo monitor. Adding a tenth strategy needs a tenth colour here before it needs anything else; see [Add a new algo](../playbooks/add-algo-strategy/) for the full checklist.
+
+<ColorSwatches
+  columns={3}
+  swatches={[
+    { name: "LIMIT", cssVar: "--semantic-limit", rgb: "96 165 250" },
+    { name: "TWAP", cssVar: "--semantic-twap", rgb: "196 132 252" },
+    { name: "POV", cssVar: "--semantic-pov", rgb: "249 115 22" },
+    { name: "VWAP", cssVar: "--semantic-vwap", rgb: "234 179 8" },
+    { name: "ICEBERG", cssVar: "--semantic-iceberg", rgb: "34 211 238" },
+    { name: "SNIPER", cssVar: "--semantic-sniper", rgb: "251 113 133" },
+    { name: "ARRIVAL_PRICE", cssVar: "--semantic-arrival-price", rgb: "129 140 248" },
+    { name: "IS", cssVar: "--semantic-is", rgb: "45 212 191" },
+    { name: "MOMENTUM", cssVar: "--semantic-momentum", rgb: "232 121 249" },
+  ]}
+/>
+
+## Chart chrome
+
+Grid lines, axes, and tooltip surfaces for anything built with Recharts or a canvas chart. Not for data series themselves; those use the semantic or heatmap palettes above/below.
+
+<ColorSwatches
+  columns={4}
+  swatches={[
+    { name: "grid", cssVar: "--chart-grid", rgb: "31 41 55" },
+    { name: "axis", cssVar: "--chart-axis", rgb: "107 114 128" },
+    { name: "tooltip-bg", cssVar: "--chart-tooltip-bg", rgb: "17 24 39" },
+    { name: "tooltip-border", cssVar: "--chart-tooltip-border", rgb: "55 65 81" },
+  ]}
+/>
+
+## Heatmap palette
+
+An 11-stop diverging scale (strong-down → neutral → strong-up) built for the market heatmap panel, plus dedicated text/background pairs so labels stay legible on any tile colour.
+
+<ColorSwatches
+  columns={4}
+  swatches={[
+    { name: "strong-up", cssVar: "--heat-strong-up", rgb: "10 92 49" },
+    { name: "mid-up", cssVar: "--heat-mid-up", rgb: "20 122 65" },
+    { name: "up", cssVar: "--heat-up", rgb: "30 153 82" },
+    { name: "light-up", cssVar: "--heat-light-up", rgb: "45 181 106" },
+    { name: "faint-up", cssVar: "--heat-faint-up", rgb: "30 77 43" },
+    { name: "neutral", cssVar: "--heat-neutral", rgb: "28 37 49" },
+    { name: "faint-down", cssVar: "--heat-faint-down", rgb: "77 28 28" },
+    { name: "down", cssVar: "--heat-down", rgb: "181 42 42" },
+    { name: "mid-down", cssVar: "--heat-mid-down", rgb: "146 32 32" },
+    { name: "strong-down", cssVar: "--heat-strong-down", rgb: "114 21 21" },
+    { name: "deep-down", cssVar: "--heat-deep-down", rgb: "79 13 13" },
+  ]}
+/>
+
+## Typography
+
+The platform uses a single monospace stack everywhere. Trading UIs are dense with tabular figures (prices, quantities, P&L), and monospace keeps columns of numbers aligned without extra formatting work.
+
+```css
+font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+```
+
+<Source path="frontend/tailwind.config.cjs" label="tailwind.config.cjs" />
+
+There is no separate type scale beyond Tailwind's defaults (`text-xs` through `text-2xl`). The density comes from font choice and the gray-scale hierarchy above, not from a large heading scale. Most panel body text sits at `text-xs`/`text-sm`; reserve anything larger for a panel's own title bar.
+
+## Theme variants
+
+Four `data-theme` values exist: the default (dark), plus `darker`, `light`, and `high-contrast`. Every token above is redefined per theme in `frontend/src/index.css`. Components should read tokens rather than assume the default dark values, since a component that hardcodes an RGB triplet breaks the other three themes silently.
+
+<Source path="frontend/src/index.css" label="theme overrides" />
+
+## Using tokens in code
+
+**Tailwind classes** (preferred for anything styled in JSX):
+
+```tsx
+<div className="bg-panel border border-divider text-primary">
+  <span className="text-semantic-up">+2.4%</span>
+</div>
+```
+
+**Raw values** (Recharts, canvas, inline SVG `fill=`, anything that needs a real string at runtime):
+
+```tsx
+import { COLOR } from "../tokens";
+
+<Line stroke={COLOR.UP} />
+```
+
+`COLOR` reads the live CSS variable on each access, so it follows theme switches without a re-render trigger of its own. Never cache a `COLOR.*` value in a module-level constant.
+
+## Docs site tokens
+
+The Astro docs site (this site) mirrors the frontend's gray scale and semantic palette in `docs/site/src/styles/custom.css`, explicitly kept in sync with `frontend/src/index.css` by comment convention. If you change one, change the other. The docs site additionally maps `--semantic-cross` onto Starlight's own `--sl-color-accent*` variables, and uses Starlight's built-in `--sl-color-purple*` for anything that isn't trading-specific (asides, the [status page](/veta-trading-platform/status/) backdrop).
+
+<Source path="docs/site/src/styles/custom.css" label="docs/site/src/styles/custom.css" />
+
+## Related
+
+- [Component kitchen sink](../components/): live, interactive primitives built from these tokens
+- [Component dependency graph](../components/component-dependency-graph/): what imports what
+- [Add a dashboard panel](../playbooks/add-dashboard-panel/): where a new panel's styling choices actually get made

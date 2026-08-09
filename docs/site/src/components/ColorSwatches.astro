@@ -1,0 +1,68 @@
+---
+interface Swatch {
+  name: string;
+  cssVar: string;
+  rgb: string;
+  note?: string;
+}
+interface Props {
+  swatches: Swatch[];
+  columns?: number;
+}
+const { swatches, columns = 4 } = Astro.props;
+---
+
+<div class="veta-swatch-grid not-content" style={`--veta-swatch-columns: ${columns};`}>
+  {
+    swatches.map((s) => (
+      <div class="veta-swatch-card">
+        <div class="veta-swatch-color" style={`background: rgb(${s.rgb});`} />
+        <div class="veta-swatch-meta">
+          <code class="veta-swatch-var">{s.cssVar}</code>
+          <span class="veta-swatch-name">{s.name}</span>
+          {s.note && <span class="veta-swatch-note">{s.note}</span>}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .veta-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  @media (min-width: 40rem) {
+    .veta-swatch-grid {
+      grid-template-columns: repeat(var(--veta-swatch-columns, 4), 1fr);
+    }
+  }
+  .veta-swatch-card {
+    border: 1px solid rgb(var(--gray-700));
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: rgb(var(--gray-900));
+  }
+  .veta-swatch-color {
+    height: 3rem;
+  }
+  .veta-swatch-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.5rem 0.6rem;
+  }
+  .veta-swatch-var {
+    font-size: 0.7rem;
+    color: rgb(var(--gray-300));
+  }
+  .veta-swatch-name {
+    font-size: 0.75rem;
+    color: rgb(var(--gray-400));
+  }
+  .veta-swatch-note {
+    font-size: 0.68rem;
+    color: rgb(var(--gray-500));
+  }
+</style>
