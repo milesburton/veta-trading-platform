@@ -32,6 +32,7 @@ http:
       middlewares:
         - edge-ratelimit
         - security-headers
+        - offline-holding-page
 
   services:
     veta-origin:
@@ -39,6 +40,17 @@ http:
         servers:
           - url: "https://127.0.0.1:18443"
         passHostHeader: true
+    # Fallback for the offline-holding-page errors middleware below: a
+    # local nginx container (see compose.yml's status-redirect service)
+    # that answers every request with a 302 to the published status
+    # page. errors can only proxy to a service, not redirect directly,
+    # so this indirection is what actually gets the client's browser
+    # onto the real docs domain — proxying the status page's HTML
+    # in-place under veta.mnetcs.com breaks its relative asset paths.
+    veta-status-fallback:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8081"
 
   middlewares:
     edge-ratelimit:
@@ -77,3 +89,19 @@ http:
         # defined at the top of this file so the policy can't drift.
         customResponseHeaders:
           Content-Security-Policy: *csp
+    # Catches 5xx from veta-origin (tunnel down, homelab Traefik down, or
+    # any backend 5xx), routes to the local status-redirect nginx (which
+    # returns a 302 body + Location header), and rewrites the client-
+    # facing status to match. Without statusRewrites (Traefik >=3.4 only)
+    # the client would receive the ORIGINAL 5xx status with nginx's 302
+    # Location header attached — browsers never act on a Location header
+    # on a non-3xx response, so the redirect silently does nothing. This
+    # exact failure mode shipped once already; see edge-architecture.md.
+    offline-holding-page:
+      errors:
+        status:
+          - "500-599"
+        statusRewrites:
+          "500-599": 302
+        service: veta-status-fallback
+        query: "/"

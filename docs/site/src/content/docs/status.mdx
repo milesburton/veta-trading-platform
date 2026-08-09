@@ -1,6 +1,6 @@
 ---
 title: VETA is temporarily offline
-description: Holding page served by the public edge when the homelab tunnel or backend services are unreachable.
+description: Holding page the public edge redirects visitors to when the homelab tunnel or backend services are unreachable.
 template: splash
 editUrl: false
 head:
@@ -10,15 +10,27 @@ head:
       content: noindex
 ---
 
-## VETA is temporarily offline
+import { Card } from "@astrojs/starlight/components";
+import StatusBackdrop from "@docs/components/StatusBackdrop.astro";
+import StatusScreenshots from "@docs/components/StatusScreenshots.astro";
 
-The trading platform is unreachable right now — either a planned maintenance window or
-an infrastructure issue on our side. Nothing you were trading or configuring has been
-lost; the platform's data lives on separate storage from the parts that are down.
+<StatusBackdrop>
 
-Check back shortly. If this persists for an extended period, the
-[GitHub repository](https://github.com/milesburton/veta-trading-platform) is the best
-place to check for status updates.
+<Card title="Nothing has been lost" icon="warning">
+We're either mid-deploy or something's misbehaving on our end. Either way,
+your trades, orders and settings are stored separately from whatever's down,
+so there's nothing to worry about. Give it a few minutes and refresh.
+</Card>
 
-You're seeing this page automatically because [`veta.mnetcs.com`](https://veta.mnetcs.com/)
-could not reach the platform backend.
+## Get in touch
+
+Want to know what's going on, or found something worth flagging? Drop by
+[Discord](https://discord.gg/tSGgsKnz) or open a ticket on
+[GitHub](https://github.com/milesburton/veta-trading-platform/issues), the
+same place the in-app "Raise ticket" button sends things.
+
+## While you wait
+
+<StatusScreenshots />
+
+</StatusBackdrop>

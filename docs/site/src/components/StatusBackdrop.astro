@@ -1,0 +1,38 @@
+---
+---
+
+<div class="veta-status-backdrop">
+  <slot />
+</div>
+
+<style>
+  .veta-status-backdrop {
+    margin: -2rem -1.5rem;
+    padding: 3rem 1.5rem;
+    background:
+      radial-gradient(ellipse 60% 50% at var(--veta-glow-x, 50%) var(--veta-glow-y, 0%), rgb(var(--semantic-cross) / 0.14), transparent 70%),
+      linear-gradient(180deg, rgb(var(--gray-900)), rgb(var(--gray-950)));
+    animation: veta-glow-drift 18s ease-in-out infinite;
+  }
+  @media (min-width: 50rem) {
+    .veta-status-backdrop {
+      margin: -2rem -3rem;
+      padding: 4rem 3rem;
+    }
+  }
+  @keyframes veta-glow-drift {
+    0%, 100% {
+      --veta-glow-x: 35%;
+      --veta-glow-y: -5%;
+    }
+    50% {
+      --veta-glow-x: 65%;
+      --veta-glow-y: 10%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .veta-status-backdrop {
+      animation: none;
+    }
+  }
+</style>

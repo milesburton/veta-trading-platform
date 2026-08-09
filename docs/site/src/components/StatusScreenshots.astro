@@ -1,0 +1,53 @@
+---
+const shots = [
+  {
+    src: "/veta-trading-platform/screenshots/01-trading-dashboard.png",
+    alt: "VETA trading dashboard with market ladder, candle chart, news, and order blotter",
+    caption: "The default trader workspace",
+  },
+  {
+    src: "/veta-trading-platform/screenshots/04-algo-workspace.png",
+    alt: "VETA algo trading workspace",
+    caption: "Algo execution workspace",
+  },
+];
+---
+
+<div class="veta-status-screenshots">
+  {
+    shots.map((shot) => (
+      <figure>
+        <img src={shot.src} alt={shot.alt} />
+        <figcaption>{shot.caption}</figcaption>
+      </figure>
+    ))
+  }
+</div>
+
+<style>
+  .veta-status-screenshots {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .veta-status-screenshots figure {
+    margin: 0;
+  }
+  .veta-status-screenshots img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(var(--gray-700));
+  }
+  .veta-status-screenshots figcaption {
+    margin-top: 0.5rem;
+    font-size: var(--sl-text-sm);
+    color: rgb(var(--gray-400));
+  }
+  @media (min-width: 50rem) {
+    .veta-status-screenshots {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
