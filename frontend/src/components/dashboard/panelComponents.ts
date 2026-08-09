@@ -31,6 +31,7 @@ import { ObservabilityPanel } from "@veta/frontend/components/ObservabilityPanel
 import { OptionPricingPanel } from "@veta/frontend/components/OptionPricingPanel.tsx";
 import { OrderBlotter } from "@veta/frontend/components/OrderBlotter.tsx";
 import { OrderProgressPanel } from "@veta/frontend/components/OrderProgressPanel.tsx";
+import { OrderRoutingSankeyPanel } from "@veta/frontend/components/OrderRoutingSankeyPanel.tsx";
 import { OrderTicket } from "@veta/frontend/components/OrderTicket.tsx";
 import { PlatformStatusPanel } from "@veta/frontend/components/PlatformStatusPanel.tsx";
 import { PriceFanPanel } from "@veta/frontend/components/PriceFanPanel.tsx";
@@ -50,6 +51,7 @@ import { ThroughputGaugesPanel } from "@veta/frontend/components/ThroughputGauge
 import { TradeRecommendationPanel } from "@veta/frontend/components/TradeRecommendationPanel.tsx";
 import { VolatilityProfilePanel } from "@veta/frontend/components/VolatilityProfilePanel.tsx";
 import { VolSurfacePanel } from "@veta/frontend/components/VolSurfacePanel.tsx";
+import { WorldClocksPanel } from "@veta/frontend/components/WorldClocksPanel.tsx";
 import { YieldCurvePanel } from "@veta/frontend/components/YieldCurvePanel.tsx";
 import type { ComponentType } from "react";
 import type { PanelId } from "./panelRegistry.ts";
@@ -119,3 +121,5 @@ registerPanel("symbol-search", SymbolSearchBar);
 registerPanel("dev-tools", DevToolsPanel);
 registerPanel("data-depth", DataDepthPanel);
 registerPanel("scenarios", ScenariosPanel);
+registerPanel("order-routing-sankey", OrderRoutingSankeyPanel);
+registerPanel("world-clocks", WorldClocksPanel);

@@ -320,6 +320,15 @@ export function makeAlgoModel(): IJsonModel {
                     incoming: 2,
                   } satisfies TabChannelConfig,
                 },
+                {
+                  type: "tab",
+                  id: "order-routing-sankey",
+                  name: PANEL_TITLES["order-routing-sankey"],
+                  component: "order-routing-sankey",
+                  config: {
+                    panelType: "order-routing-sankey",
+                  } satisfies TabChannelConfig,
+                },
               ],
             },
             {
@@ -1149,6 +1158,15 @@ export function makeMarketFeedsModel(): IJsonModel {
                   component: "market-feed-control",
                   config: {
                     panelType: "market-feed-control",
+                  } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "world-clocks",
+                  name: PANEL_TITLES["world-clocks"],
+                  component: "world-clocks",
+                  config: {
+                    panelType: "world-clocks",
                   } satisfies TabChannelConfig,
                 },
               ],

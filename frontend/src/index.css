@@ -29,6 +29,8 @@
   --semantic-iceberg: 34 211 238;     /* cyan-400     */
   --semantic-sniper: 251 113 133;     /* rose-400 — AA on panel */
   --semantic-arrival-price: 129 140 248; /* indigo-400 */
+  --semantic-is: 45 212 191;          /* teal-400     */
+  --semantic-momentum: 232 121 249;   /* fuchsia-400  */
 
   /* Chart chrome */
   --chart-grid: 31 41 55;             /* gray-800     */
@@ -104,6 +106,8 @@
   --semantic-iceberg: 14 116 144;     /* cyan-700 */
   --semantic-sniper: 190 18 60;       /* rose-700 */
   --semantic-arrival-price: 67 56 202; /* indigo-700 */
+  --semantic-is: 15 118 110;          /* teal-700 */
+  --semantic-momentum: 162 28 175;    /* fuchsia-700 */
 }
 
 [data-theme="high-contrast"] {

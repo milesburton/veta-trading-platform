@@ -1,6 +1,6 @@
 {
-  "totalPanels": 53,
-  "rendered": 51,
+  "totalPanels": 55,
+  "rendered": 53,
   "skipped": 2,
   "panels": [
     {
@@ -426,6 +426,22 @@
       "rendered": false,
       "notes": "not yet captured by walkthrough",
       "screenshot": null
+    },
+    {
+      "panelId": "order-routing-sankey",
+      "title": "Order Routing Flow",
+      "description": "Sankey diagram showing order flow from strategy through to execution venue",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/order-routing-sankey.png"
+    },
+    {
+      "panelId": "world-clocks",
+      "title": "World Clocks",
+      "description": "Live clocks for major trading market timezones",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/world-clocks.png"
     }
   ]
 }

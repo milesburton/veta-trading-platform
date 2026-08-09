@@ -32,6 +32,8 @@ const FALLBACK = {
   "--semantic-iceberg": "34 211 238",
   "--semantic-sniper": "244 63 94",
   "--semantic-arrival-price": "129 140 248",
+  "--semantic-is": "45 212 191",
+  "--semantic-momentum": "232 121 249",
   "--chart-grid": "31 41 55",
   "--chart-axis": "107 114 128",
   "--chart-tooltip-bg": "17 24 39",
@@ -121,6 +123,12 @@ export const COLOR = {
   },
   get ARRIVAL_PRICE() {
     return rgb("--semantic-arrival-price");
+  },
+  get IS() {
+    return rgb("--semantic-is");
+  },
+  get MOMENTUM() {
+    return rgb("--semantic-momentum");
   },
 
   get CHART_GRID() {
