@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.57.0...veta-trading-platform-v1.57.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **edge:** redirect to the status page instead of proxying it in place ([#539](https://github.com/milesburton/veta-trading-platform/issues/539)) ([bcb6d2e](https://github.com/milesburton/veta-trading-platform/commit/bcb6d2e335b51fb0d7ba1ab5abde9d61e00606fd))
+
 ## [1.57.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.11...veta-trading-platform-v1.57.0) (2026-08-09)
 
 
