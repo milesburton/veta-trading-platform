@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.57.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.11...veta-trading-platform-v1.57.0) (2026-08-09)
+
+
+### Features
+
+* **frontend:** add order-routing Sankey and world-clocks panels ([#530](https://github.com/milesburton/veta-trading-platform/issues/530)) ([5da6fba](https://github.com/milesburton/veta-trading-platform/commit/5da6fba2c89743df12266af416f96c7338e5c4bd))
+
+
+### Bug Fixes
+
+* **devcontainer:** avoid internet access during container startup ([b919afd](https://github.com/milesburton/veta-trading-platform/commit/b919afdc2bed57c2bb013a12584de5e2afe9dc74))
+* **gateway:** expose CORS_ALLOWED_ORIGINS in compose so prod can set it ([#540](https://github.com/milesburton/veta-trading-platform/issues/540)) ([a89715b](https://github.com/milesburton/veta-trading-platform/commit/a89715b2844189e2a0397bf4f30b6e1c2d3f6725))
+
 ## [1.56.11](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.10...veta-trading-platform-v1.56.11) (2026-08-07)
 
 
