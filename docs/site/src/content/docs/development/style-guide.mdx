@@ -1,6 +1,6 @@
 ---
 title: Style guide
-description: The colour tokens, gray scale, and typography VETA's frontend and docs site are built from, so new panels and pages stay visually consistent without guessing.
+description: The colour tokens, grey scale, and typography VETA's frontend and docs site are built from, so new panels and pages stay visually consistent without guessing.
 ---
 
 import ColorSwatches from "@docs/components/ColorSwatches.astro";
@@ -8,12 +8,12 @@ import Source from "@docs/components/Source.astro";
 
 This page documents the design tokens. For live, interactive UI primitives (buttons, menus, status dots), see the [component kitchen sink](../components/) instead. This page is about colour, type, and spacing; that one is about components built from them.
 
-Everything here is sourced from CSS custom properties, not hardcoded per-component. If a new panel needs a colour, it should reference one of these tokens rather than picking a fresh hex value.
+Every value below is a snapshot of the frontend's CSS custom properties (`frontend/src/index.css`), not something to copy as a fresh hex value. If a new panel needs a colour, reference the named token (via a Tailwind class or `COLOR.*`, see [Using tokens in code](#using-tokens-in-code)) rather than hardcoding the RGB triplet shown here, which can go stale.
 
 <Source path="frontend/src/index.css" label="frontend/src/index.css" />
 <Source path="frontend/src/tokens.ts" label="frontend/src/tokens.ts" />
 
-## Gray scale
+## Grey scale
 
 Eleven steps, each with a documented purpose and contrast ratio against the page background. Tailwind exposes these under purpose-named aliases (`text-primary`, `bg-panel`, `border-divider`, etc.) rather than numbered ones, so a change to the palette doesn't require renaming every usage.
 
@@ -116,7 +116,7 @@ font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 
 <Source path="frontend/tailwind.config.cjs" label="tailwind.config.cjs" />
 
-There is no separate type scale beyond Tailwind's defaults (`text-xs` through `text-2xl`). The density comes from font choice and the gray-scale hierarchy above, not from a large heading scale. Most panel body text sits at `text-xs`/`text-sm`; reserve anything larger for a panel's own title bar.
+There is no separate type scale beyond Tailwind's defaults (`text-xs` through `text-2xl`). The density comes from font choice and the grey-scale hierarchy above, not from a large heading scale. Most panel body text sits at `text-xs`/`text-sm`; reserve anything larger for a panel's own title bar.
 
 ## Theme variants
 
@@ -137,7 +137,7 @@ Four `data-theme` values exist: the default (dark), plus `darker`, `light`, and 
 **Raw values** (Recharts, canvas, inline SVG `fill=`, anything that needs a real string at runtime):
 
 ```tsx
-import { COLOR } from "../tokens";
+import { COLOR } from "@veta/frontend/tokens.ts";
 
 <Line stroke={COLOR.UP} />
 ```
@@ -146,7 +146,7 @@ import { COLOR } from "../tokens";
 
 ## Docs site tokens
 
-The Astro docs site (this site) mirrors the frontend's gray scale and semantic palette in `docs/site/src/styles/custom.css`, explicitly kept in sync with `frontend/src/index.css` by comment convention. If you change one, change the other. The docs site additionally maps `--semantic-cross` onto Starlight's own `--sl-color-accent*` variables, and uses Starlight's built-in `--sl-color-purple*` for anything that isn't trading-specific (asides, the [status page](/veta-trading-platform/status/) backdrop).
+The Astro docs site (this site) keeps its own, smaller copy of the grey scale and semantic palette in `docs/site/src/styles/custom.css`. It is meant to track `frontend/src/index.css` by comment convention, but the two are not currently identical (`--gray-500` and `--semantic-limit` are two confirmed examples), so treat this page's swatches as describing the frontend, not this site's own rendering of them. The docs site additionally maps `--semantic-cross` onto Starlight's own `--sl-color-accent*` variables, and uses Starlight's built-in `--sl-color-purple*` for anything that isn't trading-specific (asides, the [status page](/veta-trading-platform/status/) backdrop).
 
 <Source path="docs/site/src/styles/custom.css" label="docs/site/src/styles/custom.css" />
 
