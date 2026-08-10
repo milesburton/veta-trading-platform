@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.57.1...veta-trading-platform-v1.57.2) (2026-08-10)
+
+
+### Bug Fixes
+
+* **status:** match milesburton.com's actual gradient technique ([5018725](https://github.com/milesburton/veta-trading-platform/commit/5018725969ffa0b896f81ff4246919a06a4b2afa))
+
 ## [1.57.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.57.0...veta-trading-platform-v1.57.1) (2026-08-09)
 
 
