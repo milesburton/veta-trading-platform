@@ -124,6 +124,16 @@ Four `data-theme` values exist: the default (dark), plus `darker`, `light`, and 
 
 <Source path="frontend/src/index.css" label="theme overrides" />
 
+## Brand gradient
+
+The app body carries the same subtle brand gradient as milesburton.com and the docs [status page](/veta-trading-platform/status/): a low-opacity purple wash from the top-left corner, `linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, transparent 60%)` layered under the theme's flat `background-color`. It shows through wherever a component doesn't paint its own opaque background over `body` (the gaps around the docked panel layout, the sign-in screen).
+
+The selector excludes `high-contrast` explicitly (`html:not([data-theme="high-contrast"]) body`), since that theme exists specifically for predictable, flat, maximal-contrast backgrounds and a gradient works against that purpose. `data-theme` is set on `<html>` (`document.documentElement`), not `<body>`, in `frontend/index.html`.
+
+A component that wants the gradient to show through must not set its own opaque background (no `bg-page`, `bg-gray-950`, or similar) on a full-bleed wrapper; `LoginPage.tsx`'s root `<div>` is the reference example.
+
+<Source path="frontend/src/index.css" label="brand gradient" />
+
 ## Using tokens in code
 
 **Tailwind classes** (preferred for anything styled in JSX):
