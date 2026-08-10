@@ -57,6 +57,7 @@ const DESCRIPTIONS = {
   "replay-service": "rrweb session recording and playback",
   "risk-engine": "Pre-trade risk checks (6 checks)",
   "discord-bot": "Discord Gateway client, welcome message on member join",
+  "synthetic-trader": "Continuous market-hours-aware synthetic trader over the real WS order path",
 };
 
 const DISPLAY_NAMES = {
@@ -96,6 +97,7 @@ const DISPLAY_NAMES = {
   "replay-service": "Session Replay",
   "risk-engine": "Risk Engine",
   "discord-bot": "Discord Bot",
+  "synthetic-trader": "Synthetic Trader",
 };
 
 function parseSupervisordPrograms(text) {
