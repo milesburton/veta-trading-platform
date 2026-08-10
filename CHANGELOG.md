@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.59.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.58.0...veta-trading-platform-v1.59.0) (2026-08-10)
+
+
+### Features
+
+* **synthetic-trader:** add a continuous market-hours-aware trading agent ([#550](https://github.com/milesburton/veta-trading-platform/issues/550)) ([99428ba](https://github.com/milesburton/veta-trading-platform/commit/99428baa455aa858a7214aef8cbfe0c03d29af73))
+
 ## [1.58.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.57.2...veta-trading-platform-v1.58.0) (2026-08-10)
 
 
