@@ -30,7 +30,10 @@ on:
         default: ci-manual
         type: string
   schedule:
-    - cron: "30 3 * * 1"
+    # Every 4 hours: frequent enough to catch a regression within a
+    # working session, not so frequent it competes with the always-on
+    # homelab loadgen (loadgen-soak/loadgen-matrix) for the same gateway.
+    - cron: "15 */4 * * *"
 
 permissions:
   contents: write
@@ -66,6 +69,7 @@ jobs:
           echo "run_label=$RUN_LABEL" >> "$GITHUB_OUTPUT"
 
       - name: Run k6 scenario
+        id: run
         env:
           BASE_URL: ${{ steps.cfg.outputs.base_url }}
           K6_TOKEN: ${{ secrets.K6_TOKEN }}
@@ -75,10 +79,17 @@ jobs:
         run: |
           if [ -z "${K6_TOKEN:-}" ]; then
             echo "K6_TOKEN secret is not configured; skipping load test run."
+            echo "ran=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "ran=true" >> "$GITHUB_OUTPUT"
 
           mkdir -p docs/site/src/data/loadtest
+          # k6 exits non-zero when a threshold is breached (see options.thresholds
+          # in each k6/*.js scenario). Capture that rather than let it fail the
+          # step outright, so the summary JSON still gets committed and the
+          # Discord alert step below still runs even on a threshold breach.
+          set +e
           docker run --rm \
             -e BASE_URL="$BASE_URL" \
             -e K6_TOKEN="$K6_TOKEN" \
@@ -89,6 +100,60 @@ jobs:
             grafana/k6:0.55.0 run \
             --summary-trend-stats=p(50),p(95),p(99),avg,max,min,med \
             "/scripts/$K6_SCRIPT"
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Check load test results
+        id: results
+        if: steps.run.outputs.ran == 'true'
+        env:
+          RUN_LABEL: ${{ steps.cfg.outputs.run_label }}
+          SCENARIO: ${{ steps.cfg.outputs.scenario }}
+          BASE_URL: ${{ steps.cfg.outputs.base_url }}
+          K6_EXIT_CODE: ${{ steps.run.outputs.exit_code }}
+        run: |
+          SUMMARY_FILE=$(ls -t "docs/site/src/data/loadtest/"*"-${RUN_LABEL}.json" 2>/dev/null | head -1)
+          if [ -z "$SUMMARY_FILE" ]; then
+            echo "No summary JSON found for run_label=${RUN_LABEL}; treating as failure."
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=k6 produced no summary output (see job log for the raw failure)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          FAILURE_RATE=$(jq -r '.failureRate // 0' "$SUMMARY_FILE")
+          BREACHED=$(jq -r '.thresholdsBreached // [] | join(", ")' "$SUMMARY_FILE")
+          ITERATIONS=$(jq -r '.iterations // 0' "$SUMMARY_FILE")
+
+          echo "k6 exit code: ${K6_EXIT_CODE:-unknown}"
+          echo "failure rate: $FAILURE_RATE"
+          echo "thresholds breached: ${BREACHED:-none}"
+
+          if [ "${K6_EXIT_CODE:-0}" != "0" ] || [ -n "$BREACHED" ]; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=failure rate ${FAILURE_RATE} over ${ITERATIONS} iterations; thresholds breached: ${BREACHED:-none listed, see k6 exit code ${K6_EXIT_CODE}}" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Alert Discord on load test failure
+        if: steps.results.outputs.failed == 'true'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SCENARIO: ${{ steps.cfg.outputs.scenario }}
+          BASE_URL: ${{ steps.cfg.outputs.base_url }}
+          REASON: ${{ steps.results.outputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set; skipping"
+            exit 0
+          fi
+          CONTENT="🚨 **Load test failed** · \`${SCENARIO}\` against ${BASE_URL}\n${REASON}\n<${RUN_URL}>"
+          PAYLOAD=$(jq -nc --arg c "$CONTENT" '{username:"VETA Load Tests",content:$c,allowed_mentions:{parse:[]}}')
+          curl --fail-with-body --show-error --silent --retry 2 \
+            -X POST -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$DISCORD_WEBHOOK_URL"
 
       - name: Publish load test artifacts
         uses: actions/upload-artifact@v6
@@ -122,3 +187,9 @@ jobs:
             echo "Failed to publish loadtest dataset after retries"
             exit 1
           fi
+
+      - name: Fail the job if the load test failed
+        if: steps.results.outputs.failed == 'true'
+        run: |
+          echo "::error::${{ steps.results.outputs.reason }}"
+          exit 1

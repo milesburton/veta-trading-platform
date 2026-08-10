@@ -180,6 +180,28 @@ Three things matter:
 
 When in doubt, open the **Order Pipeline (Traces)** dashboard while a run is in flight. The Sankey panel and per-stage latency lines tell the same story the JSON summary does, but live.
 
+## Scheduled runs and Discord alerting
+
+`.github/workflows/load-tests.yml` runs `mixed-strategy.js` against production
+(`https://veta.mnetcs.com/api/gateway`) every 4 hours, in addition to being
+runnable on demand via `workflow_dispatch` with a choice of scenario. This is
+independent of the always-on homelab loadgen (`loadgen-soak` /
+`loadgen-matrix`, see [continuous load generator](../loadgen/)): the homelab
+loadgen provides continuous demo traffic and Prometheus baselines, while this
+CI job is a scheduled health check from an independent vantage point (GitHub's
+infrastructure, not the homelab), the same reasoning the
+[synthetic probe](../../../platform/supporting/synthetic-probe/) uses for
+running from both CI and the edge.
+
+After each run the workflow reads the scenario's own summary JSON
+(`thresholdsBreached`, `failureRate`) and the k6 container's exit code. If
+either indicates a failure, the job posts to the `#alerts` Discord channel via
+`DISCORD_WEBHOOK_URL` and the job itself fails (red in the Actions tab), same
+pattern as the `Notify Discord` workflow's CI-failure alert. A quiet run posts
+nothing. `K6_TOKEN` must be set as a repo secret for scheduled runs to
+execute; if it is unset, the job exits early without alerting (there is
+nothing to report on a run that never happened).
+
 ## Authentication
 
 All load tests use a pre-issued admin token passed as the `K6_TOKEN`
