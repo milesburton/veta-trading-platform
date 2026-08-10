@@ -39,9 +39,10 @@ export default defineConfig({
       description:
         "A near real-world equities and fixed income trading platform for paper trading and learning market dynamics.",
       social: [],
+      favicon: "/favicon.png",
       logo: {
         alt: "VETA",
-        src: "./src/assets/logo.svg",
+        src: "./src/assets/logo.png",
       },
       editLink: {
         baseUrl:
@@ -217,14 +218,6 @@ export default defineConfig({
         Header: "./src/components/Header.astro",
       },
       head: [
-        {
-          tag: "link",
-          attrs: {
-            rel: "icon",
-            type: "image/svg+xml",
-            href: `${docsBase}/favicon.svg`,
-          },
-        },
         {
           tag: "script",
           attrs: { type: "module" },

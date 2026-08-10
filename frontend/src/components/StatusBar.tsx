@@ -548,6 +548,7 @@ export function AppHeader() {
       )}
       <div className="flex items-center gap-3 px-4 h-10 bg-surface border-b border-panel text-xs text-label">
         <div className="flex items-center gap-2 shrink-0">
+          <img src="/favicon.png" alt="" aria-hidden="true" className="h-5 w-5 rounded shrink-0" />
           <EnvironmentBadge />
           <BuildInfo
             buildDate={import.meta.env.VITE_BUILD_DATE}
