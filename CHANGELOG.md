@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.58.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.57.2...veta-trading-platform-v1.58.0) (2026-08-10)
+
+
+### Features
+
+* **ci:** alert Discord and tighten cadence on load test failures ([#547](https://github.com/milesburton/veta-trading-platform/issues/547)) ([a3ed5f2](https://github.com/milesburton/veta-trading-platform/commit/a3ed5f2d4ccdad38db084c421fb09f609e1eed3e))
+
+
+### Bug Fixes
+
+* **ci:** skip post-deploy probe wait on docs-only pushes ([#545](https://github.com/milesburton/veta-trading-platform/issues/545)) ([9956611](https://github.com/milesburton/veta-trading-platform/commit/9956611c7b93c058e18fa789b77a7bf724906c25))
+
 ## [1.57.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.57.1...veta-trading-platform-v1.57.2) (2026-08-10)
 
 
