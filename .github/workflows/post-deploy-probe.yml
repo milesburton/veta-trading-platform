@@ -1,19 +1,27 @@
 name: Post-deploy probe
 
-# Runs after every push to main. Polls the gateway's /health endpoint
-# until its reported commit SHA matches the merged commit (the server's
-# 5-minute auto-pull timer picks up the new commit and rolls out the new
-# images), then runs the synthetic probe against the public URL. Waiting
-# for the SHA to go live, rather than sleeping a fixed interval, avoids
-# probing a half-deployed stack when a rollout runs slow.
+# Runs after every push to main that changes something a Docker image is
+# built from. Polls the gateway's /health endpoint until its reported
+# commit SHA matches the merged commit (the server's 5-minute auto-pull
+# timer picks up the new commit and rolls out the new images), then runs
+# the synthetic probe against the public URL. Waiting for the SHA to go
+# live, rather than sleeping a fixed interval, avoids probing a
+# half-deployed stack when a rollout runs slow.
 # Detects "your latest deploy broke prod" shortly after it is live.
+#
+# A push that only touches docs/screenshots never rebuilds the gateway
+# image, so the gateway can never report the pushed SHA: waiting for it
+# anyway just times out on every docs-only commit. The changes job below
+# mirrors ci.yml's docker-path filter so this workflow only waits for a
+# SHA when a new image was actually going to be built.
 #
 # This is the same Deno probe that runs every 60s on the edge server.
 # CI is a third, independent vantage point — if the edge probe sees a
 # different result from GitHub runners, the divergence itself is a
 # useful signal (e.g. an edge-side network issue).
 #
-# Triggered also on manual workflow_dispatch for ad-hoc checks.
+# Triggered also on manual workflow_dispatch for ad-hoc checks; dispatch
+# always probes regardless of what last changed.
 
 on:
   push:
@@ -39,9 +47,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect deployable changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    outputs:
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            docker:
+              - 'docker/**'
+              - 'compose*.yml'
+              - 'backend/**'
+              - 'frontend/src/**'
+              - 'frontend/public/**'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'shared/**'
+              - 'deno.json'
+              - 'deno.lock'
+              - '.github/workflows/ci.yml'
+
   probe:
     name: Probe ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.docker == 'true')
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v5
