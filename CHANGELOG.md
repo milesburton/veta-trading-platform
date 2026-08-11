@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.0...veta-trading-platform-v1.60.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* **docs:** sync dark-mode background colour with the trading app ([#557](https://github.com/milesburton/veta-trading-platform/issues/557)) ([a44d4f2](https://github.com/milesburton/veta-trading-platform/commit/a44d4f28e2eeb1320014c78d61c14933510881c8))
+
 ## [1.60.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.59.1...veta-trading-platform-v1.60.0) (2026-08-11)
 
 
