@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.59.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.59.0...veta-trading-platform-v1.59.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* **deploy:** publish synthetic-trader image; catch 404 in the holding page ([#552](https://github.com/milesburton/veta-trading-platform/issues/552)) ([e2dfdf6](https://github.com/milesburton/veta-trading-platform/commit/e2dfdf6d22dece40cd556d3752b2a7649bd2ef8f))
+
 ## [1.59.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.58.0...veta-trading-platform-v1.59.0) (2026-08-10)
 
 
