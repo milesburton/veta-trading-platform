@@ -57,7 +57,14 @@ const DESCRIPTIONS = {
   "replay-service": "rrweb session recording and playback",
   "risk-engine": "Pre-trade risk checks (6 checks)",
   "discord-bot": "Discord Gateway client, welcome message on member join",
-  "synthetic-trader": "Continuous market-hours-aware synthetic trader over the real WS order path",
+  "synthetic-trader-equity-high-touch": "Continuous synthetic trader, equity high-touch desk, over the real WS order path",
+  "synthetic-trader-equity-low-touch": "Continuous synthetic trader, equity low-touch/algo desk, over the real WS order path",
+  "synthetic-trader-fi-voice": "Continuous synthetic trader, FI voice desk, over the real WS order path",
+  "synthetic-trader-fx-electronic": "Continuous synthetic trader, FX electronic desk, over the real WS order path",
+  "synthetic-trader-fx-high-touch": "Continuous synthetic trader, FX high-touch desk, over the real WS order path",
+  "synthetic-trader-derivatives-high-touch": "Continuous synthetic trader, derivatives high-touch desk, over the real WS order path",
+  "synthetic-trader-derivatives-low-touch": "Continuous synthetic trader, derivatives low-touch desk, over the real WS order path",
+  "synthetic-trader-commodities-voice": "Continuous synthetic trader, commodities desk, over the real WS order path",
 };
 
 const DISPLAY_NAMES = {
@@ -97,7 +104,14 @@ const DISPLAY_NAMES = {
   "replay-service": "Session Replay",
   "risk-engine": "Risk Engine",
   "discord-bot": "Discord Bot",
-  "synthetic-trader": "Synthetic Trader",
+  "synthetic-trader-equity-high-touch": "Synthetic Trader (Equity HT)",
+  "synthetic-trader-equity-low-touch": "Synthetic Trader (Equity LT)",
+  "synthetic-trader-fi-voice": "Synthetic Trader (FI Voice)",
+  "synthetic-trader-fx-electronic": "Synthetic Trader (FX Electronic)",
+  "synthetic-trader-fx-high-touch": "Synthetic Trader (FX HT)",
+  "synthetic-trader-derivatives-high-touch": "Synthetic Trader (Derivatives HT)",
+  "synthetic-trader-derivatives-low-touch": "Synthetic Trader (Derivatives LT)",
+  "synthetic-trader-commodities-voice": "Synthetic Trader (Commodities)",
 };
 
 function parseSupervisordPrograms(text) {
@@ -215,13 +229,24 @@ function extractDefaultPort(scriptAbs, programName) {
   return null;
 }
 
+// Multiple supervisord programs can share one script (e.g. the eight
+// synthetic-trader-* instances all run synthetic-trader.ts, differing only
+// by env var), so extractDefaultPort's source-file scan can't tell them
+// apart: it would report the same fallback default for every one. Prefer
+// an explicit port set inline on the command= line itself
+// (`SOME_PORT=1234 deno run ...`), which is unambiguous per program.
+function extractInlineCommandPort(command) {
+  const m = command.match(/\b[A-Z_]*PORT=(\d+)\b/);
+  return m ? Number(m[1]) : null;
+}
+
 const programs = parseSupervisordPrograms(supervisord);
 const rows = [];
 for (const program of programs) {
   if (INFRA_OR_NON_HTTP.has(program.name)) continue;
   const scriptPath = findScriptPath(program.command);
   const scriptAbs = resolveScriptAbsPath(scriptPath);
-  const port = extractDefaultPort(scriptAbs, program.name);
+  const port = extractInlineCommandPort(program.command) ?? extractDefaultPort(scriptAbs, program.name);
   // Hand-typed descriptions in DESCRIPTIONS take priority because they have
   // been tuned for a single-cell table format. Source JSDoc is fallback for
   // services we forget to add to the map. Audit the table after adding a

@@ -573,7 +573,65 @@ services:
       - "traefik.http.routers.health.service=gateway"
       - "traefik.http.routers.health.priority=25"
 
-  synthetic-trader:
+  # All eight instances below share one published image (the archetype is
+  # an env var, not a different build); see compose.yml for the full set.
+  synthetic-trader-equity-high-touch:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-equity-low-touch:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-fx-electronic:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-fx-high-touch:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-fi-voice:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-derivatives-high-touch:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-derivatives-low-touch:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
+  synthetic-trader-commodities-voice:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
     build: !reset null
