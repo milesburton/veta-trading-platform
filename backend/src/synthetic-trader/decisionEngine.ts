@@ -2,7 +2,37 @@ import { getTraderArchetype, STARTER_MAX_ORDER_QTY } from "@veta/trader-archetyp
 import type { OrderNew } from "@veta/schemas/orders";
 import type { PositionTracker, Side } from "./positionTracker.ts";
 
-const DEFAULT_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "JPM", "GS", "V"];
+interface DeskConfig {
+  desk: OrderNew["desk"];
+  instrumentType: OrderNew["instrumentType"];
+  symbols: readonly string[];
+}
+
+const EQUITY_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "JPM", "GS", "V"];
+
+// Real symbols pulled from market-sim's asset universes (fxAssets.ts,
+// commodityAssets.ts, shared/curatedBonds.ts) so orders look like the
+// instruments the platform actually simulates prices for, without a
+// cross-service import of those service-specific files.
+const DESK_CONFIG: Record<string, DeskConfig> = {
+  equity: { desk: "equity", instrumentType: "equity", symbols: EQUITY_SYMBOLS },
+  fx: {
+    desk: "fx",
+    instrumentType: "fx",
+    symbols: ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "EUR/GBP", "EUR/JPY", "NZD/USD"],
+  },
+  fi: {
+    desk: "fi",
+    instrumentType: "bond",
+    symbols: ["US3M", "US6M", "US1Y", "US2Y", "US3Y", "US5Y", "US7Y", "US10Y", "US20Y", "US30Y"],
+  },
+  derivatives: { desk: "derivatives", instrumentType: "option", symbols: EQUITY_SYMBOLS },
+  commodities: {
+    desk: "commodities",
+    instrumentType: "commodity",
+    symbols: ["CL1!", "NG1!", "GC1!", "SI1!", "HG1!", "ZC1!", "ZW1!", "ZS1!"],
+  },
+};
 
 const STRATEGY_WEIGHTS: Record<string, number> = {
   LIMIT: 30,
@@ -52,6 +82,7 @@ export class DecisionEngine {
   #archetypeId: string;
   #userId: string;
   #allowedStrategies: string[];
+  #desk: DeskConfig;
   #symbols: readonly string[];
   #random: () => number;
   #counter = 0;
@@ -61,10 +92,15 @@ export class DecisionEngine {
     if (!archetype) {
       throw new Error(`Unknown trader archetype: ${config.archetypeId}`);
     }
+    const desk = DESK_CONFIG[archetype.allowedDesks];
+    if (!desk) {
+      throw new Error(`No desk config for allowedDesks: ${archetype.allowedDesks}`);
+    }
     this.#archetypeId = archetype.id;
     this.#userId = config.userId;
     this.#allowedStrategies = archetype.allowedStrategies.split(",").map((s) => s.trim());
-    this.#symbols = config.symbols ?? DEFAULT_SYMBOLS;
+    this.#desk = desk;
+    this.#symbols = config.symbols ?? desk.symbols;
     this.#random = config.random ?? Math.random;
   }
 
@@ -123,8 +159,8 @@ export class DecisionEngine {
       quantity,
       limitPrice,
       strategy: strategy as OrderNew["strategy"],
-      instrumentType: "equity",
-      desk: "equity",
+      instrumentType: this.#desk.instrumentType,
+      desk: this.#desk.desk,
     };
 
     return { kind: "order", order };

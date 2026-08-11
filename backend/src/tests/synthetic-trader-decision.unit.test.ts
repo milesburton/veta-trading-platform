@@ -70,6 +70,29 @@ Deno.test("[synthetic-trader-decision] only ever selects strategies within the a
   }
 });
 
+Deno.test("[synthetic-trader-decision] each archetype's default symbols produce the correct desk and instrumentType", () => {
+  const cases: Array<{ archetypeId: string; desk: string; instrumentType: string }> = [
+    { archetypeId: "equity-high-touch", desk: "equity", instrumentType: "equity" },
+    { archetypeId: "equity-low-touch", desk: "equity", instrumentType: "equity" },
+    { archetypeId: "fx-electronic", desk: "fx", instrumentType: "fx" },
+    { archetypeId: "fx-high-touch", desk: "fx", instrumentType: "fx" },
+    { archetypeId: "fi-voice", desk: "fi", instrumentType: "bond" },
+    { archetypeId: "derivatives-high-touch", desk: "derivatives", instrumentType: "option" },
+    { archetypeId: "derivatives-low-touch", desk: "derivatives", instrumentType: "option" },
+    { archetypeId: "commodities-voice", desk: "commodities", instrumentType: "commodity" },
+  ];
+  for (const { archetypeId, desk, instrumentType } of cases) {
+    const engine = new DecisionEngine({ archetypeId, userId: "u1", random: () => 0.1 });
+    const tracker = new PositionTracker();
+    const decision = engine.decide(tracker, () => 100);
+    assertEquals(decision.kind, "order", `${archetypeId} should produce an order`);
+    if (decision.kind === "order") {
+      assertEquals(decision.order.desk, desk, `${archetypeId} desk`);
+      assertEquals(decision.order.instrumentType, instrumentType, `${archetypeId} instrumentType`);
+    }
+  }
+});
+
 Deno.test("[synthetic-trader-decision] side selection is weighted roughly 50/50 over many samples", () => {
   const engine = new DecisionEngine({ archetypeId: "equity-high-touch", userId: "u1", symbols: ["AAPL", "MSFT"] });
   const tracker = new PositionTracker();

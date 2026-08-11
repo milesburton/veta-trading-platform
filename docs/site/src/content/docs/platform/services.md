@@ -40,9 +40,16 @@ Ports listed below are the internal listening ports used inside the dev containe
 | 5029 | RFQ | `rfq-service` | Request for quote workflow |
 | 5030 | Product Service | `product-service` | Structured product builder (CDO-like multi-leg baskets) |
 | 5031 | Session Replay | `replay-service` | rrweb session recording and playback |
-| 5031 | Synthetic Trader | `synthetic-trader` | Continuous market-hours-aware synthetic trader over the real WS order path |
+| 5031 | Synthetic Trader (Equity HT) | `synthetic-trader-equity-high-touch` | Continuous synthetic trader, equity high-touch desk, over the real WS order path |
 | 5032 | Risk Engine | `risk-engine` | Pre-trade risk checks (6 checks) |
 | 5033 | LLM Worker | `llm-worker` | LLM inference worker (job queue consumer) |
 | 5034 | Discord Bot | `discord-bot` | Discord Gateway client, welcome message on member join |
+| 5036 | Synthetic Trader (Equity LT) | `synthetic-trader-equity-low-touch` | Continuous synthetic trader, equity low-touch/algo desk, over the real WS order path |
+| 5037 | Synthetic Trader (FX Electronic) | `synthetic-trader-fx-electronic` | Continuous synthetic trader, FX electronic desk, over the real WS order path |
+| 5038 | Synthetic Trader (FX HT) | `synthetic-trader-fx-high-touch` | Continuous synthetic trader, FX high-touch desk, over the real WS order path |
+| 5039 | Synthetic Trader (FI Voice) | `synthetic-trader-fi-voice` | Continuous synthetic trader, FI voice desk, over the real WS order path |
+| 5040 | Synthetic Trader (Derivatives HT) | `synthetic-trader-derivatives-high-touch` | Continuous synthetic trader, derivatives high-touch desk, over the real WS order path |
+| 5041 | Synthetic Trader (Derivatives LT) | `synthetic-trader-derivatives-low-touch` | Continuous synthetic trader, derivatives low-touch desk, over the real WS order path |
+| 5042 | Synthetic Trader (Commodities) | `synthetic-trader-commodities-voice` | Continuous synthetic trader, commodities desk, over the real WS order path |
 | 9880 | FIX Exchange | `fix-exchange` | Simulated FIX 4.2 matching engine |
 | 9881 | FIX Gateway | `fix-gateway` | FIX 4.2 session manager |
