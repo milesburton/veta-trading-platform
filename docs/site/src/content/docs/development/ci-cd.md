@@ -87,9 +87,22 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker 
 
 ### docker-services (~3 to 5 minutes per image, parallel)
 
-- Builds 37 individual service Docker images
+- Builds 38 individual service Docker images
 - Pushes to GHCR (`ghcr.io/milesburton/veta-trading-platform/<service>:latest`)
-- Matrix build: all 37 run simultaneously
+- Matrix build: all 38 run simultaneously, driven by a hardcoded `service`/`file` list in
+  `ci.yml`, one entry per service, each pointing at that service's own `docker/<name>/Dockerfile`
+
+Adding a new service means adding it to **this matrix**, not just `compose.yml`. A new
+service wired into `compose.yml`/`deno.json`/`supervisord.conf` but left out of this matrix
+never gets an image built or published at all, which is silent in CI (nothing fails; the
+matrix simply has one fewer entry than it should) and only surfaces on the server, where
+`docker compose up -d` fails on that one missing image. Because compose brings the stack up
+as a unit, that single failure aborts the **entire** deployment, not just the new service:
+every other container is left in a `Created`-but-never-started state, even though their
+images were built and published fine. This took the platform down for roughly 8 hours on
+2026-08-11 (the `synthetic-trader` service shipped without a matrix entry); see
+[Edge architecture](../../platform/edge-architecture/#offline-holding-page) for the related
+gap it exposed in the offline holding page.
 
 ### screenshots (~1.5 minutes, path-conditional)
 
@@ -110,6 +123,12 @@ The production server is the only deployment target. The application is served a
 - When a new SHA is detected, the server clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
 - `deploy.sh` runs `docker compose up -d`; GHCR images are pulled by the daemon
 - Typical lag: around 5 minutes after Docker build completes
+- `docker compose up -d` treats the whole stack as one unit: if any single image referenced
+  in `compose.yml` is missing from GHCR, the entire command fails and every container it
+  would otherwise have started or recreated is left alone, not just the one with the missing
+  image. If services were already stopped or half-created from a prior failed attempt (see
+  the [`docker-services` matrix note](#docker-services-3-to-5-minutes-per-image-parallel)
+  above), they stay that way until a deploy with all images present succeeds
 
 ### GitHub Pages
 

@@ -99,6 +99,12 @@ not a connection failure. That reached a real browser once (2026-08-11)
 before this was added. This is safe to catch broadly here since the app
 is a SPA with no routes that should genuinely 404 for an end user.
 
+The all-containers-`Created`-but-never-started state itself traces back to a
+missing published Docker image aborting the server's `docker compose up -d`
+for the whole stack, not just the one service with the missing image; see
+[CI/CD: docker-services](../../development/ci-cd/#docker-services-3-to-5-minutes-per-image-parallel)
+for the full chain.
+
 The fallback target is the [status page](/veta-trading-platform/status/) published as
 part of this Astro docs site — it deploys to GitHub Pages independently of the
 server, so it stays reachable exactly when the primary origin is not.
