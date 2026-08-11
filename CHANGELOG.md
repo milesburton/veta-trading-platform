@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.60.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.59.1...veta-trading-platform-v1.60.0) (2026-08-11)
+
+
+### Features
+
+* **synthetic-trader:** run one instance per desk archetype ([#556](https://github.com/milesburton/veta-trading-platform/issues/556)) ([b730baf](https://github.com/milesburton/veta-trading-platform/commit/b730baf740f9e501c9c4fdceef59454e16661612))
+
+
+### Bug Fixes
+
+* **deploy:** add synthetic-trader to compose.prod.yml's image override ([#554](https://github.com/milesburton/veta-trading-platform/issues/554)) ([ddc08a0](https://github.com/milesburton/veta-trading-platform/commit/ddc08a047da097aeb82e835096d23c68c04833b6))
+
 ## [1.59.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.59.0...veta-trading-platform-v1.59.1) (2026-08-11)
 
 
