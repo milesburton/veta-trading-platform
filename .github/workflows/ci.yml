@@ -1419,6 +1419,8 @@ jobs:
             file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
+          - service: synthetic-trader
+            file: docker/synthetic-trader/Dockerfile
     steps:
       - uses: actions/checkout@v5
 
@@ -1725,6 +1727,8 @@ jobs:
             file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
+          - service: synthetic-trader
+            file: docker/synthetic-trader/Dockerfile
     steps:
       - uses: actions/checkout@v5
 

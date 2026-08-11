@@ -97,11 +97,21 @@ http:
     # Location header attached — browsers never act on a Location header
     # on a non-3xx response, so the redirect silently does nothing. This
     # exact failure mode shipped once already; see edge-architecture.md.
+    #
+    # 404 is included too: a live homelab Traefik with zero backend
+    # containers registered (every app service down, only infra like
+    # Postgres/Redpanda up) answers every path with its own "no matching
+    # router" 404, a normal, valid HTTP response through a live tunnel,
+    # not a 5xx. That reached a real browser once (2026-08-11) before
+    # this was added. Safe to include broadly: this app is a SPA with no
+    # public routes that should ever genuinely 404 for an end user.
     offline-holding-page:
       errors:
         status:
+          - "404"
           - "500-599"
         statusRewrites:
+          "404": 302
           "500-599": 302
         service: veta-status-fallback
         query: "/"
