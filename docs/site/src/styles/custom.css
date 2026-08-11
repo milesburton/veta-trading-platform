@@ -44,6 +44,16 @@
   --sl-color-accent-high: rgb(var(--semantic-cross) / 0.6);
 }
 
+/* Same for the page background in dark mode, without this Starlight falls
+   back to its own near-black (hsl(224,10%,10%)) instead of the app's actual
+   background token, so the two sites' dark mode visibly diverge. Scoped to
+   dark mode only so light mode keeps Starlight's white background. */
+:root:not([data-theme="light"]) {
+  --sl-color-bg: rgb(var(--gray-950));
+  --sl-color-bg-nav: rgb(var(--gray-900));
+  --sl-color-bg-sidebar: rgb(var(--gray-900));
+}
+
 .screenshot-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
