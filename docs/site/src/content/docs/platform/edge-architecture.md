@@ -60,14 +60,16 @@ Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-tradi
   (`ipStrategy.depth: 0` trusts no proxies; correct when Cloudflare
   proxy is in DNS-only mode)
 - Security-headers middleware: HSTS preload, CSP, frame-deny, etc.
-- Offline-holding-page middleware: catches 5xx from the backend and
-  serves a fallback page (see below)
+- Offline-holding-page middleware: catches 5xx and 404 from the backend
+  and serves a fallback page (see below)
 
 ### Offline holding page
 
-When the secure tunnel is down or the server's backend returns a 5xx, the edge
-Traefik redirects the visitor to a "VETA is temporarily offline" page instead
-of a bare 502, using Traefik's built-in `errors` middleware:
+When the secure tunnel is down, the server's backend returns a 5xx, or the
+homelab Traefik is up but has no backend containers registered to route to
+(a plain 404 through a live tunnel), the edge Traefik redirects the visitor
+to a "VETA is temporarily offline" page instead, using Traefik's built-in
+`errors` middleware:
 
 ```yaml
 services:
@@ -80,12 +82,22 @@ middlewares:
   offline-holding-page:
     errors:
       status:
+        - "404"
         - "500-599"
       statusRewrites:
+        "404": 302
         "500-599": 302
       service: veta-status-fallback
       query: "/"
 ```
+
+404 is caught alongside 5xx because a live tunnel with a healthy homelab
+Traefik but zero application containers running (all services stuck in a
+failed `Created` state, only infrastructure like Postgres/Redpanda up)
+produces Traefik's own "no matching router" 404, a normal HTTP response,
+not a connection failure. That reached a real browser once (2026-08-11)
+before this was added. This is safe to catch broadly here since the app
+is a SPA with no routes that should genuinely 404 for an end user.
 
 The fallback target is the [status page](/veta-trading-platform/status/) published as
 part of this Astro docs site — it deploys to GitHub Pages independently of the
