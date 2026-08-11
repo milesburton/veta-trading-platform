@@ -12,7 +12,8 @@
     "preview": "astro preview",
     "capture:grafana": "node scripts/capture-grafana-screenshots.mjs",
     "validate:mermaid": "node scripts/validate-mermaid.mjs",
-    "validate:links": "node scripts/validate-links.mjs"
+    "validate:links": "node scripts/validate-links.mjs",
+    "validate:brand-colors": "node scripts/validate-brand-colors.mjs"
   },
   "keywords": [],
   "author": "",

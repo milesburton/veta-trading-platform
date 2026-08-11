@@ -506,6 +506,11 @@ jobs:
         working-directory: docs/site
         run: npm run validate:links
 
+      - name: Validate brand colors
+        if: needs.changes.outputs.docs == 'true'
+        working-directory: docs/site
+        run: npm run validate:brand-colors
+
   coverage-badges:
     name: Publish coverage badges
     runs-on: ubuntu-latest
