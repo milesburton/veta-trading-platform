@@ -104,6 +104,15 @@ images were built and published fine. This took the platform down for roughly 8 
 [Edge architecture](../../platform/edge-architecture/#offline-holding-page) for the related
 gap it exposed in the offline holding page.
 
+A **second**, separate requirement for a new service: it also needs an `image:` override in
+`compose.prod.yml` (see [Server](#server) below), or the homelab tries to build it locally
+from source instead of pulling the published image, which `docker compose up -d --no-build`
+(what the server actually runs) refuses to do, failing with the same "No such image" error
+even after the image is correctly published to GHCR. This compounded the same 2026-08-11
+outage: the matrix fix alone published the image, but the platform stayed down until this
+second gap was also found and fixed, because compose was still trying to build
+`synthetic-trader` locally under its bare service name rather than pull the registry image.
+
 ### screenshots (~1.5 minutes, path-conditional)
 
 - `Capture UI screenshots` (main only): runs `screenshots.spec.ts` against every dashboard workspace and persona, then commits any changed PNGs to `docs/screenshots/` with `[skip ci]`. These are the images the docs site and README embed.
@@ -121,7 +130,8 @@ The production server is the only deployment target. The application is served a
 
 - systemd `veta-auto-pull.timer` polls `origin/main` every 5 minutes
 - When a new SHA is detected, the server clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
-- `deploy.sh` runs `docker compose up -d`; GHCR images are pulled by the daemon
+- `deploy.sh` runs `docker compose -f compose.yml -f compose.prod.yml [...] up -d --no-build`; GHCR images are pulled by the daemon, nothing is built from source on the server
+- `compose.prod.yml` is the overlay that makes this work: every application service's block there sets `image: ghcr.io/.../<service>:latest` and `build: !reset null` (Compose's merge-key syntax for "explicitly clear the base file's `build:` directive"), overriding `compose.yml`'s own `build:` block. A service present in `compose.yml` but missing from `compose.prod.yml` keeps the base file's `build:` directive, and with `--no-build` in play that means `up -d` looks for a local image under the bare service name (e.g. `veta-<service>:latest`) instead of pulling from GHCR, and fails with `No such image` even once the real image is published
 - Typical lag: around 5 minutes after Docker build completes
 - `docker compose up -d` treats the whole stack as one unit: if any single image referenced
   in `compose.yml` is missing from GHCR, the entire command fails and every container it

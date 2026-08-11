@@ -573,6 +573,14 @@ services:
       - "traefik.http.routers.health.service=gateway"
       - "traefik.http.routers.health.priority=25"
 
+  synthetic-trader:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/synthetic-trader:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=false"
+
   db-migrate:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/db-migrate:latest
