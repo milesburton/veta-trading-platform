@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.60.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.2...veta-trading-platform-v1.60.3) (2026-08-12)
+
+
+### Bug Fixes
+
+* **frontend:** make light theme production-ready (Phase 1) ([#562](https://github.com/milesburton/veta-trading-platform/issues/562)) ([8cb1d21](https://github.com/milesburton/veta-trading-platform/commit/8cb1d21d97084bc4ecbf33886a404beff31a08d3))
+* **frontend:** strengthen the page background gradient ([#564](https://github.com/milesburton/veta-trading-platform/issues/564)) ([0f3c4d0](https://github.com/milesburton/veta-trading-platform/commit/0f3c4d030a27578e79dac44e825b59163997a94a))
+
 ## [1.60.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.1...veta-trading-platform-v1.60.2) (2026-08-12)
 
 
