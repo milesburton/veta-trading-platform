@@ -67,6 +67,11 @@ module.exports = {
           iceberg: "rgb(var(--semantic-iceberg) / <alpha-value>)",
           sniper: "rgb(var(--semantic-sniper) / <alpha-value>)",
           "arrival-price": "rgb(var(--semantic-arrival-price) / <alpha-value>)",
+          "status-success": "rgb(var(--semantic-status-success) / <alpha-value>)",
+          "status-pending": "rgb(var(--semantic-status-pending) / <alpha-value>)",
+          "status-info": "rgb(var(--semantic-status-info) / <alpha-value>)",
+          "status-critical": "rgb(var(--semantic-status-critical) / <alpha-value>)",
+          "status-warning": "rgb(var(--semantic-status-warning) / <alpha-value>)",
         },
         chart: {
           grid: "rgb(var(--chart-grid) / <alpha-value>)",

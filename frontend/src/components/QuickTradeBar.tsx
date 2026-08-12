@@ -91,9 +91,9 @@ export function QuickTradeBar() {
   }
 
   const previewClass = regexIntent
-    ? "text-emerald-400"
+    ? "text-semantic-status-success"
     : input.value.length > 0
-      ? "text-amber-400"
+      ? "text-semantic-status-warning"
       : "text-muted";
 
   return (
@@ -109,7 +109,7 @@ export function QuickTradeBar() {
       >
         + New Order
       </button>
-      <span className="text-[10px] font-semibold tracking-widest uppercase text-emerald-400 shrink-0">
+      <span className="text-[10px] font-semibold tracking-widest uppercase text-semantic-status-success shrink-0">
         Quick trade
       </span>
       <input
@@ -152,7 +152,7 @@ export function QuickTradeBar() {
         onClick={askAi}
         disabled={!canAskAi}
         title="Use the LLM to parse free-form instructions"
-        className="shrink-0 px-2 py-0.5 rounded border border-emerald-700 hover:bg-emerald-900/40 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-300 text-[11px] font-semibold uppercase tracking-wide transition-colors"
+        className="shrink-0 px-2 py-0.5 rounded border border-semantic-status-success/40 hover:bg-semantic-status-success/6 disabled:opacity-30 disabled:cursor-not-allowed text-semantic-status-success text-[11px] font-semibold uppercase tracking-wide transition-colors"
       >
         {parseTicketState.isLoading ? "Asking…" : "Ask AI"}
       </button>
@@ -160,7 +160,9 @@ export function QuickTradeBar() {
         <span
           data-testid="quick-trade-flash"
           className={`shrink-0 text-[10px] ${
-            flash.value.kind === "ok" ? "text-emerald-400" : "text-amber-400"
+            flash.value.kind === "ok"
+              ? "text-semantic-status-success"
+              : "text-semantic-status-warning"
           }`}
         >
           {flash.value.msg}

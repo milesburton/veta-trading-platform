@@ -189,8 +189,8 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   }, [services, dispatch]);
 
   const SEVERITY_CLS: Record<AlertSeverity, string> = {
-    CRITICAL: "border-red-500 bg-red-600 text-white animate-pulse",
-    WARNING: "border-amber-500 bg-amber-600/80 text-white",
+    CRITICAL: "border-red-700 bg-red-700 text-white animate-pulse",
+    WARNING: "border-amber-700 bg-amber-700 text-white",
     INFO: "border-divider bg-panel/60 text-label hover:bg-divider/60 hover:border-muted hover:text-default",
   };
   const btnCls = highestSeverity ? SEVERITY_CLS[highestSeverity] : SEVERITY_CLS.INFO;
@@ -251,10 +251,10 @@ function DataFreshness() {
       <span
         data-testid="feed-status"
         title="Gateway disconnected — all data sources offline"
-        className="flex items-center gap-1.5 text-[10px] text-red-400 tabular-nums"
+        className="flex items-center gap-1.5 text-[10px] text-semantic-status-critical tabular-nums"
       >
         <span className="text-muted">Feed</span>
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-semantic-status-critical shrink-0" />
         disconnected
       </span>
     );
@@ -267,12 +267,16 @@ function DataFreshness() {
   const marketSlow = marketAge !== null && marketAge > FEED_STALE_MS;
   const live = !marketDead && !marketSlow;
 
-  const dotClass = marketDead ? "bg-red-500" : marketSlow ? "bg-amber-400" : "bg-emerald-500";
-  const textClass = marketDead
-    ? "text-red-400"
+  const dotClass = marketDead
+    ? "bg-semantic-status-critical"
     : marketSlow
-      ? "text-amber-400"
-      : "text-emerald-400";
+      ? "bg-semantic-status-warning"
+      : "bg-semantic-status-success";
+  const textClass = marketDead
+    ? "text-semantic-status-critical"
+    : marketSlow
+      ? "text-semantic-status-warning"
+      : "text-semantic-status-success";
 
   const tooltip = sources
     .map(([key, ts]) => {
@@ -300,22 +304,22 @@ const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: stri
   local: {
     label: "Local",
     title: "Local development build",
-    cls: "bg-sky-900/50 text-sky-400 border-sky-800",
+    cls: "bg-semantic-status-info/6 text-semantic-status-info border-semantic-status-info/30",
   },
   uat: {
     label: "UAT",
     title: "Internal UAT environment — not production",
-    cls: "bg-amber-900/50 text-amber-300 border-amber-800",
+    cls: "bg-semantic-status-pending/6 text-semantic-status-pending border-semantic-status-pending/30",
   },
   fly: {
     label: "Demo",
     title: "Public Fly.io demo deployment",
-    cls: "bg-emerald-900/40 text-emerald-300 border-emerald-800",
+    cls: "bg-semantic-status-success/6 text-semantic-status-success border-semantic-status-success/30",
   },
   prod: {
     label: "Production",
     title: "Production deployment",
-    cls: "bg-emerald-900/40 text-emerald-300 border-emerald-800",
+    cls: "bg-semantic-status-success/6 text-semantic-status-success border-semantic-status-success/30",
   },
 };
 
@@ -384,12 +388,20 @@ function dataQualityLabel(days: number): {
 } {
   const label = depthLabelOnly(days);
   if (days >= DATA_DEPTH_THRESHOLDS.good) {
-    return { label, color: "text-emerald-400", dotColor: "bg-emerald-500" };
+    return {
+      label,
+      color: "text-semantic-status-success",
+      dotColor: "bg-semantic-status-success",
+    };
   }
   if (days >= DATA_DEPTH_THRESHOLDS.limited) {
-    return { label, color: "text-amber-400", dotColor: "bg-amber-400" };
+    return {
+      label,
+      color: "text-semantic-status-warning",
+      dotColor: "bg-semantic-status-warning",
+    };
   }
-  return { label, color: "text-red-400", dotColor: "bg-red-500" };
+  return { label, color: "text-semantic-status-critical", dotColor: "bg-semantic-status-critical" };
 }
 
 export function DataDepthIndicator() {
@@ -451,7 +463,11 @@ function MemoryIndicator() {
   }
   const usedRounded = Math.round(snapshot.usedMb);
   const color =
-    snapshot.pct > 75 ? "text-down" : snapshot.pct > 50 ? "text-amber-400" : "text-muted";
+    snapshot.pct > 75
+      ? "text-semantic-status-critical"
+      : snapshot.pct > 50
+        ? "text-semantic-status-warning"
+        : "text-muted";
   const tooltip = [
     `JS heap: ${usedRounded} MB used`,
     `Total: ${Math.round(snapshot.totalMb)} MB`,
@@ -682,7 +698,7 @@ export function AppHeader() {
                 <span
                   className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-semibold tracking-wide ${
                     user.role === "admin"
-                      ? "bg-orange-900/60 text-orange-300"
+                      ? "bg-semantic-status-warning/25 text-semantic-status-warning"
                       : "bg-divider text-secondary"
                   }`}
                 >
@@ -692,8 +708,8 @@ export function AppHeader() {
                 <span
                   className={`text-[9px] font-medium uppercase px-1 py-0.5 rounded ${
                     user.role === "admin"
-                      ? "bg-orange-900/50 text-orange-400"
-                      : "bg-blue-900/50 text-blue-400"
+                      ? "bg-semantic-status-warning/6 text-semantic-status-warning"
+                      : "bg-semantic-status-info/6 text-semantic-status-info"
                   }`}
                 >
                   {user.role}

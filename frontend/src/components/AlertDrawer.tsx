@@ -23,18 +23,21 @@ function relativeTime(ts: number): string {
 
 const SEVERITY_STYLES: Record<AlertSeverity, { dot: string; badge: string; label: string }> = {
   CRITICAL: {
-    dot: "bg-red-500",
-    badge: "bg-red-900/60 text-red-300 border border-red-800",
+    dot: "bg-semantic-status-critical",
+    badge:
+      "bg-semantic-status-critical/6 text-semantic-status-critical border border-semantic-status-critical/30",
     label: "CRITICAL",
   },
   WARNING: {
-    dot: "bg-amber-400",
-    badge: "bg-amber-900/60 text-amber-300 border border-amber-800",
+    dot: "bg-semantic-status-warning",
+    badge:
+      "bg-semantic-status-warning/6 text-semantic-status-warning border border-semantic-status-warning/30",
     label: "WARNING",
   },
   INFO: {
-    dot: "bg-blue-400",
-    badge: "bg-blue-900/40 text-blue-300 border border-blue-800",
+    dot: "bg-semantic-status-info",
+    badge:
+      "bg-semantic-status-info/6 text-semantic-status-info border border-semantic-status-info/30",
     label: "INFO",
   },
 };
@@ -159,7 +162,7 @@ export function AlertList({
                       <span className="text-[10px] text-muted">{SOURCE_LABELS[alert.source]}</span>
                       {(alert.count ?? 1) > 1 && (
                         <span
-                          className="text-[10px] font-mono font-semibold text-amber-400 bg-amber-950/40 border border-amber-800/40 rounded px-1 leading-none py-0.5"
+                          className="text-[10px] font-mono font-semibold text-semantic-status-pending bg-semantic-status-pending/6 border border-semantic-status-pending/30 rounded px-1 leading-none py-0.5"
                           data-testid="alert-count"
                           title={`${alert.count} occurrences in this run`}
                         >

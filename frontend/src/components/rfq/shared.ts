@@ -27,11 +27,11 @@ export interface SellSideRfq {
 }
 
 export const SELL_SIDE_RFQ_STATE_COLORS: Record<SellSideRfqState, string> = {
-  CLIENT_REQUEST: "bg-blue-900 text-blue-300",
-  SALES_REVIEW: "bg-yellow-900 text-yellow-300",
-  DEALER_QUOTE: "bg-yellow-900 text-yellow-300",
-  SALES_MARKUP: "bg-yellow-900 text-yellow-300",
-  CLIENT_CONFIRMATION: "bg-amber-900 text-amber-300",
-  CONFIRMED: "bg-emerald-900 text-emerald-300",
-  REJECTED: "bg-red-900 text-red-400",
+  CLIENT_REQUEST: "bg-semantic-status-info/6 text-semantic-status-info",
+  SALES_REVIEW: "bg-semantic-status-warning/6 text-semantic-status-warning",
+  DEALER_QUOTE: "bg-semantic-status-warning/6 text-semantic-status-warning",
+  SALES_MARKUP: "bg-semantic-status-warning/6 text-semantic-status-warning",
+  CLIENT_CONFIRMATION: "bg-semantic-status-pending/6 text-semantic-status-pending",
+  CONFIRMED: "bg-semantic-status-success/6 text-semantic-status-success",
+  REJECTED: "bg-semantic-status-critical/6 text-semantic-status-critical",
 };

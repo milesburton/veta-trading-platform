@@ -11,24 +11,24 @@ import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 
 const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
   STRONG_BUY: {
-    badge: "bg-emerald-800/60 text-emerald-200 border border-emerald-700",
-    dot: "bg-emerald-400",
+    badge: "bg-semantic-up/25 text-semantic-up border border-semantic-up/40",
+    dot: "bg-semantic-up",
   },
   BUY: {
-    badge: "bg-emerald-900/40 text-emerald-300 border border-emerald-800",
-    dot: "bg-emerald-600",
+    badge: "bg-semantic-up/15 text-semantic-up border border-semantic-up/30",
+    dot: "bg-semantic-up",
   },
   NEUTRAL: {
     badge: "bg-panel/60 text-label border border-divider",
     dot: "bg-muted",
   },
   SELL: {
-    badge: "bg-red-900/40 text-red-300 border border-red-800",
-    dot: "bg-red-600",
+    badge: "bg-semantic-down/15 text-semantic-down border border-semantic-down/30",
+    dot: "bg-semantic-down",
   },
   STRONG_SELL: {
-    badge: "bg-red-800/60 text-red-200 border border-red-700",
-    dot: "bg-red-400",
+    badge: "bg-semantic-down/25 text-semantic-down border border-semantic-down/40",
+    dot: "bg-semantic-down",
   },
 };
 

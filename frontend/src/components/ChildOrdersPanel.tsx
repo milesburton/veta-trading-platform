@@ -5,9 +5,10 @@ import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
 import { useQueryGridQuery } from "@veta/frontend/store/gridApi.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
-import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "@veta/frontend/types.ts";
+import type { ChildOrder, LiquidityFlag, OrderRecord } from "@veta/frontend/types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
 import { formatTime } from "@veta/frontend/utils/format.ts";
+import { ORDER_STATUS_STYLES } from "@veta/frontend/utils/orderStatusStyles.ts";
 import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 
@@ -63,20 +64,10 @@ const CHILD_COLS: ColDef[] = [
   { key: "settle", label: "Settle", type: "string", defaultWidth: 64 },
 ];
 
-const STATUS_STYLES: Record<OrderStatus, string> = {
-  pending: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
-  working: "bg-sky-900/50 text-sky-300 border border-sky-700/50",
-  filled: "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
-  expired: "bg-panel/50 text-muted border border-divider/50",
-  rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
-  cancelled: "bg-orange-950/50 text-orange-400 border border-orange-800/50",
-  held: "bg-yellow-950/50 text-yellow-400 border border-yellow-700/50",
-};
-
 const LIQ_STYLES: Record<LiquidityFlag, string> = {
-  MAKER: "text-emerald-500",
-  TAKER: "text-amber-500",
-  CROSS: "text-sky-500",
+  MAKER: "text-semantic-maker",
+  TAKER: "text-semantic-taker",
+  CROSS: "text-semantic-cross",
 };
 
 export function ChildOrdersPanel() {
@@ -236,7 +227,7 @@ export function ChildOrdersPanel() {
                     <td className="px-3 py-1.5">
                       <span
                         className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${
-                          STATUS_STYLES[child.status]
+                          ORDER_STATUS_STYLES[child.status]
                         }`}
                         title={ORDER_STATUS_DESCRIPTIONS[child.status]}
                       >

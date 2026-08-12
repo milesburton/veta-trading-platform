@@ -383,7 +383,7 @@ export function WorkspaceSidebar({
             aria-label="Add new workspace"
             title="Add new workspace"
             onClick={addWorkspace}
-            className={`flex items-center gap-1.5 h-full text-emerald-600 hover:text-emerald-400 hover:bg-surface/60 transition-colors ${
+            className={`flex items-center gap-1.5 h-full text-semantic-status-success hover:text-semantic-status-success hover:bg-surface/60 transition-colors ${
               isExpanded ? "flex-1 px-2.5 text-[11px] font-semibold" : "w-8 justify-center"
             }`}
           >
