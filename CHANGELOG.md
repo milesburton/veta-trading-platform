@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.1...veta-trading-platform-v1.60.2) (2026-08-12)
+
+
+### Bug Fixes
+
+* **frontend:** show the page gradient on the trading dashboard too ([#560](https://github.com/milesburton/veta-trading-platform/issues/560)) ([f5bb50d](https://github.com/milesburton/veta-trading-platform/commit/f5bb50d47fe725d6f1f1ad24d424945431474d9d))
+
 ## [1.60.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.0...veta-trading-platform-v1.60.1) (2026-08-11)
 
 
