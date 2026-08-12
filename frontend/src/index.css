@@ -73,7 +73,7 @@
   --gray-200: 229 231 235;
   --gray-300: 209 213 219;
   --gray-400: 160 160 160;
-  --gray-500: 102 102 102;
+  --gray-500: 130 130 130; /* lightened from 102 for AA on gray-800/900 panels */
   --gray-600: 68 68 68;
   --gray-700: 51 51 51;
   --gray-800: 17 17 17;
@@ -137,6 +137,14 @@
   --gray-800: 255 255 255;
   --gray-900: 255 255 255;
   --gray-950: 245 245 245;
+
+  /* Panels are near-white here, same as light mode — reuse its darker,
+     AA-tuned status variants instead of dark mode's light-on-dark values. */
+  --semantic-status-success: 4 120 87;
+  --semantic-status-pending: 146 64 14;
+  --semantic-status-info: 3 105 161;
+  --semantic-status-critical: 185 28 28;
+  --semantic-status-warning: 154 52 18;
 }
 
 @tailwind base;

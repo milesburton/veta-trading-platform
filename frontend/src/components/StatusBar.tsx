@@ -698,7 +698,7 @@ export function AppHeader() {
                 <span
                   className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-semibold tracking-wide ${
                     user.role === "admin"
-                      ? "bg-semantic-status-warning/25 text-semantic-status-warning"
+                      ? "bg-semantic-status-warning/6 text-semantic-status-warning"
                       : "bg-divider text-secondary"
                   }`}
                 >
