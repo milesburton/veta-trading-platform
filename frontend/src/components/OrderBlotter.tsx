@@ -13,10 +13,11 @@ import {
 } from "@veta/frontend/store/ordersSlice.ts";
 import { selectOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
-import type { ChildOrder, OrderRecord, OrderStatus } from "@veta/frontend/types.ts";
+import type { ChildOrder, OrderRecord } from "@veta/frontend/types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
 import { formatTime } from "@veta/frontend/utils/format.ts";
 import { applyCfRules } from "@veta/frontend/utils/gridFilter.ts";
+import { ORDER_STATUS_STYLES } from "@veta/frontend/utils/orderStatusStyles.ts";
 import {
   openOrderTicketWindow,
   orderToTicketPrefill,
@@ -29,16 +30,6 @@ import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
-
-const STATUS_STYLES: Record<OrderStatus, string> = {
-  pending: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
-  working: "bg-sky-900/50 text-sky-300 border border-sky-700/50",
-  filled: "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
-  expired: "bg-panel/50 text-muted border border-divider/50",
-  rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
-  cancelled: "bg-orange-950/50 text-orange-400 border border-orange-800/50",
-  held: "bg-yellow-950/50 text-yellow-400 border border-yellow-700/50",
-};
 
 const BLOTTER_COLS: ColDef[] = [
   { key: "submittedAt", label: "Time", type: "string", defaultWidth: 80 },
@@ -688,7 +679,7 @@ export function OrderBlotter() {
                                 <span
                                   data-testid="order-status-badge"
                                   className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
-                                    STATUS_STYLES[order.status]
+                                    ORDER_STATUS_STYLES[order.status]
                                   }`}
                                   title={ORDER_STATUS_DESCRIPTIONS[order.status]}
                                 >

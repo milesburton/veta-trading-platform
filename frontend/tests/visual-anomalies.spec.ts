@@ -121,16 +121,27 @@ test.describe("visual anomalies (merge-gating)", () => {
   // high-contrast theme exists in CSS but is otherwise never visually
   // tested — this scenario surfaces axe contrast or DOM overflow regressions
   // before they reach a user.
+  //
+  // Theme must be seeded via localStorage *before* the app loads, not by
+  // setting the DOM attribute after the fact — themeSlice's Redux state is
+  // the single source of truth for data-theme (App.tsx syncs the attribute
+  // from state on every render), so a post-hoc attribute write gets
+  // immediately overwritten by React's own effect on the next render.
   for (const theme of ["dark", "darker", "light", "high-contrast"] as const) {
     test(`trader dashboard — ${theme} theme`, async ({ page }) => {
+      await page.addInitScript((t) => {
+        localStorage.setItem("veta-theme", t);
+      }, theme);
       const app = new AppPage(page);
       await app.gotoAsTrader();
-      await page.evaluate((t) => {
-        document.documentElement.setAttribute("data-theme", t);
-      }, theme);
       await page.waitForTimeout(500);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       const r = await captureAnomalies(page, `trader-dashboard-${theme}`);
       expect(r.scenario).toBe(`trader-dashboard-${theme}`);
+      if (theme === "light") {
+        const contrastViolations = r.axe.filter((v) => v.id === "color-contrast");
+        expect(contrastViolations, JSON.stringify(contrastViolations, null, 2)).toHaveLength(0);
+      }
     });
   }
 });

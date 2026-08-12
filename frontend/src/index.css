@@ -32,6 +32,15 @@
   --semantic-is: 45 212 191;          /* teal-400     */
   --semantic-momentum: 232 121 249;   /* fuchsia-400  */
 
+  /* Status semantics — generic UI concepts (order/RFQ/alert state), distinct
+     from the trading-concept palette above. Aliased to the closest matching
+     trading colour so there's one source of truth per hue. */
+  --semantic-status-success: 52 211 153;  /* = semantic-up      */
+  --semantic-status-pending: 245 158 11;  /* = semantic-taker    */
+  --semantic-status-info: 56 189 248;     /* = semantic-cross    */
+  --semantic-status-critical: 248 113 113; /* = semantic-down    */
+  --semantic-status-warning: 249 115 22;  /* = semantic-pov      */
+
   /* Chart chrome */
   --chart-grid: 31 41 55;             /* gray-800     */
   --chart-axis: 107 114 128;          /* gray-500     */
@@ -64,7 +73,7 @@
   --gray-200: 229 231 235;
   --gray-300: 209 213 219;
   --gray-400: 160 160 160;
-  --gray-500: 102 102 102;
+  --gray-500: 130 130 130; /* lightened from 102 for AA on gray-800/900 panels */
   --gray-600: 68 68 68;
   --gray-700: 51 51 51;
   --gray-800: 17 17 17;
@@ -81,7 +90,7 @@
   --gray-800: 226 232 240; /* subtle borders, hover — slate-200 */
   --gray-700: 203 213 225; /* dividers — slate-300 */
   --gray-600: 148 163 184; /* muted text, placeholders — slate-400 */
-  --gray-500: 100 116 139; /* secondary text — slate-500 */
+  --gray-500: 94 109 128; /* secondary text — darkened slate-500 for AA on bg-surface */
   --gray-400: 71 85 105; /* body text — slate-600 */
   --gray-300: 51 65 85; /* strong text — slate-700 */
   --gray-200: 30 41 59; /* headings — slate-800 */
@@ -108,6 +117,12 @@
   --semantic-arrival-price: 67 56 202; /* indigo-700 */
   --semantic-is: 15 118 110;          /* teal-700 */
   --semantic-momentum: 162 28 175;    /* fuchsia-700 */
+
+  --semantic-status-success: 4 120 87;    /* = semantic-up (emerald-700) */
+  --semantic-status-pending: 146 64 14;   /* amber-800 — darker than semantic-taker for AA on bg-surface */
+  --semantic-status-info: 3 105 161;      /* = semantic-cross (sky-700) */
+  --semantic-status-critical: 185 28 28;  /* = semantic-down (red-700) */
+  --semantic-status-warning: 154 52 18;   /* orange-800 — darker than semantic-pov for AA on bg-surface */
 }
 
 [data-theme="high-contrast"] {
@@ -122,6 +137,14 @@
   --gray-800: 255 255 255;
   --gray-900: 255 255 255;
   --gray-950: 245 245 245;
+
+  /* Panels are near-white here, same as light mode — reuse its darker,
+     AA-tuned status variants instead of dark mode's light-on-dark values. */
+  --semantic-status-success: 4 120 87;
+  --semantic-status-pending: 146 64 14;
+  --semantic-status-info: 3 105 161;
+  --semantic-status-critical: 185 28 28;
+  --semantic-status-warning: 154 52 18;
 }
 
 @tailwind base;
@@ -136,6 +159,7 @@ body,
 }
 
 html:not([data-theme="high-contrast"]) body,
+html:not([data-theme="high-contrast"]) #root,
 html:not([data-theme="high-contrast"]) .bg-page-gradient {
   background-image: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
 }
@@ -204,29 +228,34 @@ html:not([data-theme="high-contrast"]) .bg-page-gradient {
   }
 }
 
+/* !important throughout: flexlayout-react/style/dark.css defines the same
+   .flexlayout__layout selector at equal specificity, so whichever stylesheet
+   loads later in the bundle otherwise wins the cascade non-deterministically
+   across themes. These variables must always resolve to VETA's own
+   theme-aware tokens regardless of import order. */
 .flexlayout__layout {
-  --color-background: rgb(var(--gray-950));
-  --color-text: rgb(var(--gray-100));
-  --color-1: rgb(var(--gray-900));
-  --color-2: rgb(var(--gray-800));
-  --color-3: rgb(var(--gray-700));
-  --color-4: rgb(var(--gray-700));
-  --color-5: rgb(var(--gray-600));
-  --color-6: rgb(var(--gray-500));
-  --color-tabset-background: rgb(var(--gray-950));
-  --color-tabset-background-selected: rgb(var(--gray-900));
-  --color-tabset-header-background: rgb(var(--gray-900));
-  --color-tab-selected-background: rgb(var(--gray-950));
-  --color-tab-unselected: rgb(var(--gray-500));
-  --color-tab-selected: rgb(var(--gray-50));
-  --color-border: rgb(var(--gray-800));
-  --color-splitter: rgb(var(--gray-800));
-  --color-splitter-hover: rgb(var(--gray-700));
-  --color-splitter-drag: #10b981;
-  --color-drag-rect-border: #10b981;
-  --color-drag-rect-background: rgb(16 185 129 / 0.08);
-  --color-toolbar-button-hover: rgb(var(--gray-700));
-  --color-overflow: rgb(var(--gray-500));
+  --color-background: rgb(var(--gray-950)) !important;
+  --color-text: rgb(var(--gray-100)) !important;
+  --color-1: rgb(var(--gray-900)) !important;
+  --color-2: rgb(var(--gray-800)) !important;
+  --color-3: rgb(var(--gray-700)) !important;
+  --color-4: rgb(var(--gray-700)) !important;
+  --color-5: rgb(var(--gray-600)) !important;
+  --color-6: rgb(var(--gray-500)) !important;
+  --color-tabset-background: rgb(var(--gray-950)) !important;
+  --color-tabset-background-selected: rgb(var(--gray-900)) !important;
+  --color-tabset-header-background: rgb(var(--gray-900)) !important;
+  --color-tab-selected-background: rgb(var(--gray-950)) !important;
+  --color-tab-unselected: rgb(var(--gray-500)) !important;
+  --color-tab-selected: rgb(var(--gray-50)) !important;
+  --color-border: rgb(var(--gray-800)) !important;
+  --color-splitter: rgb(var(--gray-800)) !important;
+  --color-splitter-hover: rgb(var(--gray-700)) !important;
+  --color-splitter-drag: #10b981 !important;
+  --color-drag-rect-border: #10b981 !important;
+  --color-drag-rect-background: rgb(16 185 129 / 0.08) !important;
+  --color-toolbar-button-hover: rgb(var(--gray-700)) !important;
+  --color-overflow: rgb(var(--gray-500)) !important;
 }
 
 .flexlayout__tab_button {
