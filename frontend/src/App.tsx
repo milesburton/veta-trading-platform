@@ -362,7 +362,7 @@ function TradingApp() {
         <div
           data-testid="trading-app"
           data-theme={theme}
-          className="flex flex-col h-screen bg-page text-primary overflow-hidden"
+          className="flex flex-col h-screen bg-page bg-page-gradient text-primary overflow-hidden"
         >
           <AppHeader />
           <ConnectionLostBanner />
