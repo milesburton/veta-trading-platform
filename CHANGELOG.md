@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.3...veta-trading-platform-v1.61.0) (2026-08-13)
+
+
+### Features
+
+* **market-hours:** port trading calendar model to the backend ([#565](https://github.com/milesburton/veta-trading-platform/issues/565)) ([df1e67a](https://github.com/milesburton/veta-trading-platform/commit/df1e67ac2afa5b933d96ba5d00427dbe04e9ebb8))
+
 ## [1.60.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.2...veta-trading-platform-v1.60.3) (2026-08-12)
 
 
