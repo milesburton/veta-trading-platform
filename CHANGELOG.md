@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.63.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.62.0...veta-trading-platform-v1.63.0) (2026-08-13)
+
+
+### Features
+
+* **market-sim:** restructure market-hours admin API to per-asset-class ([#571](https://github.com/milesburton/veta-trading-platform/issues/571)) ([0926321](https://github.com/milesburton/veta-trading-platform/commit/0926321dbebb5e269e2d9de58e6350303f06f98d))
+
 ## [1.62.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.61.0...veta-trading-platform-v1.62.0) (2026-08-13)
 
 
