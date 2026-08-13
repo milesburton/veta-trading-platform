@@ -321,6 +321,7 @@ Deno.test({
               signal: T(),
             });
             assertEquals(resetRes.status, 200);
+            await resetRes.json();
           }
         }
       );
