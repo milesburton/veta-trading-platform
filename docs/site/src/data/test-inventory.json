@@ -1,12 +1,14 @@
 {
   "backend": {
     "unit": {
-      "files": 72,
-      "cases": 805,
+      "files": 74,
+      "cases": 820,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
         "marketSim.test.ts": 15,
+        "trading-calendar.unit.test.ts": 11,
+        "settlement.unit.test.ts": 4,
         "rng.test.ts": 9,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,
