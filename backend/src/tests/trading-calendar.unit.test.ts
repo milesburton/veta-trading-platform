@@ -3,6 +3,7 @@ import {
   buildSessionSchedule,
   isEarlyClose,
   isHoliday,
+  resolveCurrentSession,
   resolvePhaseFromMinute,
   totalTradingMinutes,
 } from "../lib/tradingCalendar.ts";
@@ -122,4 +123,22 @@ Deno.test("calendarForOrder resolves by assetClass before falling back to exchan
   // derivatives calendar, so an unmatched/equity request falls back to US.
   assertEquals(calendarForOrder({ instrumentType: "option" }).exchangeMic, "XNAS");
   assertEquals(calendarForOrder({}).exchangeMic, "XNAS");
+});
+
+Deno.test("resolveCurrentSession allows order entry during the US equity regular session", () => {
+  const session = resolveCurrentSession(US_EQUITY_CALENDAR, new Date("2026-07-29T14:00:00Z"));
+  assertEquals(session.allowsOrderEntry, true);
+});
+
+Deno.test("resolveCurrentSession rejects order entry outside the US equity session", () => {
+  const beforeOpen = resolveCurrentSession(US_EQUITY_CALENDAR, new Date("2026-07-29T12:00:00Z"));
+  assertEquals(beforeOpen.allowsOrderEntry, false);
+  const weekend = resolveCurrentSession(US_EQUITY_CALENDAR, new Date("2026-08-01T15:00:00Z"));
+  assertEquals(weekend.allowsOrderEntry, false);
+});
+
+Deno.test("resolveCurrentSession follows the FX calendar's continuous week, not equity hours", () => {
+  const midweek = new Date("2026-07-29T12:00:00Z");
+  assertEquals(resolveCurrentSession(US_EQUITY_CALENDAR, midweek).allowsOrderEntry, false);
+  assertEquals(resolveCurrentSession(FX_CALENDAR, midweek).allowsOrderEntry, true);
 });
