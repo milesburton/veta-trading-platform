@@ -1,4 +1,6 @@
 import type { Desk } from "@veta/primitives";
+import { isHoliday } from "@veta/trading-calendar";
+import { SIFMA_BOND_CALENDAR, US_EQUITY_CALENDAR } from "@veta/market-calendars";
 
 export type { Desk } from "@veta/primitives";
 
@@ -10,8 +12,13 @@ const SETTLEMENT_DAYS: Record<Desk, number> = {
   commodities: 2,
 };
 
+function calendarForDesk(desk: Desk) {
+  return desk === "fi" ? SIFMA_BOND_CALENDAR : US_EQUITY_CALENDAR;
+}
+
 export function settlementDate(desk: Desk = "equity", fromMs = Date.now()): string {
   const days = SETTLEMENT_DAYS[desk];
+  const calendar = calendarForDesk(desk);
   if (days === 0) return new Date(fromMs).toISOString().slice(0, 10);
 
   const d = new Date(fromMs);
@@ -19,7 +26,8 @@ export function settlementDate(desk: Desk = "equity", fromMs = Date.now()): stri
   while (added < days) {
     d.setDate(d.getDate() + 1);
     const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) added++;
+    const dateStr = d.toISOString().slice(0, 10);
+    if (dow !== 0 && dow !== 6 && !isHoliday(calendar, dateStr)) added++;
   }
   return d.toISOString().slice(0, 10);
 }
