@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.63.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.63.0...veta-trading-platform-v1.63.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* **synthetic-trader:** don't fatal-exit on a missing password when the desk is disabled ([#573](https://github.com/milesburton/veta-trading-platform/issues/573)) ([c15a8fb](https://github.com/milesburton/veta-trading-platform/commit/c15a8fb73918310ef74a883283dc3b6672c22d05))
+
 ## [1.63.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.62.0...veta-trading-platform-v1.63.0) (2026-08-13)
 
 
