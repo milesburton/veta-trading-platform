@@ -11,6 +11,7 @@ import {
   TestTickSchema,
 } from "@veta/schemas/risk";
 import {
+  type AssetMeta,
   type Position,
   type RecentOrder,
   type RiskState,
@@ -25,6 +26,11 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const TEST_MODE = Deno.env.get("RISK_ENGINE_TEST_MODE") === "1";
+// Startup override for market-hours enforcement, distinct from the
+// hot-reloadable PUT /config toggle — mainly useful for wall-clock-sensitive
+// test environments (e.g. testcontainers integration suites) that don't
+// want every order gated by real-world market hours by default.
+const MARKET_HOURS_ENFORCED_ENV = Deno.env.get("RISK_ENGINE_MARKET_HOURS_ENFORCED");
 
 const config: RiskConfig = {
   fatFingerPct: 5.0,
@@ -39,6 +45,9 @@ const config: RiskConfig = {
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
   selfCrossEnabled: true,
+  marketHoursEnforced: MARKET_HOURS_ENFORCED_ENV === undefined
+    ? true
+    : MARKET_HOURS_ENFORCED_ENV === "true",
 };
 
 const configStore = createConfigStore(config);
@@ -72,6 +81,7 @@ const workingOrders: WorkingOrder[] = [];
 const rateBuckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
 const positions: Map<string, Map<string, Position>> = new Map();
 const recentOrders: RecentOrder[] = [];
+const assetMeta: Map<string, AssetMeta> = new Map();
 
 const riskState: RiskState = {
   config,
@@ -82,6 +92,7 @@ const riskState: RiskState = {
   workingOrders,
   rateBuckets,
   positions,
+  assetMeta,
   onPnlBreaker: (userId, observedPnl) => fireUserPnlBreaker(userId, observedPnl),
 };
 
@@ -97,12 +108,15 @@ async function fetchPrices(): Promise<void> {
         initialPrice?: number;
         volume?: number;
         dailyVolume?: number;
+        exchange?: string;
+        assetClass?: string;
       }>;
       for (const a of assets) {
         const p = a.price ?? a.initialPrice ?? 0;
         if (p > 0) prices[a.symbol] = p;
         const v = a.volume ?? a.dailyVolume ?? 0;
         if (v > 0) volumes[a.symbol] = v;
+        assetMeta.set(a.symbol, { exchange: a.exchange, assetClass: a.assetClass });
       }
     }
   } catch {
@@ -531,6 +545,7 @@ Deno.serve({ port: PORT }, async (req) => {
     }
     if (body.breakersEnabled !== undefined) next.breakersEnabled = body.breakersEnabled;
     if (body.selfCrossEnabled !== undefined) next.selfCrossEnabled = body.selfCrossEnabled;
+    if (body.marketHoursEnforced !== undefined) next.marketHoursEnforced = body.marketHoursEnforced;
 
     if (TEST_MODE) {
       Object.assign(config, next);

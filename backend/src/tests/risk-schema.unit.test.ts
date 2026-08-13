@@ -138,6 +138,29 @@ Deno.test("[risk-schema] RiskConfigSchema requires every field", () => {
   assert(!RiskConfigSchema.safeParse({ fatFingerPct: 5 }).success);
 });
 
+Deno.test("[risk-schema] RiskConfigSchema defaults marketHoursEnforced to true when omitted", () => {
+  const base = {
+    fatFingerPct: 5,
+    maxOpenOrders: 50,
+    duplicateWindowMs: 500,
+    maxOrdersPerSecond: 10,
+    maxAdvPct: 10,
+    maxGrossNotional: 5_000_000,
+    maxDailyLoss: -50_000,
+    maxConcentrationPct: 25,
+    haltMovePercent: 10,
+    breakerCooldownMs: 60_000,
+    breakersEnabled: true,
+  };
+  const parsed = RiskConfigSchema.safeParse(base);
+  assert(parsed.success);
+  if (parsed.success) assert(parsed.data.marketHoursEnforced === true);
+
+  const explicit = RiskConfigSchema.safeParse({ ...base, marketHoursEnforced: false });
+  assert(explicit.success);
+  if (explicit.success) assert(explicit.data.marketHoursEnforced === false);
+});
+
 Deno.test("[risk-schema] CheckResultSchema shape", () => {
   const ok = CheckResultSchema.safeParse({
     allowed: true,
