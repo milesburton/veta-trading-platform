@@ -8,10 +8,32 @@ const updateMarketHours = vi.fn();
 vi.mock("../../store/gatewayApi.ts", () => ({
   useGetMarketHoursQuery: () => ({
     data: {
-      allowOutOfHours: true,
-      regularSessionOpen: false,
-      timeZone: "America/New_York",
-      regularSession: "09:30–16:00",
+      assetClasses: {
+        equity: {
+          calendarLabel: "XNAS",
+          isOpen: false,
+          phase: "Market Closed",
+          allowOutOfHoursOverride: true,
+        },
+        fx: {
+          calendarLabel: "FX",
+          isOpen: true,
+          phase: "Continuous Trading",
+          allowOutOfHoursOverride: true,
+        },
+        commodity: {
+          calendarLabel: "XCME",
+          isOpen: true,
+          phase: "Continuous Trading",
+          allowOutOfHoursOverride: true,
+        },
+        bond: {
+          calendarLabel: "SIFMA",
+          isOpen: false,
+          phase: "Market Closed",
+          allowOutOfHoursOverride: true,
+        },
+      },
     },
     isLoading: false,
     error: null,
@@ -71,12 +93,28 @@ describe("AdminPanel", () => {
     updateLimits.mockReturnValue({ unwrap: () => Promise.resolve({}) });
   });
 
-  it("allows an administrator to toggle out-of-hours trading", () => {
+  it("allows an administrator to toggle out-of-hours trading per asset class", () => {
     render(<AdminPanel />);
-    const toggle = screen.getByRole("switch", { name: /allow out-of-hours trading/i });
+    const toggle = screen.getByRole("switch", { name: /allow out-of-hours trading for equity/i });
     expect(toggle).toHaveAttribute("aria-checked", "true");
     fireEvent.click(toggle);
-    expect(updateMarketHours).toHaveBeenCalledWith(false);
+    expect(updateMarketHours).toHaveBeenCalledWith({
+      assetClass: "equity",
+      allowOutOfHours: false,
+    });
+  });
+
+  it("renders a market-hours row for every asset class", () => {
+    render(<AdminPanel />);
+    expect(
+      screen.getByRole("switch", { name: /allow out-of-hours trading for fx/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /allow out-of-hours trading for commodities/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /allow out-of-hours trading for fixed income/i })
+    ).toBeInTheDocument();
   });
 
   it("renders the admin panel header", () => {

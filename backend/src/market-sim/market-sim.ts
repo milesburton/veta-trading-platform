@@ -7,7 +7,14 @@ import { intradayVolumeFactor } from "@veta/time-scale";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
-import { isUsEquityRegularSession, parseAllowOutOfHours } from "./marketHours.ts";
+import { parseAllowOutOfHours } from "./marketHours.ts";
+import {
+  ASSET_CLASSES,
+  type AssetClass,
+  buildMarketHoursPayload,
+  isAssetClass,
+  isAssetClassOpen,
+} from "./marketHoursByAssetClass.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -136,7 +143,21 @@ prewarmPricesAsync(PREWARM_TICKS).then(() => {
 let marketMinute = 0;
 let tickCount = 0;
 const TICKS_PER_MINUTE = 240;
-let allowOutOfHours = parseAllowOutOfHours(Deno.env.get("MARKET_SIM_ALLOW_OUT_OF_HOURS"));
+
+const DEFAULT_ALLOW_OUT_OF_HOURS = parseAllowOutOfHours(
+  Deno.env.get("MARKET_SIM_ALLOW_OUT_OF_HOURS")
+);
+const allowOutOfHours: Record<AssetClass, boolean> = {
+  equity: DEFAULT_ALLOW_OUT_OF_HOURS,
+  fx: DEFAULT_ALLOW_OUT_OF_HOURS,
+  commodity: DEFAULT_ALLOW_OUT_OF_HOURS,
+  bond: DEFAULT_ALLOW_OUT_OF_HOURS,
+};
+
+function assetClassOf(symbol: string): AssetClass {
+  const meta = ALL_ASSET_MAP.get(symbol);
+  return (meta?.assetClass as AssetClass | undefined) ?? "equity";
+}
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -273,7 +294,6 @@ let tickDiffState = createTickDiffState();
 
 setInterval(() => {
   if (isResetInProgress()) return;
-  if (!allowOutOfHours && !isUsEquityRegularSession()) return;
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
     marketMinute = (marketMinute + 1) % 390;
@@ -284,8 +304,11 @@ setInterval(() => {
     const real = realPriceCache.get(sym);
     if (real) seedPrice(sym, real);
   }
+  const openAssetClasses = new Set(
+    ASSET_CLASSES.filter((ac) => allowOutOfHours[ac] || isAssetClassOpen(ac))
+  );
   for (const asset of Object.keys(marketData)) {
-    generatePrice(asset);
+    if (openAssetClasses.has(assetClassOf(asset))) generatePrice(asset);
   }
 
   const volumes = computeTickVolumes(marketMinute);
@@ -351,37 +374,34 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   if (url.pathname === "/admin/market-hours" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        allowOutOfHours,
-        regularSessionOpen: isUsEquityRegularSession(),
-        timeZone: "America/New_York",
-        regularSession: "09:30–16:00",
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
-    );
+    return new Response(JSON.stringify(buildMarketHoursPayload(allowOutOfHours)), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   if (url.pathname === "/admin/market-hours" && req.method === "PUT") {
     try {
-      const body = (await req.json()) as { allowOutOfHours?: unknown };
+      const body = (await req.json()) as { assetClass?: unknown; allowOutOfHours?: unknown };
+      if (!isAssetClass(body.assetClass)) {
+        return new Response(
+          JSON.stringify({ error: `assetClass must be one of ${ASSET_CLASSES.join(", ")}` }),
+          { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+        );
+      }
       if (typeof body.allowOutOfHours !== "boolean") {
         return new Response(JSON.stringify({ error: "allowOutOfHours must be a boolean" }), {
           status: 400,
           headers: { "Content-Type": "application/json", ...CORS_HEADERS },
         });
       }
-      allowOutOfHours = body.allowOutOfHours;
-      logger.info(`Out-of-hours market simulation ${allowOutOfHours ? "enabled" : "disabled"}`);
-      return new Response(
-        JSON.stringify({
-          allowOutOfHours,
-          regularSessionOpen: isUsEquityRegularSession(),
-          timeZone: "America/New_York",
-          regularSession: "09:30–16:00",
-        }),
-        { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      const assetClass = body.assetClass as AssetClass;
+      allowOutOfHours[assetClass] = body.allowOutOfHours;
+      logger.info(
+        `Out-of-hours market simulation for ${assetClass} ${body.allowOutOfHours ? "enabled" : "disabled"}`
       );
+      return new Response(JSON.stringify(buildMarketHoursPayload(allowOutOfHours)), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
         status: 400,
