@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 74,
-      "cases": 820,
+      "cases": 829,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -30,12 +30,12 @@
         "orders-schema.unit.test.ts": 21,
         "user-schema.unit.test.ts": 14,
         "trader-archetypes.unit.test.ts": 7,
-        "risk-schema.unit.test.ts": 19,
+        "risk-schema.unit.test.ts": 20,
         "logger.unit.test.ts": 17,
         "rateLimit.test.ts": 9,
         "risk-bypass.test.ts": 2,
         "loadAgent.test.ts": 8,
-        "risk-checks.unit.test.ts": 30,
+        "risk-checks.unit.test.ts": 38,
         "black-scholes.unit.test.ts": 6,
         "monte-carlo.unit.test.ts": 10,
         "lib.unit.test.ts": 13,
@@ -100,7 +100,7 @@
     },
     "testcontainers": {
       "files": 20,
-      "cases": 221,
+      "cases": 222,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -112,7 +112,7 @@
         "scenarios.integration.tc.test.ts": 2,
         "algo.integration.tc.test.ts": 15,
         "smoke.full.tc.test.ts": 65,
-        "risk-rejection.integration.tc.test.ts": 6,
+        "risk-rejection.integration.tc.test.ts": 7,
         "job-store.integration.tc.test.ts": 15,
         "weight-store.integration.tc.test.ts": 5,
         "messaging.integration.tc.test.ts": 6,

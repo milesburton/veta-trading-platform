@@ -14,6 +14,7 @@ export const RiskConfigSchema = z.object({
   breakerCooldownMs: z.number().int(),
   breakersEnabled: z.boolean(),
   selfCrossEnabled: z.boolean().default(true),
+  marketHoursEnforced: z.boolean().default(true),
 });
 export type RiskConfig = z.infer<typeof RiskConfigSchema>;
 

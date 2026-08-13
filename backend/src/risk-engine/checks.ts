@@ -1,4 +1,6 @@
 import type { CheckRequest, CheckResult, RiskConfig } from "@veta/schemas/risk";
+import { calendarForOrder } from "@veta/market-calendars";
+import { buildSessionSchedule, resolvePhaseFromMinute, resolveSession } from "@veta/trading-calendar";
 
 export interface Position {
   symbol: string;
@@ -7,6 +9,11 @@ export interface Position {
   costBasis: number;
   realisedPnl: number;
   fillCount: number;
+}
+
+export interface AssetMeta {
+  exchange?: string;
+  assetClass?: string;
 }
 
 export interface WorkingOrder {
@@ -34,6 +41,7 @@ export interface RiskState {
   workingOrders: WorkingOrder[];
   rateBuckets: Map<string, { tokens: number; lastRefill: number }>;
   positions: Map<string, Map<string, Position>>;
+  assetMeta: Map<string, AssetMeta>;
   onPnlBreaker?: (userId: string, observedPnl: number) => void;
   now?: () => number;
 }
@@ -106,6 +114,86 @@ export function checkFatFingerPrice(state: RiskState, req: CheckRequest): CheckH
     return {
       code: "FAT_FINGER_PRICE",
       message: `Limit price ${req.limitPrice.toFixed(2)} is ${pct}% ${dir} mid ${mid.toFixed(2)} (threshold: ${state.config.fatFingerPct}%)`,
+    };
+  }
+  return null;
+}
+
+function dateStringInTimezone(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const y = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const m = parts.find((p) => p.type === "month")?.value ?? "01";
+  const d = parts.find((p) => p.type === "day")?.value ?? "01";
+  return `${y}-${m}-${d}`;
+}
+
+function minutesSinceOpenInTimezone(
+  date: Date,
+  timezone: string,
+  openHour: number,
+  openMinute: number
+): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  const nowMinutes = hour * 60 + minute;
+  const openMinutes = openHour * 60 + openMinute;
+  const delta = nowMinutes - openMinutes;
+  // Negative delta (before today's open) rolls into the previous day's
+  // post-close window rather than going negative, matching how
+  // buildSessionSchedule treats a single day as [0, totalTradingMinutes).
+  return delta < 0 ? delta + 24 * 60 : delta;
+}
+
+function isWeekendInTimezone(date: Date, timezone: string): boolean {
+  const day = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(
+    date
+  );
+  return day === "Sat" || day === "Sun";
+}
+
+export function checkMarketHours(state: RiskState, req: CheckRequest): CheckHit {
+  if (state.config.marketHoursEnforced === false) return null;
+
+  const meta = state.assetMeta.get(req.symbol);
+  const calendar = calendarForOrder({
+    assetClass: meta?.assetClass,
+    exchange: meta?.exchange,
+    instrumentType: req.instrumentType,
+  });
+
+  const nowDate = new Date(now(state));
+  const dateStr = dateStringInTimezone(nowDate, calendar.timezone);
+  const weekend = isWeekendInTimezone(nowDate, calendar.timezone);
+  const holiday = calendar.holidays.includes(dateStr);
+
+  const marketMinute = minutesSinceOpenInTimezone(
+    nowDate,
+    calendar.timezone,
+    calendar.openHour,
+    calendar.openMinute
+  );
+  const schedule = buildSessionSchedule(calendar, dateStr);
+  const phase = weekend || holiday
+    ? "CLOSED"
+    : resolvePhaseFromMinute(schedule, marketMinute, calendar.dailyBreaks);
+  const session = resolveSession(phase);
+
+  if (!session.allowsOrderEntry) {
+    const reason = weekend ? "weekend" : holiday ? `holiday (${dateStr})` : session.phaseLabel;
+    return {
+      code: "MARKET_CLOSED",
+      message: `${calendar.exchangeMic} is closed (${reason}) for ${req.symbol} — market hours are ${calendar.timezone} ${String(calendar.openHour).padStart(2, "0")}:${String(calendar.openMinute).padStart(2, "0")}`,
     };
   }
   return null;
@@ -265,6 +353,7 @@ export function runChecks(state: RiskState, req: CheckRequest): CheckResult {
   const warnings: string[] = [];
   const checks: Array<(s: RiskState, r: CheckRequest) => CheckHit> = [
     checkFatFingerPrice,
+    checkMarketHours,
     checkDuplicateOrder,
     checkMaxOpenOrders,
     checkSelfCross,

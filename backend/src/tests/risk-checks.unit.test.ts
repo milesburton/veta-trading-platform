@@ -5,6 +5,7 @@ import {
   checkDailyPnlStop,
   checkDuplicateOrder,
   checkFatFingerPrice,
+  checkMarketHours,
   checkMaxOpenOrders,
   checkOrderSizeVsAdv,
   checkPositionNotional,
@@ -33,6 +34,7 @@ const DEFAULT_CONFIG: RiskConfig = {
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
   selfCrossEnabled: true,
+  marketHoursEnforced: false,
 };
 
 function makeState(overrides: Partial<RiskState> = {}): RiskState {
@@ -46,6 +48,7 @@ function makeState(overrides: Partial<RiskState> = {}): RiskState {
     workingOrders: [],
     rateBuckets: new Map(),
     positions: new Map(),
+    assetMeta: new Map(),
     now: () => nowValue,
     ...overrides,
   };
@@ -561,4 +564,107 @@ Deno.test("[risk-checks] math sanity: gross + total pnl interact predictably wit
   assertEquals(userGrossNotional(state, "alice"), 100 * 200);
   assertAlmostEquals(userTotalPnl(state, "alice"), 100 * (200 - 150));
   assertGreater(userGrossNotional(state, "alice"), userTotalPnl(state, "alice"));
+});
+
+Deno.test("[risk-checks] market hours: equity order during regular session is allowed", () => {
+  const openNow = new Date("2026-07-30T14:00:00Z").getTime(); // Thu, 10:00 ET
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
+    now: () => openNow,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "AAPL" }));
+  assertEquals(hit, null);
+});
+
+Deno.test("[risk-checks] market hours: equity order outside session hours is rejected", () => {
+  const beforeOpen = new Date("2026-07-30T13:00:00Z").getTime(); // Thu, 09:00 ET — before 09:30 open
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
+    now: () => beforeOpen,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "AAPL" }));
+  assertHitCode(hit, "MARKET_CLOSED");
+});
+
+Deno.test("[risk-checks] market hours: equity order on a weekend is rejected", () => {
+  const saturday = new Date("2026-08-01T15:00:00Z").getTime();
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
+    now: () => saturday,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "AAPL" }));
+  assertHitCode(hit, "MARKET_CLOSED");
+});
+
+Deno.test("[risk-checks] market hours: equity order on a holiday is rejected", () => {
+  const newYearsDay = new Date("2026-01-01T15:00:00Z").getTime(); // Thu, but a US equity holiday
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
+    now: () => newYearsDay,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "AAPL" }));
+  assertHitCode(hit, "MARKET_CLOSED");
+});
+
+Deno.test("[risk-checks] market hours: FX order is NOT gated by the US equity calendar (regression)", () => {
+  // Saturday — US equity would reject, but FX trades weekends up until
+  // Friday 22:00 UTC / reopens Sunday 22:00 UTC. Pick a moment squarely
+  // inside FX's continuous window: Wed 12:00 UTC.
+  const midweek = new Date("2026-07-29T12:00:00Z").getTime();
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["EUR/USD", { assetClass: "fx" }]]),
+    now: () => midweek,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "EUR/USD" }));
+  assertEquals(hit, null);
+
+  // And confirm the same moment WOULD be rejected for equity, proving this
+  // isn't just "everything passes" — it's specifically FX not being gated
+  // by the equity calendar.
+  const equityState = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
+    now: () => midweek,
+  });
+  const equityHit = checkMarketHours(equityState, makeRequest({ symbol: "AAPL" }));
+  assertHitCode(equityHit, "MARKET_CLOSED");
+});
+
+Deno.test("[risk-checks] market hours: commodity order is halted during the daily maintenance window", () => {
+  // COMMODITY_CALENDAR's daily break is 16:00-17:00 America/Chicago.
+  const duringBreak = new Date("2026-07-29T21:30:00Z").getTime(); // 16:30 CT (UTC-5 in July, DST)
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map([["CL1!", { exchange: "XNYM", assetClass: "commodity" }]]),
+    now: () => duringBreak,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "CL1!" }));
+  assertHitCode(hit, "MARKET_CLOSED");
+});
+
+Deno.test("[risk-checks] market hours: bypassed entirely when marketHoursEnforced is false", () => {
+  const saturday = new Date("2026-08-01T15:00:00Z").getTime();
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: false },
+    assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
+    now: () => saturday,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "AAPL" }));
+  assertEquals(hit, null);
+});
+
+Deno.test("[risk-checks] market hours: unknown symbol falls back to the US equity calendar", () => {
+  const saturday = new Date("2026-08-01T15:00:00Z").getTime();
+  const state = makeState({
+    config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
+    assetMeta: new Map(),
+    now: () => saturday,
+  });
+  const hit = checkMarketHours(state, makeRequest({ symbol: "UNKNOWN_SYMBOL" }));
+  assertHitCode(hit, "MARKET_CLOSED");
 });

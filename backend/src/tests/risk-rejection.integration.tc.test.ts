@@ -28,7 +28,15 @@ Deno.test({
   async fn(t) {
     const stack = await startStack({
       services: [...SERVICES],
-      perServiceEnv: { oms: { RISK_ENGINE_ENABLED: "true" } },
+      perServiceEnv: {
+        oms: { RISK_ENGINE_ENABLED: "true" },
+        // The existing tests below submit real orders at whatever moment
+        // CI happens to run — disable market-hours enforcement at startup
+        // so they aren't flaky depending on the real-world clock. The
+        // dedicated market-hours test further down re-enables it via a
+        // runtime PUT /config call instead of relying on wall-clock timing.
+        "risk-engine": { RISK_ENGINE_MARKET_HOURS_ENFORCED: "false" },
+      },
       startupTimeoutMs: 90_000,
     });
     const GW = url(stack, "gateway");
@@ -225,6 +233,97 @@ Deno.test({
           `at-market order must not be fat-finger-rejected, reason: ${outcome.rejectReason}`
         );
       });
+
+      await t.step(
+        "risk-engine /check applies MARKET_CLOSED only when marketHoursEnforced is toggled on",
+        async () => {
+          const RISK = url(stack, "risk-engine");
+          const mid = await midPrice("AAPL");
+          const checkBody = {
+            orderId: "direct-market-hours",
+            userId: "alice",
+            userRole: "trader",
+            symbol: "AAPL",
+            side: "BUY",
+            quantity: 10,
+            limitPrice: mid,
+            strategy: "LIMIT",
+          };
+
+          const disabledRes = await fetch(`${RISK}/check`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(checkBody),
+            signal: T(),
+          });
+          assertEquals(disabledRes.status, 200);
+          const disabled = (await disabledRes.json()) as { allowed: boolean; reasons: string[] };
+          assert(
+            !disabled.reasons.some((r) => r.includes("MARKET_CLOSED")),
+            `expected no MARKET_CLOSED reason while enforcement is disabled, got: ${JSON.stringify(
+              disabled.reasons
+            )}`
+          );
+
+          const putRes = await fetch(`${RISK}/config?by=test`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ marketHoursEnforced: true }),
+            signal: T(),
+          });
+          assertEquals(putRes.status, 200);
+          const putBody = (await putRes.json()) as { marketHoursEnforced: boolean };
+          assertEquals(
+            putBody.marketHoursEnforced,
+            true,
+            "PUT /config should apply and echo back marketHoursEnforced"
+          );
+
+          try {
+            const enabledRes = await fetch(`${RISK}/check`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(checkBody),
+              signal: T(),
+            });
+            assertEquals(enabledRes.status, 200);
+            const enabled = (await enabledRes.json()) as { allowed: boolean; reasons: string[] };
+
+            const now = new Date();
+            const etParts = new Intl.DateTimeFormat("en-US", {
+              timeZone: "America/New_York",
+              hourCycle: "h23",
+              weekday: "short",
+              hour: "numeric",
+              minute: "numeric",
+            }).formatToParts(now);
+            const weekday = etParts.find((p) => p.type === "weekday")?.value;
+            const hour = Number(etParts.find((p) => p.type === "hour")?.value ?? "0");
+            const minute = Number(etParts.find((p) => p.type === "minute")?.value ?? "0");
+            const minutesSinceMidnight = hour * 60 + minute;
+            const isWeekday = weekday !== "Sat" && weekday !== "Sun";
+            const isRegularSession =
+              isWeekday && minutesSinceMidnight >= 9 * 60 + 30 && minutesSinceMidnight < 16 * 60;
+
+            const hasMarketClosed = enabled.reasons.some((r) => r.includes("MARKET_CLOSED"));
+            assertEquals(
+              hasMarketClosed,
+              !isRegularSession,
+              `MARKET_CLOSED presence should match real US-equity session state (isRegularSession=${isRegularSession}), reasons: ${JSON.stringify(
+                enabled.reasons
+              )}`
+            );
+          } finally {
+            const resetRes = await fetch(`${RISK}/config?by=test`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ marketHoursEnforced: false }),
+              signal: T(),
+            });
+            assertEquals(resetRes.status, 200);
+          }
+        }
+      );
     } finally {
       await stack.teardown();
     }
