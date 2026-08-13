@@ -53,11 +53,22 @@ interface LoadGenStartRequest {
   strategyMix?: ReadonlyArray<{ strategy: string; weight: number }>;
 }
 
+export type MarketHoursAssetClass = "equity" | "fx" | "commodity" | "bond";
+
+export interface AssetClassMarketHours {
+  calendarLabel: string;
+  isOpen: boolean;
+  phase: string;
+  allowOutOfHoursOverride: boolean;
+}
+
 export interface MarketHoursConfig {
+  assetClasses: Record<MarketHoursAssetClass, AssetClassMarketHours>;
+}
+
+export interface UpdateMarketHoursRequest {
+  assetClass: MarketHoursAssetClass;
   allowOutOfHours: boolean;
-  regularSessionOpen: boolean;
-  timeZone: string;
-  regularSession: string;
 }
 
 export type BugCategory = "ui" | "data" | "auth" | "performance" | "other";
@@ -95,11 +106,11 @@ export const gatewayApi = createApi({
       query: () => "/admin/market-hours",
       providesTags: ["MarketHours"],
     }),
-    updateMarketHours: builder.mutation<MarketHoursConfig, boolean>({
-      query: (allowOutOfHours) => ({
+    updateMarketHours: builder.mutation<MarketHoursConfig, UpdateMarketHoursRequest>({
+      query: (body) => ({
         url: "/admin/market-hours",
         method: "PUT",
-        body: { allowOutOfHours },
+        body,
       }),
       invalidatesTags: ["MarketHours"],
     }),

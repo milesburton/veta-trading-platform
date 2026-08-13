@@ -41,6 +41,40 @@ vi.mock("../../store/marketDataApi.ts", () => ({
   useToggleFeedMutation: () => [toggleFeed, { isLoading: false }],
 }));
 
+vi.mock("../../store/gatewayApi.ts", () => ({
+  useGetMarketHoursQuery: () => ({
+    data: {
+      assetClasses: {
+        equity: {
+          calendarLabel: "XNAS",
+          isOpen: true,
+          phase: "Continuous Trading",
+          allowOutOfHoursOverride: true,
+        },
+        fx: {
+          calendarLabel: "FX",
+          isOpen: true,
+          phase: "Continuous Trading",
+          allowOutOfHoursOverride: true,
+        },
+        commodity: {
+          calendarLabel: "XCME",
+          isOpen: true,
+          phase: "Continuous Trading",
+          allowOutOfHoursOverride: true,
+        },
+        bond: {
+          calendarLabel: "SIFMA",
+          isOpen: true,
+          phase: "Continuous Trading",
+          allowOutOfHoursOverride: true,
+        },
+      },
+    },
+    isLoading: false,
+  }),
+}));
+
 function renderPanel(role: "admin" | "trader" = "admin") {
   const store = configureStore({
     reducer: {

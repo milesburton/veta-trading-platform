@@ -1,81 +1,29 @@
 import { useSignal } from "@preact/signals-react";
+import { useGetMarketHoursQuery } from "@veta/frontend/store/gatewayApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   useGetOverridesQuery,
   useGetSourcesQuery,
   useToggleFeedMutation,
 } from "@veta/frontend/store/marketDataApi.ts";
-import { useEffect, useMemo } from "react";
-
-type MarketSession = "pre-market" | "open" | "after-hours" | "closed";
+import { useMemo } from "react";
 
 interface ExchangeInfo {
   mic: string;
   name: string;
-  hours: string;
 }
 
 const EXCHANGES: ExchangeInfo[] = [
-  { mic: "XNAS", name: "NASDAQ", hours: "9:30 AM – 4:00 PM ET" },
-  { mic: "XNYS", name: "NYSE", hours: "9:30 AM – 4:00 PM ET" },
-  { mic: "ARCX", name: "NYSE Arca", hours: "9:30 AM – 4:00 PM ET" },
-  { mic: "XCHI", name: "Chicago SE", hours: "9:30 AM – 4:00 PM ET" },
+  { mic: "XNAS", name: "NASDAQ" },
+  { mic: "XNYS", name: "NYSE" },
+  { mic: "ARCX", name: "NYSE Arca" },
+  { mic: "XCHI", name: "Chicago SE" },
 ];
 
-function getMarketSession(): MarketSession {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    minute: "numeric",
-    weekday: "short",
-    hour12: false,
-  }).formatToParts(now);
-  const h = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10) % 24;
-  const m = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
-  const day = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
-  const dow: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-  const dayNum = dow[day] ?? 1;
-  if (dayNum === 0 || dayNum === 6) return "closed";
-  const total = h * 60 + m;
-  if (total < 240) return "closed"; // before 4:00 AM ET
-  if (total < 570) return "pre-market"; // 4:00–9:30 AM ET
-  if (total < 960) return "open"; // 9:30 AM–4:00 PM ET
-  if (total < 1200) return "after-hours"; // 4:00–8:00 PM ET
-  return "closed";
-}
-
-function sessionBadge(session: MarketSession): { label: string; cls: string } {
-  switch (session) {
-    case "open":
-      return {
-        label: "Open",
-        cls: "bg-emerald-900/40 text-emerald-400 border border-emerald-700/50",
-      };
-    case "pre-market":
-      return {
-        label: "Pre-market",
-        cls: "bg-blue-900/30 text-blue-400 border border-blue-700/40",
-      };
-    case "after-hours":
-      return {
-        label: "After-hours",
-        cls: "bg-amber-900/30 text-amber-400 border border-amber-700/40",
-      };
-    case "closed":
-      return {
-        label: "Closed",
-        cls: "bg-panel/60 text-muted border border-divider/40",
-      };
-  }
+function sessionBadge(isOpen: boolean): { label: string; cls: string } {
+  return isOpen
+    ? { label: "Open", cls: "bg-emerald-900/40 text-emerald-400 border border-emerald-700/50" }
+    : { label: "Closed", cls: "bg-panel/60 text-muted border border-divider/40" };
 }
 
 export function MarketFeedControlPanel() {
@@ -86,15 +34,10 @@ export function MarketFeedControlPanel() {
   const { data: sources = [], isLoading: sourcesLoading } = useGetSourcesQuery();
   const { data: overridesData } = useGetOverridesQuery();
   const [toggleFeed, { isLoading: toggling }] = useToggleFeedMutation();
-
-  // Market session clock — recalculates every 60s
-  const session = useSignal<MarketSession>(getMarketSession());
-  useEffect(() => {
-    const id = setInterval(() => {
-      session.value = getMarketSession();
-    }, 60_000);
-    return () => clearInterval(id);
-  }, [session]);
+  const { data: marketHours, isLoading: marketHoursLoading } = useGetMarketHoursQuery(undefined, {
+    pollingInterval: 60_000,
+  });
+  const equityHours = marketHours?.assetClasses.equity;
 
   const search = useSignal("");
 
@@ -120,7 +63,7 @@ export function MarketFeedControlPanel() {
   }, [assets, serverOverrides, sources, search.value]);
 
   const externalCount = symbolRows.filter((r) => r.source !== "synthetic").length;
-  const badge = sessionBadge(session.value);
+  const badge = sessionBadge(equityHours?.isOpen ?? false);
 
   return (
     <div className="flex flex-col h-full bg-page text-default text-xs">
@@ -218,15 +161,14 @@ export function MarketFeedControlPanel() {
                   <span className="text-[11px] font-semibold text-secondary">{ex.name}</span>
                   <span className="text-[9px] font-mono text-muted">{ex.mic}</span>
                 </div>
-                <div className="text-[10px] text-muted mb-1.5">{ex.hours}</div>
+                <div className="text-[10px] text-muted mb-1.5">
+                  {marketHoursLoading ? "…" : (equityHours?.phase ?? "—")}
+                </div>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${badge.cls}`}>
                   {badge.label}
                 </span>
               </div>
             ))}
-          </div>
-          <div className="text-[9px] text-divider mt-1.5">
-            Stub — uses browser clock · no holiday calendar
           </div>
         </div>
 
