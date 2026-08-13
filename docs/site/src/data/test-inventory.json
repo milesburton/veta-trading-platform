@@ -1,13 +1,13 @@
 {
   "backend": {
     "unit": {
-      "files": 74,
-      "cases": 829,
+      "files": 75,
+      "cases": 839,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
         "marketSim.test.ts": 15,
-        "trading-calendar.unit.test.ts": 11,
+        "trading-calendar.unit.test.ts": 14,
         "settlement.unit.test.ts": 4,
         "rng.test.ts": 9,
         "scenarios.diff.test.ts": 5,
@@ -75,6 +75,7 @@
         "demo-day-attribution.unit.test.ts": 3,
         "marketSimClient.unit.test.ts": 5,
         "synthetic-trader-decision.unit.test.ts": 8,
+        "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-position-tracker.unit.test.ts": 7,
         "synthetic-trader-token-client.unit.test.ts": 3

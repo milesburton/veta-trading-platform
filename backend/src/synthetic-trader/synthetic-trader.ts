@@ -1,7 +1,7 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
-import { isUsEquityRegularSession } from "@veta/market-hours";
+import { isDeskOpen } from "./deskCalendar.ts";
 import { DecisionEngine } from "./decisionEngine.ts";
 import { GatewaySocket } from "./gatewaySocket.ts";
 import { nextDelayMs } from "./pacing.ts";
@@ -126,11 +126,6 @@ function tick(): void {
     logger.info("synthetic-trader: tick skipped, socket not ready");
     return;
   }
-  if (!isUsEquityRegularSession()) {
-    logger.info("synthetic-trader: tick skipped, outside market hours");
-    return;
-  }
-
   resetDailyNotionalIfNewDay();
 
   const decision = engine.decide(tracker, (symbol) => latestPrices[symbol]);
@@ -140,6 +135,10 @@ function tick(): void {
   }
 
   const order = decision.order;
+  if (!isDeskOpen(order.desk, new Date())) {
+    logger.info("synthetic-trader: tick skipped, outside market hours", { desk: order.desk });
+    return;
+  }
   const notional = order.quantity * (order.limitPrice ?? 0);
   const dailyCap = 1_000_000 * MAX_DAILY_NOTIONAL_FRACTION;
   if (dailyNotional + notional > dailyCap) {

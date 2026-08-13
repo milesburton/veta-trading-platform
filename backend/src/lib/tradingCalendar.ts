@@ -205,6 +205,63 @@ export function resolvePhaseFromMinute(
   return "CLOSED";
 }
 
+function dateStringInTimezone(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const month = parts.find((p) => p.type === "month")?.value ?? "01";
+  const day = parts.find((p) => p.type === "day")?.value ?? "01";
+  return `${year}-${month}-${day}`;
+}
+
+function minutesSinceOpenInTimezone(
+  date: Date,
+  timezone: string,
+  openHour: number,
+  openMinute: number
+): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hourCycle: "h23",
+    hour: "numeric",
+    minute: "numeric",
+  }).formatToParts(date);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  const minutesSinceMidnight = hour * 60 + minute;
+  const openAt = openHour * 60 + openMinute;
+  const delta = minutesSinceMidnight - openAt;
+  return delta < 0 ? delta + 24 * 60 : delta;
+}
+
+function isWeekendInTimezone(date: Date, timezone: string): boolean {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "short",
+  }).format(date);
+  return weekday === "Sat" || weekday === "Sun";
+}
+
+export function resolveCurrentSession(calendar: TradingCalendar, now: Date): SessionState {
+  const dateStr = dateStringInTimezone(now, calendar.timezone);
+  const weekend = isWeekendInTimezone(now, calendar.timezone);
+  const holiday = calendar.holidays.includes(dateStr);
+  const marketMinute = minutesSinceOpenInTimezone(
+    now,
+    calendar.timezone,
+    calendar.openHour,
+    calendar.openMinute
+  );
+  const schedule = buildSessionSchedule(calendar, dateStr);
+  const phase =
+    weekend || holiday ? "CLOSED" : resolvePhaseFromMinute(schedule, marketMinute, calendar.dailyBreaks);
+  return resolveSession(phase);
+}
+
 export function isHoliday(calendar: TradingCalendar, dateStr: string): boolean {
   return calendar.holidays.includes(dateStr);
 }
