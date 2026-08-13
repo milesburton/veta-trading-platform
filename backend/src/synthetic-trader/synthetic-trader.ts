@@ -28,8 +28,8 @@ const MAX_PACE_MS = Number(Deno.env.get("SYNTHETIC_TRADER_MAX_PACE_MS")) || 480_
 const SYMBOLS = Deno.env.get("SYNTHETIC_TRADER_SYMBOLS")?.split(",").map((s) => s.trim());
 const MAX_DAILY_NOTIONAL_FRACTION = 0.5;
 
-if (!PASSWORD) {
-  logger.error("synthetic-trader: SYNTHETIC_TRADER_PASSWORD is required, exiting");
+if (ENABLED && !PASSWORD) {
+  logger.error("synthetic-trader: SYNTHETIC_TRADER_PASSWORD is required when enabled, exiting");
   Deno.exit(1);
 }
 
