@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.62.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.61.0...veta-trading-platform-v1.62.0) (2026-08-13)
+
+
+### Features
+
+* **risk-engine:** enforce real market hours as an 11th pre-trade check ([#567](https://github.com/milesburton/veta-trading-platform/issues/567)) ([f10da3c](https://github.com/milesburton/veta-trading-platform/commit/f10da3cc067a96f053a1d88f853a603620a5ed63))
+
+
+### Bug Fixes
+
+* **synthetic-trader:** gate order generation per-desk, not on US equity hours ([#568](https://github.com/milesburton/veta-trading-platform/issues/568)) ([faa465c](https://github.com/milesburton/veta-trading-platform/commit/faa465c707faa93d0a4760ec2a6fb806e0352b1d))
+* **tests:** consume response body in risk-rejection.integration.tc.test.ts ([a2af3d0](https://github.com/milesburton/veta-trading-platform/commit/a2af3d0cac5d8bd5c441e681dfd90fcc51fbdab7))
+* **tests:** consume the reset PUT /config response body in risk-rejection.integration.tc.test.ts ([2eb48bd](https://github.com/milesburton/veta-trading-platform/commit/2eb48bdd55ee6ba914d1162f828791c985ce20d0))
+
 ## [1.61.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.60.3...veta-trading-platform-v1.61.0) (2026-08-13)
 
 
