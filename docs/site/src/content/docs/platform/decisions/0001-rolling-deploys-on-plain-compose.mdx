@@ -3,7 +3,10 @@ title: "ADR 0001: Keep the platform accessible during deploys via fast in-place 
 description: Keep the platform accessible end to end during a deploy on a single host by health-gating Traefik routing, adding a retry middleware to hold in-flight requests across a sub-second container swap, and recreating the request-path services one at a time in dependency order. Concurrent A/B replicas were investigated and rejected as unsafe for this stack.
 ---
 
-**Status:** Proposed (interim; the blue-green target is [ADR 0002](../0002-blue-green-deploys/))
+**Status:** Superseded by [ADR 0005](../0005-deploy-visibility-gateway-health-gate/) — its
+premise (Traefik routes to every request-path service) does not match this stack; only
+`gateway` is Traefik-enabled, the rest are reached by Docker DNS. ADR 0005 keeps this
+ADR's goal but scopes the fix to the router that actually exists.
 
 **Date:** 2026-06-18
 
