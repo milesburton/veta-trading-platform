@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.64.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.63.1...veta-trading-platform-v1.64.0) (2026-08-16)
+
+
+### Features
+
+* **fix:** close FIX engine gaps — venue routing, market-hours, risk checks, cancel/replace, archival ([501070d](https://github.com/milesburton/veta-trading-platform/commit/501070db6b1a196cd150f0499004d51b6d5ed5aa))
+
+
+### Bug Fixes
+
+* **frontend:** merge order-book diff updates instead of replacing the whole book ([c8e94b4](https://github.com/milesburton/veta-trading-platform/commit/c8e94b4f95e0f1d79394d709ffa5355324854b2a))
+* **frontend:** pin the page gradient to the viewport instead of the scrolling box ([51d5ed2](https://github.com/milesburton/veta-trading-platform/commit/51d5ed24b4d428ef928c18a7953df97e353f1200))
+* **frontend:** portal the services-bar dropdown to escape OverflowBar clipping ([1922f3c](https://github.com/milesburton/veta-trading-platform/commit/1922f3c5fddbf5902ce7a27cd326e76a41914c19))
+
 ## [1.63.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.63.0...veta-trading-platform-v1.63.1) (2026-08-13)
 
 
