@@ -161,6 +161,28 @@ body,
 html:not([data-theme="high-contrast"]) body,
 html:not([data-theme="high-contrast"]) #root,
 html:not([data-theme="high-contrast"]) .bg-page-gradient {
+  position: relative;
+}
+
+/* A ::before layer pinned to the viewport rather than painted as a
+   background-image on body/#root/.bg-page-gradient directly. Those
+   elements can grow taller than one viewport (e.g. the sign-in page's
+   scrolling persona list), and a background-image's percentage-based
+   gradient stops are relative to the element's own box — on a tall box
+   the glow ends up compressed near the top with a flat, ungradiented
+   area below. background-attachment: fixed would be the standard fix,
+   but is unreliable in Chromium once the element isn't the page's own
+   root scroller. position: fixed on a dedicated layer has none of
+   that ambiguity: it always covers exactly the current viewport,
+   however tall the scrolling content underneath is. */
+html:not([data-theme="high-contrast"]) body::before,
+html:not([data-theme="high-contrast"]) #root::before,
+html:not([data-theme="high-contrast"]) .bg-page-gradient::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, transparent 60%);
 }
 
