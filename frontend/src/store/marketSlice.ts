@@ -193,7 +193,7 @@ export const marketSlice = createSlice({
       state.candlesReady[symbol] = true;
     },
     orderBookUpdated(state, action: PayloadAction<Record<string, OrderBookSnapshot>>) {
-      state.orderBook = action.payload;
+      state.orderBook = { ...state.orderBook, ...action.payload };
     },
   },
 });

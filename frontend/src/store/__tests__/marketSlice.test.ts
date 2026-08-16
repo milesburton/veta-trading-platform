@@ -616,7 +616,7 @@ describe("orderBookUpdated", () => {
     expect(state.orderBook.AAPL).toEqual(snapshot.AAPL);
   });
 
-  it("overwrites previous orderBook entirely", () => {
+  it("merges partial updates, preserving symbols absent from the new payload", () => {
     const first = {
       AAPL: { bids: [], asks: [], mid: 150, ts: 1_000 },
       MSFT: { bids: [], asks: [], mid: 300, ts: 1_000 },
@@ -626,7 +626,7 @@ describe("orderBookUpdated", () => {
       AAPL: { bids: [], asks: [], mid: 151, ts: 2_000 },
     };
     const state = reducer(stateWithBook, orderBookUpdated(second));
-    expect(state.orderBook.MSFT).toBeUndefined();
+    expect(state.orderBook.MSFT).toEqual(first.MSFT);
     expect(state.orderBook.AAPL.mid).toBe(151);
   });
 });
