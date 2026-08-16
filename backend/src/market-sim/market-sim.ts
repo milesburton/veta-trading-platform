@@ -280,6 +280,13 @@ type SessionPhase =
   | "HALTED"
   | "CLOSED";
 
+// Deliberately derived from the simulated 390-minute loop (marketMinute),
+// not wall-clock time — the loop compresses a trading day into ~90 seconds
+// of ticks as a demo/UX choice, orthogonal to whether real-world calendar
+// gating (holidays, weekends; see @veta/trading-calendar and
+// isUsEquityRegularSession in marketHours.ts) allows order entry right now.
+// Do not "fix" this into a wall-clock-only check — that would lose the
+// fast demo pacing every consumer of sessionPhase currently relies on.
 function deriveSessionPhase(minute: number): SessionPhase {
   if (minute < 5) return "PRE_OPEN";
   if (minute < 10) return "OPENING_AUCTION";

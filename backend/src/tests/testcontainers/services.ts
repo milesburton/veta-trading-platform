@@ -27,6 +27,8 @@ export type ServiceName =
   | "market-data"
   | "market-data-adapters"
   | "fix-archive"
+  | "fix-exchange"
+  | "fix-gateway"
   | "observability"
   | "gateway"
   | "news-aggregator"
@@ -141,6 +143,21 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
   "fix-archive": {
     entrypoint: "backend/src/fix/fix-archive.ts",
     port: 5012,
+    health: "/health",
+  },
+  "fix-exchange": {
+    // fix-exchange's primary port (FIX_EXCHANGE_PORT, default 9880) is a raw
+    // TCP FIX listener, not HTTP — waitForHealth needs an HTTP endpoint, so
+    // this descriptor points at the service's separate health server on
+    // FIX_EXCHANGE_PORT - 1. Tests that need the TCP port should read
+    // FIX_EXCHANGE_PORT from perServiceEnv or add 1 to this port.
+    entrypoint: "backend/src/fix/fix-exchange.ts",
+    port: 9879,
+    health: "/health",
+  },
+  "fix-gateway": {
+    entrypoint: "backend/src/fix/fix-gateway.ts",
+    port: 9881,
     health: "/health",
   },
   "market-data": {

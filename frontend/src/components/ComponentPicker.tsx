@@ -6,6 +6,7 @@ import { canAccessPanel } from "./dashboard/panelRegistry.ts";
 import { clearDraggedPanelId, setDraggedPanelId } from "./panelDragState.ts";
 
 const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
+  "fix-sessions": "Live FIX counterparty sessions and recent execution reports",
   "world-clocks": "Live clocks for major trading market timezones",
   "order-routing-sankey":
     "Sankey diagram showing order flow from strategy through to execution venue",

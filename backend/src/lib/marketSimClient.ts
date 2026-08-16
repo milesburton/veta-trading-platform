@@ -13,11 +13,20 @@ export interface OrderBookSnapshot {
   ts: number;
 }
 
+export type SessionPhase =
+  | "PRE_OPEN"
+  | "OPENING_AUCTION"
+  | "CONTINUOUS"
+  | "CLOSING_AUCTION"
+  | "HALTED"
+  | "CLOSED";
+
 export interface MarketTick {
   prices: Record<string, number>;
   volumes: Record<string, number>;
   marketMinute: number;
   venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
+  sessionPhase?: SessionPhase;
 }
 
 type TickCallback = (tick: MarketTick) => void;
@@ -35,6 +44,7 @@ export interface RawTickMessage {
   volumes?: Record<string, number>;
   marketMinute?: number;
   venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
+  sessionPhase?: SessionPhase;
 }
 
 function isRawTickMessage(data: unknown): data is RawTickMessage {
@@ -66,6 +76,7 @@ export function mergeTick(latest: MarketTick, data: RawTickMessage): MarketTick 
       volumes: data.volumes ?? {},
       marketMinute: data.marketMinute ?? latest.marketMinute,
       venueBooks: data.venueBooks,
+      sessionPhase: data.sessionPhase ?? latest.sessionPhase,
     };
   }
 
@@ -76,6 +87,7 @@ export function mergeTick(latest: MarketTick, data: RawTickMessage): MarketTick 
     venueBooks: data.venueBooks
       ? mergeVenueBooks(latest.venueBooks, data.venueBooks)
       : latest.venueBooks,
+    sessionPhase: data.sessionPhase ?? latest.sessionPhase,
   };
 }
 

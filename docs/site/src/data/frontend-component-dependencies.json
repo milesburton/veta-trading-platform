@@ -1,6 +1,6 @@
 {
-  "totalComponents": 212,
-  "totalEdges": 217,
+  "totalComponents": 214,
+  "totalEdges": 219,
   "nodes": [
     {
       "name": "App",
@@ -181,6 +181,12 @@
       "path": "components/ExecutionsPanel.tsx",
       "importCount": 4,
       "importedByCount": 1
+    },
+    {
+      "name": "FixSessionsPanel",
+      "path": "components/FixSessionsPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
     },
     {
       "name": "GreeksSurfacePanel",
@@ -384,7 +390,7 @@
       "name": "PopOutButton",
       "path": "components/PopOutButton.tsx",
       "importCount": 0,
-      "importedByCount": 8
+      "importedByCount": 9
     },
     {
       "name": "PopOutHost",
@@ -1011,6 +1017,12 @@
       "importedByCount": 1
     },
     {
+      "name": "fixApi",
+      "path": "store/fixApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
       "name": "gatewayApi",
       "path": "store/gatewayApi.ts",
       "importCount": 0,
@@ -1037,7 +1049,7 @@
     {
       "name": "index",
       "path": "store/index.ts",
-      "importCount": 35,
+      "importCount": 36,
       "importedByCount": 8
     },
     {

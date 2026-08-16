@@ -3,7 +3,7 @@
 
 import { logger } from "@veta/logger";
 import { EncryptMethod, MsgType, Tag } from "./fix-dictionary.ts";
-import { decode, encode, utcTimestamp } from "./fix-parser.ts";
+import { decode, encode, utcTimestamp, validateChecksum } from "./fix-parser.ts";
 
 export type SessionState = "DISCONNECTED" | "LOGON_SENT" | "ACTIVE" | "LOGOUT_SENT";
 
@@ -14,6 +14,14 @@ export interface SessionConfig {
   onSend: (msg: string) => void;
   onApplicationMessage: (tags: Map<number, string>) => void;
   onStateChange?: (state: SessionState) => void;
+  /**
+   * Called with the inbound Logon's tags before accepting it. Return false
+   * to reject the Logon (session stays DISCONNECTED, no reply is sent —
+   * the caller is expected to close the transport). Defaults to
+   * always-accept, preserving the pre-existing behavior for callers that
+   * don't need per-client identity checks.
+   */
+  onLogonRequest?: (tags: Map<number, string>) => boolean;
 }
 
 export class FixSession {
@@ -28,6 +36,7 @@ export class FixSession {
     this.config = {
       heartBtInt: 30,
       onStateChange: () => {},
+      onLogonRequest: () => true,
       ...config,
     };
   }
@@ -36,8 +45,25 @@ export class FixSession {
     return this.state;
   }
 
+  /**
+   * Overrides the TargetCompID used on future outbound messages — e.g.
+   * once a Logon's own SenderCompID is known, replies should address that
+   * counterparty rather than a fixed default. Does not affect this
+   * session's own identity (senderCompID).
+   */
+  setTargetCompID(targetCompID: string): void {
+    this.config.targetCompID = targetCompID;
+  }
+
   /** Called when raw bytes arrive over the transport. May produce messages to send. */
   handleInbound(raw: string): void {
+    if (!validateChecksum(raw)) {
+      logger.warn("Checksum validation failed — dropping message", {
+        senderCompID: this.config.senderCompID,
+      });
+      return;
+    }
+
     const tags = decode(raw);
     const msgType = tags.get(Tag.MsgType);
     const senderSeq = Number(tags.get(Tag.MsgSeqNum) ?? "0");
@@ -122,6 +148,17 @@ export class FixSession {
       this.startHeartbeat(heartBtInt);
     } else if (this.state === "DISCONNECTED") {
       // Acceptor role: received Logon first
+      if (!this.config.onLogonRequest(tags)) {
+        logger.warn("Logon rejected", {
+          senderCompID: tags.get(Tag.SenderCompID),
+        });
+        const reject = this.buildMessage([
+          [Tag.MsgType, MsgType.Logout],
+          [Tag.Text, "Logon rejected: unknown or unauthorized SenderCompID"],
+        ]);
+        this.config.onSend(reject);
+        return;
+      }
       const response = this.buildMessage([
         [Tag.MsgType, MsgType.Logon],
         [Tag.EncryptMethod, EncryptMethod.None],

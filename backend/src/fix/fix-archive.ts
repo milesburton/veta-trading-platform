@@ -25,6 +25,7 @@ interface ExecReport {
   counterparty?: string;
   commission?: number;
   settlDate?: string;
+  account?: string;
   transactTime: string;
   ts: number;
 }
@@ -46,6 +47,7 @@ type PendingExec = [
   string | null,
   number | null,
   string | null,
+  string | null,
   string,
   Date,
 ];
@@ -65,8 +67,8 @@ async function flushWriteQueue() {
         `INSERT INTO fix_archive.executions
            (exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
             leaves_qty, cum_qty, avg_px, last_qty, last_px, venue, counterparty,
-            commission, settl_date, transact_time, ts)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+            commission, settl_date, account, transact_time, ts)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
          ON CONFLICT (exec_id) DO UPDATE SET
            ord_status = EXCLUDED.ord_status,
            leaves_qty = EXCLUDED.leaves_qty,
@@ -112,6 +114,7 @@ createConsumer("fix-archive", ["fix.execution"])
         r.counterparty ?? null,
         r.commission ?? null,
         r.settlDate ?? null,
+        r.account ?? null,
         r.transactTime,
         new Date(r.ts),
       ]);
@@ -138,6 +141,7 @@ function rowToExec(r: SqlRow) {
     counterparty,
     commission,
     settlDate,
+    account,
     transactTime,
     ts,
   ] = r;
@@ -158,6 +162,7 @@ function rowToExec(r: SqlRow) {
     counterparty,
     commission,
     settlDate,
+    account,
     transactTime,
     ts: ts instanceof Date ? ts.getTime() : ts,
   };
@@ -201,7 +206,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const COLS = `exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
     leaves_qty, cum_qty, avg_px, last_qty, last_px, venue, counterparty,
-    commission, settl_date, transact_time, ts`;
+    commission, settl_date, account, transact_time, ts`;
 
   if (path === "/executions" && req.method === "GET") {
     const symbol = url.searchParams.get("symbol");

@@ -64,6 +64,9 @@ const POV_ALGO_URL = `http://${Deno.env.get("POV_ALGO_HOST") ?? "localhost"}:${D
 const VWAP_ALGO_URL = `http://${Deno.env.get("VWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`;
 const KAFKA_RELAY_URL = `http://${Deno.env.get("KAFKA_RELAY_HOST") ?? "localhost"}:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`;
 const FIX_ARCHIVE_URL = `http://${Deno.env.get("FIX_ARCHIVE_HOST") ?? "localhost"}:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`;
+const FIX_EXCHANGE_HEALTH_URL = `http://${Deno.env.get("FIX_EXCHANGE_HOST") ?? "localhost"}:${
+  Number(Deno.env.get("FIX_EXCHANGE_PORT") ?? "9880") - 1
+}`;
 const ICEBERG_ALGO_URL = `http://${Deno.env.get("ICEBERG_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ICEBERG_ALGO_PORT") ?? "5021"}`;
 const SNIPER_ALGO_URL = `http://${Deno.env.get("SNIPER_ALGO_HOST") ?? "localhost"}:${Deno.env.get("SNIPER_ALGO_PORT") ?? "5022"}`;
 const ARRIVAL_PRICE_ALGO_URL = `http://${Deno.env.get("ARRIVAL_PRICE_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ARRIVAL_PRICE_ALGO_PORT") ?? "5023"}`;
@@ -951,6 +954,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "journal": JOURNAL_URL,
     "fix-archive": FIX_ARCHIVE_URL,
     "fix-gateway": FIX_GATEWAY_URL,
+    "fix-exchange": FIX_EXCHANGE_HEALTH_URL,
     "kafka-relay": KAFKA_RELAY_URL,
     "user-service": USER_SERVICE_URL,
     "news-aggregator": NEWS_AGGREGATOR_URL,
@@ -1081,6 +1085,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     ]),
     "fix-archive": new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "fix-gateway": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "fix-exchange": new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "kafka-relay": new Set(["risk-manager", "compliance", "oncall", "admin"]),
     observability: new Set(["risk-manager", "compliance", "oncall", "admin"]),
     replay: new Set(["risk-manager", "compliance", "oncall", "admin"]),

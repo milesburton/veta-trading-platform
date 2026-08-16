@@ -69,11 +69,13 @@ export const PANEL_IDS = [
   "platform-status",
   "order-routing-sankey",
   "world-clocks",
+  "fix-sessions",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
 
 export const PANEL_TITLES: Record<PanelId, string> = {
+  "fix-sessions": "FIX Sessions",
   "world-clocks": "World Clocks",
   "order-routing-sankey": "Order Routing Flow",
   "market-ladder": "Market Ladder (live quotes)",
@@ -132,6 +134,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
+  "fix-sessions": "Live FIX counterparty sessions and recent execution reports",
   "world-clocks": "Live clocks for major trading market timezones",
   "order-routing-sankey":
     "Sankey diagram showing order flow from strategy through to execution venue",
@@ -268,6 +271,7 @@ export interface TabChannelConfig {
 }
 
 export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> = {
+  "fix-sessions": { out: false, in: false },
   "world-clocks": { out: false, in: false },
   "order-routing-sankey": { out: false, in: false },
   "market-ladder": { out: true, in: false },
@@ -340,6 +344,7 @@ const ALL_READ_ROLES: AuthRole[] = [
 const DESK_ROLES: AuthRole[] = ["trader", "desk-head", "risk-manager", "admin", "compliance"];
 
 export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
+  "fix-sessions": new Set<AuthRole>(["risk-manager", "compliance", "oncall", "admin"]),
   "world-clocks": new Set<AuthRole>(ALL_READ_ROLES),
   "order-routing-sankey": new Set<AuthRole>(ALL_READ_ROLES),
   "market-ladder": new Set<AuthRole>(ALL_READ_ROLES),

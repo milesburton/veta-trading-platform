@@ -1,7 +1,7 @@
 {
-  "totalPanels": 55,
+  "totalPanels": 56,
   "rendered": 53,
-  "skipped": 2,
+  "skipped": 3,
   "panels": [
     {
       "panelId": "market-ladder",
@@ -442,6 +442,14 @@
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/world-clocks.png"
+    },
+    {
+      "panelId": "fix-sessions",
+      "title": "FIX Sessions",
+      "description": "Live FIX counterparty sessions and recent execution reports",
+      "rendered": false,
+      "notes": "not yet captured by walkthrough",
+      "screenshot": null
     }
   ]
 }

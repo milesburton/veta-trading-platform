@@ -81,7 +81,7 @@ includes whatever tags were present).
 | 9 | BodyLength | Computed by `encode()` |
 | 35 | MsgType | See message types below |
 | 34 | MsgSeqNum | Tracked per session by `FixSession` |
-| 49 / 56 | SenderCompID / TargetCompID | Fixed to `EXCHANGE`/`GATEWAY` — see [Known gaps](#known-gaps-and-not-yet-implemented) |
+| 49 / 56 | SenderCompID / TargetCompID | Exchange's own SenderCompID is fixed (`EXCHANGE`); TargetCompID resolves per-connection to the counterparty's SenderCompID once Logon succeeds — see [counterparty identity](#counterparty-identity-and-venue-routing) |
 | 52 | SendingTime | Set by `utcTimestamp()` on every outbound message |
 | 108 | HeartBtInt | Defaults to 30s |
 | 98 | EncryptMethod | Always `0` (none) — this is a simulator, not a production link |
@@ -92,7 +92,7 @@ includes whatever tags were present).
 | 55 / 54 / 38 / 44 / 40 / 59 | Symbol / Side / OrderQty / Price / OrdType / TimeInForce | Order fields |
 | 17 / 150 / 39 | ExecID / ExecType / OrdStatus | Execution report fields |
 | 151 / 14 / 6 / 32 / 31 | LeavesQty / CumQty / AvgPx / LastQty / LastPx | Fill quantities |
-| 100 / 21 / 1 | ExDestination / HandlInst / Account | **Defined but never read** — see [Known gaps](#known-gaps-and-not-yet-implemented) |
+| 100 / 21 / 1 | ExDestination / HandlInst / Account | ExDestination validated against a venue-capabilities registry; HandlInst read and logged only (this simulator always auto-executes); Account flows through to the ExecutionReport and `fix.execution` — see [counterparty identity](#counterparty-identity-and-venue-routing) |
 
 ### Supported message types
 
@@ -163,25 +163,78 @@ behavior — liveness is entirely TestRequest/Heartbeat-response driven, once pe
 `fix-exchange.ts` listens on TCP `:9880` (configurable via `FIX_EXCHANGE_PORT`) and a
 separate plain-HTTP health endpoint on `:9879` (hardcoded as `FIX_EXCHANGE_PORT - 1`).
 
-On a `NewOrderSingle`:
+On a `NewOrderSingle`, three gates run in order before any fill logic — the first to
+reject sends an `ExecutionReport` with `ExecType=Rejected`/`OrdStatus=Rejected` and a
+`Text` reason, and stops processing:
 
-1. Sends an immediate `ExecutionReport` with `ExecType=New`, `OrdStatus=New`,
-   `LeavesQty=<full order qty>`.
-2. Waits a randomized 10–50ms to simulate exchange latency.
-3. Reads the current mid-price and volume for the order's symbol from
+1. **Venue routing.** If `ExDestination` is set, it is resolved against a backend port of
+   the frontend's `venue-capabilities.ts` registry (`backend/src/fix/venue-registry.ts`)
+   and validated against the order's `OrdType`/`OrderQty` — e.g. a market order routed to
+   IEX, or a quantity below a dark venue's minimum, is rejected here. An absent
+   `ExDestination` is always valid (venue routing is optional, not required).
+2. **Market-hours gate** (ADR 0003 Phase 6). Rejects if the current `sessionPhase` —
+   read from the same `marketClient` connection used for fills, no separate connection —
+   is `HALTED` or `CLOSED`. An order received before the first market-sim tick arrives
+   (`sessionPhase` still `undefined`) is treated as open, not rejected.
+3. **Pre-trade risk check** (see [ADR 0004](../decisions/0004-fix-risk-check-without-oms-integration/)),
+   only when `RISK_ENGINE_ENABLED` is not `"false"`. Calls risk-engine's `POST /check`
+   directly — the same endpoint and request shape `oms-server.ts` already uses — with the
+   counterparty's `SenderCompID` standing in for `userId`. Fails closed: any risk-engine
+   error (timeout, non-2xx, malformed body, network failure) rejects the order rather than
+   letting it through unchecked.
+4. Only after all three pass: sends an `ExecutionReport` with `ExecType=New`,
+   `OrdStatus=New`, `LeavesQty=<full order qty>`.
+
+Then, for an accepted order:
+
+1. Waits a randomized 10–50ms to simulate exchange latency.
+2. Reads the current mid-price and volume for the order's symbol from
    `marketClient.getLatest()` — a live WebSocket connection to `market-sim`, the same
    `@veta/market-client` library every algo strategy and `ems-server.ts` use.
-4. Synthesizes up to 3 partial fills via `computeFill()`, which caps each fill at
-   `tickVolume × EMS_PARTICIPATION_CAP` (default 20%) and applies a market-impact price
-   adjustment of `(filledQty / 1000) × EMS_IMPACT_PER_1000_BPS` basis points, worse for the
-   order's side. This mirrors the participation-cap fill model used elsewhere in the
-   platform's EMS, not a separate implementation.
-5. Sends one `ExecutionReport` per fill slice (`ExecType=PartialFill` until the last,
-   `Fill` on the slice that exhausts the order), with a 50–150ms gap between partials.
+3. Synthesizes up to 3 partial fills via `computeFill()` (`backend/src/fix/fill-math.ts`),
+   which caps each fill at `tickVolume × EMS_PARTICIPATION_CAP` (default 20%) and applies a
+   market-impact price adjustment of `(filledQty / 1000) × EMS_IMPACT_PER_1000_BPS` basis
+   points, worse for the order's side. This mirrors the participation-cap fill model used
+   elsewhere in the platform's EMS (`ems/fill-math.ts`), but is a separate implementation,
+   not a shared one.
+4. Sends one `ExecutionReport` per fill slice (`ExecType=PartialFill` until the last,
+   `Fill` on the slice that exhausts the order), with a 50–150ms gap between partials, and
+   publishes a matching row to the Kafka topic `fix.execution` after each one — see
+   [fix-archive](#fix-archive).
 
 There is **no order book and no counterparty matching** — every fill is synthesized
 against a snapshot price, not matched against another FIX client's resting order. Two
 FIX clients trading the same symbol at the same time do not interact with each other.
+
+## Counterparty identity and venue routing
+
+Every FIX session still authenticates as the same exchange-side identity
+(`SenderCompID=EXCHANGE`), but the counterparty side is no longer hardcoded. A Logon's
+`SenderCompID` is checked against a static, env-configured counterparty table
+(`backend/src/fix/counterparties.ts`, `FIX_COUNTERPARTIES=id:secret;id:secret`) —
+unrecognized SenderCompIDs get a `Logout` in reply and the session never reaches `ACTIVE`.
+Once accepted, the exchange addresses all further replies to that counterparty's
+`SenderCompID` as `TargetCompID`, rather than a fixed `GATEWAY`.
+
+This is intentionally scoped to "is this a provisioned counterparty," not a full
+password-verified handshake — the minimal FIX 4.4 dictionary this exchange implements has
+no `RawData`/`Password` tags (96/554) to check a credential against. Adding real
+credential verification on Logon would need those tags added first.
+
+The counterparty table starts as a static map, not a Postgres table, matching the
+project's general pattern of starting simple and promoting to a real table only once
+something besides Logon needs to query it.
+
+`GET /sessions` on `fix-exchange`'s health port (`FIX_EXCHANGE_PORT - 1`) lists every
+currently-connected TCP session: its remote address, resolved counterparty (`null` until
+Logon succeeds), `FixSession` state, connect time, and open-order count. Entries are held
+in an in-memory `Map` keyed by remote address, registered on connect and removed once the
+connection's read loop exits — there is no persistence, so a `fix-exchange` restart clears
+the list (the sessions themselves are gone too, so this matches reality). Proxied through
+the gateway as `/api/fix-exchange/sessions`, gated to the same
+`risk-manager`/`compliance`/`oncall`/`admin` roles as `fix-archive`, and surfaced in the
+**FIX Sessions** dashboard panel (`fix-sessions`, in the System Status workspace) alongside
+a recent-executions view backed by `fix-archive`'s `/executions`.
 
 ## fix-archive
 
@@ -194,54 +247,47 @@ A Postgres-backed HTTP service (`fix_archive.executions` table) exposing:
 Writes are batched: it consumes the Kafka topic `fix.execution` and flushes up to 50
 pending rows every 50ms in a single transaction, upserting on `exec_id` so a repeated
 partial-fill update (same `execId`, later `ordStatus`/`leavesQty`) overwrites in place
-rather than duplicating rows.
+rather than duplicating rows. `fix-exchange.ts` is now one of four producers to this
+topic, alongside `rfq-service.ts`, `dark-pool-server.ts`, and `ems-server.ts` — all four
+send the same flat shape, including a nullable `account` field (migration
+`0024_fix_archive_account.sql`) carrying through a NewOrderSingle's `Account` tag when
+present.
 
 ## Known gaps and not-yet-implemented
 
 This is an honest list, not aspirational — each item below is confirmed absent from the
-current implementation, not merely undocumented:
+current implementation, not merely undocumented. None of this is a defect relative to
+what the platform currently promises: the FIX stack is explicitly a minimal,
+self-contained simulator, not a production gateway.
 
-- **`fix-exchange` never publishes to `fix.execution`.** `fix-archive` is fully
-  implemented and consumes that topic correctly, but nothing in `fix-exchange.ts` sends to
-  it — the topic is currently populated by `rfq-service.ts`, `dark-pool-server.ts`, and
-  `ems-server.ts` instead. FIX executions are not archived today. Wiring
-  `fix-exchange.ts` to publish an `ExecReport`-shaped message to `fix.execution` after
-  each fill would close this gap with no schema change needed on the archive side.
-- **No risk-engine or OMS integration.** A `NewOrderSingle` accepted by `fix-exchange`
-  never touches `risk-engine`'s pre-trade checks (fat-finger, position limits,
-  concentration, etc.) or creates an OMS order record. It is a fully separate simulated
-  venue from the HTTP order path, not a second entry point into the same risk-managed
-  pipeline.
-- **No market-hours or auction-session awareness**, matching the gap across the rest of
-  the order-entry surface — see
-  [ADR 0003: market-session and auction enforcement](../decisions/0003-market-session-and-auction-enforcement/).
-  A `NewOrderSingle` is accepted and filled at any time, with no reference to
-  `MarketPhase`/`sessionPhase`.
-- **No per-client identity or venue routing.** Every session is hardcoded to
-  `SenderCompID=EXCHANGE`/`TargetCompID=GATEWAY` — there is no counterparty table, no
-  credential check on Logon, and no concept of routing a FIX session to a specific
-  simulated venue (the frontend's `venue-capabilities.ts` registry has no FIX-side
-  counterpart).
-- **`ExDestination`, `HandlInst`, and `Account` tags are defined but never read.** A
-  client can send them; `fix-exchange.ts` ignores them.
-- **No cancel/replace handling.** `OrderCancelRequest`, `OrderCancelReplaceRequest`, and
-  `OrderCancelReject` have no application-level handler — a cancel is silently dropped.
-- **No backend test coverage.** There is no test file for any of the 6
-  `backend/src/fix/*.ts` modules today.
-- **No TLS.** The TCP listener and WebSocket bridge are both plaintext.
-- **No rate limiting.** Nothing bounds messages-per-second or orders-per-second on a FIX
-  session, unlike the HTTP gateway's IP-based rate limiter.
-
-None of this is a defect relative to what the platform currently promises — the FIX stack
-is explicitly a minimal, self-contained simulator, not a production gateway. This section
-exists so future work starts from an accurate baseline rather than the previous version of
-this page, which described a gRPC/S3-backed architecture that was never implemented.
+- **No OMS integration.** `fix-exchange.ts` calls risk-engine's pre-trade check directly
+  (see [ADR 0004](../decisions/0004-fix-risk-check-without-oms-integration/)) but does not
+  route orders through OMS. FIX orders create no OMS order record, don't appear in OMS's
+  `activeOrders` map, and aren't visible to the kill-switch or `journal` the way an
+  HTTP-submitted order is.
+- **No auction model.** An order submitted during `OPENING_AUCTION`/`CLOSING_AUCTION` on
+  the FIX path behaves identically to a continuous-session order — see
+  [ADR 0003](../decisions/0003-market-session-and-auction-enforcement/) Phase 7.
+- **Rate limiting is coarse.** `fix-gateway`'s Traefik router applies a per-IP limit, but
+  every FIX client is proxied through `fix-gateway.ts`'s single WS→TCP bridge, so this
+  only ever sees each browser's IP at the WebSocket layer — it cannot distinguish
+  counterparties once past that point. A tighter limit keyed on `SenderCompID` at
+  `fix-exchange.ts` itself would need that layer added separately.
+- **No password-verified Logon.** A Logon is accepted or rejected based on whether its
+  `SenderCompID` is a provisioned counterparty (see
+  [Counterparty identity and venue routing](#counterparty-identity-and-venue-routing)),
+  not a credential check — the minimal FIX 4.4 dictionary this exchange implements has no
+  `RawData`/`Password` tags (96/554) to check against.
 
 ## See also
 
 - [Service map](../services/) — the FIX services' position in the service mesh.
 - [Risk architecture](../risk-architecture/) — how the HTTP order path integrates
-  pre-trade risk checks; the FIX path currently does not.
+  pre-trade risk checks; the FIX path now calls the same risk-engine endpoint directly
+  (see [ADR 0004](../decisions/0004-fix-risk-check-without-oms-integration/)), without the
+  fuller OMS-routed integration the HTTP path has.
 - [ADR 0003: market-session and auction enforcement](../decisions/0003-market-session-and-auction-enforcement/) —
-  covers the FIX path's lack of session awareness alongside the rest of the order-entry
-  surface.
+  the FIX path's session-hours reject (Phase 6) is implemented; the auction model
+  (Phase 7) is not.
+- [ADR 0004: FIX pre-trade risk checks without full OMS integration](../decisions/0004-fix-risk-check-without-oms-integration/) —
+  what closing the risk-check gap did and did not do.

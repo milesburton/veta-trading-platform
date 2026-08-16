@@ -30,10 +30,19 @@ function runSequence(seed: number, ticks: number, asset = "AAPL"): number[] {
 Deno.test("US regular session observes New York time and weekends", () => {
   assertEquals(isUsEquityRegularSession(new Date("2026-07-30T13:29:00Z")), false);
   assertEquals(isUsEquityRegularSession(new Date("2026-07-30T13:30:00Z")), true);
-  assertEquals(isUsEquityRegularSession(new Date("2026-07-30T19:59:00Z")), true);
+  assertEquals(isUsEquityRegularSession(new Date("2026-07-30T19:00:00Z")), true);
   assertEquals(isUsEquityRegularSession(new Date("2026-07-30T20:00:00Z")), false);
   assertEquals(isUsEquityRegularSession(new Date("2026-01-15T14:30:00Z")), true);
   assertEquals(isUsEquityRegularSession(new Date("2026-08-01T15:00:00Z")), false);
+});
+
+// isUsEquityRegularSession now delegates to @veta/trading-calendar's
+// resolveCurrentSession (ADR 0003 Phase 1), so it is holiday-aware where
+// the old hand-rolled weekday/09:30-16:00 check was not.
+Deno.test("US regular session observes exchange holidays", () => {
+  // 2026-01-01 is a US_EQUITY_CALENDAR holiday, otherwise a Thursday during
+  // regular hours.
+  assertEquals(isUsEquityRegularSession(new Date("2026-01-01T15:00:00Z")), false);
 });
 
 Deno.test("out-of-hours startup setting defaults on and accepts false aliases", () => {

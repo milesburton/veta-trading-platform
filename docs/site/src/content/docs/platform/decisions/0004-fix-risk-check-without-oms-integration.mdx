@@ -1,0 +1,95 @@
+---
+title: "ADR 0004: FIX pre-trade risk checks without full OMS integration"
+description: "fix-exchange.ts now calls risk-engine's existing POST /check directly before acknowledging a NewOrderSingle, closing the pre-trade-risk half of the FIX engine's known gaps. It deliberately does not publish to orders.new or route through OMS — that is scoped as a separate, larger future change."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-08-15
+
+## Context
+
+The [FIX protocol overview](../../fix-protocol/) documented a gap: a `NewOrderSingle`
+accepted by `fix-exchange.ts` never touched risk-engine's pre-trade checks (fat-finger,
+position limits, concentration, etc.) or created an OMS order record. FIX was, and
+remains, "a fully separate simulated venue from the HTTP order path, not a second entry
+point into the same risk-managed pipeline."
+
+Closing that gap fully means giving FIX orders the same treatment HTTP orders get end to
+end: publish to `orders.new`, let OMS run its role/desk/strategy/notional checks and
+routing, and reflect the async result (`orders.submitted`, `orders.rejected`,
+`orders.filled`, ...) back onto the FIX session as ExecutionReports. That is a
+substantially larger change than everything else in the FIX remediation plan combined —
+`fix-exchange.ts` today has no Kafka producer or consumer at all (the `fix.execution`
+publish added alongside this ADR is its first), and OMS's pipeline is asynchronous and
+Kafka-event-driven, while a FIX session must reply synchronously on the same TCP
+connection that submitted the order. Bridging the two means adding request/response
+correlation (matching an async OMS outcome back to the right open connection by client
+order ID) that does not exist anywhere in this codebase today.
+
+Pre-trade risk checking, in isolation, does not need any of that. risk-engine's
+`POST /check` endpoint (`backend/src/risk-engine/risk-engine.ts`) is already
+caller-agnostic — it accepts a flat JSON body (`orderId`, `userId`, `userRole`, `symbol`,
+`side`, `quantity`, `limitPrice`, ...) and returns `{ allowed, reasons, warnings }`, with
+no assumption about who is calling it. `oms-server.ts` already calls it this way as one
+step inside its own pipeline (`backend/src/oms/oms-server.ts`), not as something
+OMS-specific.
+
+## Decision
+
+Ship the smaller change now: `fix-exchange.ts` calls risk-engine's `POST /check` directly
+(`backend/src/fix/risk-check.ts`), blocking the acknowledgment until the check returns,
+before any fill logic runs. On `!allowed`, it sends an `ExecutionReport` with
+`OrdStatus=Rejected` carrying the risk-engine's reasons, instead of the normal `New`
+acknowledgment. On a risk-engine failure of any kind (non-2xx, malformed body, timeout,
+network error), it fails closed — every order rejected until risk-engine is reachable
+again — mirroring `oms-server.ts`'s existing posture exactly rather than choosing a
+FIX-specific policy.
+
+`SenderCompID` (the counterparty identity established in the FIX remediation plan's
+per-client-identity phase) stands in for `userId` in the risk-engine request, since a FIX
+session authenticates as a counterparty rather than an individual platform user the way an
+HTTP session does. `userRole` is fixed at `"trader"` — FIX has no concept of role beyond
+that today.
+
+Defer the fuller integration — publishing to `orders.new`, correlating OMS's async
+pipeline back to the right FIX session, and creating a durable OMS order record for FIX
+orders — as a separate, explicitly out-of-scope future project. This ADR does not schedule
+it; a future ADR should if it is taken on.
+
+## Consequences
+
+- FIX orders are now pre-trade risk-checked (fat-finger, position limits, concentration,
+  and every other check `risk-engine/checks.ts` runs) for the first time. This is the
+  primary practical improvement this ADR ships.
+- FIX orders still do not create an OMS order record, do not appear in OMS's in-memory
+  `activeOrders` map, do not publish `orders.submitted`/`orders.routed`, and are not
+  visible to `journal` the way an HTTP-submitted order is. Anything that depends on OMS
+  visibility (the kill-switch, desk-level order counts, journal-backed order history) does
+  not see FIX orders before or after this change — that gap is unchanged.
+  Risk-engine's per-user rate/position tracking (`checkRateLimit`, `checkMaxOpenOrders`,
+  `checkPositionNotional`, `checkConcentration`) still updates from the `/check` call
+  itself, so FIX order volume does count toward those checks' state even without OMS
+  routing — only OMS-side visibility (kill-switch, journal, activeOrders) is the part that
+  stays absent.
+- `fix-exchange.ts` has a Kafka producer (for `fix.execution`) but still no consumer. This
+  risk check is a synchronous HTTP call, not a Kafka round-trip, so it does not change
+  that.
+- If full OMS integration is ever built, this direct risk-engine call becomes redundant —
+  OMS already performs its own risk-engine check as one step in its pipeline. Whoever
+  builds that integration should remove this call rather than run the check twice.
+
+## Alternatives considered
+
+- **Publish to `orders.new` and route through OMS (the fuller integration).** Rejected for
+  this pass on size alone — see Context. Not rejected as a future direction; explicitly
+  left open for a later, separately-scoped ADR.
+- **Skip risk checking entirely until the fuller integration lands.** Rejected: pre-trade
+  risk checking is the more urgent half of the gap (an unchecked FIX order can still cause
+  real harm — fat-finger, oversized positions), and it does not need to wait on the
+  harder architectural problem of OMS correlation.
+- **Fail open on risk-engine unreachable, to keep the FIX venue available during a
+  risk-engine outage.** Rejected: this would make FIX's failure posture inconsistent with
+  the HTTP path, which already fails closed. An attacker or a misconfigured client
+  wouldn't need to compromise risk-engine, only make it briefly unreachable, to bypass
+  every check.

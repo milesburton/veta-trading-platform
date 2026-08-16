@@ -23,6 +23,9 @@ export const Tag = {
   SessionRejectReason: 373,
 
   ClOrdID: 11,
+  OrigClOrdID: 41,
+  CxlRejReason: 102,
+  CxlRejResponseTo: 434,
   Symbol: 55,
   Side: 54,
   OrderQty: 38,
@@ -61,10 +64,26 @@ export const MsgType = {
   NewOrderSingle: "D",
   ExecutionReport: "8",
   OrderCancelRequest: "F",
+  OrderCancelReplaceRequest: "G",
   OrderCancelReject: "9",
 } as const;
 
 export type MsgTypeValue = (typeof MsgType)[keyof typeof MsgType];
+
+// CxlRejResponseTo (tag 434): identifies which cancel-family message an
+// OrderCancelReject is responding to.
+export const CxlRejResponseTo = {
+  OrderCancelRequest: "1",
+  OrderCancelReplaceRequest: "2",
+} as const;
+
+// CxlRejReason (tag 102): a small subset of the FIX 4.4 enum, limited to
+// the reasons this exchange can actually produce.
+export const CxlRejReason = {
+  UnknownOrder: "1",
+  TooLateToCancel: "0",
+  Other: "99",
+} as const;
 
 export const Side = {
   Buy: "1",

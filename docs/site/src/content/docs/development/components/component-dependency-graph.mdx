@@ -28,7 +28,7 @@ graph TD
 
 ## Component Inventory
 
-`212` components analysed.
+`214` components analysed.
 
 | Component | Path | Imports | Imported By |
 | --- | --- | --- | --- |
@@ -72,6 +72,7 @@ graph TD
 | EnvironmentOverlay | `components/EnvironmentOverlay.tsx` | 0 (—) | 1 (App) |
 | EstateOverviewPanel | `components/EstateOverviewPanel.tsx` | 0 (—) | 0 (—) |
 | ExecutionsPanel | `components/ExecutionsPanel.tsx` | 4 (CfRuleEditor, FilterBar, ResizableHeader, PopOutButton) | 1 (PopOutHost) |
+| FixSessionsPanel | `components/FixSessionsPanel.tsx` | 1 (PopOutButton) | 0 (—) |
 | GreeksSurfacePanel | `components/GreeksSurfacePanel.tsx` | 0 (—) | 0 (—) |
 | CfRuleEditor | `components/grid/CfRuleEditor.tsx` | 1 (ExpressionBuilder) | 2 (ExecutionsPanel, OrderBlotter) |
 | ExpressionBuilder | `components/grid/ExpressionBuilder.tsx` | 0 (—) | 2 (CfRuleEditor, FilterBar) |
@@ -111,7 +112,7 @@ graph TD
 | panelDragState | `components/panelDragState.ts` | 0 (—) | 1 (ComponentPicker) |
 | PanelMenu | `components/PanelMenu.tsx` | 1 (DashboardLayout) | 0 (—) |
 | PlatformStatusPanel | `components/PlatformStatusPanel.tsx` | 0 (—) | 0 (—) |
-| PopOutButton | `components/PopOutButton.tsx` | 0 (—) | 8 (AlgoMonitor, ExecutionsPanel, MarketLadder, MyPositionsPanel, ObservabilityPanel, OrderBlotter, +2 more) |
+| PopOutButton | `components/PopOutButton.tsx` | 0 (—) | 9 (AlgoMonitor, ExecutionsPanel, FixSessionsPanel, MarketLadder, MyPositionsPanel, ObservabilityPanel, +3 more) |
 | PopOutHost | `components/PopOutHost.tsx` | 17 (AdminPanel, AlgoMonitor, AnalysisPanel, CandlestickChart, DashboardLayout, DecisionLog, +11 more) | 1 (main) |
 | PopOutPlaceholder | `components/PopOutPlaceholder.tsx` | 0 (—) | 0 (—) |
 | PriceFanPanel | `components/PriceFanPanel.tsx` | 0 (—) | 0 (—) |
@@ -200,11 +201,12 @@ graph TD
 | channel | `store/channel.ts` | 0 (—) | 2 (main, index) |
 | channelsSlice | `store/channelsSlice.ts` | 0 (—) | 1 (index) |
 | feedSlice | `store/feedSlice.ts` | 0 (—) | 1 (index) |
+| fixApi | `store/fixApi.ts` | 0 (—) | 1 (index) |
 | gatewayApi | `store/gatewayApi.ts` | 0 (—) | 1 (index) |
 | gridApi | `store/gridApi.ts` | 0 (—) | 1 (index) |
 | gridPrefsSlice | `store/gridPrefsSlice.ts` | 1 (index) | 1 (index) |
 | hooks | `store/hooks.ts` | 1 (index) | 1 (App) |
-| index | `store/index.ts` | 35 (advisoryApi, advisorySlice, alertsSlice, analyticsApi, authSlice, breakersSlice, +29 more) | 8 (App, main, alertsSlice, gridPrefsSlice, hooks, newsSlice, +2 more) |
+| index | `store/index.ts` | 36 (advisoryApi, advisorySlice, alertsSlice, analyticsApi, authSlice, breakersSlice, +30 more) | 8 (App, main, alertsSlice, gridPrefsSlice, hooks, newsSlice, +2 more) |
 | intelligenceSlice | `store/intelligenceSlice.ts` | 1 (safeKey) | 1 (index) |
 | killSwitchSlice | `store/killSwitchSlice.ts` | 1 (ordersSlice) | 1 (index) |
 | llmSubsystemSlice | `store/llmSubsystemSlice.ts` | 0 (—) | 2 (advisoryApi, index) |

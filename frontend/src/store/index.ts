@@ -8,6 +8,7 @@ import { breakersSlice } from "./breakersSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
 import { feedSlice } from "./feedSlice.ts";
+import { fixApi } from "./fixApi.ts";
 import { gatewayApi } from "./gatewayApi.ts";
 import { gridApi } from "./gridApi.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
@@ -57,6 +58,7 @@ const combinedReducer = combineReducers({
   [analyticsApi.reducerPath]: analyticsApi.reducer,
   [marketDataApi.reducerPath]: marketDataApi.reducer,
   [advisoryApi.reducerPath]: advisoryApi.reducer,
+  [fixApi.reducerPath]: fixApi.reducer,
   [gatewayApi.reducerPath]: gatewayApi.reducer,
   [gridApi.reducerPath]: gridApi.reducer,
   [newsApi.reducerPath]: newsApi.reducer,
@@ -86,6 +88,7 @@ export const store = configureStore({
       .concat(analyticsApi.middleware)
       .concat(marketDataApi.middleware)
       .concat(advisoryApi.middleware)
+      .concat(fixApi.middleware)
       .concat(gatewayApi.middleware)
       .concat(gridApi.middleware)
       .concat(newsApi.middleware)

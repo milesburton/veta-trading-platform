@@ -95,3 +95,26 @@ Deno.test("a diff with no venueBooks field leaves existing venueBooks untouched"
 
   assertEquals(next.venueBooks?.XNAS?.AAPL?.mid, 190);
 });
+
+Deno.test("sessionPhase carries through a full message", () => {
+  const latest: MarketTick = { ...emptyTick(), sessionPhase: "CONTINUOUS" };
+  const full: RawTickMessage = { full: true, sessionPhase: "CLOSING_AUCTION" };
+
+  const next = mergeTick(latest, full);
+
+  assertEquals(next.sessionPhase, "CLOSING_AUCTION");
+});
+
+Deno.test("sessionPhase updates on a diff and persists when a later diff omits it", () => {
+  const latest: MarketTick = { ...emptyTick(), sessionPhase: "PRE_OPEN" };
+
+  const withPhase = mergeTick(latest, { sessionPhase: "OPENING_AUCTION" });
+  assertEquals(withPhase.sessionPhase, "OPENING_AUCTION");
+
+  const withoutPhase = mergeTick(withPhase, { prices: { AAPL: 191 } });
+  assertEquals(
+    withoutPhase.sessionPhase,
+    "OPENING_AUCTION",
+    "sessionPhase must not reset when a later diff doesn't include it"
+  );
+});

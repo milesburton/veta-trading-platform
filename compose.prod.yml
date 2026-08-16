@@ -288,18 +288,40 @@ services:
       - "traefik.http.services.fix-exchange.loadbalancer.server.port=9880"
       - "traefik.http.routers.fix-exchange.priority=10"
 
+  # fix-gateway is the browser-facing edge of the FIX stack (WS -> TCP
+  # bridge to fix-exchange). It's the trust boundary, so TLS terminates
+  # here (entrypoints=websecure, tls=true) and a per-IP rate limit applies
+  # — same pattern the main gateway already uses for its own WS route.
+  # The internal TCP hop from fix-gateway to fix-exchange stays plaintext
+  # deliberately: both processes are on the trusted internal network, and
+  # that hop was never the trust boundary in the first place. This is a
+  # coarse, per-IP/per-connection limit; a tighter SenderCompID-keyed
+  # limit at fix-exchange itself is a separate, larger change (fix-gateway
+  # proxies every client through one TCP connection pool, so IP-based
+  # limiting at fix-exchange's own layer would only ever see fix-gateway's
+  # address — see fix-protocol.mdx's known gaps).
   fix-gateway:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/fix-gateway:latest
     build: !reset null
     profiles: !reset []
     labels:
-      - "traefik.enable=false"
-      - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`) || PathPrefix(`/ws/fix`)"
-      - "traefik.http.routers.fix-gateway.entrypoints=web"
-      - "traefik.http.routers.fix-gateway.middlewares=fix-gateway-strip"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.fix-ratelimit.ratelimit.average=10"
+      - "traefik.http.middlewares.fix-ratelimit.ratelimit.burst=20"
+      - "traefik.http.middlewares.fix-ratelimit.ratelimit.sourcecriterion.ipstrategy.depth=1"
+      - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`)"
+      - "traefik.http.routers.fix-gateway.entrypoints=websecure"
+      - "traefik.http.routers.fix-gateway.tls=true"
+      - "traefik.http.routers.fix-gateway.middlewares=fix-gateway-strip,fix-ratelimit"
       - "traefik.http.services.fix-gateway.loadbalancer.server.port=9881"
       - "traefik.http.routers.fix-gateway.priority=10"
+      - "traefik.http.routers.fix-gateway-ws.rule=PathPrefix(`/ws/fix`)"
+      - "traefik.http.routers.fix-gateway-ws.entrypoints=websecure"
+      - "traefik.http.routers.fix-gateway-ws.tls=true"
+      - "traefik.http.routers.fix-gateway-ws.middlewares=fix-ratelimit"
+      - "traefik.http.routers.fix-gateway-ws.service=fix-gateway"
+      - "traefik.http.routers.fix-gateway-ws.priority=10"
 
   fix-archive:
     <<: *prod-defaults
@@ -307,9 +329,10 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
       - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
-      - "traefik.http.routers.fix-archive.entrypoints=web"
+      - "traefik.http.routers.fix-archive.entrypoints=websecure"
+      - "traefik.http.routers.fix-archive.tls=true"
       - "traefik.http.routers.fix-archive.middlewares=fix-archive-strip"
       - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
       - "traefik.http.routers.fix-archive.priority=10"
@@ -552,15 +575,33 @@ services:
       - "traefik.http.middlewares.api-ratelimit.ratelimit.average=30"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=60"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.sourcecriterion.ipstrategy.depth=1"
+      # ADR 0005: hold a request that lands in the gap between the old
+      # gateway container stopping and the new one passing its health
+      # check, instead of surfacing a 502/dropped connection to the client.
+      - "traefik.http.middlewares.deploy-retry.retry.attempts=4"
+      - "traefik.http.middlewares.deploy-retry.retry.initialinterval=100ms"
       - "traefik.http.routers.gateway.rule=PathPrefix(`/api/gateway`)"
       - "traefik.http.routers.gateway.entrypoints=websecure"
       - "traefik.http.routers.gateway.tls=true"
-      - "traefik.http.routers.gateway.middlewares=gateway-strip,api-ratelimit"
+      - "traefik.http.routers.gateway.middlewares=gateway-strip,deploy-retry,api-ratelimit"
       - "traefik.http.services.gateway.loadbalancer.server.port=5011"
       - "traefik.http.services.gateway.loadbalancer.sticky.cookie=true"
       - "traefik.http.services.gateway.loadbalancer.sticky.cookie.name=veta_gw"
       - "traefik.http.services.gateway.loadbalancer.sticky.cookie.httpOnly=true"
+      # Health-gate this router specifically — Traefik stops sending
+      # traffic to a gateway container the moment it fails /health,
+      # rather than only when the container disappears entirely. With
+      # one replica this narrows the swap-window error rather than
+      # eliminating it; it matters more once GATEWAY_REPLICAS > 1.
+      - "traefik.http.services.gateway.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.gateway.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.gateway.loadbalancer.healthcheck.timeout=3s"
       - "traefik.http.routers.gateway.priority=20"
+      # deploy-retry is deliberately not applied here: it retries an HTTP
+      # request, and a WebSocket upgrade handshake is not one Traefik can
+      # safely replay mid-negotiation. The frontend's own reconnect-with-
+      # backoff (gatewayMiddleware.ts) already covers a dropped socket
+      # during the gateway's swap window.
       - "traefik.http.routers.gateway-ws.rule=PathPrefix(`/ws/gateway`)"
       - "traefik.http.routers.gateway-ws.entrypoints=websecure"
       - "traefik.http.routers.gateway-ws.tls=true"

@@ -1240,6 +1240,15 @@ export function makeSystemStatusModel(): IJsonModel {
                     panelType: "throughput-gauges",
                   } satisfies TabChannelConfig,
                 },
+                {
+                  type: "tab",
+                  id: "fix-sessions",
+                  name: PANEL_TITLES["fix-sessions"],
+                  component: "fix-sessions",
+                  config: {
+                    panelType: "fix-sessions",
+                  } satisfies TabChannelConfig,
+                },
               ],
             },
           ],
