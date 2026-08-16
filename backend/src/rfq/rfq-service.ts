@@ -9,15 +9,19 @@ import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { settlementDate } from "@veta/settlement";
-
-type SellSideRfqState =
-  | "CLIENT_REQUEST" // client submitted
-  | "SALES_REVIEW" // waiting for sales to route
-  | "DEALER_QUOTE" // dealer simulation running (for FI) or just pricing (for equity)
-  | "SALES_MARKUP" // sales applies markup before sending to client
-  | "CLIENT_CONFIRMATION" // sent to client, awaiting accept/reject
-  | "CONFIRMED" // client accepted, order placed
-  | "REJECTED"; // rejected at any stage
+import {
+  computeDealerYieldAndPrice,
+  isUstBond,
+  selectBestQuote,
+  specialisationBonus,
+} from "./rfq-math.ts";
+import {
+  checkSellSideActor,
+  checkSellSideTransition,
+  computeMarkupPrice,
+  type SellSideAction,
+  type SellSideRfqState,
+} from "./sellside-transitions.ts";
 
 interface SellSideRfq {
   rfqId: string;
@@ -220,22 +224,6 @@ const consumer = await createConsumer("rfq-service-fi", ["orders.fi.rfq"]).catch
   return null;
 });
 
-/**
- * Price a bond using the standard present-value formula.
- * Returns clean price as fraction of face value.
- */
-function priceBond(spec: BondSpec, yieldAnnual: number): number {
-  const { couponRate, totalPeriods, periodsPerYear, faceValue } = spec;
-  const r = yieldAnnual / periodsPerYear;
-  const couponPayment = faceValue * (couponRate / periodsPerYear);
-  if (r === 0) {
-    return (couponPayment * totalPeriods + faceValue) / faceValue;
-  }
-  const pv =
-    (couponPayment * (1 - (1 + r) ** -totalPeriods)) / r + faceValue * (1 + r) ** -totalPeriods;
-  return parseFloat((pv / faceValue).toFixed(6));
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -256,46 +244,24 @@ async function simulateDealerQuote(
   if (Math.random() > dealer.responseRate) return null;
 
   const spec = rfq.bondSpec;
-  const baseYield = spec.yieldAtOrder;
-
-  const isUST = spec.creditRating === "AAA" && spec.isin.startsWith("US9128");
-  const specialisationBonus =
-    dealer.specialisation === "UST" && isUST
-      ? 0.5
-      : dealer.specialisation === "Corp" && !isUST
-        ? 0.5
-        : 0;
+  const isUst = isUstBond(spec);
+  const bonus = specialisationBonus(dealer, isUst);
 
   const jitter = (Math.random() * 0.6 - 0.3) * dealer.baseSpreadBps;
-  const spreadBps = Math.max(0.5, dealer.baseSpreadBps - specialisationBonus + jitter);
+  const spreadBps = Math.max(0.5, dealer.baseSpreadBps - bonus + jitter);
 
-  // BUY: dealer offers at ask (higher yield); SELL: dealer bids (lower yield = higher price)
-  const spreadFactor = rfq.side === "BUY" ? 1 : -1;
-  const dealerYield = baseYield + (spreadFactor * spreadBps) / 10_000;
-
-  const price = priceBond(spec, dealerYield);
+  const { yield: dealerYield, price } = computeDealerYieldAndPrice(spec, rfq.side, spreadBps);
   const notional = parseFloat((rfq.quantity * price * spec.faceValue).toFixed(2));
 
   return {
     dealerId: dealer.id,
     dealerName: dealer.name,
     price,
-    yield: parseFloat(dealerYield.toFixed(6)),
+    yield: dealerYield,
     spreadBps: parseFloat(spreadBps.toFixed(2)),
     notional,
     receivedAt: Date.now(),
   };
-}
-
-/**
- * Pick the best quote: for a BUY, the lowest yield (highest price);
- * for a SELL, the highest yield (lowest price from buyer's perspective = best for seller).
- */
-function selectBestQuote(quotes: DealerQuote[], side: "BUY" | "SELL"): DealerQuote | undefined {
-  if (quotes.length === 0) return undefined;
-  return quotes.reduce((best, q) =>
-    side === "BUY" ? (q.yield < best.yield ? q : best) : q.yield > best.yield ? q : best
-  );
 }
 
 async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
@@ -482,10 +448,10 @@ async function processRfq(req: RfqRequest): Promise<void> {
     .catch(() => {});
 
   // Send to 4–5 dealers concurrently (random subset weighted by specialisation)
+  const requestIsUst = isUstBond(req.bondSpec);
   const candidateDealers = DEALERS.filter((d) => {
     if (d.specialisation === "all") return true;
-    const isUST = req.bondSpec.creditRating === "AAA" && req.bondSpec.isin.startsWith("US9128");
-    return d.specialisation === "UST" ? isUST : !isUST;
+    return d.specialisation === "UST" ? requestIsUst : !requestIsUst;
   });
   // Always include all-rounder dealers; pick up to 2 specialist dealers
   const allRounders = candidateDealers.filter((d) => d.specialisation === "all");
@@ -692,7 +658,7 @@ Deno.serve({ port: PORT }, async (req) => {
   if (ssActionMatch && req.method === "PUT") {
     const rfq = sellSideRfqStore.get(ssActionMatch[1]);
     if (!rfq) return jsonError("Not found", 404);
-    const action = ssActionMatch[2];
+    const action = ssActionMatch[2] as SellSideAction;
     let actionBody: Record<string, unknown> = {};
     try {
       actionBody = await req.json();
@@ -700,10 +666,10 @@ Deno.serve({ port: PORT }, async (req) => {
       /* empty body ok for some actions */
     }
 
+    const stateCheck = checkSellSideTransition(action, rfq.state);
+    if (!stateCheck.ok) return jsonError(stateCheck.error, stateCheck.status);
+
     if (action === "route") {
-      if (rfq.state !== "CLIENT_REQUEST") {
-        return jsonError(`Cannot route from state ${rfq.state}`, 409);
-      }
       const salesUserId = actionBody.salesUserId as string | undefined;
       if (!salesUserId) return jsonError("Missing salesUserId", 400);
       const basePrice = rfq.limitPrice ?? 0;
@@ -718,21 +684,13 @@ Deno.serve({ port: PORT }, async (req) => {
     }
 
     if (action === "markup") {
-      if (rfq.state !== "SALES_MARKUP") {
-        return jsonError(`Cannot apply markup from state ${rfq.state}`, 409);
-      }
       const salesUserId = actionBody.salesUserId as string | undefined;
       const markupBps = Number(actionBody.markupBps ?? 0);
-      if (!salesUserId || salesUserId !== rfq.salesUserId) {
-        return jsonError("salesUserId does not match", 403);
-      }
+      const actorCheck = checkSellSideActor(action, salesUserId, { salesUserId: rfq.salesUserId });
+      if (!actorCheck.ok) return jsonError(actorCheck.error, actorCheck.status);
       const dealerPrice = rfq.dealerBestPrice ?? 0;
-      const clientPrice =
-        rfq.side === "BUY"
-          ? dealerPrice * (1 + markupBps / 10_000)
-          : dealerPrice * (1 - markupBps / 10_000);
       rfq.salesMarkupBps = markupBps;
-      rfq.clientQuotedPrice = parseFloat(clientPrice.toFixed(4));
+      rfq.clientQuotedPrice = computeMarkupPrice(dealerPrice, rfq.side, markupBps);
       rfq.state = "CLIENT_CONFIRMATION";
       rfq.salesMarkupAppliedAt = Date.now();
       rfq.ts = Date.now();
@@ -741,13 +699,9 @@ Deno.serve({ port: PORT }, async (req) => {
     }
 
     if (action === "confirm") {
-      if (rfq.state !== "CLIENT_CONFIRMATION") {
-        return jsonError(`Cannot confirm from state ${rfq.state}`, 409);
-      }
       const clientUserId = actionBody.clientUserId as string | undefined;
-      if (!clientUserId || clientUserId !== rfq.clientUserId) {
-        return jsonError("clientUserId does not match", 403);
-      }
+      const actorCheck = checkSellSideActor(action, clientUserId, { clientUserId: rfq.clientUserId });
+      if (!actorCheck.ok) return jsonError(actorCheck.error, actorCheck.status);
       rfq.state = "CONFIRMED";
       rfq.clientConfirmedAt = Date.now();
       rfq.ts = Date.now();
@@ -771,9 +725,6 @@ Deno.serve({ port: PORT }, async (req) => {
     }
 
     if (action === "reject") {
-      if (rfq.state === "CONFIRMED" || rfq.state === "REJECTED") {
-        return jsonError(`Cannot reject from state ${rfq.state}`, 409);
-      }
       rfq.rejectedBy = actionBody.rejectedBy as string | undefined;
       rfq.rejectionReason = actionBody.reason as string | undefined;
       rfq.state = "REJECTED";

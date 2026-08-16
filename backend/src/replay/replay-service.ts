@@ -3,6 +3,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { replayPool } from "@veta/db";
 import { corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
+import { clampLimit, isForeignKeyViolation, parseOffset } from "./replay-helpers.ts";
 
 const PORT = Number(Deno.env.get("REPLAY_PORT")) || 5_031;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -101,8 +102,8 @@ async function uploadChunk(sessionId: string, req: Request): Promise<Response> {
 }
 
 async function listSessions(url: URL): Promise<Response> {
-  const limit = Math.min(100, Number(url.searchParams.get("limit") ?? "50"));
-  const offset = Number(url.searchParams.get("offset") ?? "0");
+  const limit = clampLimit(url.searchParams.get("limit"));
+  const offset = parseOffset(url.searchParams.get("offset"));
   const client = await replayPool.connect();
   try {
     const { rows } = await client.queryObject<{
@@ -177,8 +178,7 @@ async function deleteSession(sessionId: string): Promise<Response> {
   } catch (err) {
     // FK RESTRICT: chunks still reference this session — chunks are retained
     // for compliance and block session-metadata deletion.
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("violates foreign key constraint")) {
+    if (isForeignKeyViolation(err)) {
       return json(
         { error: "session has retained chunks; delete chunks first or contact compliance" },
         409,

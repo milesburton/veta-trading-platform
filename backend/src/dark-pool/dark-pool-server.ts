@@ -11,6 +11,13 @@ import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { settlementDate } from "@veta/settlement";
+import {
+  buildFixExecution,
+  buildOrdersFilled,
+  type DarkOrder,
+  matchSymbol,
+  type SymbolPool,
+} from "./dark-pool-matching.ts";
 
 const PORT = Number(Deno.env.get("DARK_POOL_PORT")) || 5_027;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -38,42 +45,6 @@ interface RoutedOrder {
   desk?: string;
   marketType?: string;
   destinationVenue?: string;
-  ts: number;
-}
-
-interface DarkOrder {
-  orderId: string;
-  clientOrderId?: string;
-  userId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  remainingQty: number;
-  limitPrice: number;
-  admittedAt: number;
-  deadlineAt: number;
-  strategy: string;
-  algoParams?: Record<string, unknown>;
-  desk?: string;
-}
-
-interface SymbolPool {
-  buys: DarkOrder[];
-  sells: DarkOrder[];
-}
-
-interface DarkFill {
-  execId: string;
-  buyOrderId: string;
-  sellOrderId: string;
-  buyClientOrderId?: string;
-  sellClientOrderId?: string;
-  buyUserId?: string;
-  sellUserId?: string;
-  asset: string;
-  matchedQty: number;
-  midPrice: number;
-  settlementDate: string;
   ts: number;
 }
 
@@ -156,147 +127,6 @@ consumer?.onMessage((_topic, raw) => {
   );
 });
 
-function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFill[] {
-  // FIFO order — price not used for priority (dark pool matching semantics)
-  pool.buys.sort((a, b) => a.admittedAt - b.admittedAt);
-  pool.sells.sort((a, b) => a.admittedAt - b.admittedAt);
-
-  const fills: DarkFill[] = [];
-  const now = Date.now();
-
-  let bi = 0;
-  let si = 0;
-
-  while (bi < pool.buys.length && si < pool.sells.length) {
-    const buy = pool.buys[bi];
-    const sell = pool.sells[si];
-
-    if (now >= buy.deadlineAt) {
-      bi++;
-      continue;
-    }
-    if (now >= sell.deadlineAt) {
-      si++;
-      continue;
-    }
-
-    const buyEligible = buy.limitPrice >= midPrice;
-    const sellEligible = sell.limitPrice <= midPrice;
-
-    if (!buyEligible) {
-      bi++;
-      continue;
-    }
-    if (!sellEligible) {
-      si++;
-      continue;
-    }
-
-    const matchedQty = Math.min(buy.remainingQty, sell.remainingQty);
-    if (matchedQty <= 0) {
-      if (buy.remainingQty <= 0) bi++;
-      if (sell.remainingQty <= 0) si++;
-      continue;
-    }
-
-    buy.remainingQty -= matchedQty;
-    sell.remainingQty -= matchedQty;
-
-    const sd = settlementDate("equity");
-    fills.push({
-      execId: nextExecId(),
-      buyOrderId: buy.orderId,
-      sellOrderId: sell.orderId,
-      buyClientOrderId: buy.clientOrderId,
-      sellClientOrderId: sell.clientOrderId,
-      buyUserId: buy.userId,
-      sellUserId: sell.userId,
-      asset,
-      matchedQty,
-      midPrice,
-      settlementDate: sd,
-      ts: now,
-    });
-
-    logger.info(
-      `Match ${fills[fills.length - 1].execId}: ${matchedQty} ${asset} @ ${midPrice} ` +
-        `buy=${buy.orderId} sell=${sell.orderId}`
-    );
-
-    if (buy.remainingQty <= 0) bi++;
-    if (sell.remainingQty <= 0) si++;
-  }
-
-  pool.buys = pool.buys.filter((o) => o.remainingQty > 0);
-  pool.sells = pool.sells.filter((o) => o.remainingQty > 0);
-
-  return fills;
-}
-
-function buildOrdersFilled(
-  fill: DarkFill,
-  side: "BUY" | "SELL",
-  order: DarkOrder
-): Record<string, unknown> {
-  const isFullFill = order.remainingQty === 0;
-  return {
-    execId: `${fill.execId}-${side}`,
-    childId: `${order.orderId}-dark-${fill.ts}`,
-    parentOrderId: order.orderId,
-    clientOrderId: order.clientOrderId,
-    userId: order.userId,
-    algo: "DARK",
-    asset: fill.asset,
-    side,
-    requestedQty: order.quantity,
-    filledQty: fill.matchedQty,
-    remainingQty: order.remainingQty,
-    avgFillPrice: fill.midPrice,
-    midPrice: fill.midPrice,
-    marketImpactBps: 0, // dark pool: no market impact by definition
-    venue: "DARK1",
-    counterparty: "DARK1",
-    liquidityFlag: "CROSS",
-    commissionUSD: 0,
-    secFeeUSD: 0,
-    finraTafUSD: 0,
-    totalFeeUSD: 0,
-    settlementDate: fill.settlementDate,
-    desk: order.desk ?? "equity",
-    marketType: "dark",
-    execType: isFullFill ? "2" : "1", // 2=Fill, 1=PartialFill
-    ts: fill.ts,
-  };
-}
-
-function buildFixExecution(
-  fill: DarkFill,
-  side: "BUY" | "SELL",
-  order: DarkOrder
-): Record<string, unknown> {
-  const isFullFill = order.remainingQty === 0;
-  return {
-    execId: `${fill.execId}-${side}`,
-    clOrdId: `${order.orderId}-dark-${fill.ts}`,
-    origClOrdId: order.orderId,
-    symbol: fill.asset,
-    side: side === "BUY" ? "1" : "2",
-    ordType: "2", // Limit
-    execType: isFullFill ? "2" : "1",
-    ordStatus: isFullFill ? "2" : "1",
-    leavesQty: order.remainingQty,
-    cumQty: order.quantity - order.remainingQty,
-    avgPx: fill.midPrice,
-    lastQty: fill.matchedQty,
-    lastPx: fill.midPrice,
-    venue: "DARK1",
-    counterparty: "DARK1",
-    commission: 0,
-    settlDate: fill.settlementDate,
-    transactTime: new Date(fill.ts).toISOString(),
-    ts: fill.ts,
-  };
-}
 
 async function runMatchCycle(): Promise<void> {
   const tick = marketClient.getLatest();
@@ -313,7 +143,15 @@ async function runMatchCycle(): Promise<void> {
     const buyMap = new Map(pool.buys.map((o) => [o.orderId, o]));
     const sellMap = new Map(pool.sells.map((o) => [o.orderId, o]));
 
-    const fills = matchSymbol(pool, asset, midPrice);
+    const fills = matchSymbol(pool, asset, midPrice, Date.now(), nextExecId, () =>
+      settlementDate("equity")
+    );
+    for (const fill of fills) {
+      logger.info(
+        `Match ${fill.execId}: ${fill.matchedQty} ${asset} @ ${fill.midPrice} ` +
+          `buy=${fill.buyOrderId} sell=${fill.sellOrderId}`
+      );
+    }
 
     for (const fill of fills) {
       const buyOrder = buyMap.get(fill.buyOrderId);

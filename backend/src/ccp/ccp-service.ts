@@ -9,6 +9,13 @@ import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
+import {
+  computeInitialMargin,
+  computeMarginCall,
+  computeMarginRelease,
+  type MarginAccount,
+  updatePosition,
+} from "./margin-math.ts";
 
 const PORT = Number(Deno.env.get("CCP_SERVICE_PORT")) || 5_028;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -20,19 +27,6 @@ const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) || 3
 
 /** How often to mark-to-market margin positions (ms). */
 const MARGIN_MTM_MS = Number(Deno.env.get("CCP_MARGIN_MTM_MS")) || 10_000;
-
-const INITIAL_MARGIN_RATE: Record<string, number> = {
-  equity: 0.1, // 10% of notional
-  fi: 0.02, //  2% of notional (bonds are lower risk)
-  derivatives: 0.15, // 15% of notional (options carry more risk)
-  otc: 0.05, //  5% default for OTC
-};
-const _MAINTENANCE_MARGIN_RATE: Record<string, number> = {
-  equity: 0.07,
-  fi: 0.015,
-  derivatives: 0.1,
-  otc: 0.035,
-};
 
 interface Fill {
   execId: string;
@@ -86,21 +80,6 @@ interface NovationLeg {
   settlementDate: string;
   createdAt: number;
   settled: boolean;
-}
-
-interface MarginAccount {
-  userId: string;
-  /** Initial margin posted (USD) across all open positions. */
-  initialMarginPosted: number;
-  /** Current mark-to-market P&L (USD). Positive = gain, negative = loss. */
-  unrealisedPnl: number;
-  /** Net margin requirement after MtM. */
-  netMarginRequired: number;
-  /** Open positions: asset → net qty (positive = long, negative = short). */
-  positions: Record<string, number>;
-  /** Average cost basis per asset (USD per share/unit). */
-  costBasis: Record<string, number>;
-  lastUpdated: number;
 }
 
 interface SettlementObligation {
@@ -175,32 +154,6 @@ function getOrCreateMarginAccount(userId: string): MarginAccount {
   return acct;
 }
 
-function updatePosition(
-  acct: MarginAccount,
-  asset: string,
-  side: "BUY" | "SELL",
-  qty: number,
-  price: number
-): void {
-  const sign = side === "BUY" ? 1 : -1;
-  const currentQty = acct.positions[asset] ?? 0;
-  const currentCost = acct.costBasis[asset] ?? 0;
-
-  const newQty = currentQty + sign * qty;
-
-  if (Math.abs(newQty) < 0.0001) {
-    delete acct.positions[asset];
-    delete acct.costBasis[asset];
-  } else if (sign > 0) {
-    const totalCost = Math.abs(currentQty) * currentCost + qty * price;
-    acct.positions[asset] = newQty;
-    acct.costBasis[asset] = totalCost / Math.abs(newQty);
-  } else {
-    acct.positions[asset] = newQty;
-    acct.costBasis[asset] = currentCost;
-  }
-}
-
 async function postInitialMargin(
   userId: string,
   desk: string,
@@ -212,8 +165,7 @@ async function postInitialMargin(
   execId: string
 ): Promise<void> {
   const acct = getOrCreateMarginAccount(userId);
-  const rate = INITIAL_MARGIN_RATE[desk] ?? 0.1;
-  const marginRequired = parseFloat((notional * rate).toFixed(2));
+  const marginRequired = computeInitialMargin(desk, notional);
 
   acct.initialMarginPosted += marginRequired;
   acct.netMarginRequired += marginRequired;
@@ -407,8 +359,7 @@ async function runSettlementSweep(): Promise<void> {
     // Release initial margin for this position
     const acct = marginAccounts.get(obligation.userId);
     if (acct) {
-      const rate = INITIAL_MARGIN_RATE[obligation.desk] ?? 0.1;
-      const release = parseFloat((obligation.notional * rate).toFixed(2));
+      const release = computeMarginRelease(obligation.desk, obligation.notional);
       acct.initialMarginPosted = Math.max(0, acct.initialMarginPosted - release);
       acct.netMarginRequired = Math.max(0, acct.netMarginRequired - release);
       // Remove settled position from the account
@@ -457,39 +408,22 @@ async function runMarginMtM(): Promise<void> {
   const now = Date.now();
 
   for (const [userId, acct] of marginAccounts) {
-    let unrealisedPnl = 0;
+    const result = computeMarginCall(acct, tick.prices);
+    acct.unrealisedPnl = result.unrealisedPnl;
 
-    for (const [asset, qty] of Object.entries(acct.positions)) {
-      const currentPrice = tick.prices[asset];
-      if (!currentPrice || Math.abs(qty) < 0.0001) continue;
-      const costBasis = acct.costBasis[asset] ?? currentPrice;
-      unrealisedPnl += qty * (currentPrice - costBasis);
-    }
-
-    acct.unrealisedPnl = parseFloat(unrealisedPnl.toFixed(2));
-
-    // Check if margin has fallen below maintenance threshold
-    const maintenanceRequired =
-      acct.netMarginRequired * (Object.keys(acct.positions).length > 0 ? 0.7 : 1); // maintenance is 70% of initial
-
-    const effectiveMargin = acct.initialMarginPosted + acct.unrealisedPnl;
-
-    if (acct.initialMarginPosted > 0 && effectiveMargin < maintenanceRequired) {
-      const variationCall = parseFloat((acct.netMarginRequired - effectiveMargin).toFixed(2));
-      if (variationCall > 0) {
-        totalMarginCalls++;
-        await producer
-          ?.send("ccp.margin", {
-            type: "variation",
-            userId,
-            variationCall,
-            effectiveMargin,
-            maintenanceRequired,
-            unrealisedPnl: acct.unrealisedPnl,
-            ts: now,
-          })
-          .catch(() => {});
-      }
+    if (result.variationCall !== null) {
+      totalMarginCalls++;
+      await producer
+        ?.send("ccp.margin", {
+          type: "variation",
+          userId,
+          variationCall: result.variationCall,
+          effectiveMargin: result.effectiveMargin,
+          maintenanceRequired: result.maintenanceRequired,
+          unrealisedPnl: acct.unrealisedPnl,
+          ts: now,
+        })
+        .catch(() => {});
     }
 
     acct.lastUpdated = now;

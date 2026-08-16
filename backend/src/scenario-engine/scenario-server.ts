@@ -5,6 +5,7 @@ import { logger } from "@veta/logger";
 import type { FeatureVector, ScenarioShock, Signal } from "@veta/types/intelligence";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
+import { applyShocks } from "./apply-shocks.ts";
 
 const PORT = Number(Deno.env.get("SCENARIO_ENGINE_PORT")) || 5_020;
 const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
@@ -70,14 +71,7 @@ serveJsonService({
 
       const baseline = scoreFeatureVector(fv, weights);
 
-      const shockedFv: FeatureVector = { ...fv };
-      for (const shock of shocks) {
-        if (shock.factor in shockedFv) {
-          (shockedFv as unknown as Record<string, number>)[shock.factor] =
-            (shockedFv as unknown as Record<string, number>)[shock.factor] + shock.delta;
-        }
-      }
-
+      const shockedFv = applyShocks(fv, shocks);
       const shocked = scoreFeatureVector(shockedFv, weights);
       const delta = shocked.score - baseline.score;
 
