@@ -4,7 +4,7 @@ import {
   formatCenterDate,
   formatCenterTime,
   isCenterOpen,
-} from "@veta/frontend/domain/market/financial-centers";
+} from "@veta/frontend/domain/market/financialCenters";
 import { useEffect } from "react";
 
 export function WorldClocksPanel() {

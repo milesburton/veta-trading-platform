@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { resolveTicket } from "./resolve-ticket";
-import type { TicketContext, TicketResolution } from "./ticket-types";
+import { resolveTicket } from "./resolveTicket";
+import type { TicketContext, TicketResolution } from "./ticketTypes";
 
 /**
  * Structurally-memoized ticket resolution.

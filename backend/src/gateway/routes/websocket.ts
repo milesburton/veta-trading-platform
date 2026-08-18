@@ -1,7 +1,7 @@
 import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
 import { clientIp, RateLimiter } from "@veta/rate-limit";
-import { AbuseTracker } from "../abuseTracker.ts";
+import { AbuseTracker } from "../abuse-tracker.ts";
 import {
   addAnonymousSocket,
   addUserSocket,
@@ -10,7 +10,7 @@ import {
   totalConnections,
 } from "../connections.ts";
 import type { AuthResult, GatewayContext } from "../context.ts";
-import { classifyRequestSource } from "../requestSource.ts";
+import { classifyRequestSource } from "../request-source.ts";
 
 const WS_FRAME_CAPACITY = Number(Deno.env.get("WS_FRAME_CAPACITY")) || 100;
 const WS_FRAME_REFILL_PER_SECOND = Number(Deno.env.get("WS_FRAME_REFILL_PER_SECOND")) || 10;

@@ -4,7 +4,7 @@ import { type BondPosition, computeDurationLadder } from "../analytics/duration-
 import { rateAt } from "../analytics/spread-analysis.ts";
 import type { YieldCurvePoint } from "../analytics/types.ts";
 import { _internalForTests } from "../analytics/yield-curve.ts";
-import { getBond, getBonds } from "../market-sim/bondUniverse.ts";
+import { getBond, getBonds } from "../market-sim/bond-universe.ts";
 
 Deno.test("[duration-ladder] cash flow at the 3m boundary attributes entirely to the 3m bucket", () => {
   const bond: BondPosition = {

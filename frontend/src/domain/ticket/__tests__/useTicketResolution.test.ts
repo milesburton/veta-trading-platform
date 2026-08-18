@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
-import * as resolver from "@veta/frontend/domain/ticket/resolve-ticket";
-import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import * as resolver from "@veta/frontend/domain/ticket/resolveTicket";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
 import { useTicketResolution } from "@veta/frontend/domain/ticket/useTicketResolution";
 import { describe, expect, it, vi } from "vitest";
 import { CONTINUOUS_SESSION, makeCtx } from "./fixtures";

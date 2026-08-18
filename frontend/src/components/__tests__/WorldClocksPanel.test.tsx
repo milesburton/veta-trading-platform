@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { WorldClocksPanel } from "@veta/frontend/components/WorldClocksPanel";
-import { FINANCIAL_CENTERS } from "@veta/frontend/domain/market/financial-centers";
+import { FINANCIAL_CENTERS } from "@veta/frontend/domain/market/financialCenters";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("WorldClocksPanel", () => {

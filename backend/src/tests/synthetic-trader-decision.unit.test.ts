@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertThrows } from "jsr:@std/assert@0.217";
-import { DecisionEngine } from "../synthetic-trader/decisionEngine.ts";
-import { PositionTracker } from "../synthetic-trader/positionTracker.ts";
+import { DecisionEngine } from "../synthetic-trader/decision-engine.ts";
+import { PositionTracker } from "../synthetic-trader/position-tracker.ts";
 
 function sequenceRandom(values: number[]): () => number {
   let i = 0;

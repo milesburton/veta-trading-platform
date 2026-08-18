@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { classifyRequestSource } from "../gateway/requestSource.ts";
+import { classifyRequestSource } from "../gateway/request-source.ts";
 
 Deno.test("k6 user-agent is classified as loadgen", () => {
   assertEquals(classifyRequestSource("k6/0.55.0"), "loadgen");

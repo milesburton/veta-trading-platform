@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@0.217";
-import { TokenClient } from "../synthetic-trader/tokenClient.ts";
+import { TokenClient } from "../synthetic-trader/token-client.ts";
 
 const realFetch = globalThis.fetch;
 

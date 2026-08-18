@@ -19,7 +19,7 @@ import {
   userTotalPnl,
   type WorkingOrder,
 } from "./checks.ts";
-import { createConfigStore } from "./configStore.ts";
+import { createConfigStore } from "./config-store.ts";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

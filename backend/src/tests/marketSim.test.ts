@@ -1,5 +1,5 @@
 import { assertEquals, assertNotEquals } from "jsr:@std/assert@0.217";
-import { isUsEquityRegularSession, parseAllowOutOfHours } from "../market-sim/marketHours.ts";
+import { isUsEquityRegularSession, parseAllowOutOfHours } from "../market-sim/market-hours.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -11,7 +11,7 @@ import {
   resetRegime,
   seedPrice,
   snapshotOpenPrices,
-} from "../market-sim/priceEngine.ts";
+} from "../market-sim/price-engine.ts";
 import { seedRng } from "../market-sim/rng.ts";
 
 function runSequence(seed: number, ticks: number, asset = "AAPL"): number[] {

@@ -6,7 +6,7 @@ import { getCookieToken } from "@veta/auth";
 import { logger, registerLogSink } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
-import { decideAccessLog, type ThrottleEntry } from "./accessLogThrottle.ts";
+import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
@@ -17,11 +17,11 @@ import {
 } from "./context.ts";
 import { startDailySummary } from "./daily-summary.ts";
 import { sendDailySummary } from "./discord-notifier.ts";
-import { LoadAgent } from "./loadAgent.ts";
+import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
-import { createRefPriceCache } from "./refPrices.ts";
-import { classifyRequestSource } from "./requestSource.ts";
+import { createRefPriceCache } from "./ref-prices.ts";
+import { classifyRequestSource } from "./request-source.ts";
 import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
