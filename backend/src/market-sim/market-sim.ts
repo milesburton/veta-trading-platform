@@ -4,17 +4,17 @@ import { logger } from "@veta/logger";
 import type { OrderBookLevel, OrderBookSnapshot } from "@veta/market-client";
 import { createProducer } from "@veta/messaging";
 import { intradayVolumeFactor } from "@veta/time-scale";
-import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
-import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
-import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
-import { parseAllowOutOfHours } from "./marketHours.ts";
+import { BOND_ASSET_MAP, BOND_ASSETS } from "./bond-assets.ts";
+import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodity-assets.ts";
+import { FX_ASSET_MAP, FX_ASSETS } from "./fx-assets.ts";
+import { parseAllowOutOfHours } from "./market-hours.ts";
 import {
   ASSET_CLASSES,
   type AssetClass,
   buildMarketHoursPayload,
   isAssetClass,
   isAssetClassOpen,
-} from "./marketHoursByAssetClass.ts";
+} from "./market-hours-by-asset-class.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -25,16 +25,16 @@ import {
   refreshSectorShocks,
   seedPrice,
   snapshotOpenPrices,
-} from "./priceEngine.ts";
+} from "./price-engine.ts";
 import { nextBookRandom, nextRandom } from "./rng.ts";
-import { handleSeedRoute } from "./seedRoute.ts";
-import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
+import { handleSeedRoute } from "./seed-route.ts";
+import { ASSET_MAP, SP500_ASSETS } from "./sp500-assets.ts";
 import {
   buildTickDiff,
   createTickDiffState,
   isEmptyDiff,
   symbolsNeedingFreshBook,
-} from "./tickDiff.ts";
+} from "./tick-diff.ts";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -218,7 +218,7 @@ function buildBookForVenue(
 
 /**
  * Builds order books only for `symbols` rather than every symbol in
- * `prices`. On the recurring tick, tickDiff.ts's symbolsNeedingFreshBook()
+ * `prices`. On the recurring tick, tick-diff.ts's symbolsNeedingFreshBook()
  * already knows which symbols moved enough to be worth a fresh book —
  * building the rest anyway (then discarding them when the diff gate drops
  * them) was the dominant per-tick CPU cost at the full instrument universe
@@ -284,7 +284,7 @@ type SessionPhase =
 // not wall-clock time — the loop compresses a trading day into ~90 seconds
 // of ticks as a demo/UX choice, orthogonal to whether real-world calendar
 // gating (holidays, weekends; see @veta/trading-calendar and
-// isUsEquityRegularSession in marketHours.ts) allows order entry right now.
+// isUsEquityRegularSession in market-hours.ts) allows order entry right now.
 // Do not "fix" this into a wall-clock-only check — that would lose the
 // fast demo pacing every consumer of sessionPhase currently relies on.
 function deriveSessionPhase(minute: number): SessionPhase {

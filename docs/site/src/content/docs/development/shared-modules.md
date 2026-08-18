@@ -15,15 +15,15 @@ All shared backend modules use Deno import map aliases defined in `deno.json`. U
 | `@veta/auth` | `lib/auth.ts` | `getCookieToken()` |
 | `@veta/db` | `lib/db.ts` | `journalPool`, `usersPool`, `replayPool`, etc. |
 | `@veta/messaging` | `lib/messaging.ts` | `createProducer()`, `createConsumer()` |
-| `@veta/market-client` | `lib/marketSimClient.ts` | `createMarketSimClient()` |
-| `@veta/grid-query` | `lib/gridQuery.ts` | `applyExprGroup()`, `applySort()` |
+| `@veta/market-client` | `lib/market-sim-client.ts` | `createMarketSimClient()` |
+| `@veta/grid-query` | `lib/grid-query.ts` | `applyExprGroup()`, `applySort()` |
 | `@veta/settlement` | `lib/settlement.ts` | `settlementDate()`, `Desk` type |
-| `@veta/time-scale` | `lib/timeScale.ts` | Time conversion utilities |
+| `@veta/time-scale` | `lib/time-scale.ts` | Time conversion utilities |
 | `@veta/types/orders` | `types/orders.ts` | `RoutedOrder`, `FillEvent` |
 | `@veta/types/trade` | `types/types.ts` | `Trade` interface |
 | `@veta/types/intelligence` | `types/intelligence.ts` | `FeatureVector`, `Signal`, etc. |
 | `@veta/types/llm-advisory` | `types/llm-advisory.ts` | `LlmJob`, `LlmPolicy`, etc. |
-| `@veta/types/grid-query` | `types/gridQuery.ts` | `GridQueryRequest`, `GridQueryResponse` |
+| `@veta/types/grid-query` | `types/grid-query.ts` | `GridQueryRequest`, `GridQueryResponse` |
 
 ## Usage
 

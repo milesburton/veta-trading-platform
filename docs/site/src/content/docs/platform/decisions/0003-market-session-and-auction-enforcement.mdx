@@ -10,11 +10,11 @@ description: "The platform displays a live market-session phase but does not enf
 ## Context
 
 VETA has a real `MarketPhase` concept (`PRE_OPEN | OPENING_AUCTION | CONTINUOUS |
-CLOSING_AUCTION | HALTED | CLOSED`, `frontend/src/domain/market/market-session.ts`) that
+CLOSING_AUCTION | HALTED | CLOSED`, `frontend/src/domain/market/marketSession.ts`) that
 `market-sim` broadcasts live over the WebSocket tick stream, and that the order-ticket UI
 already uses to disable submission and warn about auction-only strategy restrictions
-(`frontend/src/domain/ticket/rules/session-rules.ts`,
-`frontend/src/domain/ticket/resolve-ticket.ts`). This is not a stub: it is wired,
+(`frontend/src/domain/ticket/rules/sessionRules.ts`,
+`frontend/src/domain/ticket/resolveTicket.ts`). This is not a stub: it is wired,
 tested, and does what it claims for the one path it covers.
 
 That path is the browser order ticket only. An audit of the rest of the order-entry
@@ -44,7 +44,7 @@ surface found the session concept stops there:
   but `MARKET_SIM_ALLOW_OUT_OF_HOURS` defaults unset, so the simulator runs 24/7 out of the
   box. The session *phase* it broadcasts is derived from a simulated 390-minute loop, not
   real calendar time — no holiday or early-close awareness feeds it, even though a
-  calendar model (`frontend/src/domain/market/trading-calendar.ts`) already exists and is
+  calendar model (`frontend/src/domain/market/tradingCalendar.ts`) already exists and is
   wired to nothing.
 
 None of this was previously documented as scoped work — no ADR, backlog item, or roadmap
@@ -64,9 +64,9 @@ problems.
 ### Phase 1 — Consolidate the calendar, no behavior change
 
 Three places currently hand-maintain the same NYSE-hours fact:
-`market-session.ts`'s phase model, `trading-calendar.ts`'s unused holiday/early-close
+`marketSession.ts`'s phase model, `tradingCalendar.ts`'s unused holiday/early-close
 schedule, and `marketHours.ts`'s hardcoded weekday/09:30–16:00 check. Promote
-`trading-calendar.ts`'s calendar (holidays, early closes) to the source of truth; extend
+`tradingCalendar.ts`'s calendar (holidays, early closes) to the source of truth; extend
 `marketHours.ts`'s `isUsEquityRegularSession()` to consult it. Since the Deno backend and
 the Vite frontend build separately, this means porting an equivalent minimal calendar
 object into a new `backend/src/market-sim/tradingCalendar.ts` with the same values, plus a
@@ -85,8 +85,8 @@ pacing is lost.
 purely additive; check existing `marketHours.test.ts` doesn't hardcode a date that is now
 also a holiday.
 
-**Status: Shipped**, at `backend/src/lib/tradingCalendar.ts` (`@veta/trading-calendar`)
-and `backend/src/lib/marketCalendars.ts` (`@veta/market-calendars`) rather than the
+**Status: Shipped**, at `backend/src/lib/trading-calendar.ts` (`@veta/trading-calendar`)
+and `backend/src/lib/market-calendars.ts` (`@veta/market-calendars`) rather than the
 `backend/src/market-sim/tradingCalendar.ts` path specified above — the calendar covers
 equities, FX, bonds, and commodities across multiple exchanges, with daily-break support.
 `marketHours.ts`'s `isUsEquityRegularSession()` delegates to it. Tests:
@@ -94,7 +94,7 @@ equities, FX, bonds, and commodities across multiple exchanges, with daily-break
 
 ### Phase 2 — Plumb `sessionPhase` into the shared market client
 
-`@veta/market-client`'s `MarketTick` interface (`backend/src/lib/marketSimClient.ts`) does
+`@veta/market-client`'s `MarketTick` interface (`backend/src/lib/market-sim-client.ts`) does
 not carry `sessionPhase` at all, even though `market-sim.ts`'s WebSocket payload includes
 it. No backend process outside `market-sim.ts` itself can observe session phase today.
 Add `sessionPhase` as an optional field to `MarketTick`/`mergeTick()`, and have
@@ -102,13 +102,13 @@ Add `sessionPhase` as an optional field to `MarketTick`/`mergeTick()`, and have
 `prices`/`openPrices`/`volumes`) track the latest phase into `RiskState`. Expose it on
 `/health` for observability. No enforcement in this phase.
 
-**Files:** `backend/src/lib/marketSimClient.ts`, `backend/src/risk-engine/checks.ts`
+**Files:** `backend/src/lib/market-sim-client.ts`, `backend/src/risk-engine/checks.ts`
 (`RiskState` shape), `risk-engine.ts`. **Complexity:** small. **Test risk:** low — new
 field is optional everywhere; watch for any test doing exact-shape snapshot comparison on
 the full tick object rather than field-by-field assertions.
 
 **Status: Half shipped.** `sessionPhase` is an optional field on `MarketTick`
-(`backend/src/lib/marketSimClient.ts`), carried correctly across full snapshots and
+(`backend/src/lib/market-sim-client.ts`), carried correctly across full snapshots and
 partial diffs. `risk-engine.ts`'s `consumeMarketTicks()` does not track it into
 `RiskState`, though — the market-hours check (Phase 3) resolves session state
 independently via `@veta/trading-calendar` instead, since `sessionPhase` reflects
@@ -124,7 +124,7 @@ Add `checkMarketSession` to `risk-engine/checks.ts`, following the file's existi
 `RiskConfig.enforceMarketHours: boolean`, defaulted `false`, settable via the existing
 `PUT /config` endpoint the same way `selfCrossEnabled`/`breakersEnabled` already work.
 Reject on `HALTED`/`CLOSED`; during `PRE_OPEN`/auction phases, allow only the same
-strategies `market-session.ts`'s `AUCTION_STRATEGIES` allow-list already permits, so the
+strategies `marketSession.ts`'s `AUCTION_STRATEGIES` allow-list already permits, so the
 server never enforces a stricter rule than what the UI already promised.
 
 This lands as `risk-engine`, not `gateway`, deliberately: gateway's only existing
@@ -144,7 +144,7 @@ only new tests are added.
 `@veta/trading-calendar` per order rather than a `RiskState`-tracked `sessionPhase` (see
 Phase 2). **Gap:** the check only tests `session.allowsOrderEntry`, a blanket open/closed
 gate — it does not restrict to auction-eligible strategies during
-`PRE_OPEN`/`OPENING_AUCTION`/`CLOSING_AUCTION`. `resolveSession()` in `tradingCalendar.ts`
+`PRE_OPEN`/`OPENING_AUCTION`/`CLOSING_AUCTION`. `resolveSession()` in `trading-calendar.ts`
 sets `allowsOrderEntry: true` unconditionally for all three phases today, so any strategy
 is accepted during an auction window, not just `LIMIT`-family ones. Closing this needs
 either a strategy check added to `checkMarketHours`, or Phase 7's auction model queuing
@@ -259,7 +259,7 @@ is a separate, larger project in its own right. MOC/LOC order types are explicit
 scope, not a dependency of this phase: they need new `Strategy`/order-type schema entries
 and OMS routing changes.
 
-Existing frontend copy in `session-rules.ts` ("orders will queue for the opening auction")
+Existing frontend copy in `sessionRules.ts` ("orders will queue for the opening auction")
 already sets this exact expectation — no frontend change needed if implemented as
 described.
 
@@ -271,7 +271,7 @@ phases; only a collision risk for E2E/load tests already flagged under Phase 4.
 **Status: Not implemented.** No `auctionQueue.ts` exists, and `oms-server.ts` has no
 `OPENING_AUCTION`/`CLOSING_AUCTION` handling. Orders submitted during an auction phase
 still behave identically to a continuous-session order on both the HTTP and FIX paths.
-Frontend copy in `session-rules.ts` promises queuing behavior this phase would deliver
+Frontend copy in `sessionRules.ts` promises queuing behavior this phase would deliver
 but doesn't yet.
 
 ## Consequences
@@ -290,11 +290,11 @@ but doesn't yet.
   version, and remains unimplemented — see Phase 7 above. Anyone expecting real
   price-time-priority uncrossing or MOC/LOC order types should treat this ADR as not
   covering that; it would be a new ADR.
-- `financial-centers.ts` (a per-financial-centre reference clock display on the
+- `financialCenters.ts` (a per-financial-centre reference clock display on the
   `feat/order-routing-sankey-and-world-clocks` branch, not yet merged) is a related but
   separate concept — global reference clocks for markets VETA does not trade, versus this
   platform's own single tradable session. It is out of scope for this ADR; reconciling its
-  duplicated NYC hours with `market-session.ts`'s real session truth should land with that
+  duplicated NYC hours with `marketSession.ts`'s real session truth should land with that
   branch's own merge, not be gated on this plan.
 
 ## Alternatives considered
@@ -311,7 +311,7 @@ but doesn't yet.
   — a genuine single-price cross needs a separate order book, matching algorithm, and
   imbalance calculation distinct from EMS's existing continuous-fill math. Left as future
   work, not a prerequisite.
-- **Unify `financial-centers.ts` with `market-session.ts` into one model.** Considered and
+- **Unify `financialCenters.ts` with `marketSession.ts` into one model.** Considered and
   rejected: the five non-US reference clocks (London, Tokyo, etc.) have no tradable-session
   equivalent on this platform, so forcing them through the same `MarketPhase` model would
   be the kind of premature generalization that does not serve either concept well. Only

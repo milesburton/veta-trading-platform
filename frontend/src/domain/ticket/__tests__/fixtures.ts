@@ -1,5 +1,5 @@
-import type { SessionState } from "@veta/frontend/domain/market/market-session";
-import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import type { SessionState } from "@veta/frontend/domain/market/marketSession";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
 import type { TradingLimits } from "@veta/frontend/store/authSlice";
 
 export const DEFAULT_LIMITS: TradingLimits = {

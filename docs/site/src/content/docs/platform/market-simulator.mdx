@@ -13,7 +13,7 @@ The <a href="/veta-trading-platform/platform/services/">Market Simulator</a> (`m
 Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector correlation, and regime-based drift.
 
 <CodeBlock
-  path="backend/src/market-sim/priceEngine.ts"
+  path="backend/src/market-sim/price-engine.ts"
   region="docs:gbm-constants"
   title="Price model constants"
 />
@@ -25,7 +25,7 @@ Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector
 ## Async prewarm
 
 <CodeBlock
-  path="backend/src/market-sim/priceEngine.ts"
+  path="backend/src/market-sim/price-engine.ts"
   region="docs:prewarm-async"
   title="Chunked prewarm"
 />
@@ -35,7 +35,7 @@ Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector
 ## Reset-in-progress guard
 
 <CodeBlock
-  path="backend/src/market-sim/priceEngine.ts"
+  path="backend/src/market-sim/price-engine.ts"
   region="docs:reset-in-progress"
   title="Reset guard"
 />
@@ -45,7 +45,7 @@ Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector
 ## Session timing
 
 <CodeBlock
-  path="backend/src/lib/timeScale.ts"
+  path="backend/src/lib/time-scale.ts"
   region="docs:intraday-volume-curve"
   title="Intraday volume curve"
 />
@@ -54,17 +54,17 @@ Trading volume is not flat across a session, it is higher at the open and close 
 
 ## Instrument metadata conventions
 
-Each asset class module (`sp500Assets.ts`, `fxAssets.ts`, `commodityAssets.ts`, `bondAssets.ts`) defines the same `AssetDef` shape but with class-specific conventions for what the fields mean. For curated equities, `RawMeta.lotSize` is optional: most names auto-derive their round lot size from `initialPrice` (ETFs and high-price stocks trade in lots of 1, mid-price in lots of 10, everything else in lots of 100), and the curated entry only needs to set `lotSize` explicitly when a symbol should deviate from that derivation.
+Each asset class module (`sp500-assets.ts`, `fx-assets.ts`, `commodity-assets.ts`, `bond-assets.ts`) defines the same `AssetDef` shape but with class-specific conventions for what the fields mean. For curated equities, `RawMeta.lotSize` is optional: most names auto-derive their round lot size from `initialPrice` (ETFs and high-price stocks trade in lots of 1, mid-price in lots of 10, everything else in lots of 100), and the curated entry only needs to set `lotSize` explicitly when a symbol should deviate from that derivation.
 
 ### Commodities
 
-<Source path="backend/src/market-sim/commodityAssets.ts" region="docs:commodity-conventions" />
+<Source path="backend/src/market-sim/commodity-assets.ts" region="docs:commodity-conventions" />
 
 Commodity futures are modelled as front-month continuous contracts. Price is USD per standard contract unit (barrel, MMBtu, troy ounce, and so on). Volatility sits between FX and speculative equities. `lotSize` is always 1, since OMS quantities for commodities are integer contracts, not shares. `exchange` collapses the real CME/NYMEX/CBOT venues onto a single simulated MIC per commodity.
 
 ### FX
 
-<Source path="backend/src/market-sim/fxAssets.ts" region="docs:fx-conventions" />
+<Source path="backend/src/market-sim/fx-assets.ts" region="docs:fx-conventions" />
 
 FX price is quote-currency units per one unit of base currency. Volatility is lower than equities, matching real spot FX behaviour. `lotSize` is 1000 (a standard FX lot expressed in base units for display). `exchange` is fixed to `XCME`: spot FX is OTC in reality, but the simulator needs a single MIC to slot into the same `AssetDef` shape as exchange-traded instruments.
 
@@ -73,7 +73,7 @@ FX price is quote-currency units per one unit of base currency. Volatility is lo
 Most S&P 500-style names get curated metadata (`CURATED_META`) for the most-traded symbols, but the long tail of generated equities needs its metadata derived algorithmically from price and volatility alone:
 
 <CodeBlock
-  path="backend/src/market-sim/sp500Assets.ts"
+  path="backend/src/market-sim/sp500-assets.ts"
   region="docs:derive-heuristics"
   title="Metadata derivation heuristics"
 />
@@ -86,7 +86,7 @@ These are heuristics for generating a plausible, internally consistent synthetic
 
 ## Fixed income data placement
 
-<Source path="backend/src/market-sim/bondUniverse.ts" region="docs:bond-universe-shared" />
+<Source path="backend/src/market-sim/bond-universe.ts" region="docs:bond-universe-shared" />
 
 Bond definitions (curated on-the-run issues plus a generated set of off-the-run UST and investment-grade corporate bonds) live under `shared/`, not `backend/src/market-sim/`, so that the frontend order ticket can import the same bond universe directly instead of maintaining a duplicate copy that could drift out of sync.
 
@@ -94,8 +94,8 @@ Bond definitions (curated on-the-run issues plus a generated set of off-the-run 
 
 <Source path="backend/src/market-sim/market-sim.ts" region="docs:venuebooks-sniper-only" />
 
-The `market.ticks` Kafka topic carries a diff of the tick payload (see the [market data pipeline](/veta-trading-platform/platform/architecture/) for the overall flow), but `venueBooks` (per-venue order book snapshots) is deliberately stripped before publishing. Only the SNIPER algo's smart-order-router consumes per-venue books, and it reads them directly over the market-sim WebSocket via `marketSimClient.ts`, not from Kafka. At full instrument-universe size, including `venueBooks` in every Kafka message risks exceeding the broker's maximum message size for no consumer that needs it.
+The `market.ticks` Kafka topic carries a diff of the tick payload (see the [market data pipeline](/veta-trading-platform/platform/architecture/) for the overall flow), but `venueBooks` (per-venue order book snapshots) is deliberately stripped before publishing. Only the SNIPER algo's smart-order-router consumes per-venue books, and it reads them directly over the market-sim WebSocket via `market-sim-client.ts`, not from Kafka. At full instrument-universe size, including `venueBooks` in every Kafka message risks exceeding the broker's maximum message size for no consumer that needs it.
 
-<Source path="backend/src/market-sim/tickDiff.ts" region="docs:symbols-needing-fresh-book" />
+<Source path="backend/src/market-sim/tick-diff.ts" region="docs:symbols-needing-fresh-book" />
 
 `symbolsNeedingFreshBook` exists so the tick loop can skip the expensive per-symbol order-book construction entirely for symbols that the diff would discard anyway, rather than building every symbol's book on every tick and throwing most of it away afterwards. It unions the main order book's "last published price" baseline with every venue's independently tracked baseline, because those baselines can drift apart over time even though they share the same `BOOK_MATERIAL_BPS` materiality threshold.

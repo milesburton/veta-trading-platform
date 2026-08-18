@@ -6,7 +6,7 @@ import {
   resolveCurrentSession,
   resolvePhaseFromMinute,
   totalTradingMinutes,
-} from "../lib/tradingCalendar.ts";
+} from "../lib/trading-calendar.ts";
 import {
   calendarForOrder,
   COMMODITY_CALENDAR,
@@ -15,7 +15,7 @@ import {
   SIFMA_BOND_CALENDAR,
   US_EQUITY_CALENDAR,
   XTKS_CALENDAR,
-} from "../lib/marketCalendars.ts";
+} from "../lib/market-calendars.ts";
 
 Deno.test("buildSessionSchedule produces 5 contiguous phases starting at minute 0", () => {
   const schedule = buildSessionSchedule(US_EQUITY_CALENDAR);

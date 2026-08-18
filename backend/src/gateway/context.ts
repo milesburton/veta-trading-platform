@@ -1,6 +1,6 @@
 import type { MsgProducer } from "@veta/messaging";
 import type { RateLimiter } from "@veta/rate-limit";
-import type { LoadAgent } from "./loadAgent.ts";
+import type { LoadAgent } from "./load-agent.ts";
 
 export interface AuthenticatedUser {
   id: string;

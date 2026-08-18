@@ -2,8 +2,8 @@ import {
   quantityLabel,
   quantitySubLabel,
   STRATEGY_OPTIONS,
-} from "@veta/frontend/domain/ticket/field-definitions";
-import { FIELD_REGISTRY, FK, getFieldDef } from "@veta/frontend/domain/ticket/field-registry";
+} from "@veta/frontend/domain/ticket/fieldDefinitions";
+import { FIELD_REGISTRY, FK, getFieldDef } from "@veta/frontend/domain/ticket/fieldRegistry";
 import { describe, expect, it } from "vitest";
 
 describe("ticket field definitions", () => {

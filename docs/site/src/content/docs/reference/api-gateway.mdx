@@ -89,7 +89,7 @@ A small set of proxy routes are reachable without a session cookie: the OAuth fl
 
 ## Classifying loadgen traffic
 
-<Source path="backend/src/gateway/requestSource.ts" label="classifyRequestSource" />
+<Source path="backend/src/gateway/request-source.ts" label="classifyRequestSource" />
 
 `classifyRequestSource` tags a request as `"loadgen"` when its User-Agent starts with `k6/` (the loadgen container's HTTP client). Access events are tagged at the point they are published, which lets alert rules filter continuous [loadgen](/veta-trading-platform/development/testing/loadgen/) traffic out of their Loki queries (`!= "\"source\":\"loadgen\""`) without losing real incident signal. This is deliberately a noise-classification filter only: a real attacker does not advertise "k6" in their User-Agent, so the tag is never trusted for an authentication or authorization decision, only for keeping alerts readable during a load run.
 

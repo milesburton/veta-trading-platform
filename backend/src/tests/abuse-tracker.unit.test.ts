@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { type AbuseConfig, AbuseTracker } from "../gateway/abuseTracker.ts";
+import { type AbuseConfig, AbuseTracker } from "../gateway/abuse-tracker.ts";
 
 const TIGHT: AbuseConfig = {
   perSocketThreshold: 3,

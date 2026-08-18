@@ -152,30 +152,30 @@ graph TD
 | TradingContext | `context/TradingContext.tsx` | 0 (—) | 2 (App, main) |
 | ChannelContext | `contexts/ChannelContext.tsx` | 0 (—) | 0 (—) |
 | bondUniverse | `data/bondUniverse.ts` | 0 (—) | 0 (—) |
-| financial-centers | `domain/market/financial-centers.ts` | 0 (—) | 0 (—) |
-| market-session | `domain/market/market-session.ts` | 0 (—) | 1 (trading-calendar) |
-| trading-calendar | `domain/market/trading-calendar.ts` | 1 (market-session) | 0 (—) |
-| venue-capabilities | `domain/market/venue-capabilities.ts` | 0 (—) | 0 (—) |
+| financialCenters | `domain/market/financialCenters.ts` | 0 (—) | 0 (—) |
+| marketSession | `domain/market/marketSession.ts` | 0 (—) | 1 (tradingCalendar) |
+| tradingCalendar | `domain/market/tradingCalendar.ts` | 1 (marketSession) | 0 (—) |
+| venueCapabilities | `domain/market/venueCapabilities.ts` | 0 (—) | 0 (—) |
 | sankeyData | `domain/orderRouting/sankeyData.ts` | 0 (—) | 0 (—) |
 | parse | `domain/quickTrade/parse.ts` | 0 (—) | 0 (—) |
-| async-risk | `domain/ticket/async-risk.ts` | 1 (ticket-types) | 1 (useAsyncRisk) |
-| field-definitions | `domain/ticket/field-definitions.ts` | 0 (—) | 1 (resolve-ticket) |
-| field-registry | `domain/ticket/field-registry.ts` | 0 (—) | 1 (resolve-ticket) |
-| resolve-ticket | `domain/ticket/resolve-ticket.ts` | 14 (field-definitions, field-registry, dark-pool, desk-access, instrument-spec, kill-switch, +8 more) | 1 (useTicketResolution) |
-| dark-pool | `domain/ticket/rules/dark-pool.ts` | 0 (—) | 1 (resolve-ticket) |
-| desk-access | `domain/ticket/rules/desk-access.ts` | 0 (—) | 1 (resolve-ticket) |
-| instrument-spec | `domain/ticket/rules/instrument-spec.ts` | 0 (—) | 1 (resolve-ticket) |
-| kill-switch | `domain/ticket/rules/kill-switch.ts` | 0 (—) | 1 (resolve-ticket) |
-| limit-checks | `domain/ticket/rules/limit-checks.ts` | 0 (—) | 1 (resolve-ticket) |
-| price-collar | `domain/ticket/rules/price-collar.ts` | 0 (—) | 1 (resolve-ticket) |
-| role-check | `domain/ticket/rules/role-check.ts` | 0 (—) | 1 (resolve-ticket) |
-| session-rules | `domain/ticket/rules/session-rules.ts` | 0 (—) | 1 (resolve-ticket) |
-| spread-check | `domain/ticket/rules/spread-check.ts` | 0 (—) | 1 (resolve-ticket) |
-| static-validation | `domain/ticket/rules/static-validation.ts` | 0 (—) | 1 (resolve-ticket) |
-| venue-rules | `domain/ticket/rules/venue-rules.ts` | 0 (—) | 1 (resolve-ticket) |
-| ticket-types | `domain/ticket/ticket-types.ts` | 0 (—) | 4 (async-risk, resolve-ticket, useAsyncRisk, useTicketResolution) |
-| useAsyncRisk | `domain/ticket/useAsyncRisk.ts` | 2 (async-risk, ticket-types) | 0 (—) |
-| useTicketResolution | `domain/ticket/useTicketResolution.ts` | 2 (resolve-ticket, ticket-types) | 0 (—) |
+| asyncRisk | `domain/ticket/asyncRisk.ts` | 1 (ticketTypes) | 1 (useAsyncRisk) |
+| fieldDefinitions | `domain/ticket/fieldDefinitions.ts` | 0 (—) | 1 (resolveTicket) |
+| fieldRegistry | `domain/ticket/fieldRegistry.ts` | 0 (—) | 1 (resolveTicket) |
+| resolveTicket | `domain/ticket/resolveTicket.ts` | 14 (fieldDefinitions, fieldRegistry, darkPool, deskAccess, instrumentSpec, killSwitch, +8 more) | 1 (useTicketResolution) |
+| darkPool | `domain/ticket/rules/darkPool.ts` | 0 (—) | 1 (resolveTicket) |
+| deskAccess | `domain/ticket/rules/deskAccess.ts` | 0 (—) | 1 (resolveTicket) |
+| instrumentSpec | `domain/ticket/rules/instrumentSpec.ts` | 0 (—) | 1 (resolveTicket) |
+| killSwitch | `domain/ticket/rules/killSwitch.ts` | 0 (—) | 1 (resolveTicket) |
+| limitChecks | `domain/ticket/rules/limitChecks.ts` | 0 (—) | 1 (resolveTicket) |
+| priceCollar | `domain/ticket/rules/priceCollar.ts` | 0 (—) | 1 (resolveTicket) |
+| roleCheck | `domain/ticket/rules/roleCheck.ts` | 0 (—) | 1 (resolveTicket) |
+| sessionRules | `domain/ticket/rules/sessionRules.ts` | 0 (—) | 1 (resolveTicket) |
+| spreadCheck | `domain/ticket/rules/spreadCheck.ts` | 0 (—) | 1 (resolveTicket) |
+| staticValidation | `domain/ticket/rules/staticValidation.ts` | 0 (—) | 1 (resolveTicket) |
+| venueRules | `domain/ticket/rules/venueRules.ts` | 0 (—) | 1 (resolveTicket) |
+| ticketTypes | `domain/ticket/ticketTypes.ts` | 0 (—) | 4 (asyncRisk, resolveTicket, useAsyncRisk, useTicketResolution) |
+| useAsyncRisk | `domain/ticket/useAsyncRisk.ts` | 2 (asyncRisk, ticketTypes) | 0 (—) |
+| useTicketResolution | `domain/ticket/useTicketResolution.ts` | 2 (resolveTicket, ticketTypes) | 0 (—) |
 | electron.d | `electron.d.ts` | 0 (—) | 0 (—) |
 | fixCodec | `fix/fixCodec.ts` | 0 (—) | 1 (fixSession) |
 | fixSession | `fix/fixSession.ts` | 1 (fixCodec) | 0 (—) |

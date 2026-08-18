@@ -480,7 +480,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Market Simulator",
     category: "market-data",
     short:
-      "Generates ~80 S&P 500 instruments at 4 ticks/sec via GBM. Per-symbol vol and beta come from sp500Assets.ts.",
+      "Generates ~80 S&P 500 instruments at 4 ticks/sec via GBM. Per-symbol vol and beta come from sp500-assets.ts.",
     seeAlso: ["gbm", "tick"],
     source: "backend/src/market-sim/market-sim.ts",
   },

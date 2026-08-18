@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { PositionTracker } from "../synthetic-trader/positionTracker.ts";
+import { PositionTracker } from "../synthetic-trader/position-tracker.ts";
 
 Deno.test("[synthetic-trader-position-tracker] recordAck adds an order to the open set", () => {
   const tracker = new PositionTracker();

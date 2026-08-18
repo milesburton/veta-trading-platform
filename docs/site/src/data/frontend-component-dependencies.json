@@ -723,26 +723,26 @@
       "importedByCount": 0
     },
     {
-      "name": "financial-centers",
-      "path": "domain/market/financial-centers.ts",
+      "name": "financialCenters",
+      "path": "domain/market/financialCenters.ts",
       "importCount": 0,
       "importedByCount": 0
     },
     {
-      "name": "market-session",
-      "path": "domain/market/market-session.ts",
+      "name": "marketSession",
+      "path": "domain/market/marketSession.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "trading-calendar",
-      "path": "domain/market/trading-calendar.ts",
+      "name": "tradingCalendar",
+      "path": "domain/market/tradingCalendar.ts",
       "importCount": 1,
       "importedByCount": 0
     },
     {
-      "name": "venue-capabilities",
-      "path": "domain/market/venue-capabilities.ts",
+      "name": "venueCapabilities",
+      "path": "domain/market/venueCapabilities.ts",
       "importCount": 0,
       "importedByCount": 0
     },
@@ -759,98 +759,98 @@
       "importedByCount": 0
     },
     {
-      "name": "async-risk",
-      "path": "domain/ticket/async-risk.ts",
+      "name": "asyncRisk",
+      "path": "domain/ticket/asyncRisk.ts",
       "importCount": 1,
       "importedByCount": 1
     },
     {
-      "name": "field-definitions",
-      "path": "domain/ticket/field-definitions.ts",
+      "name": "fieldDefinitions",
+      "path": "domain/ticket/fieldDefinitions.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "field-registry",
-      "path": "domain/ticket/field-registry.ts",
+      "name": "fieldRegistry",
+      "path": "domain/ticket/fieldRegistry.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "resolve-ticket",
-      "path": "domain/ticket/resolve-ticket.ts",
+      "name": "resolveTicket",
+      "path": "domain/ticket/resolveTicket.ts",
       "importCount": 14,
       "importedByCount": 1
     },
     {
-      "name": "dark-pool",
-      "path": "domain/ticket/rules/dark-pool.ts",
+      "name": "darkPool",
+      "path": "domain/ticket/rules/darkPool.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "desk-access",
-      "path": "domain/ticket/rules/desk-access.ts",
+      "name": "deskAccess",
+      "path": "domain/ticket/rules/deskAccess.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "instrument-spec",
-      "path": "domain/ticket/rules/instrument-spec.ts",
+      "name": "instrumentSpec",
+      "path": "domain/ticket/rules/instrumentSpec.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "kill-switch",
-      "path": "domain/ticket/rules/kill-switch.ts",
+      "name": "killSwitch",
+      "path": "domain/ticket/rules/killSwitch.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "limit-checks",
-      "path": "domain/ticket/rules/limit-checks.ts",
+      "name": "limitChecks",
+      "path": "domain/ticket/rules/limitChecks.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "price-collar",
-      "path": "domain/ticket/rules/price-collar.ts",
+      "name": "priceCollar",
+      "path": "domain/ticket/rules/priceCollar.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "role-check",
-      "path": "domain/ticket/rules/role-check.ts",
+      "name": "roleCheck",
+      "path": "domain/ticket/rules/roleCheck.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "session-rules",
-      "path": "domain/ticket/rules/session-rules.ts",
+      "name": "sessionRules",
+      "path": "domain/ticket/rules/sessionRules.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "spread-check",
-      "path": "domain/ticket/rules/spread-check.ts",
+      "name": "spreadCheck",
+      "path": "domain/ticket/rules/spreadCheck.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "static-validation",
-      "path": "domain/ticket/rules/static-validation.ts",
+      "name": "staticValidation",
+      "path": "domain/ticket/rules/staticValidation.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "venue-rules",
-      "path": "domain/ticket/rules/venue-rules.ts",
+      "name": "venueRules",
+      "path": "domain/ticket/rules/venueRules.ts",
       "importCount": 0,
       "importedByCount": 1
     },
     {
-      "name": "ticket-types",
-      "path": "domain/ticket/ticket-types.ts",
+      "name": "ticketTypes",
+      "path": "domain/ticket/ticketTypes.ts",
       "importCount": 0,
       "importedByCount": 4
     },

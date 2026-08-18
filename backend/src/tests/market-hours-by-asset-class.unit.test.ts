@@ -5,7 +5,7 @@ import {
   buildMarketHoursPayload,
   isAssetClass,
   isAssetClassOpen,
-} from "../market-sim/marketHoursByAssetClass.ts";
+} from "../market-sim/market-hours-by-asset-class.ts";
 
 function allowNone(): Record<AssetClass, boolean> {
   return { equity: false, fx: false, commodity: false, bond: false };

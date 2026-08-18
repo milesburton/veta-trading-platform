@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
-import * as risk from "@veta/frontend/domain/ticket/async-risk";
-import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import * as risk from "@veta/frontend/domain/ticket/asyncRisk";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
 import { useAsyncRisk } from "@veta/frontend/domain/ticket/useAsyncRisk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { makeCtx } from "./fixtures";

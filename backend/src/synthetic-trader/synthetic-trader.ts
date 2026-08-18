@@ -1,12 +1,12 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
-import { isDeskOpen } from "./deskCalendar.ts";
-import { DecisionEngine } from "./decisionEngine.ts";
-import { GatewaySocket } from "./gatewaySocket.ts";
+import { isDeskOpen } from "./desk-calendar.ts";
+import { DecisionEngine } from "./decision-engine.ts";
+import { GatewaySocket } from "./gateway-socket.ts";
 import { nextDelayMs } from "./pacing.ts";
-import { PositionTracker } from "./positionTracker.ts";
-import { TokenClient } from "./tokenClient.ts";
+import { PositionTracker } from "./position-tracker.ts";
+import { TokenClient } from "./token-client.ts";
 
 const PORT = Number(Deno.env.get("SYNTHETIC_TRADER_PORT")) || 5_031;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

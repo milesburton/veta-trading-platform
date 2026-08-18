@@ -17,6 +17,7 @@ The project uses a **Dev Container**. Open the repository in VS Code or JetBrain
 - **Functional where possible**: pure functions with explicit inputs and outputs over mutable module-level state.
 - **Single source of truth**: shared types in `backend/src/types/`, shared utilities in `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`.
 - **Import map aliases**: use `@veta/http`, `@veta/messaging`, `@veta/types/orders` etc. instead of relative paths like `../lib/http.ts`.
+- **Filename casing**: `backend/src/**` module files use kebab-case (`market-data-service.ts`). `frontend/src/**` module files use camelCase (`panelRegistry.ts`); React components stay PascalCase (`DashboardContext.tsx`). Test files keep the base filename's casing with a `.test.ts(x)` / `.spec.ts` / `.unit.test.ts` suffix.
 
 ### Known false-positive lint suppressions
 

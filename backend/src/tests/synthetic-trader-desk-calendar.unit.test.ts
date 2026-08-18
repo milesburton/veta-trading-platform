@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { isDeskOpen } from "../synthetic-trader/deskCalendar.ts";
+import { isDeskOpen } from "../synthetic-trader/desk-calendar.ts";
 
 Deno.test("[synthetic-trader-desk-calendar] equity desk is open during regular US session", () => {
   assertEquals(isDeskOpen("equity", new Date("2026-07-29T14:00:00Z")), true);

@@ -1,5 +1,5 @@
 import type { Middleware } from "@reduxjs/toolkit";
-import { SPREAD_WARNING_THRESHOLD_BPS } from "@veta/frontend/domain/ticket/rules/spread-check.ts";
+import { SPREAD_WARNING_THRESHOLD_BPS } from "@veta/frontend/domain/ticket/rules/spreadCheck.ts";
 import {
   alertAdded,
   alertDismissed,

@@ -1,8 +1,8 @@
 import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 
-import { intradayVolumeFactor, TRADING_DAY_MINUTES } from "../lib/timeScale.ts";
-import { generatePrice, marketData } from "../market-sim/priceEngine.ts";
-import { ASSET_MAP, SP500_ASSETS } from "../market-sim/sp500Assets.ts";
+import { intradayVolumeFactor, TRADING_DAY_MINUTES } from "../lib/time-scale.ts";
+import { generatePrice, marketData } from "../market-sim/price-engine.ts";
+import { ASSET_MAP, SP500_ASSETS } from "../market-sim/sp500-assets.ts";
 
 Deno.test("[timeScale] intradayVolumeFactor is in [0.3, 1.0] for all minutes", () => {
   for (let m = 0; m < TRADING_DAY_MINUTES; m++) {

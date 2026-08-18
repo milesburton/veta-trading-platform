@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { checkPreTradeRisk, type RiskCheckResult, shouldTriggerRiskCheck } from "./async-risk.ts";
-import type { TicketContext } from "./ticket-types.ts";
+import { checkPreTradeRisk, type RiskCheckResult, shouldTriggerRiskCheck } from "./asyncRisk.ts";
+import type { TicketContext } from "./ticketTypes.ts";
 
 const DEBOUNCE_MS = 800;
 
