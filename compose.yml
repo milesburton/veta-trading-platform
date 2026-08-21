@@ -1751,7 +1751,7 @@ services:
       user-service:
         condition: service_healthy
     environment:
-      SYNTHETIC_TRADER_PORT: "5031"
+      SYNTHETIC_TRADER_PORT: "5043"
       GATEWAY_WS_URL: ws://gateway:5011/ws/gateway
       USER_SERVICE_URL: http://user-service:5008
       MARKET_SIM_HOST: market-sim
@@ -1765,7 +1765,7 @@ services:
       SYNTHETIC_TRADER_MIN_PACE_MS: "${SYNTHETIC_TRADER_MIN_PACE_MS:-30000}"
       SYNTHETIC_TRADER_MAX_PACE_MS: "${SYNTHETIC_TRADER_MAX_PACE_MS:-480000}"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:5031/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:5043/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
