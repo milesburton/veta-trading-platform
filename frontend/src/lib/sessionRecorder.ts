@@ -3,6 +3,8 @@ import { record } from "rrweb";
 
 const FLUSH_INTERVAL_MS = 30_000;
 const MAX_DURATION_MS = 30 * 60 * 1000;
+const MAX_BUFFER_EVENTS = 20_000;
+const MAX_CHUNK_RETRIES = 5;
 
 type UploadFn = (seq: number, events: eventWithTime[]) => Promise<void>;
 type OnStopFn = () => void;
@@ -15,6 +17,14 @@ let uploadFn: UploadFn | null = null;
 let onStopCallback: OnStopFn | null = null;
 let startedAt = 0;
 let durationTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingChunkRetries = 0;
+
+function pushEvent(event: eventWithTime): void {
+  buffer.push(event);
+  if (buffer.length > MAX_BUFFER_EVENTS) {
+    buffer = buffer.slice(buffer.length - MAX_BUFFER_EVENTS);
+  }
+}
 
 async function flush(): Promise<void> {
   if (buffer.length === 0 || !uploadFn) return;
@@ -23,9 +33,15 @@ async function flush(): Promise<void> {
   const currentSeq = seq++;
   try {
     await uploadFn(currentSeq, chunk);
+    pendingChunkRetries = 0;
   } catch {
-    buffer = [...chunk, ...buffer];
+    pendingChunkRetries++;
     seq = currentSeq;
+    if (pendingChunkRetries > MAX_CHUNK_RETRIES) {
+      pendingChunkRetries = 0;
+      return;
+    }
+    buffer = [...chunk, ...buffer].slice(-MAX_BUFFER_EVENTS);
   }
 }
 
@@ -34,6 +50,7 @@ export function startRecording(upload: UploadFn, onStop?: OnStopFn): void {
 
   buffer = [];
   seq = 0;
+  pendingChunkRetries = 0;
   uploadFn = upload;
   onStopCallback = onStop ?? null;
   startedAt = Date.now();
@@ -45,7 +62,7 @@ export function startRecording(upload: UploadFn, onStop?: OnStopFn): void {
       maskTextSelector: "[data-sensitive]",
       blockSelector: ".no-replay",
       emit(event: eventWithTime) {
-        buffer.push(event);
+        pushEvent(event);
       },
     }) ?? null;
 

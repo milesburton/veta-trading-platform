@@ -28,6 +28,7 @@ vi.mock("lightweight-charts", () => ({
   createChart: vi.fn(() => chartStub),
   CandlestickSeries: {},
   HistogramSeries: {},
+  LineSeries: {},
   ColorType: { Solid: "solid" },
   CrosshairMode: { Normal: 0 },
 }));
@@ -109,6 +110,46 @@ describe("CandlestickChart – interval switching", () => {
     renderWithStore(<CandlestickChart symbol="AAPL" candles={partialCandles} />);
     fireEvent.click(screen.getByRole("button", { name: "5m" }));
     expect(screen.getByText(/Collecting 5m candles/i)).toBeInTheDocument();
+  });
+});
+
+describe("CandlestickChart – SMA overlay", () => {
+  it("renders the SMA toggle enabled by default and a period input", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const toggle = screen.getByTestId("sma-toggle");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("sma-period-input")).toHaveValue(20);
+  });
+
+  it("disables the period input when toggled off", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    fireEvent.click(screen.getByTestId("sma-toggle"));
+    expect(screen.getByTestId("sma-toggle")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("sma-period-input")).toBeDisabled();
+  });
+
+  it("updates the period when the number input changes", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const input = screen.getByTestId("sma-period-input");
+    fireEvent.change(input, { target: { value: "10" } });
+    expect(input).toHaveValue(10);
+  });
+
+  it("clamps the period to the configured min/max bounds", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const input = screen.getByTestId("sma-period-input");
+    fireEvent.change(input, { target: { value: "9999" } });
+    expect(input).toHaveValue(200);
+    fireEvent.change(input, { target: { value: "0" } });
+    expect(input).toHaveValue(2);
+  });
+
+  it("ignores non-numeric period input", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const input = screen.getByTestId("sma-period-input");
+    fireEvent.change(input, { target: { value: "10" } });
+    fireEvent.change(input, { target: { value: "" } });
+    expect(input).toHaveValue(10);
   });
 });
 

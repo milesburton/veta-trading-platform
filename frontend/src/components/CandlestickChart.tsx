@@ -2,13 +2,14 @@ import { useSignal } from "@preact/signals-react";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
 import type { OhlcCandle } from "@veta/frontend/types.ts";
-import type { IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
+import type { IChartApi, ISeriesApi, LineData, UTCTimestamp } from "lightweight-charts";
 import {
   CandlestickSeries,
   ColorType,
   CrosshairMode,
   createChart,
   HistogramSeries,
+  LineSeries,
 } from "lightweight-charts";
 import { type MutableRefObject, useEffect, useRef } from "react";
 
@@ -19,6 +20,9 @@ const INTERVAL_OPTIONS: MinuteInterval[] = Array.from(
   (_, i) => `${i + 1}m` as MinuteInterval
 );
 const CANDLE_BAR_SPACING = 8;
+const DEFAULT_SMA_PERIOD = 20;
+const MIN_SMA_PERIOD = 2;
+const MAX_SMA_PERIOD = 200;
 
 interface Props {
   symbol: string;
@@ -67,6 +71,24 @@ function toVolData(c: OhlcCandle) {
     value: c.volume ?? 0,
     color: c.close >= c.open ? COLOR.UP_BG : COLOR.DOWN_BG,
   };
+}
+
+function computeSma(candles: OhlcCandle[], period: number): LineData<UTCTimestamp>[] {
+  if (period < 1 || candles.length < period) return [];
+
+  const result: LineData<UTCTimestamp>[] = [];
+  let sum = 0;
+  for (let i = 0; i < candles.length; i++) {
+    sum += candles[i].close;
+    if (i >= period) sum -= candles[i - period].close;
+    if (i >= period - 1) {
+      result.push({
+        time: (candles[i].time / 1000) as UTCTimestamp,
+        value: sum / period,
+      });
+    }
+  }
+  return result;
 }
 
 function aggregateCandles(candles: OhlcCandle[], intervalMinutes: number): OhlcCandle[] {
@@ -128,6 +150,7 @@ function useCandlestickChartCanvas(
   chartRef: MutableRefObject<IChartApi | null>,
   candleSeriesRef: MutableRefObject<ISeriesApi<"Candlestick"> | null>,
   volumeSeriesRef: MutableRefObject<ISeriesApi<"Histogram"> | null>,
+  smaSeriesRef: MutableRefObject<ISeriesApi<"Line"> | null>,
   chartSizedRef: MutableRefObject<boolean>,
   pendingLoadRef: MutableRefObject<(() => void) | null>,
   loadedBarCountRef: MutableRefObject<number>,
@@ -158,6 +181,14 @@ function useCandlestickChartCanvas(
     });
     chart.priceScale("").applyOptions({
       scaleMargins: { top: 0.8, bottom: 0 },
+    });
+    smaSeriesRef.current = chart.addSeries(LineSeries, {
+      color: COLOR.VWAP,
+      lineWidth: 2,
+      priceScaleId: "right",
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
     });
     setFixedBarSpacing(chart);
 
@@ -209,6 +240,7 @@ function useCandlestickChartCanvas(
     lastSizeRef,
     loadedBarCountRef,
     pendingLoadRef,
+    smaSeriesRef,
     volumeSeriesRef,
   ]);
 }
@@ -217,9 +249,12 @@ function useCandlestickData(
   candles: Props["candles"],
   interval: MinuteInterval,
   symbol: string,
+  smaPeriod: number,
+  smaVisible: boolean,
   chartRef: MutableRefObject<IChartApi | null>,
   candleSeriesRef: MutableRefObject<ISeriesApi<"Candlestick"> | null>,
   volumeSeriesRef: MutableRefObject<ISeriesApi<"Histogram"> | null>,
+  smaSeriesRef: MutableRefObject<ISeriesApi<"Line"> | null>,
   chartSizedRef: MutableRefObject<boolean>,
   pendingLoadRef: MutableRefObject<(() => void) | null>,
   loadedKeyRef: MutableRefObject<string>,
@@ -230,12 +265,13 @@ function useCandlestickData(
   useEffect(() => {
     const cs = candleSeriesRef.current;
     const vs = volumeSeriesRef.current;
-    if (!cs || !vs) return;
+    const ss = smaSeriesRef.current;
+    if (!cs || !vs || !ss) return;
 
     const raw = getIntervalCandles(candles, interval);
     if (raw.length === 0) return;
 
-    const newKey = `${symbol}:${interval}`;
+    const newKey = `${symbol}:${interval}:${smaPeriod}:${smaVisible}`;
     const isNewSeries = loadedKeyRef.current !== newKey;
     const last = raw[raw.length - 1];
     const lastTime = last.time;
@@ -247,11 +283,13 @@ function useCandlestickData(
     function doLoad() {
       const cs = candleSeriesRef.current;
       const vs = volumeSeriesRef.current;
-      if (!cs || !vs) return;
+      const ss = smaSeriesRef.current;
+      if (!cs || !vs || !ss) return;
 
       if (isFullReplace) {
         cs.setData(raw.map(toBarData));
         vs.setData(raw.map(toVolData));
+        ss.setData(smaVisible ? computeSma(raw, smaPeriod) : []);
         loadedKeyRef.current = newKey;
         lastBarTimeRef.current = lastTime;
         loadedBarCountRef.current = raw.length;
@@ -262,6 +300,11 @@ function useCandlestickData(
       } else {
         cs.update(toBarData(last));
         vs.update(toVolData(last));
+        if (smaVisible && raw.length >= smaPeriod) {
+          const smaTail = computeSma(raw.slice(-smaPeriod - 1), smaPeriod);
+          const latestSma = smaTail[smaTail.length - 1];
+          if (latestSma) ss.update(latestSma);
+        }
         lastBarTimeRef.current = lastTime;
         loadedBarCountRef.current = raw.length;
         if (fitOnNextTickRef.current) {
@@ -287,6 +330,9 @@ function useCandlestickData(
     loadedBarCountRef,
     loadedKeyRef,
     pendingLoadRef,
+    smaPeriod,
+    smaSeriesRef,
+    smaVisible,
     symbol,
     volumeSeriesRef,
   ]);
@@ -298,7 +344,10 @@ export function CandlestickChart({ symbol, candles }: Props) {
   const theme = useAppSelector((s) => s.theme.theme);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const smaSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const interval = useSignal<MinuteInterval>("1m");
+  const smaPeriod = useSignal<number>(DEFAULT_SMA_PERIOD);
+  const smaVisible = useSignal<boolean>(true);
   const loadedKeyRef = useRef<string>("");
   const lastBarTimeRef = useRef<number>(0);
   const loadedBarCountRef = useRef<number>(0);
@@ -313,6 +362,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
     chartRef,
     candleSeriesRef,
     volumeSeriesRef,
+    smaSeriesRef,
     chartSizedRef,
     pendingLoadRef,
     loadedBarCountRef,
@@ -331,9 +381,12 @@ export function CandlestickChart({ symbol, candles }: Props) {
     candles,
     interval.value,
     symbol,
+    smaPeriod.value,
+    smaVisible.value,
     chartRef,
     candleSeriesRef,
     volumeSeriesRef,
+    smaSeriesRef,
     chartSizedRef,
     pendingLoadRef,
     loadedKeyRef,
@@ -365,6 +418,37 @@ export function CandlestickChart({ symbol, candles }: Props) {
               {iv}
             </button>
           ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            data-testid="sma-toggle"
+            onClick={() => {
+              smaVisible.value = !smaVisible.value;
+            }}
+            aria-pressed={smaVisible.value}
+            className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+              smaVisible.value
+                ? "bg-amber-700/30 border-amber-600 text-amber-300"
+                : "bg-panel border-divider text-muted hover:bg-divider"
+            }`}
+          >
+            SMA
+          </button>
+          <input
+            type="number"
+            data-testid="sma-period-input"
+            value={smaPeriod.value}
+            disabled={!smaVisible.value}
+            min={MIN_SMA_PERIOD}
+            max={MAX_SMA_PERIOD}
+            onChange={(e) => {
+              const next = Number.parseInt(e.target.value, 10);
+              if (Number.isNaN(next)) return;
+              smaPeriod.value = Math.min(MAX_SMA_PERIOD, Math.max(MIN_SMA_PERIOD, next));
+            }}
+            className="w-12 px-1 py-0.5 text-xs rounded border border-divider bg-panel text-label disabled:opacity-40 tabular-nums"
+          />
         </div>
         {raw.length > 0 && (
           <span className="ml-auto text-[10px] text-muted tabular-nums">{raw.length} bars</span>

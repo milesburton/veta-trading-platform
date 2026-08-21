@@ -148,4 +148,47 @@ describe("sessionRecorder", () => {
     expect(upload).toHaveBeenCalledTimes(2);
     expect(upload).toHaveBeenLastCalledWith(0, [fakeEvent(1000), fakeEvent(2000)]);
   });
+
+  it("drops the chunk after exceeding the max retry count instead of retrying forever", async () => {
+    const upload = vi.fn().mockRejectedValue(new Error("network error"));
+    startRecording(upload);
+
+    emitCallback?.(fakeEvent(1000));
+
+    // 5 retries (MAX_CHUNK_RETRIES) plus the initial attempt, all failing
+    for (let i = 0; i < 7; i++) {
+      vi.advanceTimersByTime(30_000);
+      await vi.advanceTimersByTimeAsync(0);
+    }
+
+    const callCountAtDrop = upload.mock.calls.length;
+    expect(callCountAtDrop).toBeGreaterThan(0);
+
+    // One more flush cycle: the chunk should have been dropped, so a fresh
+    // event starts a new chunk rather than an ever-growing retried one.
+    emitCallback?.(fakeEvent(9000));
+    vi.advanceTimersByTime(30_000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(upload).toHaveBeenLastCalledWith(expect.any(Number), [fakeEvent(9000)]);
+  });
+
+  it("caps the buffer so a stuck upload cannot grow it without bound", async () => {
+    const upload = vi.fn().mockRejectedValue(new Error("network error"));
+    startRecording(upload);
+
+    // Emit far more events than MAX_BUFFER_EVENTS (20_000) across repeated
+    // failed flush cycles, simulating a sustained outage.
+    for (let cycle = 0; cycle < 3; cycle++) {
+      for (let i = 0; i < 8000; i++) {
+        emitCallback?.(fakeEvent(cycle * 8000 + i));
+      }
+      vi.advanceTimersByTime(30_000);
+      await vi.advanceTimersByTimeAsync(0);
+    }
+
+    const lastCall = upload.mock.calls.at(-1);
+    const lastChunk = lastCall?.[1] as unknown[];
+    expect(lastChunk.length).toBeLessThanOrEqual(20_000);
+  });
 });
