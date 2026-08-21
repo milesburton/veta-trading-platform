@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.0...veta-trading-platform-v1.64.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* restore sign-in gradient and register synthetic-trader services ([#577](https://github.com/milesburton/veta-trading-platform/issues/577)) ([a44dd57](https://github.com/milesburton/veta-trading-platform/commit/a44dd57d4c56d9d58723d40702f7ff885bd0555c))
+
 ## [1.64.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.63.1...veta-trading-platform-v1.64.0) (2026-08-16)
 
 
