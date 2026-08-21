@@ -340,7 +340,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated equity high-touch trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderEquityLowTouch",
@@ -351,7 +350,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated equity low-touch trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderFxElectronic",
@@ -362,7 +360,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated FX electronic trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderFxHighTouch",
@@ -373,7 +370,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated FX high-touch trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderFiVoice",
@@ -384,7 +380,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated fixed income voice trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderDerivativesHighTouch",
@@ -395,7 +390,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated derivatives high-touch trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderDerivativesLowTouch",
@@ -406,7 +400,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated derivatives low-touch trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
   {
     id: "syntheticTraderCommoditiesVoice",
@@ -417,7 +410,6 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated commodities voice trader generating demo order flow",
     optional: true,
-    excludeFromGatewayHostEnv: true,
   },
 ];
 

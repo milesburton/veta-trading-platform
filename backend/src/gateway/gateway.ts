@@ -81,6 +81,14 @@ const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost
 const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
 const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
 const DISCORD_BOT_URL = `http://${Deno.env.get("DISCORD_BOT_HOST") ?? "localhost"}:${Deno.env.get("DISCORD_BOT_PORT") ?? "5034"}`;
+const SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_PORT") ?? "5043"}`;
+const SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_PORT") ?? "5036"}`;
+const SYNTHETIC_TRADER_FX_ELECTRONIC_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_FX_ELECTRONIC_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_FX_ELECTRONIC_PORT") ?? "5037"}`;
+const SYNTHETIC_TRADER_FX_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_FX_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_FX_HIGH_TOUCH_PORT") ?? "5038"}`;
+const SYNTHETIC_TRADER_FI_VOICE_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_FI_VOICE_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_FI_VOICE_PORT") ?? "5039"}`;
+const SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_PORT") ?? "5040"}`;
+const SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_PORT") ?? "5041"}`;
+const SYNTHETIC_TRADER_COMMODITIES_VOICE_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_COMMODITIES_VOICE_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_COMMODITIES_VOICE_PORT") ?? "5042"}`;
 
 const ALLOWED_ORIGINS = new Set(
   (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
@@ -980,6 +988,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "replay-service": REPLAY_URL,
     "risk-engine": RISK_ENGINE_URL,
     "discord-bot": DISCORD_BOT_URL,
+    "synthetic-trader-equity-high-touch": SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_URL,
+    "synthetic-trader-equity-low-touch": SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_URL,
+    "synthetic-trader-fx-electronic": SYNTHETIC_TRADER_FX_ELECTRONIC_URL,
+    "synthetic-trader-fx-high-touch": SYNTHETIC_TRADER_FX_HIGH_TOUCH_URL,
+    "synthetic-trader-fi-voice": SYNTHETIC_TRADER_FI_VOICE_URL,
+    "synthetic-trader-derivatives-high-touch": SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL,
+    "synthetic-trader-derivatives-low-touch": SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL,
+    "synthetic-trader-commodities-voice": SYNTHETIC_TRADER_COMMODITIES_VOICE_URL,
   };
 
   // docs: /reference/api-gateway/
