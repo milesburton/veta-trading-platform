@@ -1701,6 +1701,22 @@ services:
       FIX_GATEWAY_PORT: "9881"
       DISCORD_BOT_HOST: discord-bot
       DISCORD_BOT_PORT: "5034"
+      SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_HOST: synthetic-trader-equity-high-touch
+      SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_PORT: "5043"
+      SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_HOST: synthetic-trader-equity-low-touch
+      SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_PORT: "5036"
+      SYNTHETIC_TRADER_FX_ELECTRONIC_HOST: synthetic-trader-fx-electronic
+      SYNTHETIC_TRADER_FX_ELECTRONIC_PORT: "5037"
+      SYNTHETIC_TRADER_FX_HIGH_TOUCH_HOST: synthetic-trader-fx-high-touch
+      SYNTHETIC_TRADER_FX_HIGH_TOUCH_PORT: "5038"
+      SYNTHETIC_TRADER_FI_VOICE_HOST: synthetic-trader-fi-voice
+      SYNTHETIC_TRADER_FI_VOICE_PORT: "5039"
+      SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_HOST: synthetic-trader-derivatives-high-touch
+      SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_PORT: "5040"
+      SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_HOST: synthetic-trader-derivatives-low-touch
+      SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_PORT: "5041"
+      SYNTHETIC_TRADER_COMMODITIES_VOICE_HOST: synthetic-trader-commodities-voice
+      SYNTHETIC_TRADER_COMMODITIES_VOICE_PORT: "5042"
       REDPANDA_BROKERS: redpanda:9092
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_BUG_WEBHOOK_URL: ${DISCORD_BUG_WEBHOOK_URL:-}
@@ -1751,7 +1767,7 @@ services:
       user-service:
         condition: service_healthy
     environment:
-      SYNTHETIC_TRADER_PORT: "5031"
+      SYNTHETIC_TRADER_PORT: "5043"
       GATEWAY_WS_URL: ws://gateway:5011/ws/gateway
       USER_SERVICE_URL: http://user-service:5008
       MARKET_SIM_HOST: market-sim
@@ -1765,7 +1781,7 @@ services:
       SYNTHETIC_TRADER_MIN_PACE_MS: "${SYNTHETIC_TRADER_MIN_PACE_MS:-30000}"
       SYNTHETIC_TRADER_MAX_PACE_MS: "${SYNTHETIC_TRADER_MAX_PACE_MS:-480000}"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:5031/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:5043/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
