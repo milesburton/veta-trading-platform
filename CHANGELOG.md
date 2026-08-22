@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.1...veta-trading-platform-v1.64.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **frontend:** stop sign-in page gradient going flat below the fold ([#580](https://github.com/milesburton/veta-trading-platform/issues/580)) ([3b3ec5a](https://github.com/milesburton/veta-trading-platform/commit/3b3ec5a59a569c84f97a10c4267529bc0de8fce6))
+
 ## [1.64.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.0...veta-trading-platform-v1.64.1) (2026-08-21)
 
 
