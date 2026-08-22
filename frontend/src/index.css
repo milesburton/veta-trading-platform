@@ -151,10 +151,14 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
+html {
+  height: 100%;
+  background-color: rgb(var(--gray-950));
+}
+
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
   background-color: rgb(var(--gray-950));
 }
 
@@ -164,25 +168,28 @@ html:not([data-theme="high-contrast"]) .bg-page-gradient {
   position: relative;
 }
 
-/* A ::before layer pinned to the viewport rather than painted as a
-   background-image on body/#root/.bg-page-gradient directly. Those
-   elements can grow taller than one viewport (e.g. the sign-in page's
-   scrolling persona list), and a background-image's percentage-based
-   gradient stops are relative to the element's own box — on a tall box
-   the glow ends up compressed near the top with a flat, ungradiented
-   area below. background-attachment: fixed would be the standard fix,
-   but is unreliable in Chromium once the element isn't the page's own
-   root scroller. position: fixed on a dedicated layer has none of
-   that ambiguity: it always covers exactly the current viewport,
-   however tall the scrolling content underneath is. */
+/* A ::before layer painted as an absolutely-positioned box spanning the
+   full height of body/#root/.bg-page-gradient, rather than a
+   background-image on those elements directly. A background-image's
+   percentage-based gradient stops are relative to the element's own
+   box, so on a tall box (e.g. the sign-in page's scrolling persona
+   list) the glow would compress into a small sliver near the top. A
+   fixed pixel background-size keeps the glow's absolute size constant
+   regardless of how tall the page grows, so it reads the same at the
+   top of a short page or a long one. position: absolute (not fixed)
+   means the layer grows with #root's actual content height instead of
+   being clipped to one viewport, so it doesn't fade to flat colour
+   once you scroll past the first screenful. */
 html:not([data-theme="high-contrast"]) body::before,
 html:not([data-theme="high-contrast"]) #root::before,
 html:not([data-theme="high-contrast"]) .bg-page-gradient::before {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   background-image: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, transparent 60%);
+  background-size: 100% 1200px;
+  background-repeat: repeat-y;
 }
 
 @layer base {
