@@ -24,7 +24,7 @@ The **Candle Chart** panel shows OHLCV candlestick data for the selected instrum
 
 ![Candle Chart panel](/veta-trading-platform/screenshots/panels/candle-chart.png)
 
-A simple moving average (SMA) overlay is available from the panel header:
+A simple moving average (SMA) overlay is available from the toolbar above the chart:
 
 - **SMA toggle**: shows or hides the average line, enabled by default
 - **Period input**: sets the number of candles the average is computed over (default 20, range 2–200)
