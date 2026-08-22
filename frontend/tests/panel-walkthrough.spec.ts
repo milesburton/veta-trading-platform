@@ -63,7 +63,9 @@ const ALL_PANEL_IDS = [
   "throughput-gauges",
   "algo-leaderboard",
   "load-test",
+  "load-gen",
   "llm-subsystem",
+  "platform-status",
   "greeks-surface",
   "vol-profile",
   "estate-overview",
@@ -87,6 +89,7 @@ const ALL_PANEL_IDS = [
   "scenarios",
   "order-routing-sankey",
   "world-clocks",
+  "fix-sessions",
 ] as const;
 
 type PanelVerdict = {

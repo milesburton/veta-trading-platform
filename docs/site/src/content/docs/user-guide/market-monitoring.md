@@ -24,6 +24,13 @@ The **Candle Chart** panel shows OHLCV candlestick data for the selected instrum
 
 ![Candle Chart panel](/veta-trading-platform/screenshots/panels/candle-chart.png)
 
+A simple moving average (SMA) overlay is available from the panel header:
+
+- **SMA toggle**: shows or hides the average line, enabled by default
+- **Period input**: sets the number of candles the average is computed over (default 20, range 2–200)
+
+The line updates incrementally as new candles arrive rather than recomputing the full series on every tick.
+
 ## Market Heatmap
 
 The heatmap shows all instruments as a treemap, sized by market capitalisation and coloured by percentage change from session open.
