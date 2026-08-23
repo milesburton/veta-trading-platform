@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.65.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.3...veta-trading-platform-v1.65.0) (2026-08-23)
+
+
+### Features
+
+* **fleet:** full service-registry visibility, tri-state health, fix fix-exchange routing ([#588](https://github.com/milesburton/veta-trading-platform/issues/588)) ([eba4704](https://github.com/milesburton/veta-trading-platform/commit/eba47048d5dff684043be0a3d9a54160efa4d4c8))
+
 ## [1.64.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.2...veta-trading-platform-v1.64.3) (2026-08-23)
 
 
