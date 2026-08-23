@@ -4,6 +4,7 @@ import { logger } from "@veta/logger";
 import type { OrderBookLevel, OrderBookSnapshot } from "@veta/market-client";
 import { createProducer } from "@veta/messaging";
 import { intradayVolumeFactor } from "@veta/time-scale";
+import { recordGauge } from "@veta/telemetry";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bond-assets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodity-assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fx-assets.ts";
@@ -298,6 +299,19 @@ function deriveSessionPhase(minute: number): SessionPhase {
 const clients = new Set<WebSocket>();
 
 let tickDiffState = createTickDiffState();
+
+function publishMarketOpenGauges(): void {
+  for (const ac of ASSET_CLASSES) {
+    const open = allowOutOfHours[ac] || isAssetClassOpen(ac);
+    recordGauge("market_sim_asset_class_open", open ? 1 : 0, {
+      description: "Whether market-sim is currently generating ticks for this asset class",
+      attributes: { assetClass: ac },
+    }).catch(() => {});
+  }
+}
+
+publishMarketOpenGauges();
+setInterval(publishMarketOpenGauges, 60_000);
 
 setInterval(() => {
   if (isResetInProgress()) return;

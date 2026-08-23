@@ -184,6 +184,33 @@ groups:
             outpace deletion. Confirm the producer is intentional and
             consider stopping the offending service.
 
+      - alert: MarketTicksSilentWhileMarketOpen
+        expr: |
+          max(market_sim_asset_class_open) == 1
+          and
+          sum(rate(redpanda_kafka_request_bytes_total{
+            redpanda_request="produce",
+            redpanda_topic="market.ticks"
+          }[10m])) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: market.ticks has stopped despite at least one asset class being open
+          description: |
+            market-sim reports at least one asset class open
+            (market_sim_asset_class_open == 1) but market.ticks has taken
+            zero produce bytes for 5m. This is not the expected weekend/
+            holiday silence — something is wrong with market-sim itself.
+            Incident (2026-08-23): market-sim was OOM-looping (mem_limit
+            too low for the full instrument universe + 8 concurrent
+            synthetic-trader desks), crash-restarting every 15-30s and
+            never completing a tick cycle. Downstream, market.features
+            and market.signals — and every synthetic-trader desk — went
+            silent with it. Check:
+              docker logs veta-market-sim-1 --since 10m
+              docker inspect veta-market-sim-1 | grep RestartCount
+
       - alert: RedpandaConsumerLagSustained
         expr: |
           (
