@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.2...veta-trading-platform-v1.64.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* **market-sim:** raise mem_limit to stop OOM-restart loop ([#584](https://github.com/milesburton/veta-trading-platform/issues/584)) ([b3380fb](https://github.com/milesburton/veta-trading-platform/commit/b3380fbd3de11b0e055e7d242e6473824dd980fc))
+
 ## [1.64.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.1...veta-trading-platform-v1.64.2) (2026-08-22)
 
 
