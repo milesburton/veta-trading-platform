@@ -52,6 +52,25 @@ function isRawTickMessage(data: unknown): data is RawTickMessage {
 }
 
 /**
+ * Pure parse: turn a raw WebSocket text frame into a tick payload, or null
+ * if it isn't a recognised market tick message (malformed JSON, a
+ * different event type, or a data field that isn't tick-shaped).
+ */
+export function parseTickFrame(raw: string): RawTickMessage | null {
+  let msg: unknown;
+  try {
+    msg = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (msg === null || typeof msg !== "object") return null;
+  const envelope = msg as { event?: unknown; data?: unknown };
+  if (envelope.event !== "marketData" && envelope.event !== "marketUpdate") return null;
+  if (!isRawTickMessage(envelope.data)) return null;
+  return envelope.data;
+}
+
+/**
  * market-sim broadcasts gated diffs (see tick-diff.ts): most ticks omit
  * fields that haven't materially changed, so incoming messages must be
  * merged into the running tick rather than replacing it wholesale — a
@@ -111,15 +130,10 @@ export function createMarketSimClient(host: string, port: number): MarketSimClie
     };
 
     socket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if ((msg.event === "marketData" || msg.event === "marketUpdate") && isRawTickMessage(msg.data)) {
-          latest = mergeTick(latest, msg.data);
-          for (const cb of callbacks) cb(latest);
-        }
-      } catch {
-        // malformed message — ignore
-      }
+      const tick = parseTickFrame(event.data);
+      if (tick === null) return;
+      latest = mergeTick(latest, tick);
+      for (const cb of callbacks) cb(latest);
     };
 
     socket.onerror = () => {

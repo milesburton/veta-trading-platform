@@ -2,6 +2,7 @@ import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   buildWelcomeMessage,
   classifyGatewayEnvelope,
+  connect,
   decideWelcomePost,
   extractHeartbeatIntervalMs,
 } from "../discord-bot/discord-bot.ts";
@@ -77,4 +78,95 @@ Deno.test("decideWelcomePost does not post when the payload has no user", () => 
 Deno.test("decideWelcomePost does not post when the payload is not an object with a user", () => {
   const decision = decideWelcomePost(null, "chan-1");
   assertEquals(decision.shouldPost, false);
+});
+
+function withGatewayServer(
+  onOpen: (socket: WebSocket) => void
+): { url: string; close: () => Promise<void> } {
+  const controller = new AbortController();
+  let serverSocket: WebSocket | undefined;
+  const server = Deno.serve(
+    { port: 0, signal: controller.signal, onListen: () => {} },
+    (req) => {
+      const { socket, response } = Deno.upgradeWebSocket(req);
+      serverSocket = socket;
+      socket.onopen = () => onOpen(socket);
+      return response;
+    }
+  );
+  const addr = server.addr as Deno.NetAddr;
+  return {
+    url: `ws://127.0.0.1:${addr.port}`,
+    close: async () => {
+      serverSocket?.close();
+      controller.abort();
+      await server.finished;
+    },
+  };
+}
+
+Deno.test("connect() identifies after receiving Hello (op 10)", async () => {
+  const received: unknown[] = [];
+  const { url, close } = withGatewayServer((socket) => {
+    socket.onmessage = (event) => received.push(JSON.parse(event.data as string));
+    socket.send(JSON.stringify({ op: 10, d: { heartbeat_interval: 45_000 } }));
+  });
+  const client = connect(url, { reconnect: false });
+  try {
+    const deadline = Date.now() + 5_000;
+    while (received.length === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assertEquals(received.length, 1);
+    const identify = received[0] as { op: number; d: { intents: number } };
+    assertEquals(identify.op, 2);
+    assertEquals(identify.d.intents, 1 << 1);
+  } finally {
+    client.close();
+    await close();
+  }
+});
+
+Deno.test("connect() sends a heartbeat carrying the last sequence number after Hello", async () => {
+  const received: { op: number; d: unknown }[] = [];
+  const { url, close } = withGatewayServer((socket) => {
+    socket.onmessage = (event) => received.push(JSON.parse(event.data as string));
+    // A short heartbeat interval so the test doesn't wait 40+ seconds.
+    socket.send(JSON.stringify({ op: 10, d: { heartbeat_interval: 50 }, s: 7 }));
+  });
+  const client = connect(url, { reconnect: false });
+  try {
+    const deadline = Date.now() + 5_000;
+    while (received.filter((m) => m.op === 1).length === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const heartbeat = received.find((m) => m.op === 1);
+    assert(heartbeat, "expected a heartbeat (op 1) to be sent");
+    assertEquals(heartbeat.d, 7, "heartbeat must carry the last-seen sequence number");
+  } finally {
+    client.close();
+    await close();
+  }
+});
+
+Deno.test("connect() ignores a malformed frame, then still identifies on a subsequent Hello", async () => {
+  const received: unknown[] = [];
+  const { url, close } = withGatewayServer((socket) => {
+    socket.onmessage = (event) => received.push(JSON.parse(event.data as string));
+    socket.send("not json{{{");
+    socket.send(JSON.stringify({ op: 10, d: { heartbeat_interval: 45_000 } }));
+  });
+  const client = connect(url, { reconnect: false });
+  try {
+    const deadline = Date.now() + 5_000;
+    while (received.length === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assertEquals(received.length, 1, "the malformed frame must be dropped, not crash the handler");
+    const identify = received[0] as { op: number };
+    assertEquals(identify.op, 2, "the client must still identify after the malformed frame");
+  } finally {
+    client.close();
+    await close();
+  }
 });

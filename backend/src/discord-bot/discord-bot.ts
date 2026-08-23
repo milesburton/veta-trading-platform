@@ -141,7 +141,8 @@ function handleGuildMemberAdd(data: unknown): void {
   }
 }
 
-function connect(gatewayUrl: string): void {
+export function connect(gatewayUrl: string, opts: { reconnect?: boolean } = {}): WebSocket {
+  const reconnect = opts.reconnect ?? true;
   const ws = new WebSocket(`${gatewayUrl}/?v=10&encoding=json`);
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let sequence: number | null = null;
@@ -151,7 +152,13 @@ function connect(gatewayUrl: string): void {
   };
 
   ws.onmessage = (event) => {
-    const payload = JSON.parse(event.data as string) as GatewayEnvelope;
+    let payload: GatewayEnvelope;
+    try {
+      payload = JSON.parse(event.data as string) as GatewayEnvelope;
+    } catch {
+      logger.warn("malformed gateway frame — ignoring");
+      return;
+    }
     if (typeof payload.s === "number") sequence = payload.s;
 
     const action = classifyGatewayEnvelope(payload);
@@ -167,6 +174,7 @@ function connect(gatewayUrl: string): void {
   ws.onclose = () => {
     connectedNow = false;
     if (heartbeatTimer) clearInterval(heartbeatTimer);
+    if (!reconnect) return;
     logger.warn("gateway websocket closed, reconnecting", { delayMs: RECONNECT_DELAY_MS });
     setTimeout(() => {
       connect(gatewayUrl);
@@ -176,6 +184,8 @@ function connect(gatewayUrl: string): void {
   ws.onerror = () => {
     logger.error("gateway websocket error");
   };
+
+  return ws;
 }
 
 async function start(): Promise<void> {
