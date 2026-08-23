@@ -95,7 +95,6 @@ Deno.test("[synthetic-trader-decision] each archetype's default symbols produce 
 
 Deno.test("[synthetic-trader-decision] side selection is weighted roughly 50/50 over many samples", () => {
   const engine = new DecisionEngine({ archetypeId: "equity-high-touch", userId: "u1", symbols: ["AAPL", "MSFT"] });
-  const tracker = new PositionTracker();
   let buys = 0;
   let sells = 0;
   for (let i = 0; i < 400; i++) {
