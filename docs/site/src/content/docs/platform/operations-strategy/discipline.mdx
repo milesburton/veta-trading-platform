@@ -5,6 +5,14 @@ description: Rollback plans, incident log, postmortems, change-freeze windows, a
 
 import Term from "@docs/components/Term.astro";
 
+## Every change reaches production through CI, full stop
+
+No exceptions for outages. No direct edits to the running production configuration or code, ever — not a config tweak, not a "just this once" restart with a patched file copied in, not with explicit sign-off from anyone, including the platform owner, given in the moment. The only path from a change to production is: branch, fix, open a PR, wait for every required check to genuinely pass, merge, then the normal deploy pipeline.
+
+This also means merges never bypass required status checks. A merge command that skips branch protection (an admin override, or equivalent) is not available as a tool for getting an urgent fix out faster — if checks are slow or flaky, the fix is to make CI faster or fix the flake, not to go around it.
+
+**Why this is absolute rather than a guideline:** this platform models real trading discipline. An untested or unreviewed change reaching a live trading system during a trading day is not a process shortcut with an acceptable trade-off against faster recovery — it is the specific failure mode that pre-trade checks, staged rollouts, and required review exist to prevent. Speed during an incident comes from a fast pipeline, not a skipped one. See the [2026-08-23 market-sim incident](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/2026-08-23-01-market-sim-oom-loop.md) for what this looks like when it goes wrong.
+
 ## Rollback plans in every PR
 
 Every PR description must answer: "How do we roll this back if it breaks prod?" Three classes:
