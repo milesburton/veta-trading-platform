@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 77,
-      "cases": 855,
+      "files": 98,
+      "cases": 1072,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -50,7 +50,7 @@
         "playbooks.unit.test.ts": 14,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 18,
-        "discord-bot.unit.test.ts": 3,
+        "discord-bot.unit.test.ts": 14,
         "ticketing.unit.test.ts": 20,
         "service-registry.unit.test.ts": 3,
         "pipeline.bug-and-alert.unit.test.ts": 4,
@@ -80,7 +80,28 @@
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-position-tracker.unit.test.ts": 7,
         "synthetic-trader-token-client.unit.test.ts": 3,
-        "infra-health-paths.unit.test.ts": 4
+        "infra-health-paths.unit.test.ts": 4,
+        "admin-route.unit.test.ts": 11,
+        "apply-shocks.unit.test.ts": 7,
+        "bond-pricing.unit.test.ts": 11,
+        "dark-pool-matching.unit.test.ts": 12,
+        "duration-ladder.unit.test.ts": 9,
+        "fill-math.unit.test.ts": 6,
+        "fix-counterparties.unit.test.ts": 7,
+        "fix-dictionary.unit.test.ts": 5,
+        "fix-market-session.unit.test.ts": 4,
+        "fix-risk-check.unit.test.ts": 5,
+        "fix-session.unit.test.ts": 10,
+        "fix-venue-registry.unit.test.ts": 7,
+        "http.unit.test.ts": 13,
+        "margin-math.unit.test.ts": 21,
+        "news-analysis.unit.test.ts": 19,
+        "recommendation-engine.unit.test.ts": 8,
+        "replay-helpers.unit.test.ts": 9,
+        "rfq-math.unit.test.ts": 19,
+        "rfq-sellside-transitions.unit.test.ts": 12,
+        "spread-analysis.unit.test.ts": 9,
+        "vol-surface.unit.test.ts": 2
       }
     },
     "integration": {

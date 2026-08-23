@@ -30,6 +30,47 @@ interface GuildMemberAddPayload {
   user?: { id: string };
 }
 
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 41_250;
+
+export function extractHeartbeatIntervalMs(payload: GatewayEnvelope): number {
+  return (payload.d as HelloData | undefined)?.heartbeat_interval ?? DEFAULT_HEARTBEAT_INTERVAL_MS;
+}
+
+export type GatewayAction =
+  | { kind: "hello"; heartbeatIntervalMs: number }
+  | { kind: "ready" }
+  | { kind: "guildMemberAdd"; data: unknown }
+  | { kind: "ignore" };
+
+/** Pure dispatch: decide what a gateway envelope means, without performing any I/O. */
+export function classifyGatewayEnvelope(payload: GatewayEnvelope): GatewayAction {
+  if (payload.op === 10) {
+    return { kind: "hello", heartbeatIntervalMs: extractHeartbeatIntervalMs(payload) };
+  }
+  if (payload.op === 0 && payload.t === "READY") return { kind: "ready" };
+  if (payload.op === 0 && payload.t === "GUILD_MEMBER_ADD") {
+    return { kind: "guildMemberAdd", data: payload.d };
+  }
+  return { kind: "ignore" };
+}
+
+export interface WelcomePostDecision {
+  shouldPost: boolean;
+  channelId?: string;
+  message?: string;
+}
+
+/** Pure decision: given a GUILD_MEMBER_ADD payload and config, should we post — and what? */
+export function decideWelcomePost(
+  data: unknown,
+  welcomeChannelId: string
+): WelcomePostDecision {
+  const member = (data ?? {}) as GuildMemberAddPayload;
+  if (!welcomeChannelId || !member.user) return { shouldPost: false };
+  const mention = `<@${member.user.id}>`;
+  return { shouldPost: true, channelId: welcomeChannelId, message: buildWelcomeMessage(mention) };
+}
+
 async function postChannelMessage(channelId: string, content: string): Promise<boolean> {
   try {
     const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
@@ -93,11 +134,11 @@ function handleReady(): void {
 }
 
 function handleGuildMemberAdd(data: unknown): void {
-  const member = data as GuildMemberAddPayload;
   lastEventAt = Date.now();
-  if (!WELCOME_CHANNEL_ID || !member.user) return;
-  const mention = `<@${member.user.id}>`;
-  postChannelMessage(WELCOME_CHANNEL_ID, buildWelcomeMessage(mention));
+  const decision = decideWelcomePost(data, WELCOME_CHANNEL_ID);
+  if (decision.shouldPost && decision.channelId && decision.message) {
+    postChannelMessage(decision.channelId, decision.message);
+  }
 }
 
 function connect(gatewayUrl: string): void {
@@ -113,14 +154,14 @@ function connect(gatewayUrl: string): void {
     const payload = JSON.parse(event.data as string) as GatewayEnvelope;
     if (typeof payload.s === "number") sequence = payload.s;
 
-    if (payload.op === 10) {
-      const interval = (payload.d as HelloData | undefined)?.heartbeat_interval ?? 41_250;
-      heartbeatTimer = startHeartbeat(ws, interval, () => sequence);
+    const action = classifyGatewayEnvelope(payload);
+    if (action.kind === "hello") {
+      heartbeatTimer = startHeartbeat(ws, action.heartbeatIntervalMs, () => sequence);
       identify(ws);
       return;
     }
-    if (payload.op === 0 && payload.t === "READY") return handleReady();
-    if (payload.op === 0 && payload.t === "GUILD_MEMBER_ADD") return handleGuildMemberAdd(payload.d);
+    if (action.kind === "ready") return handleReady();
+    if (action.kind === "guildMemberAdd") return handleGuildMemberAdd(action.data);
   };
 
   ws.onclose = () => {
