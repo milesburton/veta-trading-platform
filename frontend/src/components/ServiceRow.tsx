@@ -8,6 +8,7 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
   function label(state: ServiceHealth["state"]) {
     if (unavailable) return <span className="text-subtle">unavailable</span>;
     if (state === "ok") return <span className="text-emerald-400">ok</span>;
+    if (state === "warn") return <span className="text-amber-400">warn</span>;
     if (state === "error") return <span className="text-red-400">error</span>;
     return <span className="text-muted">—</span>;
   }

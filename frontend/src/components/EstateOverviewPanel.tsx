@@ -8,7 +8,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "@veta/frontend/store/servicesApi.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
-import type { ObsEvent } from "@veta/frontend/types.ts";
+import type { ObsEvent, ServiceState } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
@@ -45,26 +45,30 @@ interface ServiceRowProps {
 }
 
 function ServiceRow({ svc, dispatch }: ServiceRowProps) {
-  const { data, isError } = useGetServiceHealthQuery(svc, {
+  const { data, isError, error } = useGetServiceHealthQuery(svc, {
     pollingInterval: 10_000,
   });
-  const prevRef = useRef<"ok" | "error" | null>(null);
+  const prevRef = useRef<ServiceState | null>(null);
 
-  const state: "ok" | "error" | "unknown" = data?.state ?? (isError ? "error" : "unknown");
+  const errState = isError
+    ? ((error as { state?: ServiceState } | undefined)?.state ?? "error")
+    : null;
+  const state: ServiceState = data?.state ?? errState ?? "unknown";
 
   useEffect(() => {
-    if (state === "error" && prevRef.current !== "error") {
-      prevRef.current = "error";
+    if ((state === "error" || state === "warn") && prevRef.current !== state) {
+      prevRef.current = state;
       dispatch(
         alertAdded({
-          severity: REQUIRED_SERVICES.has(svc.name) ? "CRITICAL" : "WARNING",
+          severity:
+            state === "warn" ? "WARNING" : REQUIRED_SERVICES.has(svc.name) ? "CRITICAL" : "WARNING",
           source: "service",
-          message: `${svc.name}: service down`,
+          message: state === "warn" ? `${svc.name}: degraded` : `${svc.name}: service down`,
           detail: svc.url,
           ts: Date.now(),
         })
       );
-    } else if (state === "ok" && prevRef.current === "error") {
+    } else if (state === "ok" && (prevRef.current === "error" || prevRef.current === "warn")) {
       prevRef.current = "ok";
       dispatch(purgeServiceAlerts());
       dispatch(
@@ -80,20 +84,32 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
     }
   }, [state, svc, dispatch]);
 
-  const dotClass = state === "ok" ? "bg-green-400" : state === "error" ? "bg-red-400" : "bg-subtle";
+  const dotClass =
+    state === "ok"
+      ? "bg-green-400"
+      : state === "warn"
+        ? "bg-amber-400"
+        : state === "error"
+          ? "bg-red-400"
+          : "bg-subtle";
   const nameClass =
     state === "error"
       ? "text-red-400 font-semibold"
-      : state === "ok"
-        ? "text-secondary"
-        : "text-subtle";
-  const statusText = state === "ok" ? "OK" : state === "error" ? "DOWN" : "—";
+      : state === "warn"
+        ? "text-amber-400 font-semibold"
+        : state === "ok"
+          ? "text-secondary"
+          : "text-subtle";
+  const statusText =
+    state === "ok" ? "OK" : state === "warn" ? "WARN" : state === "error" ? "DOWN" : "—";
   const statusClass =
     state === "ok"
       ? "text-green-400"
-      : state === "error"
-        ? "text-red-400 font-semibold"
-        : "text-subtle";
+      : state === "warn"
+        ? "text-amber-400 font-semibold"
+        : state === "error"
+          ? "text-red-400 font-semibold"
+          : "text-subtle";
 
   return (
     <tr className="border-b border-panel/50 hover:bg-surface/40">

@@ -318,7 +318,7 @@ export interface ObsEvent {
   payload?: Record<string, unknown>;
 }
 
-export type ServiceState = "ok" | "error" | "unknown";
+export type ServiceState = "ok" | "warn" | "error" | "unknown";
 
 export interface ServiceHealth {
   name: string;

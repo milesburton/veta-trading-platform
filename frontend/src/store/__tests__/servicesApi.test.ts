@@ -150,4 +150,88 @@ describe("servicesApi – RTK Query endpoints", () => {
       fetchSpy.mockRestore();
     }
   });
+
+  it("getServiceHealth treats a 503 with status:critical body as warn, not error", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ status: "critical", disk: { used_pct: 91 }, warn_pct: 85 }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate({
+          name: "Disk Monitor",
+          url: "http://disk-monitor/health",
+        })
+      );
+      const errorPayload = result.error as unknown as Record<string, unknown>;
+      expect(errorPayload.state).toBe("warn");
+      expect(errorPayload.meta).toMatchObject({ status: "critical", warn_pct: 85 });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("getServiceHealth treats a 503 without the warn body shape as a genuine error", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("service unavailable", { status: 503 }));
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate({
+          name: "Some Service",
+          url: "http://some-service/health",
+        })
+      );
+      const errorPayload = result.error as unknown as Record<string, unknown>;
+      expect(errorPayload.state).toBe("error");
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("getServiceHealth treats a 200 response with is_healthy:false as warn", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ is_healthy: false, unhealthy_reasons: ["node down"] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate({
+          name: "Redpanda",
+          url: "http://redpanda/health",
+        })
+      );
+      expect(result.data?.state).toBe("warn");
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("getServiceHealth treats a 200 response with is_healthy:true as ok", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ is_healthy: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate({
+          name: "Redpanda",
+          url: "http://redpanda/health",
+        })
+      );
+      expect(result.data?.state).toBe("ok");
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
 });

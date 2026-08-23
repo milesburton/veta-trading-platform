@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 76,
-      "cases": 851,
+      "files": 77,
+      "cases": 855,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -79,7 +79,8 @@
         "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-position-tracker.unit.test.ts": 7,
-        "synthetic-trader-token-client.unit.test.ts": 3
+        "synthetic-trader-token-client.unit.test.ts": 3,
+        "infra-health-paths.unit.test.ts": 4
       }
     },
     "integration": {
@@ -130,7 +131,7 @@
   "frontend": {
     "unit": {
       "files": 179,
-      "cases": 2100
+      "cases": 2104
     },
     "playwright": {
       "files": 19,

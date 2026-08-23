@@ -201,6 +201,42 @@ services:
       - "traefik.enable=false"
     logging: *logging
 
+  postgres-health:
+    build:
+      context: .
+      dockerfile: docker/postgres-health/Dockerfile
+    container_name: veta-postgres-health
+    restart: unless-stopped
+    command: python3 /scripts/postgres-health.py
+    networks:
+      - trading-net
+    volumes:
+      - ./scripts/postgres-health.py:/scripts/postgres-health.py:ro
+    environment:
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_USER: ${POSTGRES_USER:-veta}
+    depends_on:
+      - postgres
+    user: "65534:65534"
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8100/health > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    labels:
+      - "traefik.enable=false"
+    logging: *logging
+
   db-migrate:
     build:
       context: .
@@ -1140,7 +1176,7 @@ services:
       - "traefik.http.routers.fix-exchange.entrypoints=web,websecure"
       - "traefik.http.routers.fix-exchange.middlewares=fix-exchange-strip"
       - "traefik.http.middlewares.fix-exchange-strip.stripprefix.prefixes=/api/fix-exchange"
-      - "traefik.http.services.fix-exchange.loadbalancer.server.port=9880"
+      - "traefik.http.services.fix-exchange.loadbalancer.server.port=9879"
       - "traefik.http.routers.fix-exchange.priority=10"
 
   fix-gateway:
@@ -1698,6 +1734,8 @@ services:
       REPLAY_PORT: "5031"
       RISK_ENGINE_HOST: risk-engine
       RISK_ENGINE_PORT: "5032"
+      FIX_EXCHANGE_HOST: fix-exchange
+      FIX_EXCHANGE_PORT: "9880"
       FIX_GATEWAY_HOST: fix-gateway
       FIX_GATEWAY_PORT: "9881"
       DISCORD_BOT_HOST: discord-bot
@@ -1718,6 +1756,12 @@ services:
       SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_PORT: "5041"
       SYNTHETIC_TRADER_COMMODITIES_VOICE_HOST: synthetic-trader-commodities-voice
       SYNTHETIC_TRADER_COMMODITIES_VOICE_PORT: "5042"
+      POSTGRES_HEALTH_HOST: postgres-health
+      POSTGRES_HEALTH_PORT: "8100"
+      REDPANDA_ADMIN_HOST: redpanda
+      REDPANDA_ADMIN_PORT: "9644"
+      OLLAMA_HOST: ollama
+      OLLAMA_PORT: "11434"
       REDPANDA_BROKERS: redpanda:9092
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_BUG_WEBHOOK_URL: ${DISCORD_BUG_WEBHOOK_URL:-}
