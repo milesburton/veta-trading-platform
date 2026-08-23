@@ -8,6 +8,7 @@ import { createConsumer, createProducer } from "@veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import { makeValidateToken } from "./auth.ts";
+import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
   type AuthenticatedUser,
@@ -89,6 +90,9 @@ const SYNTHETIC_TRADER_FI_VOICE_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_F
 const SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_PORT") ?? "5040"}`;
 const SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_PORT") ?? "5041"}`;
 const SYNTHETIC_TRADER_COMMODITIES_VOICE_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_COMMODITIES_VOICE_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_COMMODITIES_VOICE_PORT") ?? "5042"}`;
+const POSTGRES_HEALTH_URL = `http://${Deno.env.get("POSTGRES_HEALTH_HOST") ?? "localhost"}:${Deno.env.get("POSTGRES_HEALTH_PORT") ?? "8100"}`;
+const REDPANDA_ADMIN_URL = `http://${Deno.env.get("REDPANDA_ADMIN_HOST") ?? "localhost"}:${Deno.env.get("REDPANDA_ADMIN_PORT") ?? "9644"}`;
+const OLLAMA_URL = `http://${Deno.env.get("OLLAMA_HOST") ?? "localhost"}:${Deno.env.get("OLLAMA_PORT") ?? "11434"}`;
 
 const ALLOWED_ORIGINS = new Set(
   (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
@@ -996,6 +1000,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "synthetic-trader-derivatives-high-touch": SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL,
     "synthetic-trader-derivatives-low-touch": SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL,
     "synthetic-trader-commodities-voice": SYNTHETIC_TRADER_COMMODITIES_VOICE_URL,
+    "postgres-health": POSTGRES_HEALTH_URL,
+    "redpanda": REDPANDA_ADMIN_URL,
+    "ollama": OLLAMA_URL,
   };
 
   // docs: /reference/api-gateway/
@@ -1145,7 +1152,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           });
         }
       }
-      const targetUrl = `${target}${svcPath}${url.search}`;
+      const targetUrl = `${target}${resolveInfraHealthPath(svcName, svcPath)}${url.search}`;
       if (req.method === "GET" || req.method === "DELETE") return proxyGet(targetUrl, req);
       if (req.method === "POST") return proxyPost(targetUrl, req);
       if (req.method === "PUT") return proxyPut(targetUrl, req);

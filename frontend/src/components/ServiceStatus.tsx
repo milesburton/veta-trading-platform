@@ -15,6 +15,7 @@ function aggregateState(services: ServiceHealth[]): ServiceState {
   const required = services.filter((s) => !s.optional);
   if (required.some((s) => s.state === "error")) return "error";
   if (required.some((s) => s.state === "unknown")) return "unknown";
+  if (required.some((s) => s.state === "warn")) return "warn";
   return "ok";
 }
 

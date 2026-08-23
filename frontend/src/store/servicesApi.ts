@@ -119,29 +119,45 @@ export const servicesApi = createApi({
       transformResponse: (body: Record<string, unknown>, _meta, arg) => {
         const { version, ...rest } = body;
         const { service: _s, status: _st, ...meta } = rest;
+        // Some infra health surfaces (e.g. Redpanda's admin API
+        // /v1/cluster/health_overview) always return 200 and encode
+        // degraded state in the body instead of the HTTP status.
+        const isHealthy = body.is_healthy;
+        const state = isHealthy === false ? ("warn" as const) : ("ok" as const);
         return {
           name: arg.name,
           url: arg.url,
           link: arg.link,
           optional: arg.optional,
           alertOnDeployments: arg.alertOnDeployments,
-          state: "ok" as const,
+          state,
           version: String(version ?? "—"),
           meta: meta as Record<string, unknown>,
           lastChecked: Date.now(),
         };
       },
-      transformErrorResponse: (_response, _meta, arg) => ({
-        name: arg.name,
-        url: arg.url,
-        link: arg.link,
-        optional: arg.optional,
-        alertOnDeployments: arg.alertOnDeployments,
-        state: "error" as const,
-        version: "—",
-        meta: {},
-        lastChecked: Date.now(),
-      }),
+      transformErrorResponse: (response, _meta, arg) => {
+        // A service can report 503 deliberately to signal a degraded-but-
+        // running warn state (e.g. disk-monitor crossing WARN_PCT) rather
+        // than being unreachable. Only treat that specific shape as "warn";
+        // every other non-2xx or network failure is a genuine "error".
+        const data =
+          typeof response.status === "number" && response.data && typeof response.data === "object"
+            ? (response.data as Record<string, unknown>)
+            : null;
+        const isWarn = response.status === 503 && data?.status === "critical";
+        return {
+          name: arg.name,
+          url: arg.url,
+          link: arg.link,
+          optional: arg.optional,
+          alertOnDeployments: arg.alertOnDeployments,
+          state: isWarn ? ("warn" as const) : ("error" as const),
+          version: "—",
+          meta: (data ?? {}) as Record<string, unknown>,
+          lastChecked: Date.now(),
+        };
+      },
     }),
     getSystemMetrics: builder.query<SystemMetrics, void>({
       query: () => ({ url: "/api/gateway/system" }),

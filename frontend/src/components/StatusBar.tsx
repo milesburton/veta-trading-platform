@@ -53,7 +53,12 @@ function useAllServiceHealth(): ServiceHealth[] {
       meta: {},
     };
     if (result.isError) {
-      return { ...base, state: "error" as const, lastChecked: Date.now() };
+      const errData = result.error as ServiceHealth | undefined;
+      return {
+        ...base,
+        state: errData?.state === "warn" ? ("warn" as const) : ("error" as const),
+        lastChecked: Date.now(),
+      };
     }
     return { ...base, state: "unknown" as const, lastChecked: null };
   });
@@ -174,7 +179,18 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
           })
         );
       }
-      if (alertable && prevState === "error" && curState === "ok") {
+      if (alertable && prevState !== undefined && prevState !== "warn" && curState === "warn") {
+        dispatch(
+          alertAdded({
+            severity: "WARNING",
+            source: "service",
+            message: `Service degraded: ${svc.name}`,
+            detail: svc.url,
+            ts: Date.now(),
+          })
+        );
+      }
+      if (alertable && (prevState === "error" || prevState === "warn") && curState === "ok") {
         dispatch(
           alertAdded({
             severity: "INFO",

@@ -27,7 +27,7 @@ interface ServiceRowProps {
 }
 
 function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
-  const { data, isError } = useGetServiceHealthQuery(svc, {
+  const { data, isError, error } = useGetServiceHealthQuery(svc, {
     pollingInterval: 10_000,
   });
 
@@ -56,22 +56,41 @@ function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
 
   useEffect(() => {
     if (isError) {
+      // transformErrorResponse encodes a deliberate warn signal (e.g.
+      // disk-monitor's 503 when disk crosses WARN_PCT) as `state: "warn"`
+      // on the error payload — that's degraded, not down, so it must not
+      // trigger the same "service down" alert as a genuine failure.
+      const errData = error as ServiceHealth | undefined;
+      const isWarn = errData?.state === "warn";
       const errHealth: ServiceHealth = {
         name: svc.name,
         url: svc.url,
         link: svc.link,
         optional: svc.optional,
         alertOnDeployments: svc.alertOnDeployments,
-        state: "error",
+        state: isWarn ? "warn" : "error",
         version: "—",
-        meta: {},
+        meta: errData?.meta ?? {},
         lastChecked: Date.now(),
       };
-      if (prevRef.current?.state !== "error") {
+      if (prevRef.current?.state !== errHealth.state) {
         prevRef.current = errHealth;
         onUpdate(errHealth);
 
-        // Transition: ok/unknown → error — tiered alert
+        if (isWarn) {
+          dispatch(
+            alertAdded({
+              severity: "WARNING",
+              source: "service",
+              message: `${svc.name}: degraded`,
+              detail: svc.url,
+              ts: Date.now(),
+            })
+          );
+          return;
+        }
+
+        // Transition: ok/unknown/warn → error — tiered alert
         const isRequired = REQUIRED_SERVICES.has(svc.name);
         dispatch(
           alertAdded({
@@ -84,7 +103,7 @@ function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
         );
       }
     }
-  }, [isError, svc, dispatch, onUpdate]);
+  }, [isError, error, svc, dispatch, onUpdate]);
 
   return null;
 }
@@ -95,8 +114,18 @@ interface RowDisplayProps {
   now: number;
 }
 
+const ROW_STATE_STYLE: Record<
+  ServiceHealth["state"],
+  { dot: string; text: string; label: string }
+> = {
+  ok: { dot: "bg-green-500", text: "text-green-400", label: "ok" },
+  warn: { dot: "bg-amber-500", text: "text-amber-400", label: "warn" },
+  error: { dot: "bg-red-500", text: "text-red-400", label: "error" },
+  unknown: { dot: "bg-muted", text: "text-muted", label: "—" },
+};
+
 function RowDisplay({ health, index, now }: RowDisplayProps) {
-  const isOk = health.state === "ok";
+  const style = ROW_STATE_STYLE[health.state];
   const ageSecs = health.lastChecked != null ? Math.floor((now - health.lastChecked) / 1000) : null;
 
   return (
@@ -118,12 +147,8 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
       </td>
       <td className="px-3 py-1 text-xs font-mono">
         <span className="flex items-center gap-1.5">
-          <span
-            className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-              isOk ? "bg-green-500" : "bg-red-500"
-            }`}
-          />
-          <span className={isOk ? "text-green-400" : "text-red-400"}>{isOk ? "ok" : "error"}</span>
+          <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${style.dot}`} />
+          <span className={style.text}>{style.label}</span>
         </span>
       </td>
       <td className="px-3 py-1 text-xs font-mono text-label whitespace-nowrap">{health.version}</td>
