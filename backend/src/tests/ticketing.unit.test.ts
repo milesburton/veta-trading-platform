@@ -217,6 +217,65 @@ Deno.test("createTicketForAlert dedupes onto a recent open issue", async () => {
   });
 });
 
+Deno.test("createTicketForAlert opens a fresh issue once the prior one was closed", async () => {
+  await withValidGithubEnv(async () => {
+    const f = captureFetch((url) => {
+      if (url.includes("/search/issues")) {
+        // GitHub's `is:open` filter means a closed issue never appears
+        // here, regardless of how recently it was created or closed.
+        return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({
+          number: 43,
+          html_url: "https://github.com/foo/bar/issues/43",
+        }),
+        { status: 201 }
+      );
+    });
+    try {
+      const r = await createTicketForAlert(
+        { severity: "CRITICAL", source: "kill-switch", message: "fired" },
+        "u-99"
+      );
+      assertEquals(r.created, true);
+      assertEquals(r.issueNumber, 43);
+      assertEquals(r.reason, null);
+      const commentCall = f.calls.find((c) => c.url.includes("/comments"));
+      assertEquals(commentCall, undefined);
+      const search = f.calls.find((c) => c.url.includes("/search/issues"));
+      assertEquals(search?.url.includes("is%3Aopen") ?? search?.url.includes("is:open"), true);
+    } finally {
+      f.restore();
+    }
+  });
+});
+
+Deno.test("createTicketForUserReport does not dedupe — every report opens its own issue", async () => {
+  await withValidGithubEnv(async () => {
+    const f = captureFetch((url) => {
+      if (url.includes("/search/issues")) {
+        throw new Error("createTicketForUserReport must not search for duplicates");
+      }
+      return new Response(
+        JSON.stringify({ number: 200, html_url: "https://github.com/foo/bar/issues/200" }),
+        { status: 201 }
+      );
+    });
+    try {
+      const r = await createTicketForUserReport(
+        { kind: "bug", title: "Broken", description: "Something is broken here." },
+        "u-1",
+        "Unit Tester"
+      );
+      assertEquals(r.created, true);
+      assertEquals(r.issueNumber, 200);
+    } finally {
+      f.restore();
+    }
+  });
+});
+
 Deno.test("buildTitle truncates long messages", () => {
   const title = _internalForTests.buildTitle({
     severity: "CRITICAL",

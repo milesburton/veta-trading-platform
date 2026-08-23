@@ -120,6 +120,69 @@ tests:
         alertname: RedpandaTopicWriteRateCritical
         exp_alerts: []
 
+  - name: MarketTicksSilentWhileMarketOpen fires when an asset class is open but ticks stopped
+    interval: 1m
+    input_series:
+      - series: 'market_sim_asset_class_open{assetClass="equity"}'
+        values: '1x10'
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.ticks"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: MarketTicksSilentWhileMarketOpen
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: MarketTicksSilentWhileMarketOpen
+        exp_alerts:
+          - exp_labels:
+              alertname: MarketTicksSilentWhileMarketOpen
+              severity: critical
+            exp_annotations:
+              summary: market.ticks has stopped despite at least one asset class being open
+              description: |
+                market-sim reports at least one asset class open
+                (market_sim_asset_class_open == 1) but market.ticks has taken
+                zero produce bytes for 5m. This is not the expected weekend/
+                holiday silence — something is wrong with market-sim itself.
+                Incident (2026-08-23): market-sim was OOM-looping (mem_limit
+                too low for the full instrument universe + 8 concurrent
+                synthetic-trader desks), crash-restarting every 15-30s and
+                never completing a tick cycle. Downstream, market.features
+                and market.signals — and every synthetic-trader desk — went
+                silent with it. Check:
+                  docker logs veta-market-sim-1 --since 10m
+                  docker inspect veta-market-sim-1 | grep RestartCount
+
+  - name: MarketTicksSilentWhileMarketOpen stays quiet when every asset class is closed
+    interval: 1m
+    input_series:
+      - series: 'market_sim_asset_class_open{assetClass="equity"}'
+        values: '0x10'
+      - series: 'market_sim_asset_class_open{assetClass="fx"}'
+        values: '0x10'
+      - series: 'market_sim_asset_class_open{assetClass="commodity"}'
+        values: '0x10'
+      - series: 'market_sim_asset_class_open{assetClass="bond"}'
+        values: '0x10'
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.ticks"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: MarketTicksSilentWhileMarketOpen
+        exp_alerts: []
+
+  - name: MarketTicksSilentWhileMarketOpen stays quiet while ticks are flowing normally
+    interval: 1m
+    input_series:
+      - series: 'market_sim_asset_class_open{assetClass="fx"}'
+        values: '1x10'
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.ticks"}'
+        values: '0+43008000x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: MarketTicksSilentWhileMarketOpen
+        exp_alerts: []
+
   - name: DiskUsageHigh fires above 80% sustained for 5m
     interval: 1m
     input_series:
