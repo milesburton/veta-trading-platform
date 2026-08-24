@@ -60,7 +60,9 @@ Deno.test("[registry] SVC_PROXY in gateway.ts covers every registry composeName"
   if (proxyStart === -1) throw new Error("SVC_PROXY not found in gateway.ts");
   const proxyEnd = text.indexOf("};", proxyStart);
   const block = text.slice(proxyStart, proxyEnd);
-  const proxiedNames = new Set([...block.matchAll(/"([a-z][a-z0-9-]+)":\s+/g)].map((m) => m[1]));
+  const proxiedNames = new Set(
+    [...block.matchAll(/(?:"([a-z][a-z0-9-]+)"|([a-z][a-z0-9]*)):\s+/g)].map((m) => m[1] ?? m[2])
+  );
   const missing: string[] = [];
   for (const svc of SERVICE_REGISTRY) {
     if (svc.excludeFromGatewayHostEnv) continue;

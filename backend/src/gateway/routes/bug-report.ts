@@ -12,6 +12,7 @@ import { createTicketForUserReport } from "../ticketing.ts";
 
 const ALLOWED_CATEGORIES = new Set(["ui", "data", "auth", "performance", "other"]);
 const ALLOWED_KINDS = new Set(["bug", "feature", "comment"]);
+const MAX_ATTACHMENTS = 5;
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
@@ -20,20 +21,51 @@ function jsonResponse(body: unknown, status: number): Response {
   });
 }
 
+function parseAttachments(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const publicBaseUrl = Deno.env.get("MINIO_PUBLIC_URL");
+  if (!publicBaseUrl) return undefined;
+
+  let base: URL;
+  try {
+    base = new URL(publicBaseUrl);
+  } catch {
+    return undefined;
+  }
+
+  const basePath = base.pathname.endsWith("/") ? base.pathname : `${base.pathname}/`;
+
+  const urls = value
+    .filter((v): v is string => typeof v === "string")
+    .map((v) => {
+      try {
+        return new URL(v);
+      } catch {
+        return null;
+      }
+    })
+    .filter(
+      (u): u is URL => u !== null && u.origin === base.origin && u.pathname.startsWith(basePath)
+    )
+    .map((u) => u.toString())
+    .slice(0, MAX_ATTACHMENTS);
+
+  return urls.length > 0 ? urls : undefined;
+}
+
 function parseReport(body: unknown): UserTicketReport | null {
   if (!body || typeof body !== "object") return null;
   const b = body as Record<string, unknown>;
   if (typeof b.title !== "string" || typeof b.description !== "string") return null;
   const kind =
-    typeof b.kind === "string" && ALLOWED_KINDS.has(b.kind)
-      ? (b.kind as UserTicketKind)
-      : "bug";
+    typeof b.kind === "string" && ALLOWED_KINDS.has(b.kind) ? (b.kind as UserTicketKind) : "bug";
   const category =
     typeof b.category === "string" && ALLOWED_CATEGORIES.has(b.category)
       ? (b.category as UserTicketReport["category"])
       : undefined;
   const url = typeof b.url === "string" ? b.url : undefined;
-  return { kind, title: b.title, description: b.description, category, url };
+  const attachments = parseAttachments(b.attachments);
+  return { kind, title: b.title, description: b.description, category, url, attachments };
 }
 
 function deliveryError(reason: string | null): string {

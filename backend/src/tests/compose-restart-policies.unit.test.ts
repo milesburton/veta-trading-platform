@@ -45,7 +45,12 @@ const SCENARIOS: Scenario[] = [
 // Services that are legitimately one-shot — init containers, migrations,
 // model downloads, etc. These run to completion and exit zero; auto-restart
 // would loop them forever, so `restart: no` is correct.
-const ONE_SHOT_SERVICES = new Set(["db-migrate", "redpanda-init", "ollama-model-pull"]);
+const ONE_SHOT_SERVICES = new Set([
+  "db-migrate",
+  "redpanda-init",
+  "ollama-model-pull",
+  "minio-init",
+]);
 
 interface ComposeServiceConfig {
   restart?: string;

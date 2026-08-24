@@ -18,6 +18,7 @@ export interface UserTicketPayload {
   url?: string;
   userAgent?: string;
   ts?: number;
+  attachments?: string[];
 }
 
 interface CreateIssueResult {
@@ -222,6 +223,18 @@ function buildUserTicketBody(ticket: UserTicketPayload, userId: string, userName
   if (ticket.url) lines.push(`**Page:** ${cleanInline(ticket.url, 500)}`);
   if (ticket.userAgent) lines.push(`**User agent:** \`${cleanInline(ticket.userAgent, 200)}\``);
   lines.push("", "**Description:**", "```", ticket.description.trim().slice(0, 4000), "```");
+  if (ticket.attachments?.length) {
+    lines.push("", "**Attachments:**");
+    for (const url of ticket.attachments) {
+      const clean = cleanInline(url, 500);
+      const safeUrl = clean.replace(/[()\s]/g, (c) => encodeURIComponent(c));
+      if (/\.(png|jpe?g|gif|webp)$/i.test(clean)) {
+        lines.push(`![attachment](${safeUrl})`);
+      } else {
+        lines.push(`- [${cleanInline(clean.split("/").pop() ?? clean, 100)}](${safeUrl})`);
+      }
+    }
+  }
   lines.push("", "---", "_Created from an in-app VETA user ticket._");
   return lines.join("\n");
 }

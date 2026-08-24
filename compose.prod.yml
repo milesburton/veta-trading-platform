@@ -42,6 +42,15 @@ services:
     labels:
       - "traefik.enable=false"
 
+  # Deliberately public, GitHub needs unauthenticated GET to render ticket
+  # attachment images inline in an issue body, so this bucket is anonymous
+  # -read by design (see minio-init in compose.yml). Unlike every other
+  # backend service here, this one keeps traefik.enable=true in prod: it is
+  # meant to be reachable directly, not only via the gateway's proxy.
+  minio:
+    <<: *prod-defaults
+    mem_limit: 512m
+
   # Application services — pulled from GHCR by the homelab auto-pull.
   frontend:
     <<: *prod-defaults
