@@ -42,7 +42,7 @@ services:
     labels:
       - "traefik.enable=false"
 
-  # Deliberately public — GitHub needs unauthenticated GET to render ticket
+  # Deliberately public, GitHub needs unauthenticated GET to render ticket
   # attachment images inline in an issue body, so this bucket is anonymous
   # -read by design (see minio-init in compose.yml). Unlike every other
   # backend service here, this one keeps traefik.enable=true in prod: it is
