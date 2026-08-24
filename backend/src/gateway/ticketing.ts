@@ -227,10 +227,11 @@ function buildUserTicketBody(ticket: UserTicketPayload, userId: string, userName
     lines.push("", "**Attachments:**");
     for (const url of ticket.attachments) {
       const clean = cleanInline(url, 500);
+      const safeUrl = clean.replace(/[()\s]/g, (c) => encodeURIComponent(c));
       if (/\.(png|jpe?g|gif|webp)$/i.test(clean)) {
-        lines.push(`![attachment](${clean})`);
+        lines.push(`![attachment](${safeUrl})`);
       } else {
-        lines.push(`- [${cleanInline(clean.split("/").pop() ?? clean, 100)}](${clean})`);
+        lines.push(`- [${cleanInline(clean.split("/").pop() ?? clean, 100)}](${safeUrl})`);
       }
     }
   }
