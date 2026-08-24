@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.66.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.65.2...veta-trading-platform-v1.66.0) (2026-08-24)
+
+
+### Features
+
+* **ticketing:** add screenshot and file attachments to Raise a ticket ([#597](https://github.com/milesburton/veta-trading-platform/issues/597)) ([64725fa](https://github.com/milesburton/veta-trading-platform/commit/64725fa8348f9fec6e297801475a9274cb44f055))
+
+
+### Bug Fixes
+
+* **frontend:** stretch sparse candlestick bars to fill the panel ([#598](https://github.com/milesburton/veta-trading-platform/issues/598)) ([94514cc](https://github.com/milesburton/veta-trading-platform/commit/94514cc08f743298aa016027ae2f91485e2dce71))
+* **security:** resolve nanoid Dependabot alert and dismiss stale CodeQL finding ([#601](https://github.com/milesburton/veta-trading-platform/issues/601)) ([950e673](https://github.com/milesburton/veta-trading-platform/commit/950e6732bd5455109d6432e74dc082d54a9d2e82))
+
 ## [1.65.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.65.1...veta-trading-platform-v1.65.2) (2026-08-24)
 
 
