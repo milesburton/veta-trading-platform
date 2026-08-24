@@ -199,4 +199,156 @@ describe("RiskDashboardPanel", () => {
       );
     });
   });
+
+  it("shows the no-positions empty state when nothing is loading and there are no fills", () => {
+    renderPanel();
+    expect(
+      screen.getByText(/No positions — orders have not yet been filled\./i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Firm P&L/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a user-pnl breaker's P&L detail and pluralises 'symbols' correctly", () => {
+    const now = Date.now();
+    state.positions = {
+      traderA: [
+        {
+          symbol: "AAPL",
+          netQty: 100,
+          avgPrice: 150,
+          costBasis: 15_000,
+          markPrice: 155,
+          unrealisedPnl: 500,
+          realisedPnl: -50,
+          totalPnl: 450,
+          fillCount: 2,
+        },
+        {
+          symbol: "MSFT",
+          netQty: -50,
+          avgPrice: 400,
+          costBasis: 20_000,
+          markPrice: 395,
+          unrealisedPnl: -250,
+          realisedPnl: 0,
+          totalPnl: -250,
+          fillCount: 1,
+        },
+      ],
+    };
+    renderPanel([
+      {
+        key: "user-pnl:traderA",
+        type: "user-pnl",
+        scope: "user",
+        target: "traderA",
+        observedValue: -1200,
+        threshold: -1000,
+        firedAt: now - 500,
+        expiresAt: now + 30_000,
+      },
+    ]);
+    expect(screen.getByText(/P&L \$-1200/)).toBeInTheDocument();
+    expect(screen.getByText(/2 symbols/)).toBeInTheDocument();
+    // netQty > 0 -> LONG, netQty < 0 -> SHORT
+    expect(screen.getByText(/LONG/)).toBeInTheDocument();
+    expect(screen.getByText(/SHORT/)).toBeInTheDocument();
+  });
+
+  it("falls back to the raw breaker type when no observedValue is present", () => {
+    const now = Date.now();
+    state.positions = {
+      traderA: [
+        {
+          symbol: "AAPL",
+          netQty: 0,
+          avgPrice: 150,
+          costBasis: 0,
+          markPrice: 150,
+          unrealisedPnl: 0,
+          realisedPnl: 0,
+          totalPnl: 0,
+          fillCount: 0,
+        },
+      ],
+    };
+    state.apiBreakers = [
+      {
+        key: "market-move:AAPL",
+        type: "market-move",
+        target: "AAPL",
+        firedAt: now - 500,
+        expiresAt: now + 30_000,
+      },
+    ];
+    renderPanel();
+    // no observedValue on the API breaker entry -> detail text is the raw type
+    expect(screen.getByText(/\(market-move\)/)).toBeInTheDocument();
+    // netQty === 0 -> FLAT
+    expect(screen.getByText(/FLAT/)).toBeInTheDocument();
+  });
+
+  it("does not render the breaker strip when there are no active (unexpired) breakers", () => {
+    const now = Date.now();
+    state.apiBreakers = [
+      {
+        key: "expired",
+        type: "market-move",
+        target: "AAPL",
+        firedAt: now - 10_000,
+        expiresAt: now - 1,
+      },
+    ];
+    renderPanel();
+    expect(screen.queryByText(/Halted/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the failure message when updateConfig rejects with a data.error", async () => {
+    updateRiskConfig.mockReturnValue({
+      unwrap: () => Promise.reject({ data: { error: "config locked" } }),
+    });
+    renderPanel();
+
+    fireEvent.change(screen.getByLabelText(/Max gross notional/i), {
+      target: { value: "2000000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Apply/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/config locked/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows a generic failure message when updateConfig rejects without a data.error", async () => {
+    updateRiskConfig.mockReturnValue({ unwrap: () => Promise.reject({}) });
+    renderPanel();
+
+    fireEvent.change(screen.getByLabelText(/Max gross notional/i), {
+      target: { value: "2000000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Apply/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/failed to update/i)).toBeInTheDocument();
+    });
+  });
+
+  it("the Apply button is disabled until the draft differs from the current config", () => {
+    renderPanel();
+    const applyBtn = screen.getByRole("button", { name: /Apply/i });
+    expect(applyBtn).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/Max gross notional/i), {
+      target: { value: "2000000" },
+    });
+    expect(applyBtn).not.toBeDisabled();
+  });
+
+  it("toggling the breakers-enabled checkbox marks the draft dirty", () => {
+    renderPanel();
+    const checkbox = screen.getByLabelText(/Breakers enabled/i) as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+    fireEvent.click(checkbox);
+    expect(screen.getByRole("button", { name: /Apply/i })).not.toBeDisabled();
+  });
 });
