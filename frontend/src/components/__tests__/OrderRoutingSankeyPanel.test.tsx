@@ -1,7 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { OrderRoutingSankeyPanel } from "@veta/frontend/components/OrderRoutingSankeyPanel";
+import {
+  OrderRoutingSankeyPanel,
+  strategyColor,
+} from "@veta/frontend/components/OrderRoutingSankeyPanel";
 import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { COLOR } from "@veta/frontend/tokens";
 import type { ChildOrder, OrderRecord } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
@@ -95,5 +99,25 @@ describe("OrderRoutingSankeyPanel", () => {
     expect(screen.getByTestId("routing-table")).toBeInTheDocument();
     fireEvent.click(toggle);
     expect(screen.queryByTestId("routing-table")).not.toBeInTheDocument();
+  });
+});
+
+describe("strategyColor", () => {
+  it.each([
+    ["LIMIT", COLOR.LIMIT],
+    ["TWAP", COLOR.TWAP],
+    ["POV", COLOR.POV],
+    ["VWAP", COLOR.VWAP],
+    ["ICEBERG", COLOR.ICEBERG],
+    ["SNIPER", COLOR.SNIPER],
+    ["ARRIVAL_PRICE", COLOR.ARRIVAL_PRICE],
+    ["IS", COLOR.IS],
+    ["MOMENTUM", COLOR.MOMENTUM],
+  ] as const)("maps %s to its token color", (strategy, expected) => {
+    expect(strategyColor(strategy)).toBe(expected);
+  });
+
+  it("falls back to the neutral color for an unrecognised strategy", () => {
+    expect(strategyColor("SOMETHING_ELSE")).toBe(COLOR.NEUTRAL);
   });
 });

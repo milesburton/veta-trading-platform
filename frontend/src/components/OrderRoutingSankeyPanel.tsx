@@ -5,7 +5,7 @@ import { COLOR } from "@veta/frontend/tokens.ts";
 import type { Strategy } from "@veta/frontend/types.ts";
 import { Layer, Rectangle, ResponsiveContainer, Sankey, Tooltip } from "recharts";
 
-function strategyColor(strategy: string): string {
+export function strategyColor(strategy: string): string {
   switch (strategy as Strategy) {
     case "LIMIT":
       return COLOR.LIMIT;
