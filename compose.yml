@@ -372,7 +372,7 @@ services:
     logging: *logging
     labels:
       # Only the S3 data port (9000) is routed. MinIO's own admin/browser
-      # console listens on 9001 and is never exposed here — MINIO_BROWSER=off
+      # console listens on 9001 and is never exposed here, MINIO_BROWSER=off
       # above disables it entirely, since ticket attachments only need PUT
       # (via presigned URLs from the gateway) and public GET (for GitHub to
       # render images inline), never bucket/user administration from the web.
