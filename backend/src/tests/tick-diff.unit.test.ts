@@ -2,12 +2,35 @@ import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   BOOK_MATERIAL_BPS,
   buildTickDiff,
+  createSingleFlightPublisher,
   createTickDiffState,
   FULL_SNAPSHOT_INTERVAL_MS,
   isEmptyDiff,
   symbolsNeedingFreshBook,
   type TickPayload,
 } from "../market-sim/tick-diff.ts";
+
+Deno.test("single-flight publisher bounds slow downstream sends", async () => {
+  let resolveSend!: () => void;
+  const sent: number[] = [];
+  const publish = createSingleFlightPublisher<number>((value) => {
+    sent.push(value);
+    return new Promise<void>((resolve) => {
+      resolveSend = resolve;
+    });
+  });
+
+  assertEquals(publish(1), true);
+  assertEquals(publish(2), false);
+  assertEquals(sent, [1]);
+
+  resolveSend();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assertEquals(publish(3), true);
+  assertEquals(sent, [1, 3]);
+});
 
 function makeBook(mid: number) {
   return {
