@@ -143,3 +143,53 @@ test("shows tooltips on service table headers", () => {
     "Current health state"
   );
 });
+
+test("aggregates a warn-state service as overall warn, distinct from ok and error", () => {
+  const withWarn: ServiceHealth[] = [
+    {
+      name: "svc-ok",
+      state: "ok",
+      version: "1.0.0",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+    {
+      name: "svc-warn",
+      state: "warn",
+      version: "—",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+  ];
+  render(<ServiceStatus services={withWarn} />);
+  fireEvent.click(screen.getByRole("button", { name: /services/i }));
+  expect(screen.getByText("svc-warn")).toBeInTheDocument();
+  expect(screen.getByText("warn")).toBeInTheDocument();
+});
+
+test("aggregate state is error, not warn, when both an error and a warn service are present", () => {
+  const mixed: ServiceHealth[] = [
+    {
+      name: "svc-error",
+      state: "error",
+      version: "—",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+    {
+      name: "svc-warn",
+      state: "warn",
+      version: "—",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+  ];
+  render(<ServiceStatus services={mixed} />);
+  fireEvent.click(screen.getByRole("button", { name: /services/i }));
+  expect(screen.getByText("svc-error")).toBeInTheDocument();
+  expect(screen.getByText("svc-warn")).toBeInTheDocument();
+});
