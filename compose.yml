@@ -364,7 +364,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "sh", "-c", "curl -fsS http://localhost:9000/minio/health/ready >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
