@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.65.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.65.0...veta-trading-platform-v1.65.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **security:** resolve 4 open Dependabot alerts; drop dead test variable ([#593](https://github.com/milesburton/veta-trading-platform/issues/593)) ([a23935d](https://github.com/milesburton/veta-trading-platform/commit/a23935da1807c406035e7b21d0b769dab595b0e9))
+
 ## [1.65.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.64.3...veta-trading-platform-v1.65.0) (2026-08-23)
 
 
