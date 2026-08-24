@@ -120,24 +120,27 @@ function aggregateCandles(candles: OhlcCandle[], intervalMinutes: number): OhlcC
   return result;
 }
 
-function setFixedBarSpacing(chart: IChartApi) {
+function setFixedBarSpacing(chart: IChartApi, barCount: number, containerWidth: number) {
+  const wouldFillContainer = barCount * CANDLE_BAR_SPACING >= containerWidth;
   chart.timeScale().applyOptions({
-    barSpacing: CANDLE_BAR_SPACING,
-    minBarSpacing: CANDLE_BAR_SPACING,
+    ...(wouldFillContainer
+      ? { barSpacing: CANDLE_BAR_SPACING, minBarSpacing: CANDLE_BAR_SPACING }
+      : { minBarSpacing: 0.5 }),
     rightOffset: 0,
     lockVisibleTimeRangeOnResize: true,
   });
 }
 
-function resizeChartToContainer(chart: IChartApi, width: number, height: number) {
+function resizeChartToContainer(chart: IChartApi, width: number, height: number, barCount: number) {
   chart.resize(width, height);
-  setFixedBarSpacing(chart);
+  setFixedBarSpacing(chart, barCount, width);
 }
 
-function fitContentAndLockSpacing(chart: IChartApi | null) {
+function fitContentAndLockSpacing(chart: IChartApi | null, barCount: number) {
   if (!chart) return;
+  const containerWidth = chart.timeScale().width();
+  setFixedBarSpacing(chart, barCount, containerWidth);
   chart.timeScale().fitContent();
-  setFixedBarSpacing(chart);
 }
 
 function getIntervalCandles(candles: Props["candles"], interval: MinuteInterval) {
@@ -190,7 +193,7 @@ function useCandlestickChartCanvas(
       lastValueVisible: false,
       crosshairMarkerVisible: false,
     });
-    setFixedBarSpacing(chart);
+    setFixedBarSpacing(chart, loadedBarCountRef.current, 0);
 
     const ro = new ResizeObserver((entries) => {
       const { width = 0, height = 0 } = entries[0]?.contentRect ?? {};
@@ -201,7 +204,7 @@ function useCandlestickChartCanvas(
       const lastSize = lastSizeRef.current;
       if (lastSize.width !== nextWidth || lastSize.height !== nextHeight) {
         lastSizeRef.current = { width: nextWidth, height: nextHeight };
-        resizeChartToContainer(chart, nextWidth, nextHeight);
+        resizeChartToContainer(chart, nextWidth, nextHeight, loadedBarCountRef.current);
       }
 
       if (!chartSizedRef.current) {
@@ -211,7 +214,7 @@ function useCandlestickChartCanvas(
           pendingLoadRef.current = null;
         }
       } else if (loadedBarCountRef.current > 0) {
-        chartRef.current?.timeScale().fitContent();
+        fitContentAndLockSpacing(chartRef.current, loadedBarCountRef.current);
       }
     });
     ro.observe(containerRef.current);
@@ -224,7 +227,7 @@ function useCandlestickChartCanvas(
         const nextWidth = Math.max(1, Math.floor(width));
         const nextHeight = Math.max(1, Math.floor(height));
         lastSizeRef.current = { width: nextWidth, height: nextHeight };
-        resizeChartToContainer(chart, nextWidth, nextHeight);
+        resizeChartToContainer(chart, nextWidth, nextHeight, loadedBarCountRef.current);
       }
     });
 
@@ -295,7 +298,7 @@ function useCandlestickData(
         loadedBarCountRef.current = raw.length;
         fitOnNextTickRef.current = true;
         requestAnimationFrame(() =>
-          requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current))
+          requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current, raw.length))
         );
       } else {
         cs.update(toBarData(last));
@@ -309,7 +312,7 @@ function useCandlestickData(
         loadedBarCountRef.current = raw.length;
         if (fitOnNextTickRef.current) {
           fitOnNextTickRef.current = false;
-          requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current));
+          requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current, raw.length));
         }
       }
     }
@@ -449,6 +452,12 @@ export function CandlestickChart({ symbol, candles }: Props) {
             }}
             className="w-12 px-1 py-0.5 text-xs rounded border border-divider bg-panel text-label disabled:opacity-40 tabular-nums"
           />
+          {smaVisible.value && raw.length > 0 && raw.length < smaPeriod.value && (
+            <span data-testid="sma-insufficient-data" className="text-[10px] text-amber-400">
+              needs {smaPeriod.value - raw.length} more bar
+              {smaPeriod.value - raw.length === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
         {raw.length > 0 && (
           <span className="ml-auto text-[10px] text-muted tabular-nums">{raw.length} bars</span>
