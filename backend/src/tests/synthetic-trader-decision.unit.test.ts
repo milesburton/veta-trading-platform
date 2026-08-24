@@ -30,7 +30,11 @@ Deno.test("[synthetic-trader-decision] produces an order when everything is avai
 });
 
 Deno.test("[synthetic-trader-decision] skips when no live price is available", () => {
-  const engine = new DecisionEngine({ archetypeId: "equity-high-touch", userId: "u1", symbols: ["AAPL"] });
+  const engine = new DecisionEngine({
+    archetypeId: "equity-high-touch",
+    userId: "u1",
+    symbols: ["AAPL"],
+  });
   const tracker = new PositionTracker();
   const decision = engine.decide(tracker, () => undefined);
   assertEquals(decision.kind, "skip");
@@ -44,16 +48,32 @@ Deno.test("[synthetic-trader-decision] skips when every candidate symbol has an 
     random: sequenceRandom([0]), // side: BUY (random < 0.5)
   });
   const tracker = new PositionTracker();
-  tracker.recordAck({ clientOrderId: "x", asset: "AAPL", side: "SELL", quantity: 100, limitPrice: 200 });
+  tracker.recordAck({
+    clientOrderId: "x",
+    asset: "AAPL",
+    side: "SELL",
+    quantity: 100,
+    limitPrice: 200,
+  });
   const decision = engine.decide(tracker, () => 200);
   assertEquals(decision.kind, "skip");
 });
 
 Deno.test("[synthetic-trader-decision] skips when the open-order cap is reached", () => {
-  const engine = new DecisionEngine({ archetypeId: "equity-high-touch", userId: "u1", symbols: ["AAPL"] });
+  const engine = new DecisionEngine({
+    archetypeId: "equity-high-touch",
+    userId: "u1",
+    symbols: ["AAPL"],
+  });
   const tracker = new PositionTracker();
   for (let i = 0; i < 30; i++) {
-    tracker.recordAck({ clientOrderId: `o${i}`, asset: "AAPL", side: "BUY", quantity: 100, limitPrice: 200 });
+    tracker.recordAck({
+      clientOrderId: `o${i}`,
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 100,
+      limitPrice: 200,
+    });
   }
   const decision = engine.decide(tracker, () => 200);
   assertEquals(decision.kind, "skip");
@@ -94,7 +114,11 @@ Deno.test("[synthetic-trader-decision] each archetype's default symbols produce 
 });
 
 Deno.test("[synthetic-trader-decision] side selection is weighted roughly 50/50 over many samples", () => {
-  const engine = new DecisionEngine({ archetypeId: "equity-high-touch", userId: "u1", symbols: ["AAPL", "MSFT"] });
+  const engine = new DecisionEngine({
+    archetypeId: "equity-high-touch",
+    userId: "u1",
+    symbols: ["AAPL", "MSFT"],
+  });
   let buys = 0;
   let sells = 0;
   for (let i = 0; i < 400; i++) {
