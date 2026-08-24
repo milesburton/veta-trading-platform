@@ -100,7 +100,7 @@ async function presignPost(
     expiration,
     conditions: [
       { bucket: cfg.bucket },
-      ["starts-with", "$key", objectKey],
+      { key: objectKey },
       { "Content-Type": contentType },
       ["content-length-range", 0, maxBytes],
       { "x-amz-algorithm": "AWS4-HMAC-SHA256" },
