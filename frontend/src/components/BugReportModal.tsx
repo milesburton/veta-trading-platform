@@ -3,7 +3,7 @@ import {
   captureScreenshotBlob,
   MAX_ATTACHMENT_BYTES,
   uploadAttachment,
-} from "@veta/frontend/lib/ticketAttachmentUpload.ts";
+} from "@veta/frontend/lib/ticketAttachmentUpload";
 import {
   type BugCategory,
   type TicketKind,

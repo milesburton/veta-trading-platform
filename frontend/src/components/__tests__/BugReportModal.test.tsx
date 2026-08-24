@@ -17,9 +17,9 @@ vi.mock("@veta/frontend/store/gatewayApi", async (importOriginal) => {
   };
 });
 
-vi.mock("@veta/frontend/lib/ticketAttachmentUpload.ts", async (importOriginal) => {
+vi.mock("@veta/frontend/lib/ticketAttachmentUpload", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("@veta/frontend/lib/ticketAttachmentUpload.ts")>();
+    await importOriginal<typeof import("@veta/frontend/lib/ticketAttachmentUpload")>();
   return {
     ...original,
     uploadAttachment: vi.fn().mockResolvedValue(undefined),
