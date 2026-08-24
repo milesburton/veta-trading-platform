@@ -1850,7 +1850,7 @@ services:
       GITHUB_TICKETING_REPO: ${GITHUB_TICKETING_REPO:-milesburton/veta-trading-platform}
       # Internal endpoint used by the gateway to sign presigned POST URLs;
       # MINIO_PUBLIC_URL is the browser-reachable host embedded in those URLs
-      # and in the object URLs saved to ticket bodies — they differ because
+      # and in the object URLs saved to ticket bodies, they differ because
       # the gateway talks to minio:9000 directly, but the browser and GitHub
       # only ever see the public Traefik route (see minio's compose labels).
       MINIO_ENDPOINT: http://minio:9000
