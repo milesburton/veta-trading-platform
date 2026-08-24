@@ -121,7 +121,9 @@ function aggregateCandles(candles: OhlcCandle[], intervalMinutes: number): OhlcC
 }
 
 function setFixedBarSpacing(chart: IChartApi, barCount: number, containerWidth: number) {
-  const wouldFillContainer = barCount * CANDLE_BAR_SPACING >= containerWidth;
+  const hasUsableContainerWidth = Number.isFinite(containerWidth) && containerWidth > 0;
+  const wouldFillContainer =
+    hasUsableContainerWidth && barCount * CANDLE_BAR_SPACING >= containerWidth;
   chart.timeScale().applyOptions({
     ...(wouldFillContainer
       ? { barSpacing: CANDLE_BAR_SPACING, minBarSpacing: CANDLE_BAR_SPACING }

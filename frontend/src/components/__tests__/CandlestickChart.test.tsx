@@ -451,6 +451,15 @@ describe("CandlestickChart – chart wiring", () => {
     expect(spacingCalls[spacingCalls.length - 1]?.minBarSpacing).toBeLessThan(8);
   });
 
+  it("does not lock fixed spacing before the chart has a usable width", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+
+    const calls = timeScaleStub.applyOptions.mock.calls.map((c) => c[0]);
+    const firstSpacingCall = calls.find((c) => "minBarSpacing" in c);
+    expect(firstSpacingCall?.minBarSpacing).toBeLessThan(8);
+    expect(firstSpacingCall).not.toHaveProperty("barSpacing");
+  });
+
   it("keeps the fixed 8px bar-spacing floor when enough bars fill the panel", () => {
     const manyCandles = {
       "1m": Array.from({ length: 200 }, (_, i) =>
