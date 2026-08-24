@@ -86,6 +86,11 @@ export function BugReportModal({ open, onClose }: Props) {
   if (!open) return null;
 
   async function uploadFile(file: Blob, name: string) {
+    const activeCount = attachments.value.filter((a) => a.status !== "error").length;
+    if (activeCount >= 5) {
+      localError.value = "You can attach up to 5 files.";
+      return;
+    }
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     attachments.value = [...attachments.value, { id, name, status: "uploading" }];
     try {
