@@ -44,7 +44,9 @@ function parseAttachments(value: unknown): string[] | undefined {
         return null;
       }
     })
-    .filter((u): u is URL => u !== null && u.origin === base.origin && u.pathname.startsWith(basePath))
+    .filter(
+      (u): u is URL => u !== null && u.origin === base.origin && u.pathname.startsWith(basePath)
+    )
     .map((u) => u.toString())
     .slice(0, MAX_ATTACHMENTS);
 

@@ -152,6 +152,29 @@ Deno.test("returns a well-formed presigned POST for a valid request", async () =
   }
 });
 
+Deno.test("the signed policy pins the object key to an exact match, not a prefix", async () => {
+  setConfiguredEnv();
+  try {
+    const res = await handleTicketAttachmentsRoute(
+      req({ fileName: "screenshot.png", contentType: "image/png", sizeBytes: 12_345 }),
+      "/ticket-attachments/presign",
+      makeContext()
+    );
+    const body = await res?.json();
+    const policy = JSON.parse(atob(body.formFields.policy));
+    const keyCondition = policy.conditions.find(
+      (c: unknown) => typeof c === "object" && c !== null && !Array.isArray(c) && "key" in c
+    );
+    assertEquals(keyCondition, { key: body.objectKey });
+    const startsWithCondition = policy.conditions.find(
+      (c: unknown) => Array.isArray(c) && c[0] === "starts-with" && c[1] === "$key"
+    );
+    assertEquals(startsWithCondition, undefined);
+  } finally {
+    restoreEnv();
+  }
+});
+
 Deno.test("sanitises unsafe characters out of the file name", async () => {
   setConfiguredEnv();
   try {

@@ -394,4 +394,34 @@ describe("BugReportModal", () => {
       expect(screen.queryByTestId("bug-report-attachments")).toBeNull();
     });
   });
+
+  it("rejects a 6th attachment once 5 are already attached", async () => {
+    mockPresign.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          postUrl: "http://minio.example/ticket-attachments",
+          formFields: {},
+          objectUrl: "http://localhost:3000/attachments/ticket-attachments/u-1/a.png",
+          objectKey: "u-1/a.png",
+          expiresAt: Date.now() + 60_000,
+        }),
+    });
+    renderModal();
+
+    for (let i = 0; i < 5; i++) {
+      const file = new File(["bytes"], `photo-${i}.png`, { type: "image/png" });
+      fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [file] } });
+      await waitFor(() => {
+        expect(mockPresign).toHaveBeenCalledTimes(i + 1);
+      });
+    }
+
+    const sixth = new File(["bytes"], "photo-5.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [sixth] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-error")).toHaveTextContent(/up to 5 files/i);
+    });
+    expect(mockPresign).toHaveBeenCalledTimes(5);
+  });
 });

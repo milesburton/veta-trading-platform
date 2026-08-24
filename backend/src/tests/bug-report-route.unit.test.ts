@@ -287,6 +287,43 @@ Deno.test("keeps only attachment URLs matching MINIO_PUBLIC_URL, dropping foreig
   }
 });
 
+Deno.test("rejects a URL that shares the public URL's string prefix but not its origin or path", async () => {
+  Deno.env.delete("DISCORD_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
+  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
+  Deno.env.set("MINIO_PUBLIC_URL", "http://localhost:3000/attachments");
+  const f = captureFetch();
+  try {
+    const res = await handleBugReportRoute(
+      new Request("http://localhost/bug-report", {
+        method: "POST",
+        body: JSON.stringify({
+          title: "Bug with attachment",
+          description: "Something is broken, see the attached screenshot.",
+          attachments: [
+            "http://localhost:3000/attachments.evil.com/steal.png",
+            "http://localhost:3000/attachmentsXYZ/steal.png",
+            "http://localhost:3000.evil.com/attachments/steal.png",
+          ],
+        }),
+      }),
+      "/bug-report",
+      makeContext()
+    );
+    assertEquals(res?.status, 200);
+    const issueCall = f.calls.find((c) => c.url === "https://api.github.com/repos/foo/bar/issues");
+    if (!issueCall) throw new Error("expected GitHub issue create call");
+    const issueBody = JSON.parse(issueCall.body);
+    assertEquals(issueBody.body.includes("**Attachments:**"), false);
+    assertEquals(issueBody.body.includes("evil.com"), false);
+  } finally {
+    f.restore();
+    restoreEnv();
+    Deno.env.delete("MINIO_PUBLIC_URL");
+  }
+});
+
 Deno.test("creates a GitHub issue when ticketing env is configured", async () => {
   Deno.env.delete("DISCORD_WEBHOOK_URL");
   Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
