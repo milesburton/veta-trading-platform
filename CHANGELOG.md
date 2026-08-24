@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.65.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.65.1...veta-trading-platform-v1.65.2) (2026-08-24)
+
+
+### Bug Fixes
+
+* **market-sim:** bound Kafka publish concurrency to stop tick-loop starvation ([#591](https://github.com/milesburton/veta-trading-platform/issues/591)) ([91d1bb3](https://github.com/milesburton/veta-trading-platform/commit/91d1bb359ee906e0c16bff617a1b6e3bf31eaba1))
+
 ## [1.65.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.65.0...veta-trading-platform-v1.65.1) (2026-08-24)
 
 
