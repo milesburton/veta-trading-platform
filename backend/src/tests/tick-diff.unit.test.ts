@@ -2,12 +2,52 @@ import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   BOOK_MATERIAL_BPS,
   buildTickDiff,
+  createSingleFlightPublisher,
   createTickDiffState,
   FULL_SNAPSHOT_INTERVAL_MS,
   isEmptyDiff,
   symbolsNeedingFreshBook,
   type TickPayload,
 } from "../market-sim/tick-diff.ts";
+
+async function flushMicrotasks(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+Deno.test("single-flight publisher bounds slow downstream sends", async () => {
+  let resolveSend!: () => void;
+  const sent: number[] = [];
+  const publish = createSingleFlightPublisher<number>((value) => {
+    sent.push(value);
+    return new Promise<void>((resolve) => {
+      resolveSend = resolve;
+    });
+  });
+
+  assertEquals(publish(1), true);
+  await Promise.resolve();
+  assertEquals(publish(2), false);
+  assertEquals(sent, [1]);
+
+  resolveSend();
+  await flushMicrotasks();
+
+  assertEquals(publish(3), true);
+  await flushMicrotasks();
+  assertEquals(sent, [1, 3]);
+});
+
+Deno.test("single-flight publisher recovers when send throws synchronously", async () => {
+  const publish = createSingleFlightPublisher<number>((value) => {
+    if (value === 1) throw new Error("boom");
+    return Promise.resolve();
+  });
+
+  assertEquals(publish(1), true);
+  await flushMicrotasks();
+
+  assertEquals(publish(2), true);
+});
 
 function makeBook(mid: number) {
   return {

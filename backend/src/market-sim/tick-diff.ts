@@ -36,6 +36,29 @@ export const VOLUME_EPSILON = 1;
 export const BOOK_MATERIAL_BPS = 5;
 export const FULL_SNAPSHOT_INTERVAL_MS = 60_000;
 
+/** Bound high-frequency publishing when the downstream transport is slow. */
+export function createSingleFlightPublisher<T>(
+  send: (value: T) => Promise<void>,
+): (value: T) => boolean {
+  let inFlight = false;
+
+  return (value: T): boolean => {
+    if (inFlight) return false;
+    inFlight = true;
+    try {
+      Promise.resolve()
+        .then(() => send(value))
+        .catch(() => {})
+        .finally(() => {
+          inFlight = false;
+        });
+    } catch {
+      inFlight = false;
+    }
+    return true;
+  };
+}
+
 export function createTickDiffState(): TickDiffState {
   return {
     lastPrices: {},
