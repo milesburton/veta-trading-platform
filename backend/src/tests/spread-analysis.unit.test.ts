@@ -4,9 +4,9 @@ import type { YieldCurvePoint } from "../analytics/types.ts";
 
 Deno.test("[spread-analysis] rateAt interpolates correctly", () => {
   const curve: YieldCurvePoint[] = [
-    { tenorYears: 1, spotRate: 0.02 },
-    { tenorYears: 2, spotRate: 0.03 },
-    { tenorYears: 3, spotRate: 0.04 },
+    { tenorYears: 1, tenorLabel: "1y", spotRate: 0.02 },
+    { tenorYears: 2, tenorLabel: "2y", spotRate: 0.03 },
+    { tenorYears: 3, tenorLabel: "3y", spotRate: 0.04 },
   ];
 
   // Test interpolation

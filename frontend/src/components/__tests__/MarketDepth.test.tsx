@@ -7,7 +7,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderBookSnapshot } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // lightweight-charts renders to canvas — stub it
 vi.mock("lightweight-charts", () => {
@@ -91,5 +91,78 @@ describe("MarketDepth – with data", () => {
       </Provider>
     );
     expect(screen.queryByText(/No depth data/i)).not.toBeInTheDocument();
+  });
+
+  it("formats prices with 4 decimals for an FX symbol (contains '/')", () => {
+    const fxSnapshot: OrderBookSnapshot = {
+      ...mockSnapshot,
+      mid: 1.0855,
+      bids: [{ price: 1.0854, size: 1_000_000 }],
+      asks: [{ price: 1.0856, size: 1_000_000 }],
+    };
+    const store = makeStore({ "EUR/USD": fxSnapshot });
+    render(
+      <Provider store={store}>
+        <MarketDepth symbol="EUR/USD" />
+      </Provider>
+    );
+    const midEl = screen.getByTitle("Mid price — midpoint between best bid and ask");
+    expect(midEl).toHaveTextContent("1.0855");
+  });
+
+  it("shows an 'unavailable' spread and '—' text when bids or asks are empty", () => {
+    const oneSided: OrderBookSnapshot = {
+      mid: 180.25,
+      ts: Date.now(),
+      bids: [],
+      asks: mockSnapshot.asks,
+    };
+    const store = makeStore({ AAPL: oneSided });
+    render(
+      <Provider store={store}>
+        <MarketDepth symbol="AAPL" />
+      </Provider>
+    );
+    const spreadEl = screen.getByTitle(
+      "Bid-ask spread — difference between best ask and best bid prices"
+    );
+    expect(spreadEl).toHaveTextContent("—");
+  });
+});
+
+describe("MarketDepthPanel", () => {
+  afterEach(() => {
+    vi.doUnmock("../../hooks/useChannelIn.ts");
+    vi.resetModules();
+  });
+
+  it("prompts to select an asset when none is selected", async () => {
+    vi.resetModules();
+    vi.doMock("../../hooks/useChannelIn.ts", () => ({
+      useChannelIn: () => ({ selectedAsset: null }),
+    }));
+    const { MarketDepthPanel: FreshPanel } = await import("@veta/frontend/components/MarketDepth");
+    const store = makeStore();
+    render(
+      <Provider store={store}>
+        <FreshPanel />
+      </Provider>
+    );
+    expect(screen.getByText(/Select an asset in Market Ladder/i)).toBeInTheDocument();
+  });
+
+  it("renders MarketDepth for the currently selected asset", async () => {
+    vi.resetModules();
+    vi.doMock("../../hooks/useChannelIn.ts", () => ({
+      useChannelIn: () => ({ selectedAsset: "AAPL" }),
+    }));
+    const { MarketDepthPanel: FreshPanel } = await import("@veta/frontend/components/MarketDepth");
+    const store = makeStore({ AAPL: mockSnapshot });
+    render(
+      <Provider store={store}>
+        <FreshPanel />
+      </Provider>
+    );
+    expect(screen.getByTestId("market-depth-panel")).toBeInTheDocument();
   });
 });

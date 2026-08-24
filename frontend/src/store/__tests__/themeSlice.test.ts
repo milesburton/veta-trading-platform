@@ -97,3 +97,31 @@ describe("themeSlice", () => {
     });
   });
 });
+
+describe("themeSlice initial state (localStorage-derived)", () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+
+  it("defaults to 'dark' when localStorage has no saved theme", async () => {
+    localStorage.removeItem("veta-theme");
+    vi.resetModules();
+    const mod = await import("@veta/frontend/store/themeSlice");
+    expect(mod.themeSlice.getInitialState().theme).toBe("dark");
+  });
+
+  it("uses the saved theme from localStorage when it's a valid Theme value", async () => {
+    localStorage.setItem("veta-theme", "high-contrast");
+    vi.resetModules();
+    const mod = await import("@veta/frontend/store/themeSlice");
+    expect(mod.themeSlice.getInitialState().theme).toBe("high-contrast");
+  });
+
+  it("falls back to 'dark' when localStorage holds an invalid theme value", async () => {
+    localStorage.setItem("veta-theme", "not-a-real-theme");
+    vi.resetModules();
+    const mod = await import("@veta/frontend/store/themeSlice");
+    expect(mod.themeSlice.getInitialState().theme).toBe("dark");
+  });
+});

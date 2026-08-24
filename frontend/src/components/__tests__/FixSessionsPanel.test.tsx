@@ -91,4 +91,102 @@ describe("FixSessionsPanel", () => {
     expect(screen.getByText("BUY")).toBeInTheDocument();
     expect(screen.getByText("Filled")).toBeInTheDocument();
   });
+
+  it("shows loading placeholders while sessions and executions are still fetching", () => {
+    state.sessionsLoading = true;
+    state.executionsLoading = true;
+    render(<FixSessionsPanel />);
+    const loading = screen.getAllByText("Loading…");
+    expect(loading.length).toBe(2);
+  });
+
+  it("does not show the loading placeholder once data has arrived, even if isLoading is still true", () => {
+    state.sessionsLoading = true;
+    state.sessions = [
+      {
+        remote: "10.0.0.5:51000",
+        counterparty: "ACME",
+        state: "ACTIVE",
+        connectedAt: Date.now(),
+        openOrders: 0,
+      },
+    ];
+    render(<FixSessionsPanel />);
+    expect(screen.queryByText("No FIX sessions connected")).not.toBeInTheDocument();
+    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
+  });
+
+  it("renders a non-ACTIVE session with the pending/amber styling and shows '(pending logon)' with no counterparty", () => {
+    state.sessions = [
+      {
+        remote: "10.0.0.6:51001",
+        counterparty: null,
+        state: "LOGON_SENT",
+        connectedAt: Date.now(),
+        openOrders: 0,
+      },
+    ];
+    render(<FixSessionsPanel />);
+    expect(screen.getByText("LOGON_SENT")).toBeInTheDocument();
+    expect(screen.getByText("(pending logon)")).toBeInTheDocument();
+  });
+
+  it("renders a SELL execution and a non-BUY/SELL side falls back to the raw code", () => {
+    state.executions = [
+      {
+        execId: "EX2",
+        clOrdId: "CL2",
+        origClOrdId: null,
+        symbol: "MSFT",
+        side: "2",
+        execType: "2",
+        ordStatus: "1",
+        leavesQty: 50,
+        cumQty: 50,
+        avgPx: 0,
+        lastQty: 50,
+        lastPx: 400,
+        venue: "FIX-EXCHANGE",
+        counterparty: null,
+        commission: null,
+        settlDate: null,
+        account: null,
+        transactTime: "20260816-10:00:00",
+        ts: Date.now(),
+      },
+    ];
+    render(<FixSessionsPanel />);
+    expect(screen.getByText("SELL")).toBeInTheDocument();
+    expect(screen.getByText("Partial")).toBeInTheDocument();
+    // avgPx of 0 and a null counterparty both render the em-dash placeholder
+    expect(screen.getAllByText("—").length).toBe(2);
+  });
+
+  it("falls back to the raw ordStatus code when it isn't in the known label map", () => {
+    state.executions = [
+      {
+        execId: "EX3",
+        clOrdId: "CL3",
+        origClOrdId: null,
+        symbol: "AAPL",
+        side: "1",
+        execType: "9",
+        ordStatus: "C",
+        leavesQty: 0,
+        cumQty: 0,
+        avgPx: 0,
+        lastQty: 0,
+        lastPx: 0,
+        venue: "FIX-EXCHANGE",
+        counterparty: "ACME",
+        commission: null,
+        settlDate: null,
+        account: null,
+        transactTime: "20260816-10:00:00",
+        ts: Date.now(),
+      },
+    ];
+    render(<FixSessionsPanel />);
+    expect(screen.getByText("C")).toBeInTheDocument();
+  });
 });

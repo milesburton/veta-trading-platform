@@ -6,7 +6,7 @@ import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state: {
-  byService: Record<string, { kind: "ok" | "error"; version: string }>;
+  byService: Record<string, { kind: "ok" | "error" | "warn"; version: string }>;
   systemMetrics: {
     disk: {
       total_gb: number;
@@ -57,6 +57,7 @@ const stableQueryResults: Record<
         }
       | undefined;
     isError: boolean;
+    error?: { name: string; state: "warn" | "error"; meta: Record<string, unknown> };
   }
 > = {};
 
@@ -75,12 +76,14 @@ vi.mock("../../store/servicesApi.ts", () => ({
     optional?: boolean;
   }) => {
     const item = state.byService[name as keyof typeof state.byService];
-    if (!item || item.kind === "error") {
-      if (stableQueryResults[name]?.signature !== "error") {
+    if (!item || item.kind === "error" || item.kind === "warn") {
+      const kind = item?.kind ?? "error";
+      if (stableQueryResults[name]?.signature !== kind) {
         stableQueryResults[name] = {
-          signature: "error",
+          signature: kind,
           data: undefined,
           isError: true,
+          error: { name, state: kind === "warn" ? "warn" : "error", meta: {} },
         };
       }
       return stableQueryResults[name];
@@ -145,5 +148,15 @@ describe("ServiceHealthPanel", () => {
 
     expect(screen.getByText(/all ok/i)).toBeInTheDocument();
     expect(screen.getByText("2.0.0")).toBeInTheDocument();
+  });
+
+  it("renders a warn-state service distinctly from ok and error", () => {
+    state.byService.Gateway = { kind: "warn", version: "—" };
+
+    renderPanel();
+
+    expect(screen.getByText("warn")).toBeInTheDocument();
+    // a warn service means the estate isn't "all ok"
+    expect(screen.queryByText(/all ok/i)).not.toBeInTheDocument();
   });
 });

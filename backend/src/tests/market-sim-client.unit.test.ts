@@ -1,5 +1,11 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { mergeTick, type MarketTick, type RawTickMessage } from "../lib/market-sim-client.ts";
+import {
+  createMarketSimClient,
+  mergeTick,
+  parseTickFrame,
+  type MarketTick,
+  type RawTickMessage,
+} from "../lib/market-sim-client.ts";
 
 function emptyTick(): MarketTick {
   return { prices: {}, volumes: {}, marketMinute: 0 };
@@ -117,4 +123,134 @@ Deno.test("sessionPhase updates on a diff and persists when a later diff omits i
     "OPENING_AUCTION",
     "sessionPhase must not reset when a later diff doesn't include it"
   );
+});
+
+Deno.test("parseTickFrame accepts a marketData event with tick-shaped data", () => {
+  const frame = JSON.stringify({ event: "marketData", data: { prices: { AAPL: 190 } } });
+  assertEquals(parseTickFrame(frame), { prices: { AAPL: 190 } });
+});
+
+Deno.test("parseTickFrame accepts a marketUpdate event with tick-shaped data", () => {
+  const frame = JSON.stringify({ event: "marketUpdate", data: { marketMinute: 12 } });
+  assertEquals(parseTickFrame(frame), { marketMinute: 12 });
+});
+
+Deno.test("parseTickFrame rejects an unrecognised event type", () => {
+  const frame = JSON.stringify({ event: "somethingElse", data: { prices: {} } });
+  assertEquals(parseTickFrame(frame), null);
+});
+
+Deno.test("parseTickFrame rejects a data field that isn't an object", () => {
+  const frame = JSON.stringify({ event: "marketData", data: "not an object" });
+  assertEquals(parseTickFrame(frame), null);
+});
+
+Deno.test("parseTickFrame rejects malformed JSON without throwing", () => {
+  assertEquals(parseTickFrame("not json{{{"), null);
+});
+
+Deno.test("parseTickFrame rejects a JSON value that isn't an object", () => {
+  assertEquals(parseTickFrame("42"), null);
+  assertEquals(parseTickFrame("null"), null);
+});
+
+Deno.test("createMarketSimClient connects, merges an incoming tick, and notifies onTick callbacks", async () => {
+  const controller = new AbortController();
+  const server = Deno.serve(
+    { port: 0, signal: controller.signal, onListen: () => {} },
+    (req) => {
+      const { socket, response } = Deno.upgradeWebSocket(req);
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ event: "marketData", data: { prices: { AAPL: 199 } } }));
+      };
+      return response;
+    }
+  );
+  const addr = server.addr as Deno.NetAddr;
+  const client = createMarketSimClient("127.0.0.1", addr.port);
+
+  const received: MarketTick[] = [];
+  client.onTick((tick) => received.push(tick));
+
+  try {
+    client.start();
+    const deadline = Date.now() + 5_000;
+    while (received.length === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assertEquals(received.length > 0, true);
+    assertEquals(client.getLatest().prices.AAPL, 199);
+  } finally {
+    client.stop();
+    controller.abort();
+    await server.finished;
+  }
+});
+
+Deno.test("createMarketSimClient ignores malformed frames without crashing the connection", async () => {
+  const controller = new AbortController();
+  const server = Deno.serve(
+    { port: 0, signal: controller.signal, onListen: () => {} },
+    (req) => {
+      const { socket, response } = Deno.upgradeWebSocket(req);
+      socket.onopen = () => {
+        socket.send("not json{{{");
+        socket.send(JSON.stringify({ event: "marketData", data: { prices: { MSFT: 400 } } }));
+      };
+      return response;
+    }
+  );
+  const addr = server.addr as Deno.NetAddr;
+  const client = createMarketSimClient("127.0.0.1", addr.port);
+
+  try {
+    client.start();
+    const deadline = Date.now() + 5_000;
+    while (client.getLatest().prices.MSFT === undefined && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assertEquals(client.getLatest().prices.MSFT, 400);
+  } finally {
+    client.stop();
+    controller.abort();
+    await server.finished;
+  }
+});
+
+Deno.test("createMarketSimClient.start() is a no-op while already connected", async () => {
+  const controller = new AbortController();
+  let openCount = 0;
+  const server = Deno.serve(
+    { port: 0, signal: controller.signal, onListen: () => {} },
+    (req) => {
+      const { socket, response } = Deno.upgradeWebSocket(req);
+      socket.onopen = () => {
+        openCount++;
+      };
+      return response;
+    }
+  );
+  const addr = server.addr as Deno.NetAddr;
+  const client = createMarketSimClient("127.0.0.1", addr.port);
+
+  try {
+    client.start();
+    const deadline = Date.now() + 5_000;
+    while (openCount === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assertEquals(openCount, 1);
+    client.start();
+    await new Promise((r) => setTimeout(r, 100));
+    assertEquals(openCount, 1, "a second start() while open must not open a second connection");
+  } finally {
+    client.stop();
+    controller.abort();
+    await server.finished;
+  }
+});
+
+Deno.test("createMarketSimClient.getLatest() starts empty before any tick arrives", () => {
+  const client = createMarketSimClient("127.0.0.1", 1);
+  assertEquals(client.getLatest(), { prices: {}, volumes: {}, marketMinute: 0 });
 });

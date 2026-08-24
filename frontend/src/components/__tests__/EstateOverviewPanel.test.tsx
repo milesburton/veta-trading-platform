@@ -8,7 +8,7 @@ import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const byService: Record<string, { ok: boolean; version: string }> = {
+const byService: Record<string, { ok: boolean; version: string; warn?: boolean }> = {
   OMS: { ok: true, version: "1.0.0" },
   Gateway: { ok: false, version: "-" },
 };
@@ -31,7 +31,13 @@ vi.mock("../../store/servicesApi.ts", () => ({
   ],
   useGetServiceHealthQuery: (svc: { name: string; url: string }) => {
     const row = byService[svc.name];
-    if (!row?.ok) return { data: undefined, isError: true };
+    if (!row?.ok) {
+      return {
+        data: undefined,
+        isError: true,
+        error: row?.warn ? { name: svc.name, state: "warn", meta: {} } : undefined,
+      };
+    }
     return {
       data: {
         name: svc.name,
@@ -272,6 +278,14 @@ describe("EstateOverviewPanel", () => {
     }));
     renderPanel([], orders);
     expect(screen.getByText(/Estate Overview/i)).toBeInTheDocument();
+  });
+
+  it("renders a warn-state service with WARN status text, distinct from OK and DOWN", () => {
+    byService.OMS = { ok: true, version: "1.0.0" };
+    byService.Gateway = { ok: false, version: "-", warn: true };
+    renderPanel();
+    expect(screen.getAllByText("WARN").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/DOWN/i)).not.toBeInTheDocument();
   });
 
   it("renders timeline events when present", () => {
