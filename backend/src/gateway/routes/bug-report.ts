@@ -25,9 +25,29 @@ function parseAttachments(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const publicBaseUrl = Deno.env.get("MINIO_PUBLIC_URL");
   if (!publicBaseUrl) return undefined;
+
+  let base: URL;
+  try {
+    base = new URL(publicBaseUrl);
+  } catch {
+    return undefined;
+  }
+
+  const basePath = base.pathname.endsWith("/") ? base.pathname : `${base.pathname}/`;
+
   const urls = value
-    .filter((v): v is string => typeof v === "string" && v.startsWith(publicBaseUrl))
+    .filter((v): v is string => typeof v === "string")
+    .map((v) => {
+      try {
+        return new URL(v);
+      } catch {
+        return null;
+      }
+    })
+    .filter((u): u is URL => u !== null && u.origin === base.origin && u.pathname.startsWith(basePath))
+    .map((u) => u.toString())
     .slice(0, MAX_ATTACHMENTS);
+
   return urls.length > 0 ? urls : undefined;
 }
 
