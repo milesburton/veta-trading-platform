@@ -14,7 +14,12 @@ function renderWithStore(ui: React.ReactElement) {
 // lightweight-charts renders to canvas which jsdom doesn't support — stub it out
 const seriesStub = { setData: vi.fn(), update: vi.fn(), applyOptions: vi.fn() };
 const priceScaleStub = { applyOptions: vi.fn() };
-const timeScaleStub = { fitContent: vi.fn(), applyOptions: vi.fn(), resize: vi.fn() };
+const timeScaleStub = {
+  fitContent: vi.fn(),
+  applyOptions: vi.fn(),
+  resize: vi.fn(),
+  width: vi.fn(() => 800),
+};
 const chartStub = {
   addSeries: vi.fn(() => seriesStub),
   priceScale: vi.fn(() => priceScaleStub),
@@ -150,6 +155,32 @@ describe("CandlestickChart – SMA overlay", () => {
     fireEvent.change(input, { target: { value: "10" } });
     fireEvent.change(input, { target: { value: "" } });
     expect(input).toHaveValue(10);
+  });
+
+  it("shows an insufficient-data note when fewer bars than the SMA period are loaded", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    // filledCandles has 2 bars; default period is 20
+    expect(screen.getByTestId("sma-insufficient-data")).toHaveTextContent("needs 18 more bars");
+  });
+
+  it("uses singular wording when exactly one more bar is needed", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const input = screen.getByTestId("sma-period-input");
+    fireEvent.change(input, { target: { value: "3" } });
+    expect(screen.getByTestId("sma-insufficient-data")).toHaveTextContent("needs 1 more bar");
+  });
+
+  it("hides the insufficient-data note once there are enough bars", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const input = screen.getByTestId("sma-period-input");
+    fireEvent.change(input, { target: { value: "2" } });
+    expect(screen.queryByTestId("sma-insufficient-data")).not.toBeInTheDocument();
+  });
+
+  it("hides the insufficient-data note when SMA is toggled off", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    fireEvent.click(screen.getByTestId("sma-toggle"));
+    expect(screen.queryByTestId("sma-insufficient-data")).not.toBeInTheDocument();
   });
 });
 
@@ -402,5 +433,45 @@ describe("CandlestickChart – chart wiring", () => {
 
     expect(seriesStub.update).toHaveBeenCalled();
     expect(timeScaleStub.fitContent).not.toHaveBeenCalled();
+  });
+
+  it("relaxes the bar-spacing floor when few bars would leave the panel mostly empty", () => {
+    const fewCandles = {
+      "1m": [
+        makeCandle({ time: 60_000, open: 150, close: 152, volume: 10 }),
+        makeCandle({ time: 120_000, open: 152, close: 149, volume: 20 }),
+      ],
+      "5m": [] as OhlcCandle[],
+    };
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={fewCandles} />);
+    observers[0].fire(800, 500);
+
+    const calls = timeScaleStub.applyOptions.mock.calls.map((c) => c[0]);
+    const spacingCalls = calls.filter((c) => "minBarSpacing" in c);
+    expect(spacingCalls[spacingCalls.length - 1]?.minBarSpacing).toBeLessThan(8);
+  });
+
+  it("does not lock fixed spacing before the chart has a usable width", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+
+    const calls = timeScaleStub.applyOptions.mock.calls.map((c) => c[0]);
+    const firstSpacingCall = calls.find((c) => "minBarSpacing" in c);
+    expect(firstSpacingCall?.minBarSpacing).toBeLessThan(8);
+    expect(firstSpacingCall).not.toHaveProperty("barSpacing");
+  });
+
+  it("keeps the fixed 8px bar-spacing floor when enough bars fill the panel", () => {
+    const manyCandles = {
+      "1m": Array.from({ length: 200 }, (_, i) =>
+        makeCandle({ time: (i + 1) * 60_000, open: 150, close: 151, volume: 10 })
+      ),
+      "5m": [] as OhlcCandle[],
+    };
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={manyCandles} />);
+    observers[0].fire(800, 500);
+
+    const calls = timeScaleStub.applyOptions.mock.calls.map((c) => c[0]);
+    const spacingCalls = calls.filter((c) => "minBarSpacing" in c);
+    expect(spacingCalls[spacingCalls.length - 1]?.minBarSpacing).toBe(8);
   });
 });
