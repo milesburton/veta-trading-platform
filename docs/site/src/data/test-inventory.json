@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 99,
-      "cases": 1113,
+      "files": 98,
+      "cases": 1098,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -57,8 +57,7 @@
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
         "daily-summary.unit.test.ts": 23,
-        "tick-diff.unit.test.ts": 21,
-        "ticket-attachments-route.unit.test.ts": 10,
+        "tick-diff.unit.test.ts": 23,
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,
         "compose-restart-policies.unit.test.ts": 1,
