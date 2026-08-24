@@ -32,6 +32,7 @@ import { handleSeedRoute } from "./seed-route.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500-assets.ts";
 import {
   buildTickDiff,
+  createSingleFlightPublisher,
   createTickDiffState,
   isEmptyDiff,
   symbolsNeedingFreshBook,
@@ -95,6 +96,14 @@ createProducer("market-sim")
     producer = p;
   })
   .catch((err) => logger.warn("Redpanda unavailable — market.ticks not published", { err }));
+
+// KafkaJS batches concurrent sends. If Redpanda slows down, allowing the 250 ms
+// tick loop to enqueue indefinitely can create an oversized batch and starve
+// this service's HTTP event loop. Market ticks are ephemeral and periodic full
+// snapshots let consumers recover from a skipped diff.
+const publishMarketTick = createSingleFlightPublisher<unknown>((value) =>
+  producer?.send("market.ticks", value) ?? Promise.resolve()
+);
 
 const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
 const ALL_ASSET_MAP = new Map([
@@ -367,7 +376,7 @@ setInterval(() => {
     // #region docs:venuebooks-sniper-only
     const { venueBooks: _venueBooks, ...kafkaDiff } = diff;
     // #endregion docs:venuebooks-sniper-only
-    producer?.send("market.ticks", kafkaDiff).catch(() => {});
+    publishMarketTick(kafkaDiff);
   }
 }, 250);
 
