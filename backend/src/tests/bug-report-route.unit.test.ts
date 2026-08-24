@@ -217,6 +217,76 @@ Deno.test("rejects category values not in the allowlist", async () => {
   }
 });
 
+Deno.test("drops attachments when MINIO_PUBLIC_URL is not configured", async () => {
+  Deno.env.delete("DISCORD_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
+  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
+  Deno.env.delete("MINIO_PUBLIC_URL");
+  const f = captureFetch();
+  try {
+    const res = await handleBugReportRoute(
+      new Request("http://localhost/bug-report", {
+        method: "POST",
+        body: JSON.stringify({
+          title: "Bug with attachment",
+          description: "Something is broken, see the attached screenshot.",
+          attachments: ["http://localhost:3000/attachments/ticket-attachments/u-1/a.png"],
+        }),
+      }),
+      "/bug-report",
+      makeContext()
+    );
+    assertEquals(res?.status, 200);
+    const issueCall = f.calls.find((c) => c.url === "https://api.github.com/repos/foo/bar/issues");
+    if (!issueCall) throw new Error("expected GitHub issue create call");
+    const issueBody = JSON.parse(issueCall.body);
+    assertEquals(issueBody.body.includes("**Attachments:**"), false);
+  } finally {
+    f.restore();
+    restoreEnv();
+  }
+});
+
+Deno.test("keeps only attachment URLs matching MINIO_PUBLIC_URL, dropping foreign URLs", async () => {
+  Deno.env.delete("DISCORD_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
+  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
+  Deno.env.set("MINIO_PUBLIC_URL", "http://localhost:3000/attachments");
+  const f = captureFetch();
+  try {
+    const res = await handleBugReportRoute(
+      new Request("http://localhost/bug-report", {
+        method: "POST",
+        body: JSON.stringify({
+          title: "Bug with attachment",
+          description: "Something is broken, see the attached screenshot.",
+          attachments: [
+            "http://localhost:3000/attachments/ticket-attachments/u-1/a.png",
+            "https://evil.example/steal.png",
+          ],
+        }),
+      }),
+      "/bug-report",
+      makeContext()
+    );
+    assertEquals(res?.status, 200);
+    const issueCall = f.calls.find((c) => c.url === "https://api.github.com/repos/foo/bar/issues");
+    if (!issueCall) throw new Error("expected GitHub issue create call");
+    const issueBody = JSON.parse(issueCall.body);
+    assertEquals(
+      issueBody.body.includes("localhost:3000/attachments/ticket-attachments/u-1/a.png"),
+      true
+    );
+    assertEquals(issueBody.body.includes("evil.example"), false);
+  } finally {
+    f.restore();
+    restoreEnv();
+    Deno.env.delete("MINIO_PUBLIC_URL");
+  }
+});
+
 Deno.test("creates a GitHub issue when ticketing env is configured", async () => {
   Deno.env.delete("DISCORD_WEBHOOK_URL");
   Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");

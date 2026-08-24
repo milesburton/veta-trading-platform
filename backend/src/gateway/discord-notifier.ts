@@ -112,6 +112,7 @@ export interface UserTicketReport {
   category?: UserTicketCategory;
   url?: string;
   userAgent?: string;
+  attachments?: string[];
 }
 
 export type BugReport = UserTicketReport;

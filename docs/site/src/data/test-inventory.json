@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 98,
-      "cases": 1096,
+      "files": 99,
+      "cases": 1111,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -46,18 +46,19 @@
         "devcontainer.unit.test.ts": 7,
         "docs-drift.unit.test.ts": 8,
         "credentials.unit.test.ts": 8,
-        "bug-report-route.unit.test.ts": 11,
+        "bug-report-route.unit.test.ts": 13,
         "playbooks.unit.test.ts": 14,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 18,
         "discord-bot.unit.test.ts": 17,
-        "ticketing.unit.test.ts": 20,
+        "ticketing.unit.test.ts": 24,
         "service-registry.unit.test.ts": 3,
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
         "daily-summary.unit.test.ts": 23,
         "tick-diff.unit.test.ts": 21,
+        "ticket-attachments-route.unit.test.ts": 9,
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,
         "compose-restart-policies.unit.test.ts": 1,
@@ -151,8 +152,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 181,
-      "cases": 2164
+      "files": 182,
+      "cases": 2174
     },
     "playwright": {
       "files": 19,

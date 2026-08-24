@@ -1,17 +1,29 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { BugReportModal } from "@veta/frontend/components/BugReportModal";
 import { gatewayApi } from "@veta/frontend/store/gatewayApi";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockSubmit = vi.fn();
+const mockPresign = vi.fn();
 
 vi.mock("@veta/frontend/store/gatewayApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("@veta/frontend/store/gatewayApi")>();
   return {
     ...original,
     useSubmitBugReportMutation: () => [mockSubmit, { isLoading: false }],
+    usePresignTicketAttachmentMutation: () => [mockPresign, { isLoading: false }],
+  };
+});
+
+vi.mock("@veta/frontend/lib/ticketAttachmentUpload.ts", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("@veta/frontend/lib/ticketAttachmentUpload.ts")>();
+  return {
+    ...original,
+    uploadAttachment: vi.fn().mockResolvedValue(undefined),
+    captureScreenshotBlob: vi.fn(),
   };
 });
 
@@ -32,6 +44,7 @@ function renderModal(open = true) {
 describe("BugReportModal", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
+    mockPresign.mockReset();
   });
 
   afterEach(() => {
@@ -245,5 +258,140 @@ describe("BugReportModal", () => {
         writable: true,
       });
     }
+  });
+
+  it("uploads an attached file and includes its URL on submit", async () => {
+    mockPresign.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          postUrl: "http://minio.example/ticket-attachments",
+          formFields: { key: "u-1/abc-photo.png" },
+          objectUrl: "http://localhost:3000/attachments/ticket-attachments/u-1/abc-photo.png",
+          objectKey: "u-1/abc-photo.png",
+          expiresAt: Date.now() + 60_000,
+        }),
+    });
+    mockSubmit.mockResolvedValueOnce({ data: { ok: true } });
+    renderModal();
+
+    const file = new File(["fake-image-bytes"], "photo.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText("Done")
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+
+    await waitFor(() => {
+      expect(mockSubmit).toHaveBeenCalledTimes(1);
+    });
+    const arg = mockSubmit.mock.calls[0][0];
+    expect(arg.attachments).toEqual([
+      "http://localhost:3000/attachments/ticket-attachments/u-1/abc-photo.png",
+    ]);
+  });
+
+  it("rejects an oversized file before calling presign", async () => {
+    renderModal();
+    const bigFile = new File([new Uint8Array(11 * 1024 * 1024)], "huge.png", {
+      type: "image/png",
+    });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), {
+      target: { files: [bigFile] },
+    });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText(/exceeds 10MB/i)
+      ).toBeInTheDocument();
+    });
+    expect(mockPresign).not.toHaveBeenCalled();
+  });
+
+  it("blocks submission while an attachment is still uploading", async () => {
+    let resolvePresign!: () => void;
+    mockPresign.mockReturnValue({
+      unwrap: () =>
+        new Promise((resolve) => {
+          resolvePresign = () =>
+            resolve({
+              postUrl: "http://minio.example/ticket-attachments",
+              formFields: {},
+              objectUrl: "http://localhost:3000/attachments/ticket-attachments/u-1/a.png",
+              objectKey: "u-1/a.png",
+              expiresAt: Date.now() + 60_000,
+            });
+        }),
+    });
+    renderModal();
+
+    const file = new File(["bytes"], "photo.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText(/Uploading/i)
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-error")).toHaveTextContent(/wait for attachments/i);
+    });
+    expect(mockSubmit).not.toHaveBeenCalled();
+    resolvePresign();
+  });
+
+  it("marks an attachment as errored when upload fails", async () => {
+    mockPresign.mockReturnValue({
+      unwrap: () => Promise.reject(new Error("network down")),
+    });
+    renderModal();
+
+    const file = new File(["bytes"], "photo.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText(/failed/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("removes an attachment from the list", async () => {
+    mockPresign.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          postUrl: "http://minio.example/ticket-attachments",
+          formFields: {},
+          objectUrl: "http://localhost:3000/attachments/ticket-attachments/u-1/a.png",
+          objectKey: "u-1/a.png",
+          expiresAt: Date.now() + 60_000,
+        }),
+    });
+    renderModal();
+
+    const file = new File(["bytes"], "photo.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-attachments")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Remove photo.png"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("bug-report-attachments")).toBeNull();
+    });
   });
 });

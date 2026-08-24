@@ -80,6 +80,21 @@ export interface BugReportRequest {
   description: string;
   category?: BugCategory;
   url?: string;
+  attachments?: string[];
+}
+
+export interface AttachmentPresignRequest {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+export interface AttachmentPresignResponse {
+  postUrl: string;
+  formFields: Record<string, string>;
+  objectUrl: string;
+  objectKey: string;
+  expiresAt: number;
 }
 
 export interface BugReportResponse {
@@ -151,6 +166,13 @@ export const gatewayApi = createApi({
         body,
       }),
     }),
+    presignTicketAttachment: builder.mutation<AttachmentPresignResponse, AttachmentPresignRequest>({
+      query: (body) => ({
+        url: "/ticket-attachments/presign",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -163,4 +185,5 @@ export const {
   useStopLoadGenMutation,
   useGetLoadGenStatusQuery,
   useSubmitBugReportMutation,
+  usePresignTicketAttachmentMutation,
 } = gatewayApi;

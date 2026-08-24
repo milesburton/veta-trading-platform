@@ -1,15 +1,29 @@
 import { useSignal } from "@preact/signals-react";
 import {
+  captureScreenshotBlob,
+  MAX_ATTACHMENT_BYTES,
+  uploadAttachment,
+} from "@veta/frontend/lib/ticketAttachmentUpload.ts";
+import {
   type BugCategory,
   type TicketKind,
+  usePresignTicketAttachmentMutation,
   useSubmitBugReportMutation,
 } from "@veta/frontend/store/gatewayApi.ts";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useRef } from "react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+}
+
+interface AttachmentState {
+  id: string;
+  name: string;
+  status: "uploading" | "done" | "error";
+  url?: string;
+  error?: string;
 }
 
 const CATEGORIES: ReadonlyArray<{ value: BugCategory; label: string }> = [
@@ -38,10 +52,14 @@ export function BugReportModal({ open, onClose }: Props) {
   const ticketIssueNumber = useSignal<number | null>(null);
   const ticketFailureReason = useSignal<string | null>(null);
   const localError = useSignal<string | null>(null);
+  const attachments = useSignal<AttachmentState[]>([]);
+  const capturing = useSignal(false);
   const titleRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const [submitBugReport, { isLoading }] = useSubmitBugReportMutation();
+  const [presignAttachment] = usePresignTicketAttachmentMutation();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: submitted, undelivered and localError are stable signal refs whose .value is reset on open; only `open` should retrigger this effect
   useEffect(() => {
@@ -53,6 +71,7 @@ export function BugReportModal({ open, onClose }: Props) {
     ticketIssueNumber.value = null;
     ticketFailureReason.value = null;
     localError.value = null;
+    attachments.value = [];
     const focusTimer = setTimeout(() => titleRef.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCloseRef.current();
@@ -65,6 +84,63 @@ export function BugReportModal({ open, onClose }: Props) {
   }, [open]);
 
   if (!open) return null;
+
+  async function uploadFile(file: Blob, name: string) {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    attachments.value = [...attachments.value, { id, name, status: "uploading" }];
+    try {
+      const presigned = await presignAttachment({
+        fileName: name,
+        contentType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+      }).unwrap();
+      await uploadAttachment(file, presigned);
+      attachments.value = attachments.value.map((a) =>
+        a.id === id ? { ...a, status: "done", url: presigned.objectUrl } : a
+      );
+    } catch {
+      attachments.value = attachments.value.map((a) =>
+        a.id === id ? { ...a, status: "error", error: "Upload failed." } : a
+      );
+    }
+  }
+
+  function handleFileSelect(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        attachments.value = [
+          ...attachments.value,
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: file.name,
+            status: "error",
+            error: "File exceeds 10MB limit.",
+          },
+        ];
+        continue;
+      }
+      uploadFile(file, file.name);
+    }
+    event.target.value = "";
+  }
+
+  async function handleCaptureScreenshot() {
+    capturing.value = true;
+    try {
+      const blob = await captureScreenshotBlob();
+      await uploadFile(blob, `screenshot-${Date.now()}.png`);
+    } catch {
+      localError.value = "Screenshot capture was cancelled or is not supported here.";
+    } finally {
+      capturing.value = false;
+    }
+  }
+
+  function removeAttachment(id: string) {
+    attachments.value = attachments.value.filter((a) => a.id !== id);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,12 +155,19 @@ export function BugReportModal({ open, onClose }: Props) {
       localError.value = "Please describe what happened (at least 10 characters).";
       return;
     }
+    if (attachments.value.some((a) => a.status === "uploading")) {
+      localError.value = "Please wait for attachments to finish uploading.";
+      return;
+    }
     const result = await submitBugReport({
       kind: kind.value,
       title: t,
       description: d,
       category: category.value,
       url: typeof window !== "undefined" ? globalThis.location.pathname : "",
+      attachments: attachments.value
+        .filter((a) => a.status === "done" && a.url)
+        .map((a) => a.url as string),
     });
     if ("error" in result) {
       const e = result.error as { status?: number; data?: { error?: string } };
@@ -97,6 +180,7 @@ export function BugReportModal({ open, onClose }: Props) {
       submitted.value = true;
       title.value = "";
       description.value = "";
+      attachments.value = [];
       discordDelivered.value = result.data.discordDelivered === true;
       ticketUrl.value = result.data.ticket?.url ?? null;
       ticketIssueNumber.value = result.data.ticket?.issueNumber ?? null;
@@ -268,6 +352,67 @@ export function BugReportModal({ open, onClose }: Props) {
                 className="w-full rounded border border-divider bg-page px-3 py-1.5 text-xs text-primary outline-none transition-colors focus:border-emerald-500 disabled:opacity-50 resize-y"
               />
             </label>
+            <div className="space-y-1">
+              <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
+                Attachments
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  data-testid="bug-report-attach-file"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="rounded border border-divider bg-page px-2.5 py-1 text-[11px] text-muted hover:text-default hover:border-muted disabled:opacity-50"
+                >
+                  Attach file
+                </button>
+                <button
+                  type="button"
+                  data-testid="bug-report-capture-screenshot"
+                  onClick={handleCaptureScreenshot}
+                  disabled={isLoading || capturing.value}
+                  className="rounded border border-divider bg-page px-2.5 py-1 text-[11px] text-muted hover:text-default hover:border-muted disabled:opacity-50"
+                >
+                  {capturing.value ? "Capturing…" : "Capture screenshot"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  data-testid="bug-report-file-input"
+                />
+              </div>
+              {attachments.value.length > 0 && (
+                <ul className="space-y-1" data-testid="bug-report-attachments">
+                  {attachments.value.map((a) => (
+                    <li
+                      key={a.id}
+                      className="flex items-center justify-between gap-2 rounded border border-divider bg-page px-2 py-1 text-[11px]"
+                    >
+                      <span className="truncate text-muted">{a.name}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        {a.status === "uploading" && <span className="text-muted">Uploading…</span>}
+                        {a.status === "done" && <span className="text-emerald-400">Done</span>}
+                        {a.status === "error" && (
+                          <span className="text-red-400">{a.error ?? "Failed"}</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(a.id)}
+                          aria-label={`Remove ${a.name}`}
+                          className="text-muted hover:text-default"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <p className="text-[10px] text-muted">
               When configured, this creates a GitHub issue and can notify Support. Your username,
               current page, and user-agent are included. Don't include passwords or sensitive data.

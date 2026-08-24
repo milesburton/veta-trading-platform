@@ -8,7 +8,6 @@ import { createConsumer, createProducer } from "@veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import { makeValidateToken } from "./auth.ts";
-import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
   type AuthenticatedUser,
@@ -18,6 +17,7 @@ import {
 } from "./context.ts";
 import { startDailySummary } from "./daily-summary.ts";
 import { sendDailySummary } from "./discord-notifier.ts";
+import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
@@ -32,6 +32,7 @@ import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
 import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleTelemetryRoute } from "./routes/telemetry.ts";
+import { handleTicketAttachmentsRoute } from "./routes/ticket-attachments.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
 import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system-status.ts";
 import { getTicketingHealth, startTicketingHealthMonitor } from "./ticketing.ts";
@@ -916,6 +917,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const bugReportResponse = await handleBugReportRoute(req, path, gatewayContext);
   if (bugReportResponse) return bugReportResponse;
 
+  const ticketAttachmentsResponse = await handleTicketAttachmentsRoute(req, path, gatewayContext);
+  if (ticketAttachmentsResponse) return ticketAttachmentsResponse;
+
   const loadgenAnnounceResponse = await handleLoadgenAnnounceRoute(req, path, gatewayContext);
   if (loadgenAnnounceResponse) return loadgenAnnounceResponse;
 
@@ -956,21 +960,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const SVC_PROXY: Record<string, string> = {
     "market-sim": MARKET_SIM_URL,
-    "ems": EMS_URL,
-    "oms": OMS_URL,
+    ems: EMS_URL,
+    oms: OMS_URL,
     "limit-algo": LIMIT_ALGO_URL,
     "twap-algo": TWAP_ALGO_URL,
     "pov-algo": POV_ALGO_URL,
     "vwap-algo": VWAP_ALGO_URL,
     observability: KAFKA_RELAY_URL,
-    "journal": JOURNAL_URL,
+    journal: JOURNAL_URL,
     "fix-archive": FIX_ARCHIVE_URL,
     "fix-gateway": FIX_GATEWAY_URL,
     "fix-exchange": FIX_EXCHANGE_HEALTH_URL,
     "kafka-relay": KAFKA_RELAY_URL,
     "user-service": USER_SERVICE_URL,
     "news-aggregator": NEWS_AGGREGATOR_URL,
-    "analytics": ANALYTICS_URL,
+    analytics: ANALYTICS_URL,
     "market-data": MARKET_DATA_URL,
     "market-data-adapters": `http://${Deno.env.get("MARKET_DATA_ADAPTERS_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
     "feature-engine": FEATURE_ENGINE_URL,
@@ -1001,8 +1005,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "synthetic-trader-derivatives-low-touch": SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL,
     "synthetic-trader-commodities-voice": SYNTHETIC_TRADER_COMMODITIES_VOICE_URL,
     "postgres-health": POSTGRES_HEALTH_URL,
-    "redpanda": REDPANDA_ADMIN_URL,
-    "ollama": OLLAMA_URL,
+    redpanda: REDPANDA_ADMIN_URL,
+    ollama: OLLAMA_URL,
   };
 
   // docs: /reference/api-gateway/

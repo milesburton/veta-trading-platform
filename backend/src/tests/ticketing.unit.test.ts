@@ -606,6 +606,69 @@ Deno.test("createTicketForAlert handles commentOnIssue throw silently while dedu
   });
 });
 
+Deno.test("buildUserTicketBody omits an Attachments section when there are none", () => {
+  const body = _internalForTests.buildUserTicketBody(
+    { title: "t", description: "d" },
+    "u-1",
+    "Test User"
+  );
+  assertEquals(body.includes("**Attachments:**"), false);
+});
+
+Deno.test("buildUserTicketBody renders an image attachment as a markdown image", () => {
+  const body = _internalForTests.buildUserTicketBody(
+    {
+      title: "t",
+      description: "d",
+      attachments: ["http://localhost:3000/attachments/ticket-attachments/u-1/abc-screenshot.png"],
+    },
+    "u-1",
+    "Test User"
+  );
+  assertEquals(
+    body.includes(
+      "![attachment](http://localhost:3000/attachments/ticket-attachments/u-1/abc-screenshot.png)"
+    ),
+    true
+  );
+});
+
+Deno.test("buildUserTicketBody renders a non-image attachment as a plain link", () => {
+  const body = _internalForTests.buildUserTicketBody(
+    {
+      title: "t",
+      description: "d",
+      attachments: ["http://localhost:3000/attachments/ticket-attachments/u-1/abc-clip.webm"],
+    },
+    "u-1",
+    "Test User"
+  );
+  assertEquals(
+    body.includes(
+      "- [abc-clip.webm](http://localhost:3000/attachments/ticket-attachments/u-1/abc-clip.webm)"
+    ),
+    true
+  );
+  assertEquals(body.includes("!["), false);
+});
+
+Deno.test("buildUserTicketBody renders multiple attachments, image and non-image mixed", () => {
+  const body = _internalForTests.buildUserTicketBody(
+    {
+      title: "t",
+      description: "d",
+      attachments: [
+        "http://localhost:3000/attachments/ticket-attachments/u-1/a-shot.png",
+        "http://localhost:3000/attachments/ticket-attachments/u-1/b-clip.mp4",
+      ],
+    },
+    "u-1",
+    "Test User"
+  );
+  assertEquals(body.includes("![attachment]"), true);
+  assertEquals(body.includes("- [b-clip.mp4]"), true);
+});
+
 if (REAL_TOKEN !== undefined) {
   Deno.env.set("GITHUB_TICKETING_TOKEN", REAL_TOKEN);
 }
