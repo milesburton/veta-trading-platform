@@ -3,7 +3,7 @@
 - **Started**: 2026-08-24 09:39 UTC (leaked connection opened). User-visible failure confirmed live 11:2X-11:55 UTC.
 - **Resolved**: 2026-08-24 11:55 UTC.
 - **MTTR**: at minimum ~16 minutes from first user report to restored service; the underlying leak had been open for over two hours before it was noticed.
-- **User-visible impact**: sign-in failed for all users ("Sign in failed. Check that the user-service is reachable."), demo personas list failed to load ("Failed to load personas — demo mode may be disabled on this deployment"), guest login failed. The GUI did not fail over to the public holding page even though the platform was effectively unusable, because the frontend shell and `/health` endpoints kept responding normally — only specific DB-backed routes were wedged.
+- **User-visible impact**: sign-in failed for all users ("Sign in failed. Check that the user-service is reachable."), demo personas list failed to load ("Failed to load personas. Demo mode may be disabled on this deployment"), guest login failed. The GUI did not fail over to the public holding page even though the platform was effectively unusable, because the frontend shell and `/health` endpoints kept responding normally. Only specific DB-backed routes were wedged.
 - **Detection**: user-reported, from a live screenshot of the sign-in page showing the failure banners.
 - **Severity**: SEV1 (core auth path fully down)
 
