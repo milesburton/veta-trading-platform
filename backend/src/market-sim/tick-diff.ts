@@ -45,9 +45,12 @@ export function createSingleFlightPublisher<T>(
   return (value: T): boolean => {
     if (inFlight) return false;
     inFlight = true;
-    send(value).catch(() => {}).finally(() => {
-      inFlight = false;
-    });
+    Promise.resolve()
+      .then(() => send(value))
+      .catch(() => {})
+      .finally(() => {
+        inFlight = false;
+      });
     return true;
   };
 }
