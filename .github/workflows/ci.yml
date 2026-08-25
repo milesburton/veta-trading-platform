@@ -1493,10 +1493,13 @@ jobs:
   deploy-gate:
     name: Deploy gate (compose + smoke)
     runs-on: ubuntu-latest
-    # Never validate or publish deployable images from a commit whose
-    # integration suite failed. Previously publish-latest could succeed while
-    # the overall workflow was red because this dependency was missing.
-    needs: [integration, docker-base, docker-services]
+    # deploy-gate doesn't consume anything integration produces (it rebuilds
+    # its own images and boots its own stack), so it doesn't need to wait
+    # for integration to finish — only publish-latest does, since that's the
+    # step that must never run on a commit whose integration suite failed.
+    # Running deploy-gate in parallel with integration removes unnecessary
+    # serialization and reduces overall wall-clock CI time.
+    needs: [docker-base, docker-services]
     timeout-minutes: 30
     permissions:
       contents: read
@@ -1648,7 +1651,11 @@ jobs:
   publish-latest:
     name: Publish ${{ matrix.service }} :latest (gated)
     runs-on: ubuntu-latest
-    needs: [docker-base, docker-services, deploy-gate]
+    # integration is required here directly (not just transitively via
+    # deploy-gate) since deploy-gate no longer waits on it — see the comment
+    # on deploy-gate. This keeps the original guarantee: nothing publishes
+    # from a commit whose integration suite failed.
+    needs: [docker-base, docker-services, deploy-gate, integration]
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
