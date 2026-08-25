@@ -1424,6 +1424,8 @@ jobs:
             file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
+          - service: postgres-health
+            file: docker/postgres-health/Dockerfile
           - service: synthetic-trader
             file: docker/synthetic-trader/Dockerfile
     steps:
@@ -1739,6 +1741,8 @@ jobs:
             file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
+          - service: postgres-health
+            file: docker/postgres-health/Dockerfile
           - service: synthetic-trader
             file: docker/synthetic-trader/Dockerfile
     steps:

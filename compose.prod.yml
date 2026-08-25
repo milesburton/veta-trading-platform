@@ -698,6 +698,18 @@ services:
     labels:
       - "traefik.enable=false"
 
+  # The published image bakes scripts/postgres-health.py in directly (see
+  # docker/postgres-health/Dockerfile); compose.yml's bind mount is a
+  # local-dev convenience only and doesn't exist as a path on the homelab
+  # deploy host, so it must be reset here rather than inherited.
+  postgres-health:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/postgres-health:latest
+    build: !reset null
+    volumes: !reset []
+    labels:
+      - "traefik.enable=false"
+
   redpanda-console:
     <<: *prod-defaults
     labels:
