@@ -9,7 +9,9 @@ docs/
 scripts/
 # postgres-health's image bakes this one script in directly (see
 # docker/postgres-health/Dockerfile) instead of relying on the bind mount
-# compose.yml still uses for local dev.
-!scripts/
+# compose.yml still uses for local dev. BuildKit (the builder this repo's
+# CI uses) re-includes a single file through an excluded parent directory
+# without needing to re-include the whole directory first; verified by
+# building the image and confirming the file lands inside it.
 !scripts/postgres-health.py
 # Last no-cache build: 2026-03-12T12:53:13Z
