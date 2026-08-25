@@ -143,15 +143,23 @@ tests:
                 market-sim reports at least one asset class open
                 (market_sim_asset_class_open == 1) but market.ticks has taken
                 zero produce bytes for 5m. This is not the expected weekend/
-                holiday silence — something is wrong with market-sim itself.
-                Incident (2026-08-23): market-sim was OOM-looping (mem_limit
-                too low for the full instrument universe + 8 concurrent
-                synthetic-trader desks), crash-restarting every 15-30s and
-                never completing a tick cycle. Downstream, market.features
-                and market.signals — and every synthetic-trader desk — went
-                silent with it. Check:
+                holiday silence. Two known causes so far:
+                (1) 2026-08-23: market-sim was OOM-looping (mem_limit too low
+                for the full instrument universe + concurrent synthetic-trader
+                desks), crash-restarting every 15-30s and never completing a
+                tick cycle. Check:
                   docker logs veta-market-sim-1 --since 10m
                   docker inspect veta-market-sim-1 | grep RestartCount
+                (2) 2026-08-24: market.ticks' max.message.bytes override never
+                applied (redpanda-init raced topic creation), so the topic fell
+                back to Redpanda's much smaller cluster default and every
+                produce was rejected. market-sim itself stays up and does not
+                restart in this case. Look for repeating "message larger than
+                the max message size" errors in market-sim's own logs with a
+                suspiciously small reported size, and topic_not_exists entries
+                in redpanda-init's logs from the last deploy:
+                  docker logs veta-market-sim-1 --since 10m | grep -i kafka
+                  docker logs redpanda-init 2>&1 | grep topic_not_exists
 
   - name: MarketTicksSilentWhileMarketOpen stays quiet when every asset class is closed
     interval: 1m
