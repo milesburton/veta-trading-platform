@@ -1497,8 +1497,8 @@ jobs:
     # its own images and boots its own stack), so it doesn't need to wait
     # for integration to finish — only publish-latest does, since that's the
     # step that must never run on a commit whose integration suite failed.
-    # Running these two ~35-40min jobs in parallel instead of serialized
-    # is most of the difference between a ~40min and a ~55min CI run.
+    # Running deploy-gate in parallel with integration removes unnecessary
+    # serialization and reduces overall wall-clock CI time.
     needs: [docker-base, docker-services]
     timeout-minutes: 30
     permissions:
