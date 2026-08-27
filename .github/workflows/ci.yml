@@ -603,7 +603,8 @@ jobs:
   integration:
     name: Integration tests
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: [lint-and-test, changes]
+    if: github.ref == 'refs/heads/main' || needs.changes.outputs.docker == 'true'
     timeout-minutes: 45
     permissions:
       contents: write
