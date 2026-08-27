@@ -19,6 +19,13 @@ const TRIAGE_ENABLED = Deno.env.get("DISCORD_TRIAGE_ENABLED") !== "false";
 const LLM_PROVIDER = Deno.env.get("LLM_PROVIDER") ?? "mock";
 const LLM_MODEL_ID = Deno.env.get("LLM_MODEL_ID") ?? "mock-v1";
 const LLM_OLLAMA_BASE_URL = Deno.env.get("LLM_OLLAMA_BASE_URL") ?? "http://localhost:11434";
+const MOTD_ENABLED = Deno.env.get("DISCORD_MOTD_ENABLED") !== "false";
+const MOTD_INTERVAL_MS = (() => {
+  const parsed = Number(Deno.env.get("DISCORD_MOTD_INTERVAL_MS"));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 60 * 60 * 1000;
+})();
+const DOCS_URL = Deno.env.get("VETA_DOCS_URL") ?? "https://milesburton.github.io/veta-trading-platform/";
+const PLATFORM_URL = Deno.env.get("VETA_PLATFORM_URL") ?? "https://veta.mnetcs.com";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const GATEWAY_INTENT_GUILD_MEMBERS = 1 << 1;
@@ -28,6 +35,16 @@ const RECONNECT_DELAY_MS = 5_000;
 
 export function buildWelcomeMessage(memberMention: string): string {
   return `👋 Welcome ${memberMention} to the VETA community! Type \`Raise. <what's wrong>\` in this channel, or use the in-app "Raise a ticket" button, if you hit a bug.`;
+}
+
+export function buildMotd(docsUrl: string, platformUrl: string): string {
+  return [
+    "📌 **VETA quick guide**",
+    "",
+    `Type \`Raise. <what's wrong>\` or @mention this bot with a description to file a bug as a GitHub ticket, no need to leave Discord.`,
+    `📖 User guide: ${docsUrl}`,
+    `💻 Trade on the real platform: ${platformUrl}`,
+  ].join("\n");
 }
 
 interface GatewayEnvelope {
@@ -417,6 +434,7 @@ function handleGuildMemberAdd(data: unknown): void {
   const decision = decideWelcomePost(data, WELCOME_CHANNEL_ID);
   if (decision.shouldPost && decision.channelId && decision.message) {
     postChannelMessage(decision.channelId, decision.message);
+    if (MOTD_ENABLED) postChannelMessage(decision.channelId, buildMotd(DOCS_URL, PLATFORM_URL));
   }
 }
 
@@ -473,6 +491,15 @@ export function connect(gatewayUrl: string, opts: { reconnect?: boolean } = {}):
   return ws;
 }
 
+let motdTimer: ReturnType<typeof setInterval> | null = null;
+
+function startMotdTimer(): void {
+  if (!MOTD_ENABLED || motdTimer) return;
+  motdTimer = setInterval(() => {
+    postChannelMessage(WELCOME_CHANNEL_ID, buildMotd(DOCS_URL, PLATFORM_URL));
+  }, MOTD_INTERVAL_MS);
+}
+
 async function start(): Promise<void> {
   if (!BOT_TOKEN) {
     logger.warn("DISCORD_BOT_TOKEN not set; welcome bot disabled");
@@ -482,6 +509,7 @@ async function start(): Promise<void> {
     logger.warn("DISCORD_WELCOME_CHANNEL_ID not set; welcome bot disabled");
     return;
   }
+  startMotdTimer();
   try {
     const gatewayUrl = await fetchGatewayUrl();
     connect(gatewayUrl);

@@ -49,6 +49,10 @@ This is a one-time setup you do yourself in the Discord Developer Portal; it can
 | `LLM_MODEL_ID` | Model id passed to the provider | `mock-v1` |
 | `LLM_OLLAMA_BASE_URL` | Ollama base URL, when `LLM_PROVIDER=ollama` | `http://localhost:11434` |
 | `GITHUB_TICKETING_TOKEN_FILE` / `GITHUB_TICKETING_TOKEN` | GitHub token used to file the resulting issue, same credential as [ticketing](../ticketing/) | unset (ticket creation skipped) |
+| `DISCORD_MOTD_ENABLED` | Turn the recurring message of the day on or off | `true` |
+| `DISCORD_MOTD_INTERVAL_MS` | How often the message of the day reposts | `3600000` (1 hour) |
+| `VETA_DOCS_URL` | Docs link included in the message of the day | `https://milesburton.github.io/veta-trading-platform/` |
+| `VETA_PLATFORM_URL` | Live platform link included in the message of the day | `https://veta.mnetcs.com` |
 
 `DISCORD_BOT_TOKEN` and `DISCORD_WELCOME_CHANNEL_ID` are required for the bot to start at all; the service logs a warning and stays idle if either is missing. The LLM and ticketing vars only gate the triage feature: with `LLM_PROVIDER` unset the bot still greets new members, but replies to any triage-triggering message with a "triage is unavailable" note instead of filing a ticket. Inject via the server's `.env`:
 
@@ -76,6 +80,20 @@ docker compose up -d discord-bot
 ```
 
 The message is static aside from the member mention. Implementation in [`backend/src/discord-bot/discord-bot.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/discord-bot/discord-bot.ts).
+
+## Message of the day
+
+Alongside the welcome message, a second, non-personalised message posts on every join and again on a fixed interval (`DISCORD_MOTD_INTERVAL_MS`, default one hour), so members who don't happen to catch the welcome message still see how to use the bot:
+
+```
+📌 VETA quick guide
+
+Type `Raise. <what's wrong>` or @mention this bot with a description to file a bug as a GitHub ticket, no need to leave Discord.
+📖 User guide: https://milesburton.github.io/veta-trading-platform/
+💻 Trade on the real platform: https://veta.mnetcs.com
+```
+
+The interval timer is armed once, in `start()`, guarded by `DISCORD_MOTD_ENABLED`; it is independent of the Gateway reconnect loop, so a dropped and re-established Gateway connection does not reset or duplicate the timer.
 
 ## Ticket triage
 

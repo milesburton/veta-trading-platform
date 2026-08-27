@@ -1,5 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  buildMotd,
   buildTriagePrompt,
   buildWelcomeMessage,
   classifyGatewayEnvelope,
@@ -19,6 +20,18 @@ Deno.test("buildWelcomeMessage mentions the joining member", () => {
 Deno.test("buildWelcomeMessage points to the Raise. command", () => {
   const msg = buildWelcomeMessage("<@1>");
   assert(msg.includes("Raise."));
+});
+
+Deno.test("buildMotd mentions the Raise. command and @mention trigger", () => {
+  const msg = buildMotd("https://docs.example/", "https://platform.example/");
+  assert(msg.includes("Raise."));
+  assert(msg.includes("@mention"));
+});
+
+Deno.test("buildMotd includes the given docs and platform URLs", () => {
+  const msg = buildMotd("https://docs.example/", "https://platform.example/");
+  assert(msg.includes("https://docs.example/"));
+  assert(msg.includes("https://platform.example/"));
 });
 
 Deno.test("buildWelcomeMessage is a single-line greeting", () => {
