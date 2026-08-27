@@ -7,7 +7,7 @@ import Svc from "@docs/components/Svc.astro";
 
 ## How events get into Loki
 
-The platform's <Svc name="kafka-relay" /> subscribes to every Redpanda topic and forwards each event as a JSON line to stdout. Grafana Alloy tails those lines and ships them to Loki, giving Grafana a unified log search across the entire trading pipeline, including the order lifecycle, fills, algo decisions, and risk events.
+The platform's <Svc name="kafka-relay" /> subscribes to a curated set of Redpanda topics (order lifecycle, fills, algo heartbeats, and a few others; see `ORDER_LIFECYCLE_TOPICS`/`HIGH_FREQ_TOPICS`/`HEARTBEAT_TOPICS` in [`observability/kafka-relay.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/kafka-relay.ts)) and forwards each event as a JSON line to stdout. Grafana Alloy tails Docker container logs directly and ships them to Loki (`loki.source.docker`, not a file tail), giving Grafana a unified log search across the trading pipeline.
 
 The relay also exposes `POST /events/batch` for the frontend. The browser's [error transport middleware](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/errorTransportMiddleware.ts) posts uncaught errors here, so client-side failures show up in Loki alongside backend events.
 
