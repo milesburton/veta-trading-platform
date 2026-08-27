@@ -69,12 +69,7 @@ export async function handleWebSocketRoute(
     );
   }
 
-  // Deno's default idleTimeout is 30s (tuned for nginx-fronted deployments,
-  // see denoland/deno#23985) and closes the socket if a ping goes
-  // unanswered in that window. This gateway's clients don't reliably
-  // answer that ping under real network conditions, so every connection
-  // was being force-closed every ~30s regardless of client type. Raised
-  // well past any realistic idle gap between ticks/orders.
+  // docs: /reference/api-gateway/
   const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 300 });
   let auth: AuthResult | null = pendingAuth;
   let socketUserId: string | null = pendingUserId;
