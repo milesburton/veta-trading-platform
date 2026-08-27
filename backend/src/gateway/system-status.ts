@@ -70,7 +70,7 @@ export function makeMarketSimWsProxy(req: Request, marketSimPort: number): Respo
   if (req.headers.get("upgrade") !== "websocket") {
     return new Response("Expected WebSocket upgrade", { status: 426 });
   }
-  const { socket: client, response } = Deno.upgradeWebSocket(req);
+  const { socket: client, response } = Deno.upgradeWebSocket(req, { idleTimeout: 300 });
   const upstream = new WebSocket(`ws://localhost:${marketSimPort}`);
   upstream.onmessage = (ev) => {
     try {

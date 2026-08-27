@@ -69,7 +69,8 @@ export async function handleWebSocketRoute(
     );
   }
 
-  const { socket, response } = Deno.upgradeWebSocket(req);
+  // docs: /reference/api-gateway/
+  const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 300 });
   let auth: AuthResult | null = pendingAuth;
   let socketUserId: string | null = pendingUserId;
 
