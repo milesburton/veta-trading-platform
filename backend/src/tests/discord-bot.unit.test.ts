@@ -1,10 +1,14 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  buildTriagePrompt,
   buildWelcomeMessage,
   classifyGatewayEnvelope,
   connect,
+  decideTriageRequest,
   decideWelcomePost,
   extractHeartbeatIntervalMs,
+  isTriageRateLimited,
+  parseTriageResponse,
 } from "../discord-bot/discord-bot.ts";
 
 Deno.test("buildWelcomeMessage mentions the joining member", () => {
@@ -12,9 +16,9 @@ Deno.test("buildWelcomeMessage mentions the joining member", () => {
   assert(msg.includes("<@42>"));
 });
 
-Deno.test("buildWelcomeMessage points to the support channel", () => {
+Deno.test("buildWelcomeMessage points to the Raise. command", () => {
   const msg = buildWelcomeMessage("<@1>");
-  assert(msg.includes("#support"));
+  assert(msg.includes("Raise."));
 });
 
 Deno.test("buildWelcomeMessage is a single-line greeting", () => {
@@ -50,9 +54,15 @@ Deno.test("classifyGatewayEnvelope: op 0 t=GUILD_MEMBER_ADD carries the payload"
   assertEquals(action, { kind: "guildMemberAdd", data });
 });
 
+Deno.test("classifyGatewayEnvelope: op 0 t=MESSAGE_CREATE carries the payload", () => {
+  const data = { id: "1", channel_id: "2", content: "hello" };
+  const action = classifyGatewayEnvelope({ op: 0, t: "MESSAGE_CREATE", d: data });
+  assertEquals(action, { kind: "messageCreate", data });
+});
+
 Deno.test("classifyGatewayEnvelope: unrecognised op/t pairs are ignored", () => {
   assertEquals(classifyGatewayEnvelope({ op: 11 }), { kind: "ignore" });
-  assertEquals(classifyGatewayEnvelope({ op: 0, t: "MESSAGE_CREATE" }), { kind: "ignore" });
+  assertEquals(classifyGatewayEnvelope({ op: 0, t: "TYPING_START" }), { kind: "ignore" });
   assertEquals(classifyGatewayEnvelope({ op: 0 }), { kind: "ignore" });
 });
 
@@ -80,20 +90,18 @@ Deno.test("decideWelcomePost does not post when the payload is not an object wit
   assertEquals(decision.shouldPost, false);
 });
 
-function withGatewayServer(
-  onOpen: (socket: WebSocket) => void
-): { url: string; close: () => Promise<void> } {
+function withGatewayServer(onOpen: (socket: WebSocket) => void): {
+  url: string;
+  close: () => Promise<void>;
+} {
   const controller = new AbortController();
   let serverSocket: WebSocket | undefined;
-  const server = Deno.serve(
-    { port: 0, signal: controller.signal, onListen: () => {} },
-    (req) => {
-      const { socket, response } = Deno.upgradeWebSocket(req);
-      serverSocket = socket;
-      socket.onopen = () => onOpen(socket);
-      return response;
-    }
-  );
+  const server = Deno.serve({ port: 0, signal: controller.signal, onListen: () => {} }, (req) => {
+    const { socket, response } = Deno.upgradeWebSocket(req);
+    serverSocket = socket;
+    socket.onopen = () => onOpen(socket);
+    return response;
+  });
   const addr = server.addr as Deno.NetAddr;
   return {
     url: `ws://127.0.0.1:${addr.port}`,
@@ -120,7 +128,7 @@ Deno.test("connect() identifies after receiving Hello (op 10)", async () => {
     assertEquals(received.length, 1);
     const identify = received[0] as { op: number; d: { intents: number } };
     assertEquals(identify.op, 2);
-    assertEquals(identify.d.intents, 1 << 1);
+    assertEquals(identify.d.intents, (1 << 1) | (1 << 9) | (1 << 15));
   } finally {
     client.close();
     await close();
@@ -169,4 +177,130 @@ Deno.test("connect() ignores a malformed frame, then still identifies on a subse
     client.close();
     await close();
   }
+});
+
+Deno.test("decideTriageRequest ignores messages from bots", () => {
+  const decision = decideTriageRequest({
+    id: "1",
+    channel_id: "c1",
+    content: "Raise. something broke",
+    author: { id: "9", username: "other-bot", bot: true },
+  });
+  assertEquals(decision.shouldTriage, false);
+});
+
+Deno.test("decideTriageRequest ignores messages without the Raise. prefix", () => {
+  const decision = decideTriageRequest({
+    id: "1",
+    channel_id: "c1",
+    content: "the candlestick chart is broken",
+    author: { id: "9", username: "alice" },
+  });
+  assertEquals(decision.shouldTriage, false);
+});
+
+Deno.test("decideTriageRequest ignores an empty message after the prefix", () => {
+  const decision = decideTriageRequest({
+    id: "1",
+    channel_id: "c1",
+    content: "Raise.   ",
+    author: { id: "9", username: "alice" },
+  });
+  assertEquals(decision.shouldTriage, false);
+});
+
+Deno.test("decideTriageRequest ignores a payload missing required fields", () => {
+  assertEquals(decideTriageRequest({}).shouldTriage, false);
+  assertEquals(decideTriageRequest(null).shouldTriage, false);
+  assertEquals(
+    decideTriageRequest({ id: "1", content: "Raise. x", author: { id: "9" } }).shouldTriage,
+    false
+  );
+});
+
+Deno.test("decideTriageRequest extracts fields for a valid Raise. message", () => {
+  const decision = decideTriageRequest({
+    id: "msg-1",
+    channel_id: "chan-1",
+    guild_id: "guild-1",
+    content: "raise.  the candlestick chart shows blank bars",
+    author: { id: "9", username: "alice" },
+  });
+  assertEquals(decision.shouldTriage, true);
+  assertEquals(decision.request?.authorId, "9");
+  assertEquals(decision.request?.authorName, "alice");
+  assertEquals(decision.request?.channelId, "chan-1");
+  assertEquals(decision.request?.messageId, "msg-1");
+  assertEquals(decision.request?.guildId, "guild-1");
+  assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
+});
+
+Deno.test("decideTriageRequest falls back to author id when username is missing", () => {
+  const decision = decideTriageRequest({
+    id: "1",
+    channel_id: "c1",
+    content: "Raise. broken thing",
+    author: { id: "9" },
+  });
+  assertEquals(decision.request?.authorName, "9");
+});
+
+Deno.test("buildTriagePrompt strips control characters and truncates long input", () => {
+  const prompt = buildTriagePrompt("hello\n\rworld");
+  assert(!prompt.includes("\n\r"), "control chars must be stripped");
+
+  const long = buildTriagePrompt("x".repeat(2_000));
+  assert(long.length < 1_100, "input must be truncated before reaching the model");
+});
+
+Deno.test("parseTriageResponse parses a valid JSON object", () => {
+  const result = parseTriageResponse('{"title":"Chart bug","description":"Bars are blank"}');
+  assert(result.ok);
+  if (result.ok) {
+    assertEquals(result.title, "Chart bug");
+    assertEquals(result.description, "Bars are blank");
+  }
+});
+
+Deno.test("parseTriageResponse strips markdown fences", () => {
+  const result = parseTriageResponse(
+    '```json\n{"title":"Chart bug","description":"Bars are blank"}\n```'
+  );
+  assert(result.ok);
+});
+
+Deno.test("parseTriageResponse reports unparseable when there is no JSON object", () => {
+  const result = parseTriageResponse("sorry, I don't understand");
+  assertEquals(result.ok, false);
+  if (!result.ok) assertEquals(result.reason, "unparseable");
+});
+
+Deno.test("parseTriageResponse surfaces an explicit model error", () => {
+  const result = parseTriageResponse('{"error":"unparseable"}');
+  assertEquals(result.ok, false);
+  if (!result.ok) assertEquals(result.reason, "unparseable");
+});
+
+Deno.test("parseTriageResponse reports schema_mismatch when fields are missing", () => {
+  const result = parseTriageResponse('{"title":"Chart bug"}');
+  assertEquals(result.ok, false);
+  if (!result.ok) assertEquals(result.reason, "schema_mismatch");
+});
+
+Deno.test("isTriageRateLimited allows up to the max attempts then blocks", () => {
+  const userId = `rate-limit-test-${crypto.randomUUID()}`;
+  const now = Date.now();
+  assertEquals(isTriageRateLimited(userId, now), false);
+  assertEquals(isTriageRateLimited(userId, now), false);
+  assertEquals(isTriageRateLimited(userId, now), false);
+  assertEquals(isTriageRateLimited(userId, now), true);
+});
+
+Deno.test("isTriageRateLimited resets once the window has passed", () => {
+  const userId = `rate-limit-window-${crypto.randomUUID()}`;
+  const start = Date.now();
+  assertEquals(isTriageRateLimited(userId, start), false);
+  assertEquals(isTriageRateLimited(userId, start), false);
+  assertEquals(isTriageRateLimited(userId, start), false);
+  assertEquals(isTriageRateLimited(userId, start + 11 * 60 * 1000), false);
 });

@@ -1629,10 +1629,18 @@ services:
       "--allow-all",
       "/app/backend/src/discord-bot/discord-bot.ts",
     ]
+    depends_on:
+      ollama:
+        condition: service_healthy
     environment:
       DISCORD_BOT_PORT: "5034"
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_WELCOME_CHANNEL_ID: ${DISCORD_WELCOME_CHANNEL_ID:-}
+      DISCORD_TRIAGE_ENABLED: ${DISCORD_TRIAGE_ENABLED:-true}
+      LLM_PROVIDER: ollama
+      LLM_MODEL_ID: ${LLM_MODEL_ID:-qwen2.5:3b}
+      LLM_OLLAMA_BASE_URL: ${LLM_OLLAMA_BASE_URL:-http://ollama:11434}
+      GITHUB_TICKETING_TOKEN: ${GITHUB_TICKETING_TOKEN:-}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5034/health || exit 1"]
       interval: 10s
