@@ -53,6 +53,10 @@ interface MessageCreatePayload {
   author?: { id?: string; username?: string; bot?: boolean };
 }
 
+interface ReadyPayload {
+  user?: { id?: string };
+}
+
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 41_250;
 
 export function extractHeartbeatIntervalMs(payload: GatewayEnvelope): number {
@@ -61,7 +65,7 @@ export function extractHeartbeatIntervalMs(payload: GatewayEnvelope): number {
 
 export type GatewayAction =
   | { kind: "hello"; heartbeatIntervalMs: number }
-  | { kind: "ready" }
+  | { kind: "ready"; data: unknown }
   | { kind: "guildMemberAdd"; data: unknown }
   | { kind: "messageCreate"; data: unknown }
   | { kind: "ignore" };
@@ -71,7 +75,7 @@ export function classifyGatewayEnvelope(payload: GatewayEnvelope): GatewayAction
   if (payload.op === 10) {
     return { kind: "hello", heartbeatIntervalMs: extractHeartbeatIntervalMs(payload) };
   }
-  if (payload.op === 0 && payload.t === "READY") return { kind: "ready" };
+  if (payload.op === 0 && payload.t === "READY") return { kind: "ready", data: payload.d };
   if (payload.op === 0 && payload.t === "GUILD_MEMBER_ADD") {
     return { kind: "guildMemberAdd", data: payload.d };
   }
@@ -111,16 +115,30 @@ export interface TriageDecision {
   request?: TriageRequest;
 }
 
+function mentionPattern(botUserId: string): RegExp {
+  return new RegExp(`<@!?${botUserId}>`, "g");
+}
+
+function extractTriageText(content: string, botUserId: string | null): string | null {
+  const prefixMatch = RAISE_PREFIX.exec(content);
+  if (prefixMatch) return content.slice(prefixMatch[0].length).trim();
+  if (!botUserId) return null;
+  const pattern = mentionPattern(botUserId);
+  if (!pattern.test(content)) return null;
+  return content.replace(pattern, " ").trim();
+}
+
 /** Pure decision: given a MESSAGE_CREATE payload, should we triage it, and with what? */
-export function decideTriageRequest(data: unknown): TriageDecision {
+export function decideTriageRequest(
+  data: unknown,
+  botUserId: string | null = null
+): TriageDecision {
   const msg = (data ?? {}) as MessageCreatePayload;
   if (msg.author?.bot) return { shouldTriage: false };
   if (!msg.author?.id || !msg.channel_id || !msg.id) return { shouldTriage: false };
   if (typeof msg.content !== "string") return { shouldTriage: false };
-  const match = RAISE_PREFIX.exec(msg.content);
-  if (!match) return { shouldTriage: false };
-  const freeText = msg.content.slice(match[0].length).trim();
-  if (freeText.length === 0) return { shouldTriage: false };
+  const freeText = extractTriageText(msg.content, botUserId);
+  if (freeText === null || freeText.length === 0) return { shouldTriage: false };
   return {
     shouldTriage: true,
     request: {
@@ -247,7 +265,7 @@ function buildDiscordMessageLink(
 
 async function handleMessageCreate(data: unknown): Promise<void> {
   if (!TRIAGE_ENABLED) return;
-  const decision = decideTriageRequest(data);
+  const decision = decideTriageRequest(data, botUserId);
   if (!decision.shouldTriage || !decision.request) return;
   const req = decision.request;
 
@@ -359,6 +377,7 @@ async function fetchGatewayUrl(): Promise<string> {
 
 let connectedNow = false;
 let lastEventAt: number | null = null;
+let botUserId: string | null = null;
 
 function identify(ws: WebSocket): void {
   ws.send(
@@ -386,8 +405,10 @@ function startHeartbeat(
   }, intervalMs);
 }
 
-function handleReady(): void {
+function handleReady(data: unknown): void {
   connectedNow = true;
+  const ready = (data ?? {}) as ReadyPayload;
+  if (ready.user?.id) botUserId = ready.user.id;
   logger.info("gateway ready");
 }
 
@@ -425,7 +446,7 @@ export function connect(gatewayUrl: string, opts: { reconnect?: boolean } = {}):
       identify(ws);
       return;
     }
-    if (action.kind === "ready") return handleReady();
+    if (action.kind === "ready") return handleReady(action.data);
     if (action.kind === "guildMemberAdd") return handleGuildMemberAdd(action.data);
     if (action.kind === "messageCreate") {
       handleMessageCreate(action.data).catch((err) =>

@@ -21,7 +21,6 @@
 
 import type { Middleware, UnknownAction } from "@reduxjs/toolkit";
 import { advisoryNoteReceived } from "@veta/frontend/store/advisorySlice.ts";
-import { alertAdded } from "@veta/frontend/store/alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "@veta/frontend/store/authSlice.ts";
 import { sessionExpired, setUser, setUserWithLimits } from "@veta/frontend/store/authSlice.ts";
 import { breakerExpired, breakerFired } from "@veta/frontend/store/breakersSlice.ts";
@@ -74,7 +73,6 @@ const GATEWAY_WS_URL = import.meta.env.VITE_GATEWAY_WS_URL ?? `${_wsOrigin}/ws/g
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`;
 
 const UI_TICK_INTERVAL_MS = 250;
-const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 const RECONNECT_DELAY_INITIAL_MS = 2_000;
 const RECONNECT_DELAY_MAX_MS = 15_000;
 const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 20_000;
@@ -150,8 +148,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   let started = false;
   let visibilityListenerInstalled = false;
   let breakerJanitorTimer: ReturnType<typeof setInterval> | null = null;
-
-  const algoLastSeen: Record<string, number> = {};
 
   let pendingPrices: Record<string, number> = {};
   let pendingOpenPrices: Record<string, number> = {};
@@ -357,7 +353,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       storeAPI.dispatch(marketSlice.actions.setConnected(false));
       storeAPI.dispatch(connectionFailed());
       consecutiveFailures += 1;
-      for (const key of Object.keys(algoLastSeen)) delete algoLastSeen[key];
       if (tickTimer) {
         clearTimeout(tickTimer);
         tickTimer = null;
@@ -517,24 +512,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   function onAlgoHeartbeat(data: unknown) {
     const hb = data as { algo: string; ts?: number };
     if (!isSafeKey(hb.algo)) return;
-    const now = Date.now();
-    const prev = algoLastSeen[hb.algo];
-    algoLastSeen[hb.algo] = now;
     storeAPI.dispatch(feedReceived("algo"));
-    if (prev && now - prev > ALGO_HEARTBEAT_TIMEOUT_MS) {
-      const gapSeconds = Math.round((now - prev) / 1000);
-      storeAPI.dispatch(
-        alertAdded({
-          severity: "WARNING",
-          source: "algo",
-          message: `Algo ${hb.algo} heartbeat gap detected`,
-          detail: `Last seen ${gapSeconds}s ago — heartbeat resumed`,
-          ts: now,
-          relatedTopic: "algo.heartbeat",
-          relatedAt: prev,
-        })
-      );
-    }
   }
 
   function onNewsUpdate(data: unknown) {
