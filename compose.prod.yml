@@ -77,6 +77,18 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/base:latest
     build: !reset null
     profiles: !reset []
+    environment:
+      GITHUB_TICKETING_TOKEN_FILE: /run/secrets/github_ticketing_token
+    secrets:
+      - github_ticketing_token
+
+  # CPU-only, used solely for Discord ticket-triage. The trading-profile
+  # llm-advisory/llm-worker feature stays disabled in prod (see their
+  # LLM_ENABLED: "false" overrides below); this is a separate, smaller
+  # workload discord-bot depends on directly.
+  ollama:
+    <<: *prod-defaults
+    profiles: !reset []
 
   market-sim:
     <<: *prod-defaults
