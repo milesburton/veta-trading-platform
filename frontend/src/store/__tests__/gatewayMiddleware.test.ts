@@ -467,7 +467,7 @@ describe("gatewayMiddleware", () => {
       expect(dispatched.some((a) => a.type === "ui/setUpgradeStatus")).toBe(true);
     });
 
-    it("algoHeartbeat emits warning when heartbeat resumes after timeout", () => {
+    it("algoHeartbeat marks the algo feed alive but never raises an alert, even after a long gap", () => {
       vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
       const { dispatched, invoke } = createHarness();
       const ws = connectWs(invoke);
@@ -487,7 +487,10 @@ describe("gatewayMiddleware", () => {
         }),
       } as MessageEvent);
 
-      expect(dispatched.some((a) => a.type === "alerts/alertAdded")).toBe(true);
+      // algo.heartbeat is an order-lifecycle event, not a periodic keepalive:
+      // a gap between orders is routine, not a fault, so it must never alert.
+      expect(dispatched.some((a) => a.type === "alerts/alertAdded")).toBe(false);
+      expect(dispatched.some((a) => a.type === "feed/feedReceived")).toBe(true);
     });
 
     it("advisoryUpdate dispatches advisoryNoteReceived", () => {

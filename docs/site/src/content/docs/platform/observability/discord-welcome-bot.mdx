@@ -1,11 +1,11 @@
 ---
 title: Discord welcome bot
-description: How the discord-bot service greets new members on join and triages Raise. messages into tickets, with bot setup, intents, and rotation.
+description: How the discord-bot service greets new members on join and triages Raise./@mention messages into tickets, with bot setup, intents, and rotation.
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-The `discord-bot` service connects to the Discord Gateway, posts a welcome message whenever someone joins the VETA Discord server, and triages `Raise. <message>` posts in any channel it can read into GitHub tickets via an LLM. This is a separate integration from [alert routing](../alerts/) and [ticketing](../ticketing/): those use outbound-only webhooks, but greeting new members on join and reading channel messages both require a real bot with a persistent connection, since webhooks cannot observe server membership or message events.
+The `discord-bot` service connects to the Discord Gateway, posts a welcome message whenever someone joins the VETA Discord server, and triages `Raise. <message>` or `@VETA <message>` posts in any channel it can read into GitHub tickets via an LLM. This is a separate integration from [alert routing](../alerts/) and [ticketing](../ticketing/): those use outbound-only webhooks, but greeting new members on join and reading channel messages both require a real bot with a persistent connection, since webhooks cannot observe server membership or message events.
 
 ## Flow
 
@@ -16,7 +16,7 @@ flowchart LR
   B --> P[POST /channels/:id/messages]
   P --> C[(#welcome channel)]
 
-  M["User posts Raise. &lt;message&gt;"] --> D
+  M["User posts Raise. &lt;message&gt; or @mentions the bot"] --> D
   D -->|MESSAGE_CREATE event| B
   B --> L[(LLM provider)]
   L -->|title, description| B
@@ -44,13 +44,13 @@ This is a one-time setup you do yourself in the Discord Developer Portal; it can
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | Bot token from the Developer Portal | empty (bot disabled) |
 | `DISCORD_WELCOME_CHANNEL_ID` | Channel ID to post welcome messages in | empty (bot disabled) |
-| `DISCORD_TRIAGE_ENABLED` | Turn `Raise.` triage on or off | `true` |
+| `DISCORD_TRIAGE_ENABLED` | Turn ticket triage (both triggers) on or off | `true` |
 | `LLM_PROVIDER` | `ollama`, `anthropic`, or unset for a disabled mock provider | `mock` |
 | `LLM_MODEL_ID` | Model id passed to the provider | `mock-v1` |
 | `LLM_OLLAMA_BASE_URL` | Ollama base URL, when `LLM_PROVIDER=ollama` | `http://localhost:11434` |
 | `GITHUB_TICKETING_TOKEN_FILE` / `GITHUB_TICKETING_TOKEN` | GitHub token used to file the resulting issue, same credential as [ticketing](../ticketing/) | unset (ticket creation skipped) |
 
-`DISCORD_BOT_TOKEN` and `DISCORD_WELCOME_CHANNEL_ID` are required for the bot to start at all; the service logs a warning and stays idle if either is missing. The LLM and ticketing vars only gate the triage feature: with `LLM_PROVIDER` unset the bot still greets new members, but replies to any `Raise.` message with a "triage is unavailable" note instead of filing a ticket. Inject via the server's `.env`:
+`DISCORD_BOT_TOKEN` and `DISCORD_WELCOME_CHANNEL_ID` are required for the bot to start at all; the service logs a warning and stays idle if either is missing. The LLM and ticketing vars only gate the triage feature: with `LLM_PROVIDER` unset the bot still greets new members, but replies to any triage-triggering message with a "triage is unavailable" note instead of filing a ticket. Inject via the server's `.env`:
 
 ```bash
 # /opt/stacks/veta/.env
@@ -77,11 +77,16 @@ docker compose up -d discord-bot
 
 The message is static aside from the member mention. Implementation in [`backend/src/discord-bot/discord-bot.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/discord-bot/discord-bot.ts).
 
-## Raise. ticket triage
+## Ticket triage
 
-Any non-bot message starting with `Raise.` (case-insensitive, e.g. `Raise. the candlestick chart shows blank bars when I change symbol`) is sent to the configured LLM provider with a prompt constrained to return a short `title` and `description`. On success, the bot files a GitHub issue through the same [`createTicketForUserReport`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/ticketing.ts) path the in-app "Raise a ticket" modal uses, labelled `user-ticket`/`auto-created`, with the description linking back to the source Discord message. It then replies in-channel with either the issue URL or a reason it couldn't file one.
+A message triggers triage in either of two ways:
 
-Each user is limited to 3 triage attempts per 10 minutes; further attempts get an in-channel rate-limit notice rather than being silently dropped. The LLM only decides how to phrase the ticket, not whether to create one: an explicit `Raise.` prefix is the trigger, so ordinary conversation in the channel is never sent to the model.
+- Starting with `Raise.` (case-insensitive, e.g. `Raise. the candlestick chart shows blank bars when I change symbol`).
+- @-mentioning the bot anywhere in the message (e.g. `@VETA the candlestick chart shows blank bars when I change symbol`). The mention is stripped from the message before the remaining text is used.
+
+Either way, the free text after the trigger is sent to the configured LLM provider with a prompt constrained to return a short `title` and `description`. On success, the bot files a GitHub issue through the same [`createTicketForUserReport`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/ticketing.ts) path the in-app "Raise a ticket" modal uses, labelled `user-ticket`/`auto-created`, with the description linking back to the source Discord message. It then replies in-channel with either the issue URL or a reason it couldn't file one.
+
+Each user is limited to 3 triage attempts per 10 minutes across both triggers; further attempts get an in-channel rate-limit notice rather than being silently dropped. The LLM only decides how to phrase the ticket, not whether to create one: an explicit trigger (the prefix or a mention) is required, so ordinary conversation in the channel is never sent to the model. The @-mention trigger uses the bot's own user id, learned from the Gateway's `READY` payload on connect; it needs no extra Developer Portal permission beyond **Message Content Intent**, already required for the prefix trigger.
 
 ## Verifying
 
@@ -99,7 +104,8 @@ curl -sf http://localhost:5034/health
 - **`connected: false` but `configured: true`.** The Gateway connection failed or dropped. Check service logs for `gateway websocket error` or `gateway websocket closed`; the service retries every 5 seconds.
 - **Bot is connected but no message appears on join.** Confirm **Server Members Intent** is enabled in the Developer Portal, this is the most common cause. Also confirm the bot has **Send Messages** permission in the welcome channel specifically, not just server-wide.
 - **401 on Gateway connect.** The token is invalid or was reset in the Developer Portal. Regenerate and update `.env`.
-- **`Raise.` messages get no reply at all.** Confirm **Message Content Intent** is enabled in the Developer Portal; without it the bot receives `MESSAGE_CREATE` events but `content` is always empty, so the `Raise.` prefix never matches. Check service logs for `message triage failed`.
+- **`Raise.` or @mention messages get no reply at all.** Confirm **Message Content Intent** is enabled in the Developer Portal; without it the bot receives `MESSAGE_CREATE` events but `content` is always empty, so neither trigger ever matches. Check service logs for `message triage failed`.
+- **@mentioning the bot never triggers triage, but `Raise.` works fine.** The bot only knows its own user id after the Gateway sends `READY`; if the bot just (re)connected, wait for that to complete. If it persists, check service logs around connect time for a `READY` payload missing a `user.id` field.
 - **Reply says "triage is unavailable".** `LLM_PROVIDER` is unset, or the configured provider's `isAvailable()` check failed (Ollama unreachable, or `ANTHROPIC_API_KEY` empty). Check the `ollama` service's health if using `LLM_PROVIDER=ollama`.
 - **Ticket triages successfully but no GitHub issue appears.** `GITHUB_TICKETING_TOKEN_FILE` / `GITHUB_TICKETING_TOKEN` is unset or invalid; see [ticketing](../ticketing/) for the same credential used by the in-app form.
 

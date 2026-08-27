@@ -1318,6 +1318,10 @@ Deno.test({
                   `trader ${p.id} has cross-desk primary (should be a single-asset-class desk)`
                 );
               }
+              assert(
+                !p.id.startsWith("synthetic-trader-"),
+                `synthetic trader ${p.id} must not appear in the sign-in persona list`
+              );
             }
           }
         );

@@ -269,7 +269,10 @@ export function LoginPage() {
     <div data-testid="login-page" className="min-h-screen flex flex-col">
       <AppHeader />
 
-      <main className="flex-1 min-h-0 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+      {/* Must scroll at the document level, not internally: the page background
+          gradient is sized to #root's box, so an inner scrollport here would
+          hide overflow from it and leave the gradient not covering the page. */}
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-[400px_1fr] md:items-start">
           <div className="flex flex-col gap-5">
             {sessionWasLost && (

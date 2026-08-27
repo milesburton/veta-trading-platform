@@ -43,6 +43,12 @@ The gateway only fans CRITICAL and WARNING out to Discord. INFO alerts (workspac
 
 Grafana applies its own routing by `category` label: anything matched by `category=security` goes to the legacy `security-webhook` contact point so security alerts can be split out later if needed.
 
+### Algo heartbeats are not a liveness signal
+
+`algo.heartbeat` Kafka messages are order-lifecycle events (an algo strategy publishes one when it starts, slices, or completes an order), not a periodic keepalive. An earlier version of `gatewayMiddleware` treated any gap of more than 30 seconds between heartbeats for a given algo as a fault and raised a WARNING alert when the gap closed. On a paper-trading platform this fired constantly and for no real reason: an algo with no order flow for a while is routine, not broken, so every quiet period followed by a new order produced a false "heartbeat gap detected" alert, forwarded straight to the Discord channel.
+
+That gap-detection logic has been removed. `onAlgoHeartbeat` now only marks the algo feed as alive (`feedReceived("algo")`); it never raises an alert. If genuine algo-liveness monitoring is wanted later, it needs a real periodic heartbeat published on a fixed interval independent of order flow, not order events repurposed as one. Do not reintroduce gap-based alerting on `algo.heartbeat` without that change.
+
 ## Ticketing for CRITICAL alerts
 
 CRITICAL alerts also auto-create a GitHub issue. The gateway's alerts route runs `notifyDiscord` and `createTicketForAlert` side-by-side via `Promise.allSettled`, so a Discord-delivery failure can't block ticket creation and vice versa.

@@ -91,3 +91,7 @@ Trading style is enforced at the panel level:
 - **Default workspaces** follow the style: high-touch lands on Trading, low-touch on Algo, FI voice on FI Trading, derivatives on Options.
 
 The default demo passcode is `veta-dev-passcode` (configurable via `OAUTH2_SHARED_SECRET`).
+
+## Synthetic trader accounts
+
+Nine `synthetic-trader-*` accounts, one per desk, generate realistic order flow during market hours so the platform has something to trade against without a human at the keyboard. They are seeded with `role='trader'` like the personas above, but their `id` is excluded from the `/personas` endpoint by prefix, so they never appear in the sign-in picker. They exist purely to validate the platform, not as a login option.
