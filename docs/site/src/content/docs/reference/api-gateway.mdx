@@ -24,7 +24,7 @@ The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser t
 | `/ws` | Main gateway WebSocket: market updates, order events, auth identity |
 | `/ws/market-sim` | Raw market-sim WebSocket proxy |
 
-`Deno.upgradeWebSocket` defaults to a 30-second `idleTimeout`: if a ping goes unanswered in that window, Deno force-closes the socket (code 1001, "No response from ping frame"), independent of any application-level logic. The gateway's clients don't reliably answer that ping under real network conditions, so every connection, regardless of client type, was being closed roughly every 30 seconds. The gateway now passes an explicit `idleTimeout: 300` to `Deno.upgradeWebSocket` in `backend/src/gateway/routes/websocket.ts`. Don't remove that option; it isn't dead configuration even though 300 looks arbitrary.
+`Deno.upgradeWebSocket` defaults to a 30-second `idleTimeout`: if a ping goes unanswered in that window, Deno force-closes the socket (code 1001, "No response from ping frame"), independent of any application-level logic. The gateway's clients don't reliably answer that ping under real network conditions, so every connection, regardless of client type, was being closed roughly every 30 seconds. Both `/ws` (`backend/src/gateway/routes/websocket.ts`) and `/ws/market-sim` (`backend/src/gateway/system-status.ts`) now pass an explicit `idleTimeout: 300` to `Deno.upgradeWebSocket`. Don't remove that option; it isn't dead configuration even though 300 looks arbitrary.
 
 ## Proxy routes
 
