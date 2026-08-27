@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.0...veta-trading-platform-v1.68.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **gateway:** stop WebSocket connections dying every 30 seconds ([#610](https://github.com/milesburton/veta-trading-platform/issues/610)) ([ec076c7](https://github.com/milesburton/veta-trading-platform/commit/ec076c7d12db3c27ce7b6ee34c64ca33536d16ec))
+
 ## [1.68.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.67.0...veta-trading-platform-v1.68.0) (2026-08-27)
 
 
