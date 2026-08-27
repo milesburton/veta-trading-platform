@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.1...veta-trading-platform-v1.68.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* **observability:** repair three Grafana panels broken by invalid LogQL ([#613](https://github.com/milesburton/veta-trading-platform/issues/613)) ([1a79816](https://github.com/milesburton/veta-trading-platform/commit/1a7981693f9d9285beb43d6bc4188bd9734dfc4d))
+
 ## [1.68.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.0...veta-trading-platform-v1.68.1) (2026-08-27)
 
 
