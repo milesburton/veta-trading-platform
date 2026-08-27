@@ -227,7 +227,7 @@
       },
       "targets": [
         {
-          "expr": "100 * clamp_min(sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.filled\" [5m])), 0) / clamp_min(sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.submitted\" [5m])), 1)",
+          "expr": "100 * count(count by (payload_parentOrderId) (count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.filled\" [5m]))) / count(count by (payload_orderId) (count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.submitted\" [5m])))",
           "legendFormat": "Fill rate",
           "datasource": { "uid": "loki", "type": "loki" }
         }
@@ -252,7 +252,7 @@
       },
       "targets": [
         {
-          "expr": "{service_name=\"kafka-relay\"} | json | type =~ \"orders\\.(submitted|filled|rejected|expired|kill\\.audit)\"",
+          "expr": "{service_name=\"kafka-relay\"} | json | type =~ `orders\\.(submitted|filled|rejected|expired|kill\\.audit)`",
           "datasource": { "uid": "loki", "type": "loki" }
         }
       ]
@@ -261,7 +261,7 @@
     {
       "id": 10,
       "type": "logs",
-      "title": "Algo Decision Log — live stream",
+      "title": "Algo Heartbeat Log — live stream",
       "gridPos": { "x": 12, "y": 25, "w": 12, "h": 10 },
       "datasource": { "uid": "loki", "type": "loki" },
       "options": {
@@ -276,7 +276,7 @@
       },
       "targets": [
         {
-          "expr": "{service_name=\"kafka-relay\"} | json | type =~ \"algo\\.(heartbeat|decision)\"",
+          "expr": "{service_name=\"kafka-relay\"} | json | type=\"algo.heartbeat\"",
           "datasource": { "uid": "loki", "type": "loki" }
         }
       ]

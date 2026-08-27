@@ -1,9 +1,9 @@
 /**
  * kafka-relay — minimal Kafka → stdout relay for LGTM observability stack.
  *
- * Consumes all trading system Kafka topics and writes each event as a single
- * JSON line to stdout. Grafana Alloy tails the supervisord log file and ships
- * the structured lines to Loki.
+ * Consumes the topics listed below and writes each event as a single JSON
+ * line to stdout. Grafana Alloy tails this container's Docker log output
+ * directly (loki.source.docker) and ships the structured lines to Loki.
  *
  * Also exposes GET /health on port 5007 (same port as the old observability
  * service) so the frontend ServiceHealthPanel continues to resolve it.
