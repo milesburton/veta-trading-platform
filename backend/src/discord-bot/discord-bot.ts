@@ -20,9 +20,11 @@ const LLM_PROVIDER = Deno.env.get("LLM_PROVIDER") ?? "mock";
 const LLM_MODEL_ID = Deno.env.get("LLM_MODEL_ID") ?? "mock-v1";
 const LLM_OLLAMA_BASE_URL = Deno.env.get("LLM_OLLAMA_BASE_URL") ?? "http://localhost:11434";
 const MOTD_ENABLED = Deno.env.get("DISCORD_MOTD_ENABLED") !== "false";
-const MOTD_INTERVAL_MS = Number(Deno.env.get("DISCORD_MOTD_INTERVAL_MS")) || 60 * 60 * 1000;
-const DOCS_URL =
-  Deno.env.get("VETA_DOCS_URL") ?? "https://milesburton.github.io/veta-trading-platform/";
+const MOTD_INTERVAL_MS = (() => {
+  const parsed = Number(Deno.env.get("DISCORD_MOTD_INTERVAL_MS"));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 60 * 60 * 1000;
+})();
+const DOCS_URL = Deno.env.get("VETA_DOCS_URL") ?? "https://milesburton.github.io/veta-trading-platform/";
 const PLATFORM_URL = Deno.env.get("VETA_PLATFORM_URL") ?? "https://veta.mnetcs.com";
 
 const DISCORD_API = "https://discord.com/api/v10";
