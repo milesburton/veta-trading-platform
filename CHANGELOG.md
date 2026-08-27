@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.67.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.66.0...veta-trading-platform-v1.67.0) (2026-08-27)
+
+
+### Features
+
+* **discord-bot:** triage Raise. messages into GitHub tickets via LLM ([#607](https://github.com/milesburton/veta-trading-platform/issues/607)) ([e6df083](https://github.com/milesburton/veta-trading-platform/commit/e6df083ceddc49253fd4a9183bd44a1ec32432b3))
+
+
+### Bug Fixes
+
+* hide synthetic traders, sign-in gradient, false heartbeat alerts, Discord mention ([#609](https://github.com/milesburton/veta-trading-platform/issues/609)) ([9d3589f](https://github.com/milesburton/veta-trading-platform/commit/9d3589fd22682bc9992079c0ff373257ac1e5d2c))
+
 ## [1.66.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.65.2...veta-trading-platform-v1.66.0) (2026-08-24)
 
 
