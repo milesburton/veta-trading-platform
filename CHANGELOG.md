@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.68.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.67.0...veta-trading-platform-v1.68.0) (2026-08-27)
+
+
+### Features
+
+* **discord-bot:** add a recurring message of the day ([#611](https://github.com/milesburton/veta-trading-platform/issues/611)) ([d96c14b](https://github.com/milesburton/veta-trading-platform/commit/d96c14b69a784acaf3638acb5be1ed01f2755cbc))
+
+
+### Bug Fixes
+
+* **deploy:** publish postgres-health image, fixing every homelab deploy since yesterday ([#606](https://github.com/milesburton/veta-trading-platform/issues/606)) ([f9f2beb](https://github.com/milesburton/veta-trading-platform/commit/f9f2beb6e75a9555a9b9ffe4625b259055846e4b))
+
 ## [1.67.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.66.0...veta-trading-platform-v1.67.0) (2026-08-27)
 
 
