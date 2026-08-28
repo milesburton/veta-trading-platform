@@ -602,9 +602,22 @@ jobs:
 
   integration:
     name: Integration tests
-    runs-on: ubuntu-latest
+    # Runs on the homelab self-hosted runner instead of GitHub-hosted
+    # ubuntu-latest: this repo is public on a personal (non-org) account, so
+    # GitHub-hosted larger runners aren't purchasable here, and the
+    # testcontainers stack (Postgres + Redpanda, 3 retried attempts, up to
+    # 45 minutes) was pushing the standard 2-core/7GB hosted runner hard.
+    # The homelab box has 8 cores/39GB free and is already running the full
+    # VETA stack, so it comfortably absorbs this.
+    #
+    # Restricted to same-repo PRs and pushes to main, never to a
+    # pull_request from a fork, because a self-hosted runner on a public
+    # repo would otherwise let any fork PR execute arbitrary code on the
+    # homelab box. See the identical restriction on pr-screenshots/
+    # pr-visual-anomalies above.
+    runs-on: [self-hosted, homelab]
     needs: [lint-and-test, changes]
-    if: github.ref == 'refs/heads/main' || needs.changes.outputs.docker == 'true'
+    if: github.ref == 'refs/heads/main' || (needs.changes.outputs.docker == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))
     timeout-minutes: 45
     permissions:
       contents: write
