@@ -22,10 +22,18 @@ import { startStack, type TestStack } from "./testcontainers/services.ts";
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
 const T = (ms = 15_000) => AbortSignal.timeout(ms);
 
+// Scales every startup/test timeout in this file. Set on contended runners
+// (e.g. a homelab box that also runs the full production stack) where
+// cold-starting 15-30 Deno subprocesses for a group takes longer than on an
+// otherwise-idle GitHub-hosted runner, without changing the defaults
+// everywhere else.
+const TIMEOUT_SCALE = Number(Deno.env.get("TC_TIMEOUT_SCALE") ?? "1");
+const scaled = (ms: number) => Math.round(ms * TIMEOUT_SCALE);
+
 // Maximum wall-clock time for a single Deno.test block including container
 // startup. If a test hangs (e.g. waiting for a service that never responds),
 // this races it to a clean timeout failure rather than blocking the CI runner.
-const TEST_TIMEOUT_MS = 5 * 60 * 1_000;
+const TEST_TIMEOUT_MS = scaled(5 * 60 * 1_000);
 
 function withTimeout<T>(fn: () => Promise<T>): Promise<T> {
   return Promise.race([
@@ -85,7 +93,7 @@ Deno.test({
           "ccp-service",
           "llm-advisory",
         ],
-        startupTimeoutMs: 90_000,
+        startupTimeoutMs: scaled(90_000),
       });
       try {
         await t.step("every service /health returns 200 ok", async () => {
@@ -187,7 +195,7 @@ Deno.test({
           "is-strategy",
           "llm-advisory",
         ],
-        startupTimeoutMs: 90_000,
+        startupTimeoutMs: scaled(90_000),
       });
       const GW = url(stack, "gateway");
       const J = url(stack, "journal");
@@ -1483,7 +1491,7 @@ Deno.test({
           "market-data-adapters",
           "observability",
         ],
-        startupTimeoutMs: 120_000,
+        startupTimeoutMs: scaled(120_000),
       });
       const NEWS = url(stack, "news-aggregator");
       const ANALYTICS_URL = url(stack, "analytics");

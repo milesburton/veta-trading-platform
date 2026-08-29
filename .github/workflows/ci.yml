@@ -673,6 +673,13 @@ jobs:
           exit 1
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+          # The homelab box also runs the full production VETA stack around
+          # the clock (load average ~14 on 8 cores), so cold-starting the
+          # 15-30 Deno subprocesses smoke.full.tc.test.ts boots per group
+          # takes longer than on an otherwise-idle hosted runner. Scales
+          # that file's startup/test timeouts; see TC_TIMEOUT_SCALE in
+          # smoke.full.tc.test.ts.
+          TC_TIMEOUT_SCALE: "3"
 
       - name: Generate TC coverage lcov
         run: deno coverage coverage --lcov > coverage-tc.lcov || echo "(no TC coverage produced)"
