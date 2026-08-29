@@ -30,7 +30,7 @@ Every block is gated on `RUN_TESTCONTAINERS=1`, runs inside `scripts/run-testcon
 
 ### Where it runs
 
-- **CI** (`test:testcontainers` task): runs on every push and PR. `scripts/run-testcontainers.sh` sets `RUN_TESTCONTAINERS=1` and brings up an ephemeral Postgres + Redpanda per Deno.test block.
+- **CI** (`test:testcontainers` task): runs on every push and PR, on the `integration` job's self-hosted homelab runner (see [CI/CD Pipeline](/development/ci-cd/)). `scripts/run-testcontainers.sh` sets `RUN_TESTCONTAINERS=1` and brings up an ephemeral Postgres + Redpanda per Deno.test block. That runner also carries the always-on production VETA stack's load, so `smoke.full.tc.test.ts` scales its timeouts via `TC_TIMEOUT_SCALE=3` there; see [Testcontainers integration tests](/development/testing/testcontainers/#tc_timeout_scale).
 - **Local development**: `deno task test:testcontainers` works in the dev container with Docker available. The full smoke suite (`smoke.full.tc.test.ts`) takes 90 to 150 seconds depending on how many services each block boots.
 - **Pre-commit**: testcontainers smoke is **not** run by the pre-commit hook because the hook stays fast for tight edit loops. Pre-commit covers unit tests + integration tests (the latter auto-skipped if the local stack is offline).
 

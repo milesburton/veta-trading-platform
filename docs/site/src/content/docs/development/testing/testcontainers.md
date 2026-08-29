@@ -173,7 +173,7 @@ Three things to notice:
    "test:testcontainers": "./scripts/run-testcontainers.sh deno test --allow-all backend/src/tests/<name>.tc.test.ts && …"
    ```
 
-4. Run `deno task test:testcontainers` locally before pushing. CI runs the same task, so anything that passes locally inside the dev container will pass on the runner.
+4. Run `deno task test:testcontainers` locally before pushing. CI runs the same task, so anything that passes locally inside the dev container will very likely pass on the GitHub-hosted CI jobs. The `integration` job's self-hosted homelab runner is the one exception: that box also runs the full production VETA stack around the clock, so it isn't idle the way a hosted runner or your dev container is. If a test times out only there, check the runner's load before assuming a code regression; see `TC_TIMEOUT_SCALE` below.
 
 ## The wrapper script
 
@@ -186,6 +186,12 @@ Three things to notice:
 It also sets `TESTCONTAINERS_RYUK_DISABLED=true`. The helpers stop containers in `finally` blocks already, and Ryuk's published port is its own loopback puzzle inside dev containers.
 
 The wrapper finishes by setting `RUN_TESTCONTAINERS=1` and `exec`-ing the rest of the command line.
+
+**Self-hosted runner gotcha**: point 2 assumes the process running the tests shares a network namespace with (or has a route to) the Docker host's default bridge network, where the `socat` sidecar lands. That's true for a GitHub-hosted runner and a normal dev container, but not automatically true for a container-based self-hosted runner: if that runner container has its own separate bridge network (the default for a `docker compose` service that doesn't set `network_mode`), it has no route to the Docker host's default bridge subnet and every Testcontainers call fails with `"Could not find a working container runtime strategy"`. The homelab `integration` runner works around this with `network_mode: host` on the runner container itself, putting it in the host's network namespace directly.
+
+### `TC_TIMEOUT_SCALE`
+
+`backend/src/tests/smoke.full.tc.test.ts` reads a `TC_TIMEOUT_SCALE` env var (default `1`) and multiplies every `startupTimeoutMs` and the file's overall test timeout by it. This exists because the `integration` job's self-hosted homelab runner also runs the full production VETA stack around the clock, unlike a GitHub-hosted runner which is otherwise idle: cold-starting the 15 to 30 Deno subprocesses one of this file's test groups boots can genuinely take longer under that background load without any code defect. CI sets `TC_TIMEOUT_SCALE=3` for that job only; everywhere else (local dev, other CI jobs) it defaults to `1` and behaves exactly as before.
 
 ### Dev-container quirks
 

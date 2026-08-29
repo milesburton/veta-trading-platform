@@ -16,7 +16,7 @@ flowchart LR
   Push --> Lint["lint-and-test<br/><i>~30s</i>"]:::test
   Push --> Frontend["frontend<br/><i>~70s</i>"]:::test
 
-  Lint --> Integration["integration<br/><i>~15 min</i>"]:::heavy
+  Lint --> Integration["integration<br/><i>~15 min</i><br/><i>self-hosted (homelab)</i>"]:::heavy
 
   Frontend --> Playwright["playwright-ui<br/><i>~5 min</i>"]:::parallel
   Frontend --> Screenshots["screenshots<br/><i>~1.5 min</i>"]:::parallel
@@ -47,7 +47,7 @@ Integration covers service contracts, algo strategies (retry), the intelligence 
 
 Playwright, screenshots, Electron, and Docker builds run **in parallel with** integration tests. They only depend on the frontend job (~70 seconds), not the 15-minute integration suite. This saves around 10 to 12 minutes off the critical path.
 
-GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker builds run in a matrix) but they queue efficiently.
+GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker builds run in a matrix) but they queue efficiently. The `integration` job doesn't compete for this hosted-runner concurrency pool at all: it runs on the self-hosted homelab runner described under [integration](#integration-15-minutes) above.
 
 ## What each job does
 
@@ -76,6 +76,10 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker 
 - Runs 5 integration test suites + smoke tests
 - Generates `docs/badges/integration-tests.json`
 - Generates `docs/badges/smoke-tests.json`
+
+This job runs on a self-hosted runner (`runs-on: [self-hosted, homelab]`) rather than a GitHub-hosted one. This repository is public on a personal (non-org) account, so GitHub-hosted larger runners aren't purchasable, and the testcontainers stack needs more than the standard 2-core hosted runner comfortably provides. The runner is an ephemeral Docker container on a homelab box (fresh container per job, `network_mode: host` so it can reach the Docker daemon the same way the wrapper script expects), scoped so it only ever runs for same-repo PRs and pushes to `main`, never a pull request from a fork.
+
+That homelab box also runs the full production VETA stack around the clock, so it isn't idle spare capacity the way a GitHub-hosted VM is. `backend/src/tests/smoke.full.tc.test.ts` sets its startup/test timeouts from a `TC_TIMEOUT_SCALE` env var (default `1`, everywhere else unchanged) so cold-starting 15 to 30 Deno subprocesses per test group has enough headroom under that background load; this job sets `TC_TIMEOUT_SCALE=3`. See [Testcontainers integration tests](/development/testing/testcontainers/) for more on that variable.
 
 ### playwright-ui (sharded, target under 5 minutes wall-clock)
 
@@ -207,7 +211,7 @@ npm run fallow:dead-code
 npm run quality:git
 ```
 
-If you want a closer approximation of the GitHub Actions runner itself, use a local workflow runner such as `act` and point it at `.github/workflows/ci.yml`. The repo does not require `act` for day-to-day development, so the script-based checks above are the supported baseline.
+If you want a closer approximation of the GitHub Actions runner itself, use a local workflow runner such as `act` and point it at `.github/workflows/ci.yml`. The repo does not require `act` for day-to-day development, so the script-based checks above are the supported baseline. `act` approximates the GitHub-hosted jobs; it can't reproduce the `integration` job's self-hosted homelab runner or that box's background load, so a passing local `act` run of `integration` doesn't guarantee the same timing in CI.
 
 ## Troubleshooting CI failures
 
@@ -249,6 +253,8 @@ If the status page is clean and the failures correlate with a specific PR or ser
 - **`Detect changed paths` fails with a JSON parse error**: the `paths-filter` step never ran and `fromJSON(...)` saw an empty string. Check the preceding `actions/checkout` step.
 - **`Deploy gate` Playwright test times out at 60s**: usually CI runner slowness, but check the trace artifact under `gate-diagnostics` for what state the page actually reached. Real backend regressions show up as Playwright passing but the test asserting wrong content; CI-load failures show the dashboard rendered but the test gave up.
 - **`Publish *-algo :latest (gated)` fails after `Deploy gate` passed**: a GHCR push flake. Rerun. If it persists across reruns, check whether GHCR has the previous image tag (rare cache-state issue).
+- **`Integration tests` queues indefinitely / never picks up**: the self-hosted homelab runner is offline or its container failed to re-register. Check `gh api repos/:owner/:repo/actions/runners` for status `online`; if it isn't, the runner needs attention on the homelab box.
+- **`Integration tests` fails with a health-check or startup timeout that wasn't present before**: check whether this is a genuine regression or homelab contention before changing test code. The homelab runner shares its box with the always-on production VETA stack, not idle capacity, so timeouts are more sensitive to whatever else the box is doing at the time. See [Testcontainers integration tests](/development/testing/testcontainers/) for the `TC_TIMEOUT_SCALE` mechanism that already compensates for this.
 
 ### Stuck check suites
 
