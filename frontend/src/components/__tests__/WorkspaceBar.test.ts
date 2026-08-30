@@ -104,9 +104,13 @@ function renderSidebar(overrides?: {
 // ── seedWorkspaces ────────────────────────────────────────────────────────────
 
 describe("seedWorkspaces", () => {
-  test("returns eleven locked trader workspaces by default", () => {
+  test("returns only the cross-desk Overview workspace when no trading style is known", () => {
     const { workspaces } = seedWorkspaces();
-    expect(workspaces).toHaveLength(11);
+    expect(workspaces.map((w) => w.id)).toEqual(["ws-overview"]);
+  });
+
+  test("oversight style sees every desk's locked trader workspace", () => {
+    const { workspaces } = seedWorkspaces(undefined, "oversight");
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-trading",
       "ws-algo",
@@ -123,8 +127,47 @@ describe("seedWorkspaces", () => {
     for (const w of workspaces) expect(w.locked).toBe(true);
   });
 
-  test("returns six locked admin workspaces for role=admin", () => {
-    const { workspaces } = seedWorkspaces("admin");
+  test("fi_voice style only sees FI desk workspaces plus cross-desk overview", () => {
+    const { workspaces } = seedWorkspaces(undefined, "fi_voice");
+    expect(workspaces.map((w) => w.id)).toEqual([
+      "ws-fi-trading",
+      "ws-fi-analysis",
+      "ws-fi-research",
+      "ws-overview",
+    ]);
+    for (const w of workspaces) expect(w.locked).toBe(true);
+  });
+
+  test("fi_voice style does not see equity or commodities workspaces", () => {
+    const { workspaces } = seedWorkspaces(undefined, "fi_voice");
+    const ids = workspaces.map((w) => w.id);
+    expect(ids).not.toContain("ws-trading");
+    expect(ids).not.toContain("ws-algo");
+    expect(ids).not.toContain("ws-commodities");
+    expect(ids).not.toContain("ws-commodities-analysis");
+  });
+
+  test("high_touch style only sees Trading, Analysis, Research, and Overview", () => {
+    const { workspaces } = seedWorkspaces(undefined, "high_touch");
+    expect(workspaces.map((w) => w.id)).toEqual([
+      "ws-trading",
+      "ws-analysis",
+      "ws-research",
+      "ws-overview",
+    ]);
+  });
+
+  test("commodities_voice style only sees Commodities workspaces and Overview", () => {
+    const { workspaces } = seedWorkspaces(undefined, "commodities_voice");
+    expect(workspaces.map((w) => w.id)).toEqual([
+      "ws-commodities",
+      "ws-commodities-analysis",
+      "ws-overview",
+    ]);
+  });
+
+  test("returns six locked admin workspaces for role=admin regardless of trading style", () => {
+    const { workspaces } = seedWorkspaces("admin", "fi_voice");
     expect(workspaces).toHaveLength(6);
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-market-feeds",
@@ -138,7 +181,7 @@ describe("seedWorkspaces", () => {
   });
 
   test("seeds layout JSON for every workspace", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     for (const w of workspaces) {
       expect(layouts[w.id]).toBeDefined();
       expect(layouts[w.id].layout).toBeDefined();
@@ -150,14 +193,19 @@ describe("seedWorkspaces", () => {
 
 describe("reconcilePresetWorkspaces", () => {
   test("returns unchanged list when all presets are present", () => {
-    const { workspaces, layouts } = seedWorkspaces();
-    const { workspaces: out, restored } = reconcilePresetWorkspaces(workspaces, layouts);
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
+    const { workspaces: out, restored } = reconcilePresetWorkspaces(
+      workspaces,
+      layouts,
+      undefined,
+      "oversight"
+    );
     expect(restored).toHaveLength(0);
     expect(out.map((w) => w.id)).toEqual(workspaces.map((w) => w.id));
   });
 
   test("restores a missing preset workspace", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
       Object.entries(layouts).filter(([k]) => k !== "ws-algo")
@@ -167,7 +215,7 @@ describe("reconcilePresetWorkspaces", () => {
       workspaces: out,
       layouts: outLayouts,
       restored,
-    } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
+    } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts, undefined, "oversight");
 
     expect(restored).toEqual(["Algo"]);
     expect(out.map((w) => w.id)).toContain("ws-algo");
@@ -175,13 +223,18 @@ describe("reconcilePresetWorkspaces", () => {
   });
 
   test("inserts restored workspace at the correct position", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
       Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
-    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
+    const { workspaces: out } = reconcilePresetWorkspaces(
+      withoutAlgo,
+      withoutAlgoLayouts,
+      undefined,
+      "oversight"
+    );
     const ids = out.map((w) => w.id);
 
     expect(ids.indexOf("ws-algo")).toBeGreaterThan(ids.indexOf("ws-trading"));
@@ -189,13 +242,18 @@ describe("reconcilePresetWorkspaces", () => {
   });
 
   test("restored preset is marked locked", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
       Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
-    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
+    const { workspaces: out } = reconcilePresetWorkspaces(
+      withoutAlgo,
+      withoutAlgoLayouts,
+      undefined,
+      "oversight"
+    );
     const restored = out.find((w) => w.id === "ws-algo");
     expect(restored?.locked).toBe(true);
   });
@@ -209,10 +267,15 @@ describe("reconcilePresetWorkspaces", () => {
       },
     ];
     const savedLayouts = {
-      "ws-trading": seedWorkspaces().layouts["ws-trading"],
+      "ws-trading": seedWorkspaces(undefined, "oversight").layouts["ws-trading"],
     };
 
-    const { workspaces: out, restored } = reconcilePresetWorkspaces(saved, savedLayouts);
+    const { workspaces: out, restored } = reconcilePresetWorkspaces(
+      saved,
+      savedLayouts,
+      undefined,
+      "oversight"
+    );
 
     expect(restored).toEqual([
       "Algo",
@@ -242,19 +305,29 @@ describe("reconcilePresetWorkspaces", () => {
   });
 
   test("preserves custom (non-preset) workspaces", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     const custom: Workspace = { id: "ws-custom-1", name: "My Setup" };
     const withCustom = [...workspaces, custom];
 
-    const { workspaces: out, restored } = reconcilePresetWorkspaces(withCustom, layouts);
+    const { workspaces: out, restored } = reconcilePresetWorkspaces(
+      withCustom,
+      layouts,
+      undefined,
+      "oversight"
+    );
 
     expect(restored).toHaveLength(0);
     expect(out.map((w) => w.id)).toContain("ws-custom-1");
   });
 
   test("does not modify existing layouts when nothing is restored", () => {
-    const { workspaces, layouts } = seedWorkspaces();
-    const { layouts: outLayouts } = reconcilePresetWorkspaces(workspaces, layouts);
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
+    const { layouts: outLayouts } = reconcilePresetWorkspaces(
+      workspaces,
+      layouts,
+      undefined,
+      "oversight"
+    );
     expect(outLayouts).toEqual(layouts);
   });
 
@@ -275,8 +348,8 @@ describe("reconcilePresetWorkspaces", () => {
     expect(out.map((w) => w.id)).toContain("ws-overview");
   });
 
-  test("inserting first preset when list is empty", () => {
-    const { workspaces: out, restored } = reconcilePresetWorkspaces([], {});
+  test("inserting first preset when list is empty (oversight style)", () => {
+    const { workspaces: out, restored } = reconcilePresetWorkspaces([], {}, undefined, "oversight");
 
     expect(restored).toEqual([
       "Trading",
@@ -293,13 +366,31 @@ describe("reconcilePresetWorkspaces", () => {
     ]);
     expect(out).toHaveLength(11);
   });
+
+  test("inserting first preset when list is empty (fi_voice style only restores FI desk)", () => {
+    const { workspaces: out, restored } = reconcilePresetWorkspaces([], {}, undefined, "fi_voice");
+
+    expect(restored).toEqual(["FI Trading", "FI Analysis", "FI Research", "Overview"]);
+    expect(out.map((w) => w.id)).toEqual([
+      "ws-fi-trading",
+      "ws-fi-analysis",
+      "ws-fi-research",
+      "ws-overview",
+    ]);
+  });
+
+  test("restores only the cross-desk Overview preset when no trading style is known", () => {
+    const { workspaces: out, restored } = reconcilePresetWorkspaces([], {});
+    expect(restored).toEqual(["Overview"]);
+    expect(out.map((w) => w.id)).toEqual(["ws-overview"]);
+  });
 });
 
 // ── userLocked ────────────────────────────────────────────────────────────────
 
 describe("Workspace userLocked field", () => {
   test("preset workspace does not have userLocked set", () => {
-    const { workspaces } = seedWorkspaces();
+    const { workspaces } = seedWorkspaces(undefined, "oversight");
     for (const w of workspaces) expect(w.userLocked).toBeUndefined();
   });
 
@@ -314,7 +405,7 @@ describe("Workspace userLocked field", () => {
   });
 
   test("reconcile preserves userLocked on custom workspaces", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     const custom: Workspace = {
       id: "ws-custom-1",
       name: "My Setup",
@@ -322,19 +413,29 @@ describe("Workspace userLocked field", () => {
     };
     const withCustom = [...workspaces, custom];
 
-    const { workspaces: out } = reconcilePresetWorkspaces(withCustom, layouts);
+    const { workspaces: out } = reconcilePresetWorkspaces(
+      withCustom,
+      layouts,
+      undefined,
+      "oversight"
+    );
     const found = out.find((w) => w.id === "ws-custom-1");
     expect(found?.userLocked).toBe(true);
   });
 
   test("reconcile does not set userLocked on restored presets", () => {
-    const { workspaces, layouts } = seedWorkspaces();
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
       Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
-    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
+    const { workspaces: out } = reconcilePresetWorkspaces(
+      withoutAlgo,
+      withoutAlgoLayouts,
+      undefined,
+      "oversight"
+    );
     const restored = out.find((w) => w.id === "ws-algo");
     expect(restored?.userLocked).toBeUndefined();
     expect(restored?.locked).toBe(true);
@@ -343,7 +444,7 @@ describe("Workspace userLocked field", () => {
 
 describe("defaultWorkspaceForStyle", () => {
   test("prefers mapped workspace when available", () => {
-    const { workspaces } = seedWorkspaces();
+    const { workspaces } = seedWorkspaces(undefined, "oversight");
     expect(defaultWorkspaceForStyle("derivatives_high_touch", workspaces)).toBe("ws-options");
   });
 
@@ -359,9 +460,16 @@ describe("defaultWorkspaceForStyle", () => {
 
 describe("useWorkspaces", () => {
   test("uses valid workspace id from URL query on first render", () => {
+    globalThis.history.replaceState(null, "", "/?ws=ws-analysis");
+    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    expect(result.current.activeId).toBe("ws-analysis");
+  });
+
+  test("ignores a URL workspace id that the trading style cannot see", () => {
     globalThis.history.replaceState(null, "", "/?ws=ws-options");
     const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
-    expect(result.current.activeId).toBe("ws-options");
+    expect(result.current.activeId).not.toBe("ws-options");
+    expect(result.current.activeId).toBe("ws-trading");
   });
 
   test("falls back to trading style default when URL workspace is invalid", () => {

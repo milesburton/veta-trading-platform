@@ -1,6 +1,18 @@
+import type { TradingStyle } from "@veta/frontend/store/authSlice.ts";
 import type { IJsonModel } from "flexlayout-react";
 import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
+
+export const ALL_TRADER_STYLES: TradingStyle[] = [
+  "high_touch",
+  "low_touch",
+  "fi_voice",
+  "fx_electronic",
+  "commodities_voice",
+  "derivatives_high_touch",
+  "derivatives_low_touch",
+  "oversight",
+];
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
 export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v24`;
@@ -2663,6 +2675,7 @@ export const LAYOUT_TEMPLATES: {
   description: string;
   model: IJsonModel;
   locked?: boolean;
+  styles?: TradingStyle[];
 }[] = [
   {
     id: "full",
@@ -2677,6 +2690,7 @@ export const LAYOUT_TEMPLATES: {
     label: "Execution",
     description: "Order entry, ladder, and blotter",
     model: makeExecutionModel(),
+    styles: ["high_touch", "oversight"],
   },
   {
     id: "algo",
@@ -2684,6 +2698,7 @@ export const LAYOUT_TEMPLATES: {
     label: "Algo Trading",
     description: "Algorithm monitor, chart, and blotter",
     model: makeAlgoModel(),
+    styles: ["low_touch", "fx_electronic", "derivatives_low_touch", "oversight"],
   },
   {
     id: "analysis",
@@ -2692,6 +2707,7 @@ export const LAYOUT_TEMPLATES: {
     description:
       "Equities chart, depth, ladder, news, and forward projections — no options or FI panels",
     model: makeAnalysisModel(),
+    styles: ["high_touch", "low_touch", "oversight"],
   },
   {
     id: "options",
@@ -2700,6 +2716,7 @@ export const LAYOUT_TEMPLATES: {
     description:
       "Black-Scholes pricing, vol surface, Greeks surface, scenario matrix, and recommendations",
     model: makeOptionsModel(),
+    styles: ["derivatives_high_touch", "derivatives_low_touch", "oversight"],
   },
   {
     id: "commodities-trading",
@@ -2707,6 +2724,7 @@ export const LAYOUT_TEMPLATES: {
     label: "Commodities Trading",
     description: "Commodities ladder, price chart, market depth, and order blotter",
     model: makeCommoditiesTradingModel(),
+    styles: ["commodities_voice", "oversight"],
   },
   {
     id: "commodities-analysis",
@@ -2714,6 +2732,7 @@ export const LAYOUT_TEMPLATES: {
     label: "Commodities Analysis",
     description: "Heatmap, forward projections, scenario shocks, news, and signal recommendations",
     model: makeCommoditiesAnalysisModel(),
+    styles: ["commodities_voice", "oversight"],
   },
   {
     id: "admin",
@@ -2767,6 +2786,7 @@ export const LAYOUT_TEMPLATES: {
     description:
       "Signal radar, instrument analysis, and factor explainability — market intelligence pipeline",
     model: makeResearchModel(),
+    styles: ["high_touch", "low_touch", "oversight"],
   },
   {
     id: "ai-advisory",
@@ -2790,6 +2810,7 @@ export const LAYOUT_TEMPLATES: {
     label: "FI Analysis",
     description: "Yield curve, price fan, vol profile, and scenario matrix — no order entry",
     model: makeFiAnalysisModel(),
+    styles: ["fi_voice", "oversight"],
   },
   {
     id: "fi-trading",
@@ -2797,6 +2818,7 @@ export const LAYOUT_TEMPLATES: {
     label: "FI Trading",
     description: "High-touch bond desk — yield curve + price fan + full order workflow",
     model: makeFiTradingModel(),
+    styles: ["fi_voice", "oversight"],
   },
   {
     id: "fi-research",
@@ -2804,6 +2826,7 @@ export const LAYOUT_TEMPLATES: {
     label: "FI Research",
     description: "Rates intelligence — signal radar, instrument analysis, yield curve, and news",
     model: makeFiResearchModel(),
+    styles: ["fi_voice", "oversight"],
   },
   {
     id: "observability",
