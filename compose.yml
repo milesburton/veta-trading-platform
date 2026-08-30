@@ -117,14 +117,14 @@ services:
           rpk -X admin.hosts=redpanda:9644 cluster config set retention_bytes 1073741824 || true
           rpk -X admin.hosts=redpanda:9644 cluster config set kafka_batch_max_bytes 4194304 || true
           TOPICS="market.ticks market.features market.signals algo.heartbeat orders.new orders.routed orders.child orders.filled fix.execution news.feed intelligence.recommendations"
-          # Right after the healthcheck passes the broker can still reject
-          # topic creation briefly, so retry create until it's actually
-          # accepted rather than firing once and hoping.
+          # rpk topic create exits non-zero both when creation is transiently
+          # rejected and when the topic already exists (TOPIC_ALREADY_EXISTS),
+          # so a "retry until success" loop here would burn its whole budget
+          # on a topic that's already there. Fire-and-forget is correct: the
+          # describe wait-loop below is what actually gates on the topic
+          # being visible before alter-config runs.
           for TOPIC in $$TOPICS; do
-            for attempt in $$(seq 1 30); do
-              rpk topic create "$$TOPIC" --brokers redpanda:9092 2>/dev/null && break
-              sleep 1
-            done
+            rpk topic create "$$TOPIC" --brokers redpanda:9092 2>/dev/null || true
           done
           # Topic creation returning OK doesn't mean the topic is visible
           # cluster-wide yet, so an immediate alter-config can still race it
