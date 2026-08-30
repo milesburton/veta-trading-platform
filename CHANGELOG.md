@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.2...veta-trading-platform-v1.68.3) (2026-08-30)
+
+
+### Bug Fixes
+
+* **compose:** fix redpanda-init variable interpolation and admin config flag ([#619](https://github.com/milesburton/veta-trading-platform/issues/619)) ([a86d03d](https://github.com/milesburton/veta-trading-platform/commit/a86d03d4cff5ec5277f691d81037f915eb2abffb))
+
 ## [1.68.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.1...veta-trading-platform-v1.68.2) (2026-08-27)
 
 
