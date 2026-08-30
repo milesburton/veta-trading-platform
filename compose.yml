@@ -113,19 +113,26 @@ services:
     command:
       - |
           set -e
-          rpk cluster config set log_retention_ms 21600000 --brokers redpanda:9092 || true
-          rpk cluster config set retention_bytes 1073741824 --brokers redpanda:9092 || true
+          rpk -X admin.hosts=redpanda:9644 cluster config set log_retention_ms 21600000 || true
+          rpk -X admin.hosts=redpanda:9644 cluster config set retention_bytes 1073741824 || true
+          rpk -X admin.hosts=redpanda:9644 cluster config set kafka_batch_max_bytes 4194304 || true
           TOPICS="market.ticks market.features market.signals algo.heartbeat orders.new orders.routed orders.child orders.filled fix.execution news.feed intelligence.recommendations"
-          for TOPIC in $TOPICS; do
-            rpk topic create "$TOPIC" --brokers redpanda:9092 2>/dev/null || true
+          # rpk topic create exits non-zero both when creation is transiently
+          # rejected and when the topic already exists (TOPIC_ALREADY_EXISTS),
+          # so a "retry until success" loop here would burn its whole budget
+          # on a topic that's already there. Fire-and-forget is correct: the
+          # describe wait-loop below is what actually gates on the topic
+          # being visible before alter-config runs.
+          for TOPIC in $$TOPICS; do
+            rpk topic create "$$TOPIC" --brokers redpanda:9092 2>/dev/null || true
           done
-          # Topic creation above is fire-and-forget: rpk returns once the create
-          # request is accepted, not once the topic is visible cluster-wide, so
-          # an immediate alter-config can race it and fail with topic_not_exists
-          # under load. Wait for each topic to actually be describable first.
-          for TOPIC in $TOPICS; do
-            for attempt in $(seq 1 30); do
-              rpk topic describe "$TOPIC" --brokers redpanda:9092 >/dev/null 2>&1 && break
+          # Topic creation returning OK doesn't mean the topic is visible
+          # cluster-wide yet, so an immediate alter-config can still race it
+          # and fail with topic_not_exists under load. Wait for each topic to
+          # actually be describable first.
+          for TOPIC in $$TOPICS; do
+            for attempt in $$(seq 1 30); do
+              rpk topic describe "$$TOPIC" --brokers redpanda:9092 >/dev/null 2>&1 && break
               sleep 1
             done
           done
