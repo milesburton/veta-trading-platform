@@ -152,6 +152,7 @@ function TradingApp() {
 
   const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(
     userId,
+    userRole,
     tradingStyle
   );
 

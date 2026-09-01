@@ -590,8 +590,8 @@ export function defaultWorkspaceForStyle(
   return available[0]?.id ?? "";
 }
 
-export function useWorkspaces(_userId: string, tradingStyle?: TradingStyle) {
-  const seed = seedWorkspaces(undefined, tradingStyle);
+export function useWorkspaces(_userId: string, role?: string, tradingStyle?: TradingStyle) {
+  const seed = seedWorkspaces(role, tradingStyle);
 
   const [workspaces, setWorkspacesState] = useState<Workspace[]>(seed.workspaces);
 

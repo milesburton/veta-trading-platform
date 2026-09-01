@@ -461,26 +461,33 @@ describe("defaultWorkspaceForStyle", () => {
 describe("useWorkspaces", () => {
   test("uses valid workspace id from URL query on first render", () => {
     globalThis.history.replaceState(null, "", "/?ws=ws-analysis");
-    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    const { result } = renderHook(() => useWorkspaces("u-1", undefined, "high_touch"));
     expect(result.current.activeId).toBe("ws-analysis");
   });
 
   test("ignores a URL workspace id that the trading style cannot see", () => {
     globalThis.history.replaceState(null, "", "/?ws=ws-options");
-    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    const { result } = renderHook(() => useWorkspaces("u-1", undefined, "high_touch"));
     expect(result.current.activeId).not.toBe("ws-options");
     expect(result.current.activeId).toBe("ws-trading");
   });
 
   test("falls back to trading style default when URL workspace is invalid", () => {
     globalThis.history.replaceState(null, "", "/?ws=missing");
-    const { result } = renderHook(() => useWorkspaces("u-1", "low_touch"));
+    const { result } = renderHook(() => useWorkspaces("u-1", undefined, "low_touch"));
     expect(result.current.activeId).toBe("ws-algo");
+  });
+
+  test("seeds admin preset workspaces when role is admin, ignoring trading style", () => {
+    globalThis.history.replaceState(null, "", "/");
+    const { result } = renderHook(() => useWorkspaces("u-1", "admin", "high_touch"));
+    expect(result.current.workspaces.map((w) => w.id)).toContain("ws-market-feeds");
+    expect(result.current.workspaces.map((w) => w.id)).not.toContain("ws-trading");
   });
 
   test("handleSelect updates active workspace and pushes URL state", () => {
     globalThis.history.replaceState(null, "", "/");
-    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    const { result } = renderHook(() => useWorkspaces("u-1", undefined, "high_touch"));
 
     act(() => {
       result.current.handleSelect("ws-analysis");
@@ -494,7 +501,7 @@ describe("useWorkspaces", () => {
   });
 
   test("setWorkspaces resets active id when current id is removed", () => {
-    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    const { result } = renderHook(() => useWorkspaces("u-1", undefined, "high_touch"));
 
     act(() => {
       result.current.handleSelect("ws-overview");
@@ -510,7 +517,7 @@ describe("useWorkspaces", () => {
   });
 
   test("popstate selects requested workspace when it exists", () => {
-    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    const { result } = renderHook(() => useWorkspaces("u-1", undefined, "high_touch"));
 
     act(() => {
       globalThis.dispatchEvent(
