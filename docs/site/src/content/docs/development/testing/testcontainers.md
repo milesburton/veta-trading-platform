@@ -68,6 +68,12 @@ All seven suites run as part of `deno task test:testcontainers`:
 | `scenarios.integration.tc.test.ts` | scenarios stack | Same-seed determinism (plus or minus 5bps tolerance) and different-seed divergence |
 | `algo.integration.tc.test.ts` | gateway + journal + 9 algo services | All 9 algo strategies via WebSocket (10 steps; 4 timing-sensitive steps gated behind `RUN_FLAKY_ALGOS=1`) |
 
+### Known exclusion: Discord delivery
+
+Discord webhook delivery (bug-report notifications, the discord-bot's ticket triage, alert routing) is exercised only by backend unit tests (`discord-notifier.unit.test.ts`, `discord-bot.unit.test.ts`), never by the Testcontainers suite. There's no safe way to provision a real webhook or bot token for CI: a shared test credential posting into the real channel on every run risks abuse and noise, and Discord has no local/sandboxed emulator to boot as a container. Verification of the live path is manual, see [Discord welcome bot: Verifying](../../../platform/observability/discord-welcome-bot/#verifying) and [User tickets](../../../platform/observability/bug-reports/).
+
+A future improvement would be a `DISCORD_TEST_MODE` style flag to temporarily point the bot at a disposable test webhook/channel for manual verification, without wiring it into automated CI.
+
 ## Helper API
 
 Helpers live in `backend/src/tests/testcontainers/`.

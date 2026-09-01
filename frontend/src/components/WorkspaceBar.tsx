@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import { publishSharedWorkspace } from "@veta/frontend/hooks/useWorkspaceSync.ts";
+import type { TradingStyle } from "@veta/frontend/store/authSlice.ts";
 import type { IJsonModel, Model } from "flexlayout-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -35,61 +36,77 @@ const TRADER_PRESET_WORKSPACES: {
   name: string;
   locked: true;
   makeModel: () => IJsonModel;
+  styles?: TradingStyle[];
 }[] = [
   {
     id: "ws-trading",
     name: "Trading",
     locked: true,
     makeModel: makeExecutionModel,
+    styles: ["high_touch", "oversight"],
   },
-  { id: "ws-algo", name: "Algo", locked: true, makeModel: makeAlgoModel },
+  {
+    id: "ws-algo",
+    name: "Algo",
+    locked: true,
+    makeModel: makeAlgoModel,
+    styles: ["low_touch", "fx_electronic", "derivatives_low_touch", "oversight"],
+  },
   {
     id: "ws-options",
     name: "Options",
     locked: true,
     makeModel: makeOptionsModel,
+    styles: ["derivatives_high_touch", "derivatives_low_touch", "oversight"],
   },
   {
     id: "ws-analysis",
     name: "Analysis",
     locked: true,
     makeModel: makeAnalysisModel,
+    styles: ["high_touch", "low_touch", "oversight"],
   },
   {
     id: "ws-research",
     name: "Research",
     locked: true,
     makeModel: makeResearchModel,
+    styles: ["high_touch", "low_touch", "oversight"],
   },
   {
     id: "ws-commodities",
     name: "Commodities",
     locked: true,
     makeModel: makeCommoditiesTradingModel,
+    styles: ["commodities_voice", "oversight"],
   },
   {
     id: "ws-commodities-analysis",
     name: "Cmdty Analysis",
     locked: true,
     makeModel: makeCommoditiesAnalysisModel,
+    styles: ["commodities_voice", "oversight"],
   },
   {
     id: "ws-fi-trading",
     name: "FI Trading",
     locked: true,
     makeModel: makeFiTradingModel,
+    styles: ["fi_voice", "oversight"],
   },
   {
     id: "ws-fi-analysis",
     name: "FI Analysis",
     locked: true,
     makeModel: makeFiAnalysisModel,
+    styles: ["fi_voice", "oversight"],
   },
   {
     id: "ws-fi-research",
     name: "FI Research",
     locked: true,
     makeModel: makeFiResearchModel,
+    styles: ["fi_voice", "oversight"],
   },
   {
     id: "ws-overview",
@@ -143,11 +160,20 @@ const ADMIN_PRESET_WORKSPACES: {
   },
 ];
 
-export function seedWorkspaces(role?: string): {
+function traderPresetsForStyle(tradingStyle?: TradingStyle) {
+  return TRADER_PRESET_WORKSPACES.filter(
+    (preset) => !preset.styles || (!!tradingStyle && preset.styles.includes(tradingStyle))
+  );
+}
+
+export function seedWorkspaces(
+  role?: string,
+  tradingStyle?: TradingStyle
+): {
   workspaces: Workspace[];
   layouts: Record<string, IJsonModel>;
 } {
-  const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : TRADER_PRESET_WORKSPACES;
+  const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : traderPresetsForStyle(tradingStyle);
   const workspaces = presets.map(({ id, name, locked }) => ({
     id,
     name,
@@ -173,13 +199,14 @@ export function seedWorkspaces(role?: string): {
 export function reconcilePresetWorkspaces(
   saved: Workspace[],
   layouts: Record<string, IJsonModel>,
-  role?: string
+  role?: string,
+  tradingStyle?: TradingStyle
 ): {
   workspaces: Workspace[];
   layouts: Record<string, IJsonModel>;
   restored: string[];
 } {
-  const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : TRADER_PRESET_WORKSPACES;
+  const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : traderPresetsForStyle(tradingStyle);
   const savedIds = new Set(saved.map((w) => w.id));
   const restored: string[] = [];
   const merged = [...saved];
@@ -563,8 +590,8 @@ export function defaultWorkspaceForStyle(
   return available[0]?.id ?? "";
 }
 
-export function useWorkspaces(_userId: string, tradingStyle?: string) {
-  const seed = seedWorkspaces();
+export function useWorkspaces(_userId: string, tradingStyle?: TradingStyle) {
+  const seed = seedWorkspaces(undefined, tradingStyle);
 
   const [workspaces, setWorkspacesState] = useState<Workspace[]>(seed.workspaces);
 

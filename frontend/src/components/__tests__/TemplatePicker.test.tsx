@@ -6,8 +6,11 @@ const resetLayout = vi.fn();
 const useAppSelectorMock = vi.fn();
 
 vi.mock("../../store/hooks.ts", () => ({
-  useAppSelector: (selector: (state: { auth: { user?: { role?: string } | null } }) => unknown) =>
-    useAppSelectorMock(selector),
+  useAppSelector: (
+    selector: (state: {
+      auth: { user?: { role?: string } | null; limits?: { trading_style?: string } };
+    }) => unknown
+  ) => useAppSelectorMock(selector),
 }));
 
 vi.mock("../DashboardLayout.tsx", () => ({
@@ -27,17 +30,32 @@ vi.mock("../DashboardLayout.tsx", () => ({
       model: { layout: { type: "row", children: [] } },
       locked: true,
     },
+    {
+      id: "fi-trading",
+      label: "FI Trading",
+      description: "Bond desk workspace",
+      model: { layout: { type: "row", children: [] } },
+      locked: true,
+      styles: ["fi_voice", "oversight"],
+    },
   ],
 }));
+
+function mockAuth(role: string, tradingStyle?: string) {
+  useAppSelectorMock.mockImplementation(
+    (
+      selector: (state: {
+        auth: { user: { role: string }; limits?: { trading_style?: string } };
+      }) => unknown
+    ) => selector({ auth: { user: { role }, limits: { trading_style: tradingStyle } } })
+  );
+}
 
 describe("TemplatePicker", () => {
   beforeEach(() => {
     resetLayout.mockReset();
     useAppSelectorMock.mockReset();
-    useAppSelectorMock.mockImplementation(
-      (selector: (state: { auth: { user: { role: string } } }) => unknown) =>
-        selector({ auth: { user: { role: "trader" } } })
-    );
+    mockAuth("trader", "high_touch");
   });
 
   it("shows only non-admin templates for non-admin users", () => {
@@ -49,15 +67,30 @@ describe("TemplatePicker", () => {
   });
 
   it("shows admin templates for admin users", () => {
-    useAppSelectorMock.mockImplementation(
-      (selector: (state: { auth: { user: { role: string } } }) => unknown) =>
-        selector({ auth: { user: { role: "admin" } } })
-    );
+    mockAuth("admin", "high_touch");
 
     render(<TemplatePicker />);
     fireEvent.click(screen.getByRole("button", { name: /layout/i }));
 
     expect(screen.getByText("Admin")).toBeInTheDocument();
+  });
+
+  it("hides desk-scoped templates for a trading style that doesn't match", () => {
+    mockAuth("trader", "high_touch");
+
+    render(<TemplatePicker />);
+    fireEvent.click(screen.getByRole("button", { name: /layout/i }));
+
+    expect(screen.queryByText("FI Trading")).not.toBeInTheDocument();
+  });
+
+  it("shows desk-scoped templates for a matching trading style", () => {
+    mockAuth("trader", "fi_voice");
+
+    render(<TemplatePicker />);
+    fireEvent.click(screen.getByRole("button", { name: /layout/i }));
+
+    expect(screen.getByText("FI Trading")).toBeInTheDocument();
   });
 
   it("applies template and closes menu", () => {

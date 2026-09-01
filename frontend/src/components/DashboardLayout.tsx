@@ -7,6 +7,7 @@ export {
 export { DashboardLayout } from "./dashboard/DashboardLayout.tsx";
 
 export {
+  ALL_TRADER_STYLES,
   LAYOUT_TEMPLATES,
   makeAdministrationModel,
   makeAdminModel,

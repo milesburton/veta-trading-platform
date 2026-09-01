@@ -17,10 +17,13 @@ export function TemplatePicker() {
   const ref = useRef<HTMLDivElement>(null);
   const { resetLayout } = useDashboard();
   const userRole = useAppSelector((s) => s.auth.user?.role);
+  const tradingStyle = useAppSelector((s) => s.auth.limits?.trading_style);
 
-  const visibleTemplates = LAYOUT_TEMPLATES.filter(
-    (tpl) => !ADMIN_ONLY_TEMPLATES.has(tpl.id) || userRole === "admin"
-  );
+  const visibleTemplates = LAYOUT_TEMPLATES.filter((tpl) => {
+    if (ADMIN_ONLY_TEMPLATES.has(tpl.id)) return userRole === "admin";
+    if (!tpl.styles) return true;
+    return !!tradingStyle && tpl.styles.includes(tradingStyle);
+  });
 
   useEffect(() => {
     if (!open.value) return;

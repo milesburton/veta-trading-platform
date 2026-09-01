@@ -158,7 +158,7 @@ function TradingApp() {
   const locallyModifiedRef = useRef(false);
 
   const [layouts, setLayouts] = useState<Record<string, Model>>(() => {
-    const seed = seedWorkspaces();
+    const seed = seedWorkspaces(userRole, tradingStyle);
     const initial: Record<string, Model> = {};
     for (const [id, json] of Object.entries(seed.layouts)) {
       try {
@@ -186,7 +186,7 @@ function TradingApp() {
       let finalLayoutsJson = prefs?.layouts ?? {};
 
       if (finalWorkspaces.length === 0) {
-        const seed = seedWorkspaces(userRole);
+        const seed = seedWorkspaces(userRole, tradingStyle);
         finalWorkspaces = seed.workspaces;
         finalLayoutsJson = seed.layouts;
         saveWorkspacePrefs({
@@ -194,12 +194,17 @@ function TradingApp() {
           layouts: finalLayoutsJson,
         });
       } else {
-        const { workspaces: presetWs } = seedWorkspaces(userRole);
+        const { workspaces: presetWs } = seedWorkspaces(userRole, tradingStyle);
         const lockedIds = new Set(presetWs.filter((w) => w.locked).map((w) => w.id));
         finalWorkspaces = finalWorkspaces.map((w) =>
           lockedIds.has(w.id) ? { ...w, locked: true as const } : w
         );
-        const reconciled = reconcilePresetWorkspaces(finalWorkspaces, finalLayoutsJson, userRole);
+        const reconciled = reconcilePresetWorkspaces(
+          finalWorkspaces,
+          finalLayoutsJson,
+          userRole,
+          tradingStyle
+        );
         if (reconciled.restored.length > 0) {
           finalWorkspaces = reconciled.workspaces;
           finalLayoutsJson = reconciled.layouts;
@@ -229,7 +234,7 @@ function TradingApp() {
       setLayouts(loaded);
       if (preferred) handleSelect(preferred);
     });
-  }, [authStatus, setWorkspaces, handleSelect, userRole]);
+  }, [authStatus, setWorkspaces, handleSelect, userRole, tradingStyle]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
