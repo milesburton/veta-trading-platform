@@ -1,21 +1,25 @@
 # VETA Trading Platform
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Docs Pages](https://github.com/milesburton/veta-trading-platform/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/pages.yml)
-[![Release Please](https://github.com/milesburton/veta-trading-platform/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/release-please.yml)
-[![Backend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Frontend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Integration tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/integration-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Smoke tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/smoke-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![E2E tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/e2e-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Frontend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Backend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Combined coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/combined-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Secret scan](https://github.com/milesburton/veta-trading-platform/actions/workflows/gitleaks.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/gitleaks.yml)
-[![CodeQL](https://github.com/milesburton/veta-trading-platform/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/codeql.yml)
-[![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-manual%20%2F%20homelab-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/)
+> **Overall:** [![VETA test coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/overall-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) across the backend and frontend.
+
+| Domain | Check | Result |
+| :--- | :--- | :---: |
+| Project | License | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) |
+| Delivery | Continuous integration | [![CI](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Delivery | Container build | [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Delivery | Documentation | [![Docs Pages](https://github.com/milesburton/veta-trading-platform/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/pages.yml) |
+| Delivery | Release automation | [![Release Please](https://github.com/milesburton/veta-trading-platform/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/release-please.yml) |
+| Tests | Backend unit | [![Backend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Tests | Frontend unit | [![Frontend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Tests | Integration | [![Integration tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/integration-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Tests | Smoke | [![Smoke tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/smoke-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Tests | End-to-end | [![E2E tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/e2e-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Coverage | Backend | [![Backend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Coverage | Frontend | [![Frontend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Coverage | Combined | [![Combined coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/combined-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
+| Security | Secret scanning | [![Secret scan](https://github.com/milesburton/veta-trading-platform/actions/workflows/gitleaks.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/gitleaks.yml) |
+| Security | Static analysis | [![CodeQL](https://github.com/milesburton/veta-trading-platform/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/codeql.yml) |
+| Performance | k6 load tests | [![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-manual%20%2F%20homelab-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/) |
 
 A simulation-first equities and fixed-income trading platform for paper trading and market-structure analysis. Built around realistic desk segregation, nine execution algorithms, and a pre-trade risk engine that gates every order.
 
