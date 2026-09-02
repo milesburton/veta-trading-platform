@@ -410,7 +410,8 @@ async function handle(req: Request): Promise<Response> {
          FROM users.users u
          LEFT JOIN users.trading_limits l ON l.user_id = u.id
          WHERE u.role IN ('trader','desk-head','risk-manager','compliance','sales','oncall','admin','external-client','viewer')
-           AND (u.id NOT LIKE 'synthetic-trader-%' OR u.id LIKE 'synthetic-trader-%-viewer')
+           AND (u.id NOT LIKE 'synthetic-trader-%'
+                OR (u.id LIKE 'synthetic-trader-%-viewer' AND u.role = 'viewer'))
          ORDER BY
            CASE u.role
              WHEN 'trader' THEN 1

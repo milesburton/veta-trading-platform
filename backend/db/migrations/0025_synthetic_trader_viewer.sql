@@ -17,7 +17,7 @@ BEGIN;
 
 INSERT INTO users.users (id, name, role, avatar_emoji, description) VALUES
   ('synthetic-trader-1-viewer', 'Synthetic Trader', 'viewer', '🤖',
-   'Read-only view of the always-on synthetic trader — watch it place orders, cannot trade')
+   'Read-only view of the always-on synthetic trader; watch it place orders, cannot trade')
 ON CONFLICT (id) DO UPDATE SET
   name         = EXCLUDED.name,
   role         = EXCLUDED.role,
