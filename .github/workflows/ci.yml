@@ -572,13 +572,14 @@ jobs:
           printf '{"schemaVersion":1,"label":"backend coverage","message":"%s%%","color":"%s"}\n' "$BACKEND" "$BACKEND_COLOR" > docs/badges/backend-coverage.json
           printf '{"schemaVersion":1,"label":"frontend coverage","message":"%s%%","color":"%s"}\n' "$FRONTEND" "$FRONTEND_COLOR" > docs/badges/frontend-coverage.json
           printf '{"schemaVersion":1,"label":"combined coverage","message":"%s%%","color":"%s"}\n' "$COMBINED" "$COMBINED_COLOR" > docs/badges/combined-coverage.json
+          printf '{"schemaVersion":1,"label":"VETA has","message":"%s%% test coverage","color":"%s"}\n' "$COMBINED" "$COMBINED_COLOR" > docs/badges/overall-coverage.json
           printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$FRONTEND" "$FRONTEND_COLOR" > docs/badges/coverage.json
 
       - name: Commit coverage badges
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/badges/backend-coverage.json docs/badges/frontend-coverage.json docs/badges/combined-coverage.json docs/badges/coverage.json
+          git add docs/badges/backend-coverage.json docs/badges/frontend-coverage.json docs/badges/combined-coverage.json docs/badges/overall-coverage.json docs/badges/coverage.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(ci): update coverage badges [skip ci]"
             for i in 1 2 3; do
