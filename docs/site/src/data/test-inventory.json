@@ -154,7 +154,7 @@
   "frontend": {
     "unit": {
       "files": 182,
-      "cases": 2195
+      "cases": 2196
     },
     "playwright": {
       "files": 19,
