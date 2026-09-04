@@ -409,8 +409,9 @@ async function handle(req: Request): Promise<Response> {
                 l.trading_style, l.primary_desk, l.allowed_strategies, l.max_order_qty, l.dark_pool_access
          FROM users.users u
          LEFT JOIN users.trading_limits l ON l.user_id = u.id
-         WHERE u.role IN ('trader','desk-head','risk-manager','compliance','sales','oncall','admin','external-client')
-           AND u.id NOT LIKE 'synthetic-trader-%'
+         WHERE u.role IN ('trader','desk-head','risk-manager','compliance','sales','oncall','admin','external-client','viewer')
+           AND (u.id NOT LIKE 'synthetic-trader-%'
+                OR (u.id LIKE 'synthetic-trader-%-viewer' AND u.role = 'viewer'))
          ORDER BY
            CASE u.role
              WHEN 'trader' THEN 1
@@ -421,7 +422,8 @@ async function handle(req: Request): Promise<Response> {
              WHEN 'compliance' THEN 6
              WHEN 'oncall' THEN 7
              WHEN 'admin' THEN 8
-             ELSE 9
+             WHEN 'viewer' THEN 9
+             ELSE 10
            END,
            l.primary_desk NULLS LAST,
            l.trading_style NULLS LAST,
