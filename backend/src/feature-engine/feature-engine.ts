@@ -7,6 +7,7 @@ import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
 import { waitForUrl } from "@veta/wait-for";
 import {
+  buildSectorPeers,
   computeEventScore,
   computeMomentum,
   computeNewsVelocity,
@@ -28,6 +29,7 @@ const volumeHistory = new Map<string, number[]>();
 const TICK_WINDOW = 100;
 
 const symbolSectors = new Map<string, string>();
+let sectorPeers = new Map<string, string[]>();
 
 const cachedRealisedVol = new Map<string, number>();
 
@@ -106,6 +108,7 @@ async function loadSectorMap(): Promise<void> {
     for (const a of assets) {
       if (a.symbol && a.sector) symbolSectors.set(a.symbol, a.sector);
     }
+    sectorPeers = buildSectorPeers(symbolSectors);
   } catch {
     /* ignore — retried by interval */
   }
@@ -126,15 +129,13 @@ function computeFeatureVector(symbol: string): FeatureVector | null {
   if (!prices || prices.length < 2) return null;
 
   const sector = symbolSectors.get(symbol) ?? "Unknown";
-  const sectorSymbols = [...symbolSectors.entries()]
-    .filter(([s, sec]) => sec === sector && s !== symbol)
-    .map(([s]) => s);
-  const sectorHistories = sectorSymbols
-    .map((s) => priceHistory.get(s) ?? [])
-    .filter((h) => h.length >= 2);
-
-  trimOldNews();
-  trimOldEvents();
+  const sectorSymbols = sectorPeers.get(sector) ?? [];
+  const sectorHistories: number[][] = [];
+  for (const s of sectorSymbols) {
+    if (s === symbol) continue;
+    const h = priceHistory.get(s);
+    if (h && h.length >= 2) sectorHistories.push(h);
+  }
 
   const fv: FeatureVector = {
     symbol,
@@ -207,6 +208,9 @@ if (tickConsumer) {
       volumes?: Record<string, number>;
     };
     if (!tick.prices || typeof tick.prices !== "object") return;
+
+    trimOldNews();
+    trimOldEvents();
 
     for (const [symbol, price] of Object.entries(tick.prices)) {
       if (!price) continue;
