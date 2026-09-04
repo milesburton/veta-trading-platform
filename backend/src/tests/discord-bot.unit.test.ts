@@ -57,7 +57,7 @@ Deno.test("classifyGatewayEnvelope: op 10 is a hello with the derived heartbeat 
 });
 
 Deno.test("classifyGatewayEnvelope: op 0 t=READY carries the payload", () => {
-  const data = { user: { id: "bot-1" } };
+  const data = { user: { id: "1234567890" } };
   const action = classifyGatewayEnvelope({ op: 0, t: "READY", d: data });
   assertEquals(action, { kind: "ready", data });
 });
@@ -264,10 +264,10 @@ Deno.test("decideTriageRequest triages a message that @mentions the bot", () => 
     {
       id: "msg-1",
       channel_id: "chan-1",
-      content: "<@bot-1> the candlestick chart shows blank bars",
+      content: "<@1234567890> the candlestick chart shows blank bars",
       author: { id: "9", username: "alice" },
     },
-    "bot-1"
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
@@ -278,10 +278,10 @@ Deno.test("decideTriageRequest handles the nickname-mention form <@!id>", () => 
     {
       id: "msg-1",
       channel_id: "chan-1",
-      content: "<@!bot-1> the candlestick chart shows blank bars",
+      content: "<@!1234567890> the candlestick chart shows blank bars",
       author: { id: "9", username: "alice" },
     },
-    "bot-1"
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
@@ -292,10 +292,10 @@ Deno.test("decideTriageRequest strips a mid-message mention of the bot", () => {
     {
       id: "msg-1",
       channel_id: "chan-1",
-      content: "hey <@bot-1> the candlestick chart shows blank bars",
+      content: "hey <@1234567890> the candlestick chart shows blank bars",
       author: { id: "9", username: "alice" },
     },
-    "bot-1"
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "hey   the candlestick chart shows blank bars");
@@ -306,10 +306,10 @@ Deno.test("decideTriageRequest ignores a mention-only message with no other text
     {
       id: "1",
       channel_id: "c1",
-      content: "<@bot-1>   ",
+      content: "<@1234567890>   ",
       author: { id: "9", username: "alice" },
     },
-    "bot-1"
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, false);
 });
@@ -322,7 +322,7 @@ Deno.test("decideTriageRequest ignores a mention of a different user, not the bo
       content: "<@someone-else> can you look at this bug",
       author: { id: "9", username: "alice" },
     },
-    "bot-1"
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, false);
 });
@@ -331,7 +331,7 @@ Deno.test("decideTriageRequest ignores mentions when the bot's own id is unknown
   const decision = decideTriageRequest({
     id: "1",
     channel_id: "c1",
-    content: "<@bot-1> the chart is broken",
+    content: "<@1234567890> the chart is broken",
     author: { id: "9", username: "alice" },
   });
   assertEquals(decision.shouldTriage, false);
@@ -345,7 +345,7 @@ Deno.test("decideTriageRequest still honours the Raise. prefix when a bot id is 
       content: "Raise. the chart is broken",
       author: { id: "9", username: "alice" },
     },
-    "bot-1"
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "the chart is broken");
