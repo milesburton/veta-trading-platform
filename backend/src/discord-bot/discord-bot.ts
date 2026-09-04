@@ -32,6 +32,13 @@ const GATEWAY_INTENT_GUILD_MEMBERS = 1 << 1;
 const GATEWAY_INTENT_GUILD_MESSAGES = 1 << 9;
 const GATEWAY_INTENT_MESSAGE_CONTENT = 1 << 15;
 const RECONNECT_DELAY_MS = 5_000;
+const MIN_HEARTBEAT_INTERVAL_MS = 1_000;
+const MAX_HEARTBEAT_INTERVAL_MS = 60_000;
+const SNOWFLAKE_PATTERN = /^\d{1,20}$/;
+
+function isDiscordSnowflake(value: string): boolean {
+  return SNOWFLAKE_PATTERN.test(value);
+}
 
 export function buildWelcomeMessage(memberMention: string): string {
   return `👋 Welcome ${memberMention} to the VETA community! Type \`Raise. <what's wrong>\` in this channel, or use the in-app "Raise a ticket" button, if you hit a bug.`;
@@ -139,7 +146,7 @@ function mentionPattern(botUserId: string): RegExp {
 function extractTriageText(content: string, botUserId: string | null): string | null {
   const prefixMatch = RAISE_PREFIX.exec(content);
   if (prefixMatch) return content.slice(prefixMatch[0].length).trim();
-  if (!botUserId) return null;
+  if (!botUserId || !isDiscordSnowflake(botUserId)) return null;
   const pattern = mentionPattern(botUserId);
   if (!pattern.test(content)) return null;
   return content.replace(pattern, " ").trim();
@@ -362,6 +369,10 @@ async function handleMessageCreate(data: unknown): Promise<void> {
 }
 
 async function postChannelMessage(channelId: string, content: string): Promise<boolean> {
+  if (!isDiscordSnowflake(channelId)) {
+    logger.error("refusing to post to non-snowflake channel id", { channelId });
+    return false;
+  }
   try {
     const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
       method: "POST",
@@ -417,9 +428,13 @@ function startHeartbeat(
   intervalMs: number,
   getSequence: () => number | null
 ): ReturnType<typeof setInterval> {
+  const clampedIntervalMs = Math.min(
+    Math.max(intervalMs, MIN_HEARTBEAT_INTERVAL_MS),
+    MAX_HEARTBEAT_INTERVAL_MS
+  );
   return setInterval(() => {
     ws.send(JSON.stringify({ op: 1, d: getSequence() }));
-  }, intervalMs);
+  }, clampedIntervalMs);
 }
 
 function handleReady(data: unknown): void {
