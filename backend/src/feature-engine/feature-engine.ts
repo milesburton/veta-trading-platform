@@ -28,6 +28,7 @@ const volumeHistory = new Map<string, number[]>();
 const TICK_WINDOW = 100;
 
 const symbolSectors = new Map<string, string>();
+const sectorMembers = new Map<string, string[]>();
 
 const cachedRealisedVol = new Map<string, number>();
 
@@ -106,6 +107,12 @@ async function loadSectorMap(): Promise<void> {
     for (const a of assets) {
       if (a.symbol && a.sector) symbolSectors.set(a.symbol, a.sector);
     }
+    sectorMembers.clear();
+    for (const [symbol, sector] of symbolSectors) {
+      const members = sectorMembers.get(sector);
+      if (members) members.push(symbol);
+      else sectorMembers.set(sector, [symbol]);
+    }
   } catch {
     /* ignore — retried by interval */
   }
@@ -126,15 +133,12 @@ function computeFeatureVector(symbol: string): FeatureVector | null {
   if (!prices || prices.length < 2) return null;
 
   const sector = symbolSectors.get(symbol) ?? "Unknown";
-  const sectorSymbols = [...symbolSectors.entries()]
-    .filter(([s, sec]) => sec === sector && s !== symbol)
-    .map(([s]) => s);
-  const sectorHistories = sectorSymbols
-    .map((s) => priceHistory.get(s) ?? [])
-    .filter((h) => h.length >= 2);
-
-  trimOldNews();
-  trimOldEvents();
+  const sectorHistories: number[][] = [];
+  for (const s of sectorMembers.get(sector) ?? []) {
+    if (s === symbol) continue;
+    const h = priceHistory.get(s);
+    if (h && h.length >= 2) sectorHistories.push(h);
+  }
 
   const fv: FeatureVector = {
     symbol,
@@ -161,6 +165,8 @@ let flushInFlight = false;
 let consecutiveInsertFailures = 0;
 
 async function flushFeatures(): Promise<void> {
+  trimOldNews();
+  trimOldEvents();
   if (flushInFlight || pendingFeatures.size === 0) return;
   flushInFlight = true;
   const batch = [...pendingFeatures.values()];
