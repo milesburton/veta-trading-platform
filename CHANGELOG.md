@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.4...veta-trading-platform-v1.68.5) (2026-09-07)
+
+
+### Bug Fixes
+
+* **gateway:** enforce role-based WebSocket broadcast ([#628](https://github.com/milesburton/veta-trading-platform/issues/628)) ([2008ad1](https://github.com/milesburton/veta-trading-platform/commit/2008ad1e2afeba9e7acad500ef3ed8222636ce7d))
+
 ## [1.68.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.3...veta-trading-platform-v1.68.4) (2026-09-04)
 
 
