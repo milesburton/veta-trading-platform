@@ -1326,11 +1326,24 @@ Deno.test({
                   `trader ${p.id} has cross-desk primary (should be a single-asset-class desk)`
                 );
               }
-              assert(
-                !p.id.startsWith("synthetic-trader-"),
-                `synthetic trader ${p.id} must not appear in the sign-in persona list`
-              );
+              if (p.id.startsWith("synthetic-trader-")) {
+                assert(
+                  p.id.endsWith("-viewer"),
+                  `synthetic trader ${p.id} must not appear in the sign-in persona list unless it is the read-only viewer persona`
+                );
+                assertEquals(
+                  p.role,
+                  "viewer",
+                  `synthetic trader viewer persona ${p.id} must have role 'viewer'`
+                );
+              }
             }
+
+            const syntheticViewer = body.personas.find(
+              (p) => p.id === "synthetic-trader-1-viewer"
+            );
+            assertExists(syntheticViewer, "synthetic-trader-1-viewer persona missing");
+            assertEquals(syntheticViewer?.role, "viewer");
           }
         );
 

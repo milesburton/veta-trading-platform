@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.3...veta-trading-platform-v1.68.4) (2026-09-04)
+
+
+### Bug Fixes
+
+* **discord-bot:** harden against CodeQL regex-injection, SSRF, and resource-exhaustion findings ([#625](https://github.com/milesburton/veta-trading-platform/issues/625)) ([94f151a](https://github.com/milesburton/veta-trading-platform/commit/94f151a690a5eca8de4572f1b70184a8526c581c))
+
 ## [1.68.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.2...veta-trading-platform-v1.68.3) (2026-08-30)
 
 

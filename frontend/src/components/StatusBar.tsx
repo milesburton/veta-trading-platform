@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { NON_TRADING_ROLES } from "@veta/frontend/auth/rbac.ts";
 import { useFrontendMemoryTelemetry } from "@veta/frontend/hooks/useFrontendMemoryTelemetry.ts";
 import type { AlertSeverity } from "@veta/frontend/store/alertsSlice.ts";
 import {
@@ -730,6 +731,15 @@ export function AppHeader() {
                 >
                   {user.role}
                 </span>
+                {NON_TRADING_ROLES.has(user.role) && (
+                  <span
+                    data-testid="read-only-badge"
+                    title="This account cannot submit orders"
+                    className="text-[9px] font-medium uppercase px-1 py-0.5 rounded bg-divider text-secondary"
+                  >
+                    Read only
+                  </span>
+                )}
               </span>
               <button
                 type="button"

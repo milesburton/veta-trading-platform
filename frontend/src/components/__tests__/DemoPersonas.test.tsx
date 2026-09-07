@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { DemoPersonas } from "@veta/frontend/components/DemoPersonas";
 import type { DemoPersona } from "@veta/frontend/store/userApi";
 import { describe, expect, it, vi } from "vitest";
@@ -149,6 +149,12 @@ describe("DemoPersonas – expanded states", () => {
             primary_desk: null,
             trading_style: null,
           }),
+          makePersona({
+            id: "synthetic-trader-1-viewer",
+            role: "viewer",
+            primary_desk: null,
+            trading_style: null,
+          }),
         ],
       },
       isLoading: false,
@@ -167,6 +173,32 @@ describe("DemoPersonas – expanded states", () => {
     expect(screen.getByText(/External clients/i)).toBeInTheDocument();
     expect(screen.getByText(/^Compliance$/)).toBeInTheDocument();
     expect(screen.getByText(/Administration/i)).toBeInTheDocument();
+    expect(screen.getByText(/Read-only observers/i)).toBeInTheDocument();
+  });
+
+  it("shows a read-only tag on non-trading persona cards", () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        personas: [
+          makePersona({
+            id: "synthetic-trader-1-viewer",
+            name: "Synthetic Trader",
+            role: "viewer",
+            primary_desk: null,
+            trading_style: null,
+          }),
+          makePersona({ id: "alice" }),
+        ],
+      },
+      isLoading: false,
+      error: undefined,
+    });
+    render(<DemoPersonas onSelect={() => {}} />);
+    fireEvent.click(screen.getByTestId("demo-personas-toggle"));
+    const viewerCard = screen.getByTestId("persona-synthetic-trader-1-viewer");
+    expect(within(viewerCard).getByText(/Read only/i)).toBeInTheDocument();
+    const traderCard = screen.getByTestId("persona-alice");
+    expect(within(traderCard).queryByText(/Read only/i)).not.toBeInTheDocument();
   });
 
   it("calls onSelect with the full persona when card clicked", () => {

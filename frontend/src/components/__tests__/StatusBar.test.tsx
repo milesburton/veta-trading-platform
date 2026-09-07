@@ -670,6 +670,75 @@ describe("StatusBar – authenticated user", () => {
     expect(screen.queryByTestId("new-order-btn")).not.toBeInTheDocument();
   });
 
+  it("shows a read-only badge for a viewer-role user", () => {
+    const store = makeStore(true);
+    store.dispatch({
+      type: "auth/setUser",
+      payload: {
+        id: "synthetic-trader-1-viewer",
+        name: "Synthetic Trader",
+        role: "viewer",
+        avatar_emoji: "🤖",
+      },
+    });
+    render(
+      <Provider store={store}>
+        <DashboardContext.Provider
+          value={{
+            layout: DEFAULT_LAYOUT,
+            setLayout: vi.fn(),
+            activePanelIds: new Set(),
+            addPanel: vi.fn(),
+            removePanel: vi.fn(),
+            removeTabById: vi.fn(),
+            resetLayout: vi.fn(),
+            storageKey: "dashboard-layout",
+            model: Model.fromJson({
+              global: {},
+              layout: { type: "row", children: [] },
+            }),
+            setModel: vi.fn(),
+          }}
+        >
+          <StatusBar />
+        </DashboardContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByTestId("read-only-badge")).toBeInTheDocument();
+  });
+
+  it("does not show a read-only badge for a trader-role user", () => {
+    const store = makeStore(true);
+    store.dispatch({
+      type: "auth/setUser",
+      payload: { id: "alice", name: "Alice", role: "trader", avatar_emoji: "👩" },
+    });
+    render(
+      <Provider store={store}>
+        <DashboardContext.Provider
+          value={{
+            layout: DEFAULT_LAYOUT,
+            setLayout: vi.fn(),
+            activePanelIds: new Set(),
+            addPanel: vi.fn(),
+            removePanel: vi.fn(),
+            removeTabById: vi.fn(),
+            resetLayout: vi.fn(),
+            storageKey: "dashboard-layout",
+            model: Model.fromJson({
+              global: {},
+              layout: { type: "row", children: [] },
+            }),
+            setModel: vi.fn(),
+          }}
+        >
+          <StatusBar />
+        </DashboardContext.Provider>
+      </Provider>
+    );
+    expect(screen.queryByTestId("read-only-badge")).not.toBeInTheDocument();
+  });
+
   it("opens and closes the bug report modal from the header", () => {
     const store = makeStore(true);
     store.dispatch({

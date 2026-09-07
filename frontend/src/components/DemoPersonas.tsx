@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { type AuthRole, NON_TRADING_ROLES } from "@veta/frontend/auth/rbac.ts";
 import { type DemoPersona, useGetDemoPersonasQuery } from "@veta/frontend/store/userApi.ts";
 
 const STYLE_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
   "external-client": "bg-amber-900/40 text-amber-400 border border-amber-800",
   compliance: "bg-slate-800 text-slate-300 border border-slate-700",
   admin: "bg-red-900/40 text-red-400 border border-red-800",
+  viewer: "bg-slate-800 text-slate-300 border border-slate-700",
 };
 
 interface DemoPersonasProps {
@@ -122,6 +124,7 @@ function PersonaCard({ persona, onSelect }: { persona: DemoPersona; onSelect: ()
   const styleLabel = persona.trading_style ? STYLE_LABELS[persona.trading_style] : null;
   const deskLabel = persona.primary_desk ? DESK_LABELS[persona.primary_desk] : null;
   const roleBadgeClass = ROLE_BADGE_CLASS[persona.role] ?? "bg-panel text-label";
+  const isReadOnly = NON_TRADING_ROLES.has(persona.role as AuthRole);
 
   return (
     <button
@@ -139,6 +142,11 @@ function PersonaCard({ persona, onSelect }: { persona: DemoPersona; onSelect: ()
             <div className="text-sm font-medium text-secondary truncate flex-1 min-w-0">
               {persona.name}
             </div>
+            {isReadOnly && (
+              <span className="shrink-0 whitespace-nowrap text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                Read only
+              </span>
+            )}
             <span
               className={`shrink-0 whitespace-nowrap text-[9px] px-1.5 py-0.5 rounded ${roleBadgeClass}`}
             >
@@ -200,6 +208,9 @@ function groupPersonas(personas: DemoPersona[]): Record<string, DemoPersona[]> {
   }
   for (const p of personas) {
     if (p.role === "admin") push("Administration", p);
+  }
+  for (const p of personas) {
+    if (p.role === "viewer") push("Read-only observers", p);
   }
 
   const ordered: Record<string, DemoPersona[]> = {};
