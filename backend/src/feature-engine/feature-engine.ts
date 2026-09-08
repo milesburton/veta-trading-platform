@@ -239,6 +239,7 @@ if (newsConsumer) {
     const event = raw as NewsEvent;
     if (!event.ts) return;
     recentNews.push(event);
+    trimOldNews();
     for (const ticker of event.tickers) {
       if (priceHistory.has(ticker)) {
         const fv = computeFeatureVector(ticker);
@@ -260,6 +261,7 @@ if (adapterConsumer) {
     const event = raw as MarketAdapterEvent;
     if (!event.scheduledAt) return;
     upcomingEvents.push(event);
+    trimOldEvents();
     if (event.ticker && priceHistory.has(event.ticker)) {
       const fv = computeFeatureVector(event.ticker);
       if (fv) pendingFeatures.set(fv.symbol, fv);
