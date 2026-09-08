@@ -104,14 +104,17 @@ async function loadSectorMap(): Promise<void> {
     });
     if (!res.ok) return;
     const assets = (await res.json()) as Array<{ symbol: string; sector?: string }>;
+
+    symbolSectors.clear();
     for (const a of assets) {
       if (a.symbol && a.sector) symbolSectors.set(a.symbol, a.sector);
     }
+
     sectorMembers.clear();
     for (const [symbol, sector] of symbolSectors) {
-      const members = sectorMembers.get(sector);
-      if (members) members.push(symbol);
-      else sectorMembers.set(sector, [symbol]);
+      const members = sectorMembers.get(sector) ?? [];
+      members.push(symbol);
+      sectorMembers.set(sector, members);
     }
   } catch {
     /* ignore — retried by interval */
