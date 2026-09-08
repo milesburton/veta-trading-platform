@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.5...veta-trading-platform-v1.68.6) (2026-09-08)
+
+
+### Bug Fixes
+
+* **compose:** cap per-container CPU to stop production starving CI/deploy checks ([#631](https://github.com/milesburton/veta-trading-platform/issues/631)) ([41c6a48](https://github.com/milesburton/veta-trading-platform/commit/41c6a482c2c684502a51dffccc3c5c9099b36476))
+
 ## [1.68.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.4...veta-trading-platform-v1.68.5) (2026-09-07)
 
 
