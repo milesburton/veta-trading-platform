@@ -1,5 +1,15 @@
 import type { MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
 
+export function buildSectorPeers(symbolSectors: Map<string, string>): Map<string, string[]> {
+  const sectorPeers = new Map<string, string[]>();
+  for (const [symbol, sector] of symbolSectors) {
+    const peers = sectorPeers.get(sector);
+    if (peers) peers.push(symbol);
+    else sectorPeers.set(sector, [symbol]);
+  }
+  return sectorPeers;
+}
+
 export function computeMomentum(priceHistory: number[]): number {
   if (priceHistory.length < 20) return 0;
   const current = priceHistory[priceHistory.length - 1];

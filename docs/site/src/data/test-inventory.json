@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 100,
-      "cases": 1142,
+      "cases": 1145,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -21,7 +21,7 @@
         "llm-dedupe.test.ts": 13,
         "llm-pg-retry.unit.test.ts": 6,
         "job-store.unit.test.ts": 2,
-        "feature-engine.test.ts": 17,
+        "feature-engine.test.ts": 20,
         "feature-store.unit.test.ts": 4,
         "signal-engine.test.ts": 7,
         "weight-store.unit.test.ts": 3,

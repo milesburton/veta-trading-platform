@@ -1,5 +1,6 @@
 import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  buildSectorPeers,
   computeEventScore,
   computeMomentum,
   computeNewsVelocity,
@@ -270,4 +271,29 @@ Deno.test("buildBatchInsert: multi-row offsets each tuple by 9 with contiguous p
   assertEquals(values[18], "NVDA");
   const maxParam = Math.max(...placeholders.matchAll(/\$(\d+)/g).map((m) => Number(m[1])));
   assertEquals(maxParam, values.length);
+});
+
+Deno.test("buildSectorPeers: groups symbols by sector", () => {
+  const symbolSectors = new Map([
+    ["AAPL", "Technology"],
+    ["MSFT", "Technology"],
+    ["JPM", "Financials"],
+    ["XOM", "Energy"],
+  ]);
+  const peers = buildSectorPeers(symbolSectors);
+  assertEquals(peers.get("Technology"), ["AAPL", "MSFT"]);
+  assertEquals(peers.get("Financials"), ["JPM"]);
+  assertEquals(peers.get("Energy"), ["XOM"]);
+});
+
+Deno.test("buildSectorPeers: empty input produces an empty map", () => {
+  const peers = buildSectorPeers(new Map());
+  assertEquals(peers.size, 0);
+});
+
+Deno.test("buildSectorPeers: does not mutate the input map", () => {
+  const symbolSectors = new Map([["AAPL", "Technology"]]);
+  buildSectorPeers(symbolSectors);
+  assertEquals(symbolSectors.size, 1);
+  assertEquals(symbolSectors.get("AAPL"), "Technology");
 });
