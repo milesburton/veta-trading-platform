@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.6...veta-trading-platform-v1.68.7) (2026-09-11)
+
+
+### Bug Fixes
+
+* **gateway:** allow traders to view own positions, any user to check replay config ([#635](https://github.com/milesburton/veta-trading-platform/issues/635)) ([530ceba](https://github.com/milesburton/veta-trading-platform/commit/530ceba004c01d748d5df0dc7b8cc902a57455a8))
+
 ## [1.68.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.5...veta-trading-platform-v1.68.6) (2026-09-08)
 
 
