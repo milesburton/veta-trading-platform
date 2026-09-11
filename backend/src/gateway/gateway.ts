@@ -1138,11 +1138,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
+        const ownPositionsMatch =
+          svcName === "risk-engine" ? svcPath.match(/^\/positions\/([^/]+)$/) : null;
         const allowedRoles =
           svcName === "market-sim" && svcPath.startsWith("/admin/")
             ? new Set(["admin"])
             : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
-        if (!allowedRoles.has(auth.user.role)) {
+        const isOwnPositions =
+          ownPositionsMatch !== null && decodeURIComponent(ownPositionsMatch[1]) === auth.user.id;
+        const isRecordingParticipantRoute =
+          (svcName === "replay" || svcName === "replay-service") &&
+          ((svcPath === "/config" && req.method === "GET") ||
+            (svcPath === "/sessions" && req.method === "POST") ||
+            (/^\/sessions\/[^/]+\/end$/.test(svcPath) && req.method === "PUT") ||
+            (/^\/sessions\/[^/]+\/chunks$/.test(svcPath) && req.method === "POST"));
+        if (!allowedRoles.has(auth.user.role) && !isOwnPositions && !isRecordingParticipantRoute) {
           publishAccessEvent({
             action: "auth_failure",
             userId: auth.user.id,
