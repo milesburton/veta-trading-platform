@@ -366,7 +366,9 @@ services:
     logging: *logging
 
   minio:
-    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    # Docker Hub's minio/minio now requires auth to pull; quay.io/minio/minio
+    # is the same image, still open.
+    image: quay.io/minio/minio:RELEASE.2025-04-08T15-41-24Z
     container_name: minio
     command: server /data --console-address ":9001"
     networks:
