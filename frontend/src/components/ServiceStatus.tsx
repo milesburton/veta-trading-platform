@@ -55,10 +55,12 @@ export function ServiceStatus({ services }: Props) {
   function panelStyle(): React.CSSProperties {
     if (!buttonRef.current) return { top: 0, right: 0 };
     const r = buttonRef.current.getBoundingClientRect();
+    const top = r.bottom + 4;
     return {
       position: "fixed",
-      top: r.bottom + 4,
+      top,
       right: globalThis.innerWidth - r.right,
+      maxHeight: globalThis.innerHeight - top - 16,
       zIndex: 9999,
     };
   }
@@ -97,9 +99,9 @@ export function ServiceStatus({ services }: Props) {
 
             <div
               style={panelStyle()}
-              className="w-[28rem] bg-surface border border-divider rounded shadow-xl text-xs"
+              className="w-[28rem] bg-surface border border-divider rounded shadow-xl text-xs flex flex-col overflow-hidden"
             >
-              <div className="px-3 py-2 border-b border-divider flex items-center justify-between min-h-[2.75rem]">
+              <div className="px-3 py-2 border-b border-divider flex items-center justify-between min-h-[2.75rem] shrink-0">
                 <span className="font-semibold text-default uppercase tracking-wider">
                   Service Health
                 </span>
@@ -138,35 +140,40 @@ export function ServiceStatus({ services }: Props) {
               </div>
 
               {okCount === 0 && (
-                <div className="px-3 py-2 border-b border-panel bg-page text-muted text-[11px]">
+                <div className="px-3 py-2 border-b border-panel bg-page text-muted text-[11px] shrink-0">
                   No services responding. Start the backend:{" "}
                   <span className="font-mono text-label">supervisorctl start all</span>
                 </div>
               )}
 
-              <table className="w-full table-fixed">
-                <thead>
-                  <tr className="text-muted border-b border-panel">
-                    <th className="text-left px-3 py-2 w-[33%]" title="Backend service name">
-                      Service
-                    </th>
-                    <th className="text-left px-3 py-2 w-[14%]" title="Current health state">
-                      Status
-                    </th>
-                    <th className="text-left px-3 py-2 w-[23%]" title="Reported service version">
-                      Version
-                    </th>
-                    <th className="text-left px-3 py-2 w-[30%]" title="Additional service metadata">
-                      Info
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {services.map((svc) => (
-                    <ServiceRow key={svc.name} svc={svc} />
-                  ))}
-                </tbody>
-              </table>
+              <div className="overflow-y-auto">
+                <table className="w-full table-fixed">
+                  <thead className="sticky top-0 bg-surface">
+                    <tr className="text-muted border-b border-panel">
+                      <th className="text-left px-3 py-2 w-[33%]" title="Backend service name">
+                        Service
+                      </th>
+                      <th className="text-left px-3 py-2 w-[14%]" title="Current health state">
+                        Status
+                      </th>
+                      <th className="text-left px-3 py-2 w-[23%]" title="Reported service version">
+                        Version
+                      </th>
+                      <th
+                        className="text-left px-3 py-2 w-[30%]"
+                        title="Additional service metadata"
+                      >
+                        Info
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services.map((svc) => (
+                      <ServiceRow key={svc.name} svc={svc} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>,
           document.body
