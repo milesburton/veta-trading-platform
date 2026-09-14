@@ -16,8 +16,9 @@ export function startingResponse(
 export async function isConnectionRefused(res: Response): Promise<boolean> {
   if (res.status !== 502) return false;
   try {
-    const body = (await res.clone().json()) as { connectionRefused?: boolean };
-    return body.connectionRefused === true;
+    const body = (await res.clone().json()) as { connectionRefused?: boolean; error?: string };
+    if (body.connectionRefused === true) return true;
+    return typeof body.error === "string" && /(econnrefused|connection refused)/i.test(body.error);
   } catch {
     return false;
   }

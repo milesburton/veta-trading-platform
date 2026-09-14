@@ -18,9 +18,15 @@ function ok(): Response {
   return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
 }
 
-Deno.test("[isConnectionRefused] true only for a 502 with connectionRefused:true in the body", async () => {
+Deno.test("[isConnectionRefused] true only for a 502 with connection-refused signals in the body", async () => {
   assertEquals(await isConnectionRefused(badGateway(true)), true);
   assertEquals(await isConnectionRefused(badGateway(false)), false);
+  assertEquals(
+    await isConnectionRefused(
+      new Response(JSON.stringify({ error: "upstream failed with ECONNREFUSED" }), { status: 502 })
+    ),
+    true
+  );
   assertEquals(await isConnectionRefused(new Response(null, { status: 502 })), false);
   assertEquals(await isConnectionRefused(new Response(null, { status: 200 })), false);
   assertEquals(await isConnectionRefused(new Response(null, { status: 503 })), false);
