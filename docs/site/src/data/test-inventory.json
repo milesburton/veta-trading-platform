@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 100,
-      "cases": 1145,
+      "cases": 1150,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
