@@ -50,6 +50,7 @@ function useAllServiceHealth(): ServiceHealth[] {
       link: svc.link,
       optional: svc.optional,
       alertOnDeployments: svc.alertOnDeployments,
+      tier: svc.tier,
       version: "—",
       meta: {},
     };
@@ -58,6 +59,7 @@ function useAllServiceHealth(): ServiceHealth[] {
       return {
         ...base,
         state: errData?.state === "warn" ? ("warn" as const) : ("error" as const),
+        connectionRefused: errData?.connectionRefused,
         lastChecked: Date.now(),
       };
     }

@@ -6,11 +6,13 @@ interface TieredServiceHealth {
   state: ServiceState;
   optional?: boolean;
   tier?: number;
+  connectionRefused?: boolean;
 }
 
-// A tier >= 1 service reporting "error" is expected to be hibernating, not broken.
+// Only a gateway-confirmed connection-refused counts as hibernating — a tier
+// >= 1 service that's reachable but returning a real error must still alarm.
 export function isHibernating(svc: TieredServiceHealth): boolean {
-  return (svc.tier ?? 0) >= 1 && svc.state === "error";
+  return (svc.tier ?? 0) >= 1 && svc.state === "error" && svc.connectionRefused === true;
 }
 
 export function deriveDisplayState(svc: TieredServiceHealth): ServiceDisplayState {

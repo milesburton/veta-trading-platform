@@ -8,8 +8,13 @@ export function armIdleExit(
   let timer: number | undefined;
 
   const fire = async () => {
-    if (onExit) await onExit();
-    exit(0);
+    try {
+      if (onExit) await onExit();
+    } catch (err) {
+      logger.error("armIdleExit: onExit failed, exiting anyway", { err });
+    } finally {
+      exit(0);
+    }
   };
 
   const touch = () => {

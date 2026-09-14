@@ -328,6 +328,8 @@ export interface ServiceHealth {
   alertOnDeployments?: readonly string[];
   /** Hibernation tier: 0 = always-on. >=1 means it may legitimately be asleep. */
   tier?: number;
+  /** True only when the gateway confirmed it couldn't reach the process at all. */
+  connectionRefused?: boolean;
   state: ServiceState;
   version: string;
   meta: Record<string, unknown>;

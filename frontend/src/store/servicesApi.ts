@@ -143,13 +143,16 @@ export const servicesApi = createApi({
       transformErrorResponse: (response, _meta, arg) => {
         // A service can report 503 deliberately to signal "warn" (e.g.
         // disk-monitor crossing WARN_PCT) or "starting" rather than being
-        // unreachable. Every other non-2xx or network failure is "error".
+        // unreachable. Every other non-2xx or network failure is "error",
+        // except a gateway-confirmed connectionRefused 502 (see wake.ts),
+        // which is the only signal isHibernating() may treat as asleep.
         const data =
           typeof response.status === "number" && response.data && typeof response.data === "object"
             ? (response.data as Record<string, unknown>)
             : null;
         const isWarn = response.status === 503 && data?.status === "critical";
         const isStarting = response.status === 503 && data?.status === "starting";
+        const connectionRefused = response.status === 502 && data?.connectionRefused === true;
         const state = isStarting
           ? ("starting" as const)
           : isWarn
@@ -163,6 +166,7 @@ export const servicesApi = createApi({
           alertOnDeployments: arg.alertOnDeployments,
           tier: arg.tier,
           state,
+          connectionRefused,
           version: "—",
           meta: (data ?? {}) as Record<string, unknown>,
           lastChecked: Date.now(),

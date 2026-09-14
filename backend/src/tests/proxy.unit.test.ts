@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { proxyGet, proxyPost, proxyPut } from "../gateway/proxy.ts";
+import { isConnectionRefusedError, proxyGet, proxyPost, proxyPut } from "../gateway/proxy.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -94,7 +94,8 @@ Deno.test("[proxyPut] uses presetBody instead of re-reading req.body when given"
 });
 
 Deno.test("[proxyGet] returns 502 with a JSON error body when fetch fails (connection refused)", async () => {
-  globalThis.fetch = (() => Promise.reject(new TypeError("connection refused"))) as typeof fetch;
+  globalThis.fetch = (() =>
+    Promise.reject(new TypeError("error sending request: Connection refused"))) as typeof fetch;
   try {
     const req = new Request("http://localhost/api/analytics/quote");
     const res = await proxyGet("http://analytics:5014/quote", req);
@@ -107,7 +108,8 @@ Deno.test("[proxyGet] returns 502 with a JSON error body when fetch fails (conne
 });
 
 Deno.test("[proxyPost] returns 502 with a JSON error body when fetch fails (connection refused)", async () => {
-  globalThis.fetch = (() => Promise.reject(new TypeError("connection refused"))) as typeof fetch;
+  globalThis.fetch = (() =>
+    Promise.reject(new TypeError("error sending request: Connection refused"))) as typeof fetch;
   try {
     const req = new Request("http://localhost/api/analytics/quote", {
       method: "POST",
@@ -118,4 +120,47 @@ Deno.test("[proxyPost] returns 502 with a JSON error body when fetch fails (conn
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+Deno.test("[proxyGet] a genuine connection-refused failure sets connectionRefused:true", async () => {
+  globalThis.fetch = (() =>
+    Promise.reject(new TypeError("error sending request: Connection refused (os error 111)"))) as typeof fetch;
+  try {
+    const req = new Request("http://localhost/api/analytics/quote");
+    const res = await proxyGet("http://analytics:5014/quote", req);
+    const body = await res.json();
+    assertEquals(body.connectionRefused, true);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("[proxyGet] a timeout failure does NOT set connectionRefused — the service may just be slow, not down", async () => {
+  globalThis.fetch = (() => {
+    const err = new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    return Promise.reject(err);
+  }) as typeof fetch;
+  try {
+    const req = new Request("http://localhost/api/analytics/quote");
+    const res = await proxyGet("http://analytics:5014/quote", req);
+    assertEquals(res.status, 502);
+    const body = await res.json();
+    assertEquals(body.connectionRefused, false);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("[isConnectionRefusedError] true only for a TypeError mentioning connection refused", () => {
+  assertEquals(
+    isConnectionRefusedError(new TypeError("error sending request: Connection refused (os error 111)")),
+    true
+  );
+  assertEquals(isConnectionRefusedError(new TypeError("connection REFUSED")), true);
+  assertEquals(
+    isConnectionRefusedError(new DOMException("aborted due to timeout", "TimeoutError")),
+    false
+  );
+  assertEquals(isConnectionRefusedError(new TypeError("DNS lookup failed")), false);
+  assertEquals(isConnectionRefusedError(new Error("connection refused")), false, "must be a TypeError");
 });

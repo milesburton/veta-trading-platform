@@ -77,9 +77,16 @@ export async function proxyGet(internalUrl: string, req: Request): Promise<Respo
   }
 }
 
+export function isConnectionRefusedError(err: Error): boolean {
+  return err instanceof TypeError && /connection refused/i.test(err.message);
+}
+
 function badGateway(err: Error): Response {
-  return new Response(JSON.stringify({ error: err.message }), {
-    status: 502,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
+  return new Response(
+    JSON.stringify({ error: err.message, connectionRefused: isConnectionRefusedError(err) }),
+    {
+      status: 502,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    }
+  );
 }

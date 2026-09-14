@@ -51,12 +51,23 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
   });
   const prevRef = useRef<ServiceState | null>(null);
 
-  const errState = isError
-    ? ((error as { state?: ServiceState } | undefined)?.state ?? "error")
-    : null;
-  const state: ServiceState = data?.state ?? errState ?? "unknown";
-  const hibernating = isHibernating({ state, optional: svc.optional, tier: svc.tier });
-  const displayState = deriveDisplayState({ state, optional: svc.optional, tier: svc.tier });
+  const errPayload = isError
+    ? (error as { state?: ServiceState; connectionRefused?: boolean } | undefined)
+    : undefined;
+  const state: ServiceState = data?.state ?? (isError ? (errPayload?.state ?? "error") : "unknown");
+  const connectionRefused = data?.connectionRefused ?? errPayload?.connectionRefused;
+  const hibernating = isHibernating({
+    state,
+    optional: svc.optional,
+    tier: svc.tier,
+    connectionRefused,
+  });
+  const displayState = deriveDisplayState({
+    state,
+    optional: svc.optional,
+    tier: svc.tier,
+    connectionRefused,
+  });
 
   useEffect(() => {
     if (hibernating) {

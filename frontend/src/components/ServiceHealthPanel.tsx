@@ -75,6 +75,7 @@ function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
         alertOnDeployments: svc.alertOnDeployments,
         tier: svc.tier,
         state: isWarn ? "warn" : "error",
+        connectionRefused: errData?.connectionRefused,
         version: "—",
         meta: errData?.meta ?? {},
         lastChecked: Date.now(),

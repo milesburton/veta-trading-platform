@@ -13,9 +13,39 @@ export function startingResponse(
   });
 }
 
-export function isConnectionRefused(res: Response): boolean {
-  // proxy.ts maps every fetch failure, including connection refused, to 502.
-  return res.status === 502;
+export async function isConnectionRefused(res: Response): Promise<boolean> {
+  if (res.status !== 502) return false;
+  try {
+    const body = (await res.clone().json()) as { connectionRefused?: boolean };
+    return body.connectionRefused === true;
+  } catch {
+    return false;
+  }
+}
+
+interface WakeOptions {
+  retryDelaysMs?: number[];
+  sleep?: (ms: number) => Promise<void>;
+  isProgramRunningFn?: typeof isProgramRunning;
+  startProgramFn?: typeof startProgram;
+}
+
+function resolveWakeOptions(options: WakeOptions) {
+  return {
+    retryDelaysMs: options.retryDelaysMs ?? WAKE_RETRY_DELAYS_MS,
+    sleep: options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))),
+    isRunning: options.isProgramRunningFn ?? isProgramRunning,
+    start: options.startProgramFn ?? startProgram,
+  };
+}
+
+async function wakeProgram(
+  program: string,
+  isRunning: typeof isProgramRunning,
+  start: typeof startProgram
+): Promise<void> {
+  const alreadyRunning = await isRunning(program);
+  if (!alreadyRunning) await start(program);
 }
 
 export async function proxyWithWake(
@@ -24,31 +54,20 @@ export async function proxyWithWake(
   req: Request,
   specByComposeName: Map<string, ServiceSpec>,
   corsHeaders: (req: Request) => Record<string, string>,
-  options: {
-    retryDelaysMs?: number[];
-    sleep?: (ms: number) => Promise<void>;
-    isProgramRunningFn?: typeof isProgramRunning;
-    startProgramFn?: typeof startProgram;
-  } = {}
+  options: WakeOptions = {}
 ): Promise<Response> {
-  const retryDelaysMs = options.retryDelaysMs ?? WAKE_RETRY_DELAYS_MS;
-  const sleep = options.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
-  const isRunning = options.isProgramRunningFn ?? isProgramRunning;
-  const start = options.startProgramFn ?? startProgram;
-
-  const spec = specByComposeName.get(svcName);
-  const program = spec?.supervisorProgram ?? svcName;
+  const { retryDelaysMs, sleep, isRunning, start } = resolveWakeOptions(options);
+  const program = specByComposeName.get(svcName)?.supervisorProgram ?? svcName;
 
   let res = await proxyFn();
-  if (!isConnectionRefused(res)) return res;
+  if (!(await isConnectionRefused(res))) return res;
 
-  const alreadyRunning = await isRunning(program);
-  if (!alreadyRunning) await start(program);
+  await wakeProgram(program, isRunning, start);
 
   for (const delayMs of retryDelaysMs) {
     await sleep(delayMs);
     res = await proxyFn();
-    if (!isConnectionRefused(res)) return res;
+    if (!(await isConnectionRefused(res))) return res;
   }
 
   return startingResponse(req, corsHeaders);

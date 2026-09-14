@@ -58,6 +58,22 @@ Deno.test("[armIdleExit] awaits onExit before exiting", async () => {
   }
 });
 
+Deno.test("[armIdleExit] still exits when onExit rejects", async () => {
+  const time = new FakeTime();
+  try {
+    const exitCodes: number[] = [];
+    const onExit = () => Promise.reject(new Error("cleanup failed"));
+    armIdleExit(1_000, onExit, (code) => exitCodes.push(code));
+    time.tick(1_000);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    assertEquals(exitCodes, [0], "a failing onExit must not prevent the process from exiting");
+  } finally {
+    time.restore();
+  }
+});
+
 Deno.test("[armConsumerIdleExit] exits after timeoutMs with no touch()", () => {
   const time = new FakeTime();
   try {
