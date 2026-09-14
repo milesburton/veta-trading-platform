@@ -20,6 +20,7 @@ import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
+import { armIdleExit } from "../shared/idle-exit.ts";
 import { blackScholes } from "./black-scholes.ts";
 import { priceBond } from "./bond-pricing.ts";
 import type { BondPosition } from "./duration-ladder.ts";
@@ -96,11 +97,15 @@ async function resolveSpot(symbol: string): Promise<number | null> {
   return null;
 }
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("ANALYTICS_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
+
 serveJsonService({
   port: PORT,
   service: "analytics",
   version: VERSION,
   health: () => ({}),
+  onRequest: () => idleExit.touch(),
   // fallow-ignore-next-line complexity
   handler: async (req, url, path) => {
     if (path === "/quote" && req.method === "POST") {

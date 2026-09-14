@@ -14,7 +14,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
-import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -44,11 +44,15 @@ interface PendingLimit {
 
 const pendingOrders: PendingLimit[] = [];
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("LIMIT_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => pendingOrders.length === 0, "limit-algo");
+
 await createTypedConsumer("limit-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "LIMIT").toUpperCase() !== "LIMIT") return;
       if (order.limitPrice === undefined) {
         logger.warn(`LIMIT order ${order.orderId} missing limitPrice`);

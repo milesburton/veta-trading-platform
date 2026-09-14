@@ -5,6 +5,7 @@ import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
 import type { MarketAdapterEvent } from "@veta/types/intelligence";
+import { armIdleExit } from "../shared/idle-exit.ts";
 import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
 import { createMarketEventStore } from "./market-event-store.ts";
@@ -88,11 +89,17 @@ setInterval(
   7 * 24 * 60 * 60 * 1000
 );
 
+// The weekly seed job above is short-lived and doesn't need to touch() idleExit.
+const IDLE_TIMEOUT_MS =
+  Number(Deno.env.get("MARKET_DATA_ADAPTERS_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
+
 serveJsonService({
   port: PORT,
   service: "market-data-adapters",
   version: VERSION,
   health: () => ({ eventCount: events.length }),
+  onRequest: () => idleExit.touch(),
   // fallow-ignore-next-line complexity
   handler: async (req, url, path) => {
     if (path === "/events" && req.method === "GET") {

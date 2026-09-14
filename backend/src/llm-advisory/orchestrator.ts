@@ -6,6 +6,7 @@ import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, Signal, TradeRecommendation } from "@veta/types/intelligence";
 import type { LlmJob, LlmSubsystemStatus } from "@veta/types/llm-advisory";
+import { startProgram } from "../shared/supervisor-control.ts";
 import { shouldEnqueueJob } from "./dedupe.ts";
 import { createJobStore } from "./job-store.ts";
 import {
@@ -330,23 +331,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         503
       );
     }
-    try {
-      const supervisorConf = Deno.env.get("SUPERVISORD_CONF") || "/home/deno/supervisord.conf";
-      const cmd = new Deno.Command("supervisorctl", {
-        args: ["-c", supervisorConf, "start", "llm-worker"],
-        stdout: "piped",
-        stderr: "piped",
-      });
-      const result = await cmd.output();
-      const stdout = new TextDecoder().decode(result.stdout).trim();
-      const stderr = new TextDecoder().decode(result.stderr).trim();
-      if (result.code === 0) {
-        return json({ status: "started", output: stdout });
-      }
-      return json({ status: "error", output: stdout || stderr }, 500);
-    } catch (err) {
-      return json({ status: "error", message: (err as Error).message }, 500);
-    }
+    const { ok, output } = await startProgram("llm-worker");
+    if (ok) return json({ status: "started", output });
+    return json({ status: "error", output }, 500);
   }
 
   const advisoryMatch = path.match(/^\/advisory\/([^/]+)$/);

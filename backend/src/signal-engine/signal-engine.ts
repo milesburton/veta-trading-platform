@@ -5,6 +5,7 @@ import { corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, Signal } from "@veta/types/intelligence";
+import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import { runReplay } from "./replay-server.ts";
 import { scoreFeatureVector } from "./scorer.ts";
 import { createWeightStore } from "./weight-store.ts";
@@ -25,8 +26,12 @@ const consumer = await createConsumer("signal-engine", ["market.features"]).catc
   return null;
 });
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("SIGNAL_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "signal-engine");
+
 if (consumer) {
   consumer.onMessage(async (_topic, raw) => {
+    idleExit.touch();
     const fv = raw as FeatureVector;
     if (!fv.symbol) return;
 

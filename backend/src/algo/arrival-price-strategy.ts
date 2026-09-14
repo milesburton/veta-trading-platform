@@ -24,7 +24,7 @@ import {
   RoutedOrderSchema,
   type RoutedOrder,
 } from "@veta/schemas/orders";
-import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5023;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -67,11 +67,15 @@ interface ActiveAP {
 /** Active AP orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveAP>();
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "arrival-price-algo");
+
 await createTypedConsumer("ap-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
       if (order.limitPrice === undefined) {
         logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);

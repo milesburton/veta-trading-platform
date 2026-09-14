@@ -11,7 +11,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
 import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
-import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { availableSniperQty } from "./sniper-math.ts";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5022;
@@ -67,11 +67,15 @@ interface ActiveSniper {
 /** Active sniper orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveSniper>();
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("SNIPER_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "sniper-algo");
+
 await createTypedConsumer("sniper-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
       if (order.limitPrice === undefined) {
         logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);

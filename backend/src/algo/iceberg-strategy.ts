@@ -18,7 +18,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
 import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
-import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5021;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -53,11 +53,15 @@ interface ActiveIceberg {
 
 const activeOrders = new Map<string, ActiveIceberg>();
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("ICEBERG_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "iceberg-algo");
+
 await createTypedConsumer("iceberg-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== "ICEBERG") return;
       if (order.limitPrice === undefined) {
         logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
