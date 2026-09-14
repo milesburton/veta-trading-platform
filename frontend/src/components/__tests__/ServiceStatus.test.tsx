@@ -187,6 +187,8 @@ test("caps the panel height to the viewport and makes the service list scrollabl
   expect(panel.className).toContain("overflow-hidden");
 
   const scrollRegion = panel.querySelector("table")?.parentElement;
+  expect(scrollRegion?.className).toContain("flex-1");
+  expect(scrollRegion?.className).toContain("min-h-0");
   expect(scrollRegion?.className).toContain("overflow-y-auto");
 });
 
