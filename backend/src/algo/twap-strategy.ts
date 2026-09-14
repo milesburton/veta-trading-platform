@@ -13,7 +13,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
-import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5004;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -30,6 +30,10 @@ const producer = await createProducer("twap-algo").catch((err) => {
   logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
+
+let activeOrderCount = 0;
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("TWAP_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrderCount === 0, "twap-algo");
 
 async function executeTWAP(order: RoutedOrder): Promise<void> {
   const durationMs = (order.expiresAt ?? 300) * 1_000;
@@ -113,6 +117,7 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     .catch(() => {});
 
   logger.info(`Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`);
+  activeOrderCount--;
 }
 
 await createTypedConsumer("twap-algo-routed", [
@@ -120,8 +125,13 @@ await createTypedConsumer("twap-algo-routed", [
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== "TWAP") return;
-      executeTWAP(order);
+      activeOrderCount++;
+      executeTWAP(order).catch((err) => {
+        logger.error(`TWAP execution failed for ${order.orderId}`, { err });
+        activeOrderCount--;
+      });
     },
   },
 ]).catch((err) => {

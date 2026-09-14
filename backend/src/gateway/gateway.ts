@@ -21,6 +21,8 @@ import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
+import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+import { proxyWithWake } from "./wake.ts";
 import { createRefPriceCache } from "./ref-prices.ts";
 import { classifyRequestSource } from "./request-source.ts";
 import { handleAdminRoute } from "./routes/admin.ts";
@@ -94,6 +96,171 @@ const SYNTHETIC_TRADER_COMMODITIES_VOICE_URL = `http://${Deno.env.get("SYNTHETIC
 const POSTGRES_HEALTH_URL = `http://${Deno.env.get("POSTGRES_HEALTH_HOST") ?? "localhost"}:${Deno.env.get("POSTGRES_HEALTH_PORT") ?? "8100"}`;
 const REDPANDA_ADMIN_URL = `http://${Deno.env.get("REDPANDA_ADMIN_HOST") ?? "localhost"}:${Deno.env.get("REDPANDA_ADMIN_PORT") ?? "9644"}`;
 const OLLAMA_URL = `http://${Deno.env.get("OLLAMA_HOST") ?? "localhost"}:${Deno.env.get("OLLAMA_PORT") ?? "11434"}`;
+
+const SVC_PROXY: Record<string, string> = {
+  "market-sim": MARKET_SIM_URL,
+  ems: EMS_URL,
+  oms: OMS_URL,
+  "limit-algo": LIMIT_ALGO_URL,
+  "twap-algo": TWAP_ALGO_URL,
+  "pov-algo": POV_ALGO_URL,
+  "vwap-algo": VWAP_ALGO_URL,
+  observability: KAFKA_RELAY_URL,
+  journal: JOURNAL_URL,
+  "fix-archive": FIX_ARCHIVE_URL,
+  "fix-gateway": FIX_GATEWAY_URL,
+  "fix-exchange": FIX_EXCHANGE_HEALTH_URL,
+  "kafka-relay": KAFKA_RELAY_URL,
+  "user-service": USER_SERVICE_URL,
+  "news-aggregator": NEWS_AGGREGATOR_URL,
+  analytics: ANALYTICS_URL,
+  "market-data": MARKET_DATA_URL,
+  "market-data-adapters": `http://${Deno.env.get("MARKET_DATA_ADAPTERS_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
+  "feature-engine": FEATURE_ENGINE_URL,
+  "signal-engine": SIGNAL_ENGINE_URL,
+  "recommendation-engine": RECOMMENDATION_ENGINE_URL,
+  "scenario-engine": SCENARIO_ENGINE_URL,
+  "iceberg-algo": ICEBERG_ALGO_URL,
+  "sniper-algo": SNIPER_ALGO_URL,
+  "arrival-price-algo": ARRIVAL_PRICE_ALGO_URL,
+  "llm-advisory": LLM_ADVISORY_URL,
+  "llm-worker": LLM_WORKER_URL,
+  "momentum-algo": MOMENTUM_ALGO_URL,
+  "is-algo": IS_ALGO_URL,
+  "dark-pool": DARK_POOL_URL,
+  "ccp-service": CCP_SERVICE_URL,
+  "rfq-service": RFQ_SERVICE_URL,
+  "product-service": PRODUCT_SERVICE_URL,
+  replay: REPLAY_URL,
+  "replay-service": REPLAY_URL,
+  "risk-engine": RISK_ENGINE_URL,
+  "discord-bot": DISCORD_BOT_URL,
+  "synthetic-trader-equity-high-touch": SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_URL,
+  "synthetic-trader-equity-low-touch": SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_URL,
+  "synthetic-trader-fx-electronic": SYNTHETIC_TRADER_FX_ELECTRONIC_URL,
+  "synthetic-trader-fx-high-touch": SYNTHETIC_TRADER_FX_HIGH_TOUCH_URL,
+  "synthetic-trader-fi-voice": SYNTHETIC_TRADER_FI_VOICE_URL,
+  "synthetic-trader-derivatives-high-touch": SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL,
+  "synthetic-trader-derivatives-low-touch": SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL,
+  "synthetic-trader-commodities-voice": SYNTHETIC_TRADER_COMMODITIES_VOICE_URL,
+  "postgres-health": POSTGRES_HEALTH_URL,
+  redpanda: REDPANDA_ADMIN_URL,
+  ollama: OLLAMA_URL,
+};
+
+const SVC_SPEC_BY_COMPOSE_NAME = new Map(SERVICE_REGISTRY.map((s) => [s.composeName, s]));
+
+// docs: /reference/api-gateway/
+// #region docs:svc-min-roles
+const SVC_MIN_ROLES: Record<string, Set<string>> = {
+  "user-service": new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  "market-sim": new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  "market-data": new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  "market-data-adapters": new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  "news-aggregator": new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  analytics: new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  ems: new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+  oms: new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+  journal: new Set(["trader", "desk-head", "risk-manager", "compliance", "oncall", "admin"]),
+  "limit-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "twap-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "pov-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "vwap-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "iceberg-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "sniper-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "arrival-price-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "momentum-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "is-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "feature-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "signal-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "recommendation-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "scenario-engine": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+  "llm-advisory": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+  "llm-worker": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+  "dark-pool": new Set(["desk-head", "risk-manager", "compliance", "admin"]),
+  "ccp-service": new Set(["desk-head", "risk-manager", "compliance", "admin"]),
+  "rfq-service": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+  "product-service": new Set([
+    "viewer",
+    "trader",
+    "desk-head",
+    "risk-manager",
+    "compliance",
+    "sales",
+    "oncall",
+    "admin",
+    "external-client",
+  ]),
+  "fix-archive": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  "fix-gateway": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  "fix-exchange": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  "kafka-relay": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  observability: new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  replay: new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  "replay-service": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  "risk-engine": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+};
+// #endregion docs:svc-min-roles
 
 const ALLOWED_ORIGINS = new Set(
   (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
@@ -958,169 +1125,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  const SVC_PROXY: Record<string, string> = {
-    "market-sim": MARKET_SIM_URL,
-    ems: EMS_URL,
-    oms: OMS_URL,
-    "limit-algo": LIMIT_ALGO_URL,
-    "twap-algo": TWAP_ALGO_URL,
-    "pov-algo": POV_ALGO_URL,
-    "vwap-algo": VWAP_ALGO_URL,
-    observability: KAFKA_RELAY_URL,
-    journal: JOURNAL_URL,
-    "fix-archive": FIX_ARCHIVE_URL,
-    "fix-gateway": FIX_GATEWAY_URL,
-    "fix-exchange": FIX_EXCHANGE_HEALTH_URL,
-    "kafka-relay": KAFKA_RELAY_URL,
-    "user-service": USER_SERVICE_URL,
-    "news-aggregator": NEWS_AGGREGATOR_URL,
-    analytics: ANALYTICS_URL,
-    "market-data": MARKET_DATA_URL,
-    "market-data-adapters": `http://${Deno.env.get("MARKET_DATA_ADAPTERS_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
-    "feature-engine": FEATURE_ENGINE_URL,
-    "signal-engine": SIGNAL_ENGINE_URL,
-    "recommendation-engine": RECOMMENDATION_ENGINE_URL,
-    "scenario-engine": SCENARIO_ENGINE_URL,
-    "iceberg-algo": ICEBERG_ALGO_URL,
-    "sniper-algo": SNIPER_ALGO_URL,
-    "arrival-price-algo": ARRIVAL_PRICE_ALGO_URL,
-    "llm-advisory": LLM_ADVISORY_URL,
-    "llm-worker": LLM_WORKER_URL,
-    "momentum-algo": MOMENTUM_ALGO_URL,
-    "is-algo": IS_ALGO_URL,
-    "dark-pool": DARK_POOL_URL,
-    "ccp-service": CCP_SERVICE_URL,
-    "rfq-service": RFQ_SERVICE_URL,
-    "product-service": PRODUCT_SERVICE_URL,
-    replay: REPLAY_URL,
-    "replay-service": REPLAY_URL,
-    "risk-engine": RISK_ENGINE_URL,
-    "discord-bot": DISCORD_BOT_URL,
-    "synthetic-trader-equity-high-touch": SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_URL,
-    "synthetic-trader-equity-low-touch": SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_URL,
-    "synthetic-trader-fx-electronic": SYNTHETIC_TRADER_FX_ELECTRONIC_URL,
-    "synthetic-trader-fx-high-touch": SYNTHETIC_TRADER_FX_HIGH_TOUCH_URL,
-    "synthetic-trader-fi-voice": SYNTHETIC_TRADER_FI_VOICE_URL,
-    "synthetic-trader-derivatives-high-touch": SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL,
-    "synthetic-trader-derivatives-low-touch": SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL,
-    "synthetic-trader-commodities-voice": SYNTHETIC_TRADER_COMMODITIES_VOICE_URL,
-    "postgres-health": POSTGRES_HEALTH_URL,
-    redpanda: REDPANDA_ADMIN_URL,
-    ollama: OLLAMA_URL,
-  };
-
-  // docs: /reference/api-gateway/
-  // #region docs:svc-min-roles
-  const SVC_MIN_ROLES: Record<string, Set<string>> = {
-    "user-service": new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    "market-sim": new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    "market-data": new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    "market-data-adapters": new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    "news-aggregator": new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    analytics: new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    ems: new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    oms: new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    journal: new Set(["trader", "desk-head", "risk-manager", "compliance", "oncall", "admin"]),
-    "limit-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "twap-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "pov-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "vwap-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "iceberg-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "sniper-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "arrival-price-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "momentum-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "is-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "feature-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "signal-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "recommendation-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "scenario-engine": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "llm-advisory": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "llm-worker": new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "dark-pool": new Set(["desk-head", "risk-manager", "compliance", "admin"]),
-    "ccp-service": new Set(["desk-head", "risk-manager", "compliance", "admin"]),
-    "rfq-service": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "product-service": new Set([
-      "viewer",
-      "trader",
-      "desk-head",
-      "risk-manager",
-      "compliance",
-      "sales",
-      "oncall",
-      "admin",
-      "external-client",
-    ]),
-    "fix-archive": new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "fix-gateway": new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "fix-exchange": new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "kafka-relay": new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    observability: new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    replay: new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "replay-service": new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "risk-engine": new Set(["risk-manager", "compliance", "oncall", "admin"]),
-  };
-  // #endregion docs:svc-min-roles
-
   const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);
   if (svcMatch) {
     const svcName = svcMatch[1];
@@ -1138,11 +1142,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
+        const ownPositionsMatch =
+          svcName === "risk-engine" ? svcPath.match(/^\/positions\/([^/]+)$/) : null;
         const allowedRoles =
           svcName === "market-sim" && svcPath.startsWith("/admin/")
             ? new Set(["admin"])
             : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
-        if (!allowedRoles.has(auth.user.role)) {
+        const isOwnPositions =
+          ownPositionsMatch !== null && decodeURIComponent(ownPositionsMatch[1]) === auth.user.id;
+        const isRecordingParticipantRoute =
+          (svcName === "replay" || svcName === "replay-service") &&
+          ((svcPath === "/config" && req.method === "GET") ||
+            (svcPath === "/sessions" && req.method === "POST") ||
+            (/^\/sessions\/[^/]+\/end$/.test(svcPath) && req.method === "PUT") ||
+            (/^\/sessions\/[^/]+\/chunks$/.test(svcPath) && req.method === "POST"));
+        if (!allowedRoles.has(auth.user.role) && !isOwnPositions && !isRecordingParticipantRoute) {
           publishAccessEvent({
             action: "auth_failure",
             userId: auth.user.id,
@@ -1157,9 +1171,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         }
       }
       const targetUrl = `${target}${resolveInfraHealthPath(svcName, svcPath)}${url.search}`;
-      if (req.method === "GET" || req.method === "DELETE") return proxyGet(targetUrl, req);
-      if (req.method === "POST") return proxyPost(targetUrl, req);
-      if (req.method === "PUT") return proxyPut(targetUrl, req);
+      const tier = SVC_SPEC_BY_COMPOSE_NAME.get(svcName)?.tier ?? 0;
+      if (req.method === "GET" || req.method === "DELETE") {
+        const call = () => proxyGet(targetUrl, req);
+        return tier >= 1
+          ? proxyWithWake(svcName, call, req, SVC_SPEC_BY_COMPOSE_NAME, corsHeaders)
+          : call();
+      }
+      if (req.method === "POST" || req.method === "PUT") {
+        const proxyFn = req.method === "POST" ? proxyPost : proxyPut;
+        if (tier < 1) return proxyFn(targetUrl, req);
+        // req.text() can only be called once, but a wake retry calls proxyFn twice.
+        const presetBody = await req.text();
+        const call = () => proxyFn(targetUrl, req, presetBody);
+        return proxyWithWake(svcName, call, req, SVC_SPEC_BY_COMPOSE_NAME, corsHeaders);
+      }
     }
   }
 

@@ -318,7 +318,7 @@ export interface ObsEvent {
   payload?: Record<string, unknown>;
 }
 
-export type ServiceState = "ok" | "warn" | "error" | "unknown";
+export type ServiceState = "ok" | "warn" | "error" | "unknown" | "starting";
 
 export interface ServiceHealth {
   name: string;
@@ -326,6 +326,10 @@ export interface ServiceHealth {
   link?: string;
   optional?: boolean;
   alertOnDeployments?: readonly string[];
+  /** Hibernation tier: 0 = always-on. >=1 means it may legitimately be asleep. */
+  tier?: number;
+  /** True only when the gateway confirmed it couldn't reach the process at all. */
+  connectionRefused?: boolean;
   state: ServiceState;
   version: string;
   meta: Record<string, unknown>;

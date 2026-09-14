@@ -80,7 +80,7 @@ export async function handleWebSocketRoute(
   });
 
   socket.onopen = () => {
-    if (socketUserId) addUserSocket(socketUserId, socket);
+    if (socketUserId) addUserSocket(socketUserId, socket, auth?.user.role);
     else addAnonymousSocket(socket);
     logger.info(
       `Client connected user=${socketUserId ?? "anonymous"} (total=${totalConnections()})`
@@ -154,7 +154,7 @@ export async function handleWebSocketRoute(
           removeSocket(socketUserId, socket);
           auth = result;
           socketUserId = result.user.id;
-          addUserSocket(socketUserId, socket);
+          addUserSocket(socketUserId, socket, result.user.role);
           socket.send(
             JSON.stringify({
               event: "authIdentity",

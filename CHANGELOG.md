@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.69.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.7...veta-trading-platform-v1.69.0) (2026-09-14)
+
+
+### Features
+
+* **fleet:** on-demand hibernation tiering for non-critical services ([#637](https://github.com/milesburton/veta-trading-platform/issues/637)) ([c42d98d](https://github.com/milesburton/veta-trading-platform/commit/c42d98db91f7a73796d532906975e780c28c3861))
+
+## [1.68.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.6...veta-trading-platform-v1.68.7) (2026-09-11)
+
+
+### Bug Fixes
+
+* **gateway:** allow traders to view own positions, any user to check replay config ([#635](https://github.com/milesburton/veta-trading-platform/issues/635)) ([530ceba](https://github.com/milesburton/veta-trading-platform/commit/530ceba004c01d748d5df0dc7b8cc902a57455a8))
+
+## [1.68.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.5...veta-trading-platform-v1.68.6) (2026-09-08)
+
+
+### Bug Fixes
+
+* **compose:** cap per-container CPU to stop production starving CI/deploy checks ([#631](https://github.com/milesburton/veta-trading-platform/issues/631)) ([41c6a48](https://github.com/milesburton/veta-trading-platform/commit/41c6a482c2c684502a51dffccc3c5c9099b36476))
+
+## [1.68.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.4...veta-trading-platform-v1.68.5) (2026-09-07)
+
+
+### Bug Fixes
+
+* **gateway:** enforce role-based WebSocket broadcast ([#628](https://github.com/milesburton/veta-trading-platform/issues/628)) ([2008ad1](https://github.com/milesburton/veta-trading-platform/commit/2008ad1e2afeba9e7acad500ef3ed8222636ce7d))
+
 ## [1.68.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.3...veta-trading-platform-v1.68.4) (2026-09-04)
 
 

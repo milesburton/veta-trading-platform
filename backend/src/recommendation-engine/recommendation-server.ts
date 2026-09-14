@@ -4,6 +4,7 @@ import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
+import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 
 const PORT = Number(Deno.env.get("RECOMMENDATION_ENGINE_PORT")) || 5_019;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -63,8 +64,13 @@ const consumer = await createConsumer("recommendation-engine", ["market.signals"
   return null;
 });
 
+const IDLE_TIMEOUT_MS =
+  Number(Deno.env.get("RECOMMENDATION_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "recommendation-engine");
+
 if (consumer) {
   consumer.onMessage(async (_topic, raw) => {
+    idleExit.touch();
     const signal = raw as Signal;
     if (!signal.symbol) return;
 
