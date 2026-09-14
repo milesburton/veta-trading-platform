@@ -6,6 +6,7 @@ import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
 import { waitForUrl } from "@veta/wait-for";
+import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import {
   computeEventScore,
   computeMomentum,
@@ -200,8 +201,12 @@ const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks
   return null;
 });
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("FEATURE_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "feature-engine");
+
 if (tickConsumer) {
   tickConsumer.onMessage((_topic, raw) => {
+    idleExit.touch();
     const tick = raw as {
       prices?: Record<string, number>;
       volumes?: Record<string, number>;

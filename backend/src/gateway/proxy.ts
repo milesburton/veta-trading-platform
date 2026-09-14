@@ -3,9 +3,13 @@ import { CORS_HEADERS } from "@veta/http";
 const POST_TIMEOUT_MS = 15_000;
 const GET_PUT_TIMEOUT_MS = 8_000;
 
-export async function proxyPost(internalUrl: string, req: Request): Promise<Response> {
+export async function proxyPost(
+  internalUrl: string,
+  req: Request,
+  presetBody?: string
+): Promise<Response> {
   try {
-    const body = await req.text();
+    const body = presetBody ?? (await req.text());
     const res = await fetch(internalUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,9 +29,13 @@ export async function proxyPost(internalUrl: string, req: Request): Promise<Resp
   }
 }
 
-export async function proxyPut(internalUrl: string, req: Request): Promise<Response> {
+export async function proxyPut(
+  internalUrl: string,
+  req: Request,
+  presetBody?: string
+): Promise<Response> {
   try {
-    const body = await req.text();
+    const body = presetBody ?? (await req.text());
     const res = await fetch(internalUrl, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

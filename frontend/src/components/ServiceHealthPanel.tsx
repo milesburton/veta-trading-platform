@@ -1,4 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import {
+  deriveDisplayState,
+  isHibernating,
+  type ServiceDisplayState,
+} from "@veta/frontend/lib/serviceHealth.ts";
 import { alertAdded, purgeServiceAlerts } from "@veta/frontend/store/alertsSlice.ts";
 import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
 import type { AppDispatch } from "@veta/frontend/store/index.ts";
@@ -68,6 +73,7 @@ function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
         link: svc.link,
         optional: svc.optional,
         alertOnDeployments: svc.alertOnDeployments,
+        tier: svc.tier,
         state: isWarn ? "warn" : "error",
         version: "—",
         meta: errData?.meta ?? {},
@@ -89,6 +95,9 @@ function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
           );
           return;
         }
+
+        // A hibernating service is expected to be unreachable, not down.
+        if (isHibernating(errHealth)) return;
 
         // Transition: ok/unknown/warn → error — tiered alert
         const isRequired = REQUIRED_SERVICES.has(svc.name);
@@ -114,18 +123,17 @@ interface RowDisplayProps {
   now: number;
 }
 
-const ROW_STATE_STYLE: Record<
-  ServiceHealth["state"],
-  { dot: string; text: string; label: string }
-> = {
+const ROW_STATE_STYLE: Record<ServiceDisplayState, { dot: string; text: string; label: string }> = {
   ok: { dot: "bg-green-500", text: "text-green-400", label: "ok" },
   warn: { dot: "bg-amber-500", text: "text-amber-400", label: "warn" },
   error: { dot: "bg-red-500", text: "text-red-400", label: "error" },
+  starting: { dot: "bg-sky-500", text: "text-sky-400", label: "starting" },
+  asleep: { dot: "bg-muted", text: "text-subtle", label: "asleep" },
   unknown: { dot: "bg-muted", text: "text-muted", label: "—" },
 };
 
 function RowDisplay({ health, index, now }: RowDisplayProps) {
-  const style = ROW_STATE_STYLE[health.state];
+  const style = ROW_STATE_STYLE[deriveDisplayState(health)];
   const ageSecs = health.lastChecked != null ? Math.floor((now - health.lastChecked) / 1000) : null;
 
   return (

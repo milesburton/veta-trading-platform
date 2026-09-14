@@ -14,7 +14,7 @@ import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
-import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -115,11 +115,15 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
     .catch(() => {});
 }
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("VWAP_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "vwap-algo");
+
 await createTypedConsumer("vwap-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== "VWAP") return;
 
       const params = order.algoParams ?? {};

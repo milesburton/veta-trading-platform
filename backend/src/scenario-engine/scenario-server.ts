@@ -3,6 +3,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import type { FeatureVector, ScenarioShock, Signal } from "@veta/types/intelligence";
+import { armIdleExit } from "../shared/idle-exit.ts";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 import { applyShocks } from "./apply-shocks.ts";
@@ -25,11 +26,15 @@ interface ScenarioResult {
   shocksApplied: ScenarioShock[];
 }
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("SCENARIO_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
+
 serveJsonService({
   port: PORT,
   service: "scenario-engine",
   version: VERSION,
   health: () => ({}),
+  onRequest: () => idleExit.touch(),
   // fallow-ignore-next-line complexity
   handler: async (req, url, path) => {
     if (path === "/scenario" && req.method === "POST") {

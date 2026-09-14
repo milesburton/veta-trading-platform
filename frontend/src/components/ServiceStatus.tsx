@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { isHibernating } from "@veta/frontend/lib/serviceHealth.ts";
 import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { commitUrl, isShortSha } from "@veta/frontend/utils/githubLinks";
@@ -12,7 +13,7 @@ interface Props {
 }
 
 function aggregateState(services: ServiceHealth[]): ServiceState {
-  const required = services.filter((s) => !s.optional);
+  const required = services.filter((s) => !s.optional && !isHibernating(s));
   if (required.some((s) => s.state === "error")) return "error";
   if (required.some((s) => s.state === "unknown")) return "unknown";
   if (required.some((s) => s.state === "warn")) return "warn";
@@ -45,7 +46,7 @@ export function ServiceStatus({ services }: Props) {
   const { consistent, commit, lastChecked } = commitSummary(services);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const okCount = services.filter((s) => s.state === "ok").length;
+  const okCount = services.filter((s) => s.state === "ok" || isHibernating(s)).length;
   const totalCount = services.length;
 
   const shortCommit = commit && isShortSha(commit) ? commit.slice(0, 7) : null;

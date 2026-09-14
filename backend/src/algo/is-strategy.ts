@@ -30,7 +30,7 @@ import {
   type RoutedOrder,
   RoutedOrderSchema,
 } from "@veta/schemas/orders";
-import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5026;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -124,11 +124,15 @@ function buildSliceSchedule(
 }
 // #endregion docs:is-slice-schedule
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("IS_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "is-algo");
+
 await createTypedConsumer("is-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
       if (order.limitPrice === undefined) {
         logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);

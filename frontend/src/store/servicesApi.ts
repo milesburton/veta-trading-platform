@@ -45,6 +45,7 @@ interface FrontendServiceSpec {
   port: number;
   alertOnDeployments?: readonly string[];
   showOnDeployments?: readonly string[];
+  tier?: number;
 }
 
 const ENV = import.meta.env as Record<string, string | undefined>;
@@ -66,6 +67,7 @@ function specToFrontend(spec: RegistrySpec): FrontendServiceSpec {
     port: spec.defaultPort,
     alertOnDeployments: spec.alertOnDeployments,
     showOnDeployments: spec.showOnDeployments,
+    tier: spec.tier,
   };
 }
 
@@ -113,6 +115,7 @@ export const servicesApi = createApi({
         optional?: boolean;
         alertOnDeployments?: readonly string[];
         showOnDeployments?: readonly string[];
+        tier?: number;
       }
     >({
       query: ({ url }) => ({ url }),
@@ -130,6 +133,7 @@ export const servicesApi = createApi({
           link: arg.link,
           optional: arg.optional,
           alertOnDeployments: arg.alertOnDeployments,
+          tier: arg.tier,
           state,
           version: String(version ?? "—"),
           meta: meta as Record<string, unknown>,
@@ -137,22 +141,28 @@ export const servicesApi = createApi({
         };
       },
       transformErrorResponse: (response, _meta, arg) => {
-        // A service can report 503 deliberately to signal a degraded-but-
-        // running warn state (e.g. disk-monitor crossing WARN_PCT) rather
-        // than being unreachable. Only treat that specific shape as "warn";
-        // every other non-2xx or network failure is a genuine "error".
+        // A service can report 503 deliberately to signal "warn" (e.g.
+        // disk-monitor crossing WARN_PCT) or "starting" rather than being
+        // unreachable. Every other non-2xx or network failure is "error".
         const data =
           typeof response.status === "number" && response.data && typeof response.data === "object"
             ? (response.data as Record<string, unknown>)
             : null;
         const isWarn = response.status === 503 && data?.status === "critical";
+        const isStarting = response.status === 503 && data?.status === "starting";
+        const state = isStarting
+          ? ("starting" as const)
+          : isWarn
+            ? ("warn" as const)
+            : ("error" as const);
         return {
           name: arg.name,
           url: arg.url,
           link: arg.link,
           optional: arg.optional,
           alertOnDeployments: arg.alertOnDeployments,
-          state: isWarn ? ("warn" as const) : ("error" as const),
+          tier: arg.tier,
+          state,
           version: "—",
           meta: (data ?? {}) as Record<string, unknown>,
           lastChecked: Date.now(),

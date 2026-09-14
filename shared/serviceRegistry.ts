@@ -13,6 +13,15 @@ export interface ServiceSpec {
   excludeFromFrontendServices?: boolean;
   alertOnDeployments?: readonly string[];
   showOnDeployments?: readonly string[];
+  /**
+   * Hibernation tier: 0 = always-on, 1 = on-demand via HTTP (gateway wakes it
+   * on first request), 2 = on-demand via Kafka (idle-shutdown only, no
+   * auto-wake yet), 3 = default-off, manual start only.
+   */
+  tier: 0 | 1 | 2 | 3;
+  idleTimeoutSeconds?: number;
+  /** supervisord [program:...] name, when it diverges from composeName. */
+  supervisorProgram?: string;
 }
 
 export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
@@ -24,6 +33,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5000,
     category: "core",
     description: "GBM price simulation & synthetic market feed",
+    tier: 0,
   },
   {
     id: "ems",
@@ -33,6 +43,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5001,
     category: "core",
     description: "Execution management — child order routing & fills",
+    tier: 0,
   },
   {
     id: "oms",
@@ -42,6 +53,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5002,
     category: "core",
     description: "Order management — validation, RBAC limits & routing",
+    tier: 0,
   },
   {
     id: "limitAlgo",
@@ -51,6 +63,9 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5003,
     category: "algo",
     description: "Passive limit order strategy with configurable aggression",
+    tier: 2,
+    idleTimeoutSeconds: 300,
+    supervisorProgram: "algo-trader",
   },
   {
     id: "twapAlgo",
@@ -60,6 +75,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5004,
     category: "algo",
     description: "Time-Weighted Average Price — uniform slice scheduling",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "povAlgo",
@@ -69,6 +86,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5005,
     category: "algo",
     description: "Percentage of Volume — tracks market participation rate",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "vwapAlgo",
@@ -78,6 +97,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5006,
     category: "algo",
     description: "Volume-Weighted Average Price — historically-shaped slices",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "kafkaRelay",
@@ -88,6 +109,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "observability",
     description: "Kafka → stdout relay feeding Grafana Alloy / Loki",
     optional: true,
+    // Excluded from idle-shutdown: gateway.ts's public fast-path for POST /events/batch implies steady traffic.
+    tier: 2,
   },
   {
     id: "userService",
@@ -97,6 +120,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5008,
     category: "infra",
     description: "Session management, RBAC token validation & trading limits",
+    tier: 0,
   },
   {
     id: "journal",
@@ -106,6 +130,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5009,
     category: "data",
     description: "Trade lifecycle store — orders, fills & OHLCV grid",
+    tier: 0,
   },
   {
     id: "fixArchive",
@@ -115,6 +140,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5012,
     category: "infra",
     description: "Postgres persistence for FIX execution reports",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "newsAggregator",
@@ -124,6 +151,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5013,
     category: "data",
     description: "Pulls and tags market news for the feature engine",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "analytics",
@@ -133,6 +162,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5014,
     category: "data",
     description: "Black-Scholes pricing, Monte Carlo scenarios & recommendations",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "marketData",
@@ -142,6 +173,9 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5015,
     category: "data",
     description: "Alpha Vantage polling & per-symbol source overrides",
+    tier: 1,
+    idleTimeoutSeconds: 600,
+    supervisorProgram: "market-data-service",
   },
   {
     id: "marketDataAdapters",
@@ -152,6 +186,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "data",
     description: "Provider adapter layer between market-data and external feeds",
     excludeFromFrontendServices: true,
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "featureEngine",
@@ -161,6 +197,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5017,
     category: "data",
     description: "Per-symbol feature vector derivation from price/volume/news",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "signalEngine",
@@ -170,6 +208,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5018,
     category: "data",
     description: "Buy/sell/neutral signal scoring from feature vectors",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "recommendationEngine",
@@ -179,6 +219,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5019,
     category: "data",
     description: "Trade recommendations from signals + position context",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "scenarioEngine",
@@ -188,6 +230,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5020,
     category: "data",
     description: "Deterministic scenario replay for backtests and demos",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "icebergAlgo",
@@ -197,6 +241,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5021,
     category: "algo",
     description: "Hidden quantity — exposes only visible slice to the market",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "sniperAlgo",
@@ -206,6 +252,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5022,
     category: "algo",
     description: "Opportunistic aggressive fills at favourable price levels",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "arrivalPriceAlgo",
@@ -215,6 +263,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5023,
     category: "algo",
     description: "Benchmarks execution against arrival price with slippage control",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "llmAdvisory",
@@ -225,6 +275,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "data",
     description: "LLM-generated advisory notes for symbols (orchestrator + worker)",
     optional: true,
+    tier: 3,
+    supervisorProgram: "llm-advisory-orchestrator",
   },
   {
     id: "momentumAlgo",
@@ -234,6 +286,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5025,
     category: "algo",
     description: "EMA crossover momentum — routes tranches on favourable price signals",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "isAlgo",
@@ -243,6 +297,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5026,
     category: "algo",
     description: "Implementation Shortfall — balances market impact vs timing risk",
+    tier: 2,
+    idleTimeoutSeconds: 300,
   },
   {
     id: "darkPool",
@@ -252,6 +308,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5027,
     category: "core",
     description: "Hidden venue with periodic crossing for size-conscious orders",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "ccpService",
@@ -261,6 +319,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5028,
     category: "core",
     description: "Central counterparty — novation, margin, settlement lifecycle",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "rfqService",
@@ -270,6 +330,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5029,
     category: "core",
     description: "Request-for-quote workflow with dealer responses",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "productService",
@@ -279,6 +341,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5030,
     category: "core",
     description: "Instrument reference data — symbols, lot sizes, contract specs",
+    // Zero consumers found anywhere — not wired for wake logic; a removal candidate.
+    tier: 1,
   },
   {
     id: "replay",
@@ -289,6 +353,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "observability",
     description: "Session recording and replay",
     optional: true,
+    tier: 3,
   },
   {
     id: "riskEngine",
@@ -298,6 +363,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 5032,
     category: "core",
     description: "Real-time pre-trade and post-trade risk checks",
+    tier: 0,
   },
   {
     id: "llmWorker",
@@ -310,6 +376,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     optional: true,
     excludeFromGatewayHostEnv: true,
     excludeFromFrontendServices: true,
+    tier: 3,
   },
   {
     id: "fixExchange",
@@ -319,6 +386,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 9880,
     category: "infra",
     description: "FIX 4.4 exchange simulator — TCP protocol port 9880 (HTTP health served on 9880-1)",
+    tier: 0,
   },
   {
     id: "fixGateway",
@@ -328,6 +396,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 9881,
     category: "infra",
     description: "WebSocket bridge to FIX exchange",
+    tier: 1,
+    idleTimeoutSeconds: 600,
   },
   {
     id: "discordBot",
@@ -339,6 +409,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     description: "Discord gateway client, posts a welcome message on member join",
     optional: true,
     excludeFromFrontendServices: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderEquityHighTouch",
@@ -349,6 +420,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated equity high-touch trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderEquityLowTouch",
@@ -359,6 +431,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated equity low-touch trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderFxElectronic",
@@ -369,6 +442,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated FX electronic trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderFxHighTouch",
@@ -379,6 +453,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated FX high-touch trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderFiVoice",
@@ -389,6 +464,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated fixed income voice trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderDerivativesHighTouch",
@@ -399,6 +475,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated derivatives high-touch trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderDerivativesLowTouch",
@@ -409,6 +486,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated derivatives low-touch trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "syntheticTraderCommoditiesVoice",
@@ -419,6 +497,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "algo",
     description: "Simulated commodities voice trader generating demo order flow",
     optional: true,
+    tier: 3,
   },
   {
     id: "postgresHealth",
@@ -428,6 +507,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 8100,
     category: "data",
     description: "Primary database — health via a pg_isready HTTP sidecar (Postgres has no HTTP surface of its own)",
+    tier: 0,
   },
   {
     id: "redpanda",
@@ -437,6 +517,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     defaultPort: 9644,
     category: "infra",
     description: "Kafka-API message broker — health via the admin API's cluster health_overview",
+    tier: 0,
   },
   {
     id: "ollama",
@@ -447,6 +528,7 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "infra",
     description: "LLM inference runtime backing LLM Advisory — health via /api/version",
     optional: true,
+    tier: 3,
   },
 ];
 

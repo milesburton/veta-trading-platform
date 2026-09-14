@@ -63,6 +63,7 @@ export function serveJsonService(options: {
   health: () => Record<string, unknown>;
   handler: (req: Request, url: URL, path: string) => Response | Promise<Response>;
   signal?: AbortSignal;
+  onRequest?: () => void;
 }): Deno.HttpServer {
   return Deno.serve(
     { port: options.port, signal: options.signal },
@@ -70,6 +71,8 @@ export function serveJsonService(options: {
       if (req.method === "OPTIONS") {
         return corsOptions();
       }
+
+      options.onRequest?.();
 
       const url = new URL(req.url);
       const path = url.pathname;

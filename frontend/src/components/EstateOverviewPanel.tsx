@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { deriveDisplayState, isHibernating } from "@veta/frontend/lib/serviceHealth.ts";
 import {
   alertAdded,
   alertDismissed,
@@ -54,8 +55,14 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
     ? ((error as { state?: ServiceState } | undefined)?.state ?? "error")
     : null;
   const state: ServiceState = data?.state ?? errState ?? "unknown";
+  const hibernating = isHibernating({ state, optional: svc.optional, tier: svc.tier });
+  const displayState = deriveDisplayState({ state, optional: svc.optional, tier: svc.tier });
 
   useEffect(() => {
+    if (hibernating) {
+      prevRef.current = null;
+      return;
+    }
     if ((state === "error" || state === "warn") && prevRef.current !== state) {
       prevRef.current = state;
       dispatch(
@@ -82,32 +89,44 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
     } else if (state === "ok" && prevRef.current === null) {
       prevRef.current = "ok";
     }
-  }, [state, svc, dispatch]);
+  }, [state, hibernating, svc, dispatch]);
 
   const dotClass =
-    state === "ok"
+    displayState === "ok"
       ? "bg-green-400"
-      : state === "warn"
+      : displayState === "warn"
         ? "bg-amber-400"
-        : state === "error"
-          ? "bg-red-400"
-          : "bg-subtle";
+        : displayState === "starting"
+          ? "bg-sky-400"
+          : displayState === "error"
+            ? "bg-red-400"
+            : "bg-subtle";
   const nameClass =
-    state === "error"
+    displayState === "error"
       ? "text-red-400 font-semibold"
-      : state === "warn"
+      : displayState === "warn"
         ? "text-amber-400 font-semibold"
-        : state === "ok"
+        : displayState === "ok"
           ? "text-secondary"
           : "text-subtle";
   const statusText =
-    state === "ok" ? "OK" : state === "warn" ? "WARN" : state === "error" ? "DOWN" : "—";
+    displayState === "ok"
+      ? "OK"
+      : displayState === "warn"
+        ? "WARN"
+        : displayState === "starting"
+          ? "STARTING"
+          : displayState === "asleep"
+            ? "ASLEEP"
+            : displayState === "error"
+              ? "DOWN"
+              : "—";
   const statusClass =
-    state === "ok"
+    displayState === "ok"
       ? "text-green-400"
-      : state === "warn"
+      : displayState === "warn"
         ? "text-amber-400 font-semibold"
-        : state === "error"
+        : displayState === "error"
           ? "text-red-400 font-semibold"
           : "text-subtle";
 

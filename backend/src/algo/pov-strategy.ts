@@ -13,7 +13,7 @@ import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
-import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5005;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -76,11 +76,15 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
     .catch(() => {});
 }
 
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("POV_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "pov-algo");
+
 await createTypedConsumer("pov-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
     handler: (order: RoutedOrder) => {
+      idleExit.touch();
       if ((order.strategy ?? "").toUpperCase() !== "POV") return;
 
       const id = nextId++;

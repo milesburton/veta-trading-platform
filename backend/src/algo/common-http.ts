@@ -3,6 +3,30 @@ import { logger } from "@veta/logger";
 import { createTypedConsumer } from "@veta/messaging";
 import { NewsSignalSchema, type NewsSignal } from "@veta/schemas/news";
 
+// isQuiescent() must reflect zero pending/active orders — never exit owing a fill.
+export function armAlgoIdleExit(
+  timeoutMs: number,
+  isQuiescent: () => boolean,
+  label: string,
+  options: { checkIntervalMs?: number; exit?: (code: number) => void } = {}
+): { touch: () => void; checkNow: () => void; stop: () => void } {
+  const checkIntervalMs = options.checkIntervalMs ?? 5_000;
+  const exit = options.exit ?? Deno.exit;
+  let lastActivity = Date.now();
+  const touch = () => {
+    lastActivity = Date.now();
+  };
+  const checkNow = () => {
+    if (!isQuiescent()) return;
+    if (Date.now() - lastActivity < timeoutMs) return;
+    logger.info(`[${label}] Idle timeout reached with no pending orders — exiting`);
+    exit(0);
+  };
+  const intervalId = setInterval(checkNow, checkIntervalMs);
+  const stop = () => clearInterval(intervalId);
+  return { touch, checkNow, stop };
+}
+
 export function serveAlgoHealth(
   port: number,
   service: string,

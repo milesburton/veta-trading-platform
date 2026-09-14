@@ -21,6 +21,8 @@ import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
+import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+import { proxyWithWake } from "./wake.ts";
 import { createRefPriceCache } from "./ref-prices.ts";
 import { classifyRequestSource } from "./request-source.ts";
 import { handleAdminRoute } from "./routes/admin.ts";
@@ -145,6 +147,8 @@ const SVC_PROXY: Record<string, string> = {
   redpanda: REDPANDA_ADMIN_URL,
   ollama: OLLAMA_URL,
 };
+
+const SVC_SPEC_BY_COMPOSE_NAME = new Map(SERVICE_REGISTRY.map((s) => [s.composeName, s]));
 
 // docs: /reference/api-gateway/
 // #region docs:svc-min-roles
@@ -1167,9 +1171,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         }
       }
       const targetUrl = `${target}${resolveInfraHealthPath(svcName, svcPath)}${url.search}`;
-      if (req.method === "GET" || req.method === "DELETE") return proxyGet(targetUrl, req);
-      if (req.method === "POST") return proxyPost(targetUrl, req);
-      if (req.method === "PUT") return proxyPut(targetUrl, req);
+      const tier = SVC_SPEC_BY_COMPOSE_NAME.get(svcName)?.tier ?? 0;
+      if (req.method === "GET" || req.method === "DELETE") {
+        const call = () => proxyGet(targetUrl, req);
+        return tier >= 1
+          ? proxyWithWake(svcName, call, req, SVC_SPEC_BY_COMPOSE_NAME, corsHeaders)
+          : call();
+      }
+      if (req.method === "POST" || req.method === "PUT") {
+        const proxyFn = req.method === "POST" ? proxyPost : proxyPut;
+        if (tier < 1) return proxyFn(targetUrl, req);
+        // req.text() can only be called once, but a wake retry calls proxyFn twice.
+        const presetBody = await req.text();
+        const call = () => proxyFn(targetUrl, req, presetBody);
+        return proxyWithWake(svcName, call, req, SVC_SPEC_BY_COMPOSE_NAME, corsHeaders);
+      }
     }
   }
 
