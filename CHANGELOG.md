@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.7...veta-trading-platform-v1.69.0) (2026-09-14)
+
+
+### Features
+
+* **fleet:** on-demand hibernation tiering for non-critical services ([#637](https://github.com/milesburton/veta-trading-platform/issues/637)) ([c42d98d](https://github.com/milesburton/veta-trading-platform/commit/c42d98db91f7a73796d532906975e780c28c3861))
+
 ## [1.68.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.6...veta-trading-platform-v1.68.7) (2026-09-11)
 
 
