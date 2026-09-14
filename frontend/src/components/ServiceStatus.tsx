@@ -146,7 +146,7 @@ export function ServiceStatus({ services }: Props) {
                 </div>
               )}
 
-              <div className="overflow-y-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 <table className="w-full table-fixed">
                   <thead className="sticky top-0 bg-surface">
                     <tr className="text-muted border-b border-panel">
