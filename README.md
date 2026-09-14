@@ -3,7 +3,7 @@
 > **Overall:** [![VETA test coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/overall-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) across the backend and frontend.
 
 | Domain | Check | Result |
-| :--- | :--- | :---: |
+| :--- | :--- | :--- |
 | Project | License | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) |
 | Delivery | Continuous integration | [![CI](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
 | Delivery | Container build | [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
