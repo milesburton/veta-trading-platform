@@ -407,7 +407,8 @@ services:
       - "traefik.http.routers.minio.priority=15"
 
   minio-init:
-    image: minio/mc:RELEASE.2025-04-08T15-39-49Z
+    # Same Docker Hub access restriction as minio/minio above.
+    image: quay.io/minio/mc:RELEASE.2025-04-08T15-39-49Z
     container_name: minio-init
     networks:
       - trading-net
