@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.2...veta-trading-platform-v1.69.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* **discord-bot:** satisfy CodeQL resource-exhaustion check on heartbeat interval ([#643](https://github.com/milesburton/veta-trading-platform/issues/643)) ([fe5764d](https://github.com/milesburton/veta-trading-platform/commit/fe5764d96744d7c64c98b8fbad8122d25f72ab0e))
+
 ## [1.69.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.1...veta-trading-platform-v1.69.2) (2026-09-15)
 
 
