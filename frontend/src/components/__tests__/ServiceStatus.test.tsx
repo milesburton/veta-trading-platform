@@ -169,6 +169,29 @@ test("aggregates a warn-state service as overall warn, distinct from ok and erro
   expect(screen.getByText("warn")).toBeInTheDocument();
 });
 
+test("caps the panel height to the viewport and makes the service list scrollable", () => {
+  const many: ServiceHealth[] = Array.from({ length: 50 }, (_, i) => ({
+    name: `svc-${i}`,
+    state: "ok" as const,
+    version: "1.0.0",
+    meta: {},
+    lastChecked: Date.now(),
+    url: "",
+  }));
+  render(<ServiceStatus services={many} />);
+  fireEvent.click(screen.getByRole("button", { name: /services/i }));
+
+  const panel = screen.getByText("Service Health").closest("div.flex.flex-col") as HTMLElement;
+  expect(panel).toBeInTheDocument();
+  expect(panel.style.maxHeight).not.toBe("");
+  expect(panel.className).toContain("overflow-hidden");
+
+  const scrollRegion = panel.querySelector("table")?.parentElement;
+  expect(scrollRegion?.className).toContain("flex-1");
+  expect(scrollRegion?.className).toContain("min-h-0");
+  expect(scrollRegion?.className).toContain("overflow-y-auto");
+});
+
 test("aggregate state is error, not warn, when both an error and a warn service are present", () => {
   const mixed: ServiceHealth[] = [
     {
