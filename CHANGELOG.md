@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.1...veta-trading-platform-v1.69.2) (2026-09-15)
+
+
+### Bug Fixes
+
+* **frontend:** cap Service Health dropdown height, fix README table alignment ([#642](https://github.com/milesburton/veta-trading-platform/issues/642)) ([37363c6](https://github.com/milesburton/veta-trading-platform/commit/37363c6889f9025853d68433c2718a93dc907629))
+
 ## [1.69.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.0...veta-trading-platform-v1.69.1) (2026-09-15)
 
 
