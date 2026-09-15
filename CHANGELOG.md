@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.69.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.0...veta-trading-platform-v1.69.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **frontend:** revert vitest to ^4.0.18, ^5.0.0 breaks jest-dom matcher types ([#644](https://github.com/milesburton/veta-trading-platform/issues/644)) ([2d9223b](https://github.com/milesburton/veta-trading-platform/commit/2d9223b000907a0e0cb4a0f60a4c69908b46be2b))
+
+
+### Performance Improvements
+
+* **feature-engine:** pre-index sector peers instead of rescanning per tick ([#627](https://github.com/milesburton/veta-trading-platform/issues/627)) ([907f34c](https://github.com/milesburton/veta-trading-platform/commit/907f34ca63bdc5442a7681275c2996b1473bd074))
+
 ## [1.69.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.68.7...veta-trading-platform-v1.69.0) (2026-09-14)
 
 
