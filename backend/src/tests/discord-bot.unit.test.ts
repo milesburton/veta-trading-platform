@@ -4,6 +4,7 @@ import {
   buildTriagePrompt,
   buildWelcomeMessage,
   classifyGatewayEnvelope,
+  clampHeartbeatIntervalMs,
   connect,
   decideTriageRequest,
   decideWelcomePost,
@@ -49,6 +50,19 @@ Deno.test("extractHeartbeatIntervalMs falls back to the Discord default when mis
 
 Deno.test("extractHeartbeatIntervalMs falls back when d is not an object with the field", () => {
   assertEquals(extractHeartbeatIntervalMs({ op: 10, d: null }), 41_250);
+});
+
+Deno.test("clampHeartbeatIntervalMs passes through an in-range value unchanged", () => {
+  assertEquals(clampHeartbeatIntervalMs(30_000), 30_000);
+});
+
+Deno.test("clampHeartbeatIntervalMs floors a too-small value to the 1s minimum", () => {
+  assertEquals(clampHeartbeatIntervalMs(0), 1_000);
+  assertEquals(clampHeartbeatIntervalMs(-1), 1_000);
+});
+
+Deno.test("clampHeartbeatIntervalMs caps a too-large value to the 60s maximum", () => {
+  assertEquals(clampHeartbeatIntervalMs(1_000_000_000), 60_000);
 });
 
 Deno.test("classifyGatewayEnvelope: op 10 is a hello with the derived heartbeat interval", () => {

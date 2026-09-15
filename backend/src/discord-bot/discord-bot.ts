@@ -423,15 +423,18 @@ function identify(ws: WebSocket): void {
   );
 }
 
+export function clampHeartbeatIntervalMs(intervalMs: number): number {
+  if (intervalMs < MIN_HEARTBEAT_INTERVAL_MS) return MIN_HEARTBEAT_INTERVAL_MS;
+  if (intervalMs > MAX_HEARTBEAT_INTERVAL_MS) return MAX_HEARTBEAT_INTERVAL_MS;
+  return intervalMs;
+}
+
 function startHeartbeat(
   ws: WebSocket,
   intervalMs: number,
   getSequence: () => number | null
 ): ReturnType<typeof setInterval> {
-  const clampedIntervalMs = Math.min(
-    Math.max(intervalMs, MIN_HEARTBEAT_INTERVAL_MS),
-    MAX_HEARTBEAT_INTERVAL_MS
-  );
+  const clampedIntervalMs = clampHeartbeatIntervalMs(intervalMs);
   return setInterval(() => {
     ws.send(JSON.stringify({ op: 1, d: getSequence() }));
   }, clampedIntervalMs);
