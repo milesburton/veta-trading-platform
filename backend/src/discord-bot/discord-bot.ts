@@ -530,6 +530,10 @@ async function start(): Promise<void> {
     logger.warn("DISCORD_BOT_TOKEN not set; welcome bot disabled");
     return;
   }
+  if (!WELCOME_CHANNEL_ID) {
+    logger.warn("DISCORD_WELCOME_CHANNEL_ID not set; welcome bot disabled");
+    return;
+  }
   startMotdTimer();
   try {
     const gatewayUrl = await fetchGatewayUrl();
