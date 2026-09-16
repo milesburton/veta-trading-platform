@@ -513,8 +513,15 @@ let motdTimer: ReturnType<typeof setInterval> | null = null;
 
 function startMotdTimer(): void {
   if (!MOTD_ENABLED || motdTimer) return;
-  motdTimer = setInterval(() => {
-    postChannelMessage(WELCOME_CHANNEL_ID, buildMotd(DOCS_URL, PLATFORM_URL));
+  if (!WELCOME_CHANNEL_ID) {
+    logger.warn("DISCORD_WELCOME_CHANNEL_ID not set; MOTD timer not started");
+    return;
+  }
+  motdTimer = setInterval(async () => {
+    const posted = await postChannelMessage(WELCOME_CHANNEL_ID, buildMotd(DOCS_URL, PLATFORM_URL));
+    if (!posted) {
+      logger.warn("failed to post MOTD to welcome channel", { channelId: WELCOME_CHANNEL_ID });
+    }
   }, MOTD_INTERVAL_MS);
 }
 
