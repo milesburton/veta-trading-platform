@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.3...veta-trading-platform-v1.69.4) (2026-09-16)
+
+
+### Bug Fixes
+
+* **discord-bot:** add error logging and validation to MOTD timer ([#647](https://github.com/milesburton/veta-trading-platform/issues/647)) ([06f2806](https://github.com/milesburton/veta-trading-platform/commit/06f2806cff28244cb5a7f11ac2d9ecf73dc72955))
+
 ## [1.69.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.2...veta-trading-platform-v1.69.3) (2026-09-15)
 
 
