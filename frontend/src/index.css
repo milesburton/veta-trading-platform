@@ -189,7 +189,7 @@ html:not([data-theme="high-contrast"]) .bg-page-gradient::before {
   pointer-events: none;
   background-image: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, transparent 60%);
   background-size: 100% 1200px;
-  background-repeat: repeat-y;
+  background-repeat: no-repeat;
 }
 
 @layer base {
