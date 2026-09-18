@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.4...veta-trading-platform-v1.69.5) (2026-09-18)
+
+
+### Bug Fixes
+
+* **frontend:** remove repeating gradient band at bottom of viewport ([#653](https://github.com/milesburton/veta-trading-platform/issues/653)) ([3b3d1ce](https://github.com/milesburton/veta-trading-platform/commit/3b3d1ce901fd1b0ef0439ea035734e8ff1d936c9))
+
 ## [1.69.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.3...veta-trading-platform-v1.69.4) (2026-09-16)
 
 
