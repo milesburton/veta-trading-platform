@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.70.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.5...veta-trading-platform-v1.70.0) (2026-09-22)
+
+
+### Features
+
+* **ems:** real order book + matching engine ([#655](https://github.com/milesburton/veta-trading-platform/issues/655)) ([a450301](https://github.com/milesburton/veta-trading-platform/commit/a450301c1178ed67bdef4c653b07d818d2d4d3c7))
+
 ## [1.69.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.4...veta-trading-platform-v1.69.5) (2026-09-18)
 
 
