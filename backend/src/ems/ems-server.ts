@@ -23,22 +23,24 @@ import {
   computeFees,
   computeFill,
   computeImpactBps,
-  IMPACT_PER_1000_DEFAULT,
   execId as makeExecId,
+  IMPACT_PER_1000_DEFAULT,
   PARTICIPATION_CAP_DEFAULT,
   pickWeightedVenue,
   VALID_VENUES,
   type VenueMIC,
 } from "./fill-math.ts";
+import { matchAgainstSnapshot } from "./matching-engine.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const PORT = Number(Deno.env.get("EMS_PORT")) || 5_001;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-const PARTICIPATION_CAP =
-  Number(Deno.env.get("EMS_PARTICIPATION_CAP")) || PARTICIPATION_CAP_DEFAULT;
-const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) || IMPACT_PER_1000_DEFAULT;
+const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) ||
+  PARTICIPATION_CAP_DEFAULT;
+const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) ||
+  IMPACT_PER_1000_DEFAULT;
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
@@ -76,7 +78,9 @@ function deskFromOrder(order: ChildOrder): Desk {
 }
 
 const producer = await createProducer("ems").catch((err) => {
-  logger.warn("Redpanda unavailable — fills will not be published to bus", { err });
+  logger.warn("Redpanda unavailable — fills will not be published to bus", {
+    err,
+  });
   return null;
 });
 
@@ -93,19 +97,50 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     return;
   }
 
-  const venue =
-    child.venue && VALID_VENUES.has(child.venue) ? (child.venue as VenueMIC) : pickWeightedVenue();
+  const venue = child.venue && VALID_VENUES.has(child.venue)
+    ? (child.venue as VenueMIC)
+    : pickWeightedVenue();
 
-  const tickVolume = tick.volumes[child.asset] ?? 1_000;
-  const { filledQty, remainingQty } = computeFill(
-    child.quantity,
-    tickVolume,
-    venue,
-    PARTICIPATION_CAP
-  );
+  const snapshot = tick.venueBooks?.[venue]?.[child.asset];
+  const requestedPrice = child.limitPrice ??
+    child.effectivePrice ??
+    (child.side === "BUY" ? midPrice * 1.05 : midPrice * 0.95);
+
+  let filledQty: number;
+  let remainingQty: number;
+  let avgFillPrice: number;
+
+  if (snapshot && (snapshot.bids.length > 0 || snapshot.asks.length > 0)) {
+    const match = matchAgainstSnapshot(
+      child.childId,
+      child.asset,
+      child.side,
+      child.quantity,
+      requestedPrice,
+      snapshot,
+      Date.now(),
+    );
+    filledQty = match.filledQty;
+    remainingQty = match.remainingQty;
+    avgFillPrice = match.avgFillPrice ?? midPrice;
+  } else {
+    const tickVolume = tick.volumes[child.asset] ?? 1_000;
+    const fallback = computeFill(
+      child.quantity,
+      tickVolume,
+      venue,
+      PARTICIPATION_CAP,
+    );
+    filledQty = fallback.filledQty;
+    remainingQty = fallback.remainingQty;
+    const impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
+    const impactFactor = child.side === "BUY"
+      ? 1 + impactBps / 10_000
+      : 1 - impactBps / 10_000;
+    avgFillPrice = child.effectivePrice ?? midPrice * impactFactor;
+  }
+  avgFillPrice = parseFloat(avgFillPrice.toFixed(4));
   const impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
-  const impactFactor = child.side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
-  const avgFillPrice = parseFloat((child.effectivePrice ?? midPrice * impactFactor).toFixed(4));
 
   const counterparty = pickCounterparty();
   const liquidityFlag = pickLiquidityFlag(venue);
@@ -114,14 +149,16 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     filledQty,
     avgFillPrice,
     child.side,
-    liquidityFlag
+    liquidityFlag,
   );
 
   const execId = makeExecId(fillSeq++);
 
   logger.info(
     `Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
-      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${impactBps.toFixed(2)}bps`
+      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${
+        impactBps.toFixed(2)
+      }bps`,
   );
 
   if (filledQty > 0) {
@@ -182,13 +219,21 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
 }
 
 const consumer = await createTypedConsumer("ems-child-orders", [
-  { topic: "orders.child", schema: OrderChildSchema, handler: handleChildOrder },
+  {
+    topic: "orders.child",
+    schema: OrderChildSchema,
+    handler: handleChildOrder,
+  },
 ]).catch((err) => {
   logger.warn("Cannot subscribe to orders.child", { err });
   return null;
 });
 
-logger.info(`Listening for orders.child on message bus (consumer=${consumer ? "ok" : "skipped"})`);
+logger.info(
+  `Listening for orders.child on message bus (consumer=${
+    consumer ? "ok" : "skipped"
+  })`,
+);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

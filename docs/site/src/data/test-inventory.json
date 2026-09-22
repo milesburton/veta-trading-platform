@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 100,
-      "cases": 1153,
+      "files": 102,
+      "cases": 1170,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -89,6 +89,8 @@
         "dark-pool-matching.unit.test.ts": 12,
         "duration-ladder.unit.test.ts": 9,
         "fill-math.unit.test.ts": 6,
+        "order-book.unit.test.ts": 10,
+        "matching-engine.unit.test.ts": 7,
         "fix-counterparties.unit.test.ts": 7,
         "fix-dictionary.unit.test.ts": 5,
         "fix-market-session.unit.test.ts": 4,
