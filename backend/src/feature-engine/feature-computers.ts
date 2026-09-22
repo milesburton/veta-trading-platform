@@ -116,3 +116,8 @@ export function computeSentimentDelta(
 
   return newerAvg - olderAvg;
 }
+
+export function backoffDelayMs(failures: number, baseMs: number, maxMs: number): number {
+  if (failures <= 0) return 0;
+  return Math.min(baseMs * 2 ** (failures - 1), maxMs);
+}

@@ -8,6 +8,7 @@ import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/i
 import { waitForUrl } from "@veta/wait-for";
 import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import {
+  backoffDelayMs,
   buildSectorPeers,
   computeEventScore,
   computeMomentum,
@@ -161,12 +162,17 @@ const producer = await createProducer("feature-engine").catch((err) => {
 const pendingFeatures = new Map<string, FeatureVector>();
 let flushInFlight = false;
 let consecutiveInsertFailures = 0;
+let nextFlushAt = 0;
+
+const FLUSH_INTERVAL_MS = 250;
+const BACKOFF_BASE_MS = 250;
+const BACKOFF_MAX_MS = 30_000;
 
 async function flushFeatures(): Promise<void> {
   if (flushInFlight || pendingFeatures.size === 0) return;
+  if (Date.now() < nextFlushAt) return;
   flushInFlight = true;
   const batch = [...pendingFeatures.values()];
-  pendingFeatures.clear();
 
   for (const fv of batch) {
     latestFeatures.set(fv.symbol, fv);
@@ -174,14 +180,19 @@ async function flushFeatures(): Promise<void> {
 
   try {
     await store.insertBatch(batch);
+    pendingFeatures.clear();
     consecutiveInsertFailures = 0;
+    nextFlushAt = 0;
   } catch (err) {
     consecutiveInsertFailures++;
+    const delay = backoffDelayMs(consecutiveInsertFailures, BACKOFF_BASE_MS, BACKOFF_MAX_MS);
+    nextFlushAt = Date.now() + delay;
     if (consecutiveInsertFailures === 1 || consecutiveInsertFailures % 50 === 0) {
-      logger.warn("feature batch insert failed", {
+      logger.warn("feature batch insert failed, backing off", {
         err,
         consecutiveInsertFailures,
         batchSize: batch.length,
+        nextRetryInMs: delay,
       });
     }
   }
@@ -195,7 +206,7 @@ async function flushFeatures(): Promise<void> {
 
 setInterval(() => {
   void flushFeatures();
-}, 250);
+}, FLUSH_INTERVAL_MS);
 
 const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks"]).catch((err) => {
   logger.warn("Cannot subscribe to market.ticks", { err });
