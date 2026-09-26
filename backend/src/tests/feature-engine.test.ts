@@ -1,5 +1,6 @@
 import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  backoffDelayMs,
   buildSectorPeers,
   computeEventScore,
   computeMomentum,
@@ -296,4 +297,21 @@ Deno.test("buildSectorPeers: does not mutate the input map", () => {
   buildSectorPeers(symbolSectors);
   assertEquals(symbolSectors.size, 1);
   assertEquals(symbolSectors.get("AAPL"), "Technology");
+});
+
+Deno.test("backoffDelayMs: zero or negative failures → no delay", () => {
+  assertEquals(backoffDelayMs(0, 250, 30_000), 0);
+  assertEquals(backoffDelayMs(-1, 250, 30_000), 0);
+});
+
+Deno.test("backoffDelayMs: doubles per consecutive failure", () => {
+  assertEquals(backoffDelayMs(1, 250, 30_000), 250);
+  assertEquals(backoffDelayMs(2, 250, 30_000), 500);
+  assertEquals(backoffDelayMs(3, 250, 30_000), 1_000);
+  assertEquals(backoffDelayMs(4, 250, 30_000), 2_000);
+});
+
+Deno.test("backoffDelayMs: caps at maxMs regardless of failure count", () => {
+  assertEquals(backoffDelayMs(20, 250, 30_000), 30_000);
+  assertEquals(backoffDelayMs(1_000_000, 250, 30_000), 30_000);
 });
