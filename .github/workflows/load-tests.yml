@@ -30,10 +30,12 @@ on:
         default: ci-manual
         type: string
   schedule:
-    # Every 4 hours: frequent enough to catch a regression within a
-    # working session, not so frequent it competes with the always-on
-    # homelab loadgen (loadgen-soak/loadgen-matrix) for the same gateway.
-    - cron: "15 */4 * * *"
+    # Once a day: frequent enough to catch a regression within a day,
+    # without adding recurring load against the production gateway on
+    # top of the always-on homelab loadgen (loadgen-soak/loadgen-matrix).
+    # Was every 4 hours (6x/day) until 2026-09-26; relaxed after the
+    # homelab was found running hot with the platform otherwise idle.
+    - cron: "15 6 * * *"
 
 permissions:
   contents: write
@@ -61,15 +63,50 @@ jobs:
           [ -n "$BASE_URL" ] || BASE_URL="https://veta.mnetcs.com/api/gateway"
 
           RUN_LABEL="${{ github.event.inputs.run_label }}"
-          [ -n "$RUN_LABEL" ] || RUN_LABEL="ci-weekly"
+          [ -n "$RUN_LABEL" ] || RUN_LABEL="ci-daily"
 
           echo "scenario=$SCENARIO" >> "$GITHUB_OUTPUT"
           echo "order_count=$ORDER_COUNT" >> "$GITHUB_OUTPUT"
           echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
           echo "run_label=$RUN_LABEL" >> "$GITHUB_OUTPUT"
 
+      - name: Check market hours (scheduled runs only)
+        id: hours
+        if: github.event_name == 'schedule'
+        env:
+          BASE_URL: ${{ steps.cfg.outputs.base_url }}
+          K6_TOKEN: ${{ secrets.K6_TOKEN }}
+        run: |
+          if [ -z "${K6_TOKEN:-}" ]; then
+            echo "open=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Load-testing an idle platform wastes CPU on an already
+          # resource-constrained homelab box for no signal — skip the
+          # scheduled run entirely when every asset class is closed.
+          # A manual workflow_dispatch run always proceeds regardless.
+          # market-sim isn't public on its own (traefik.enable=false, see
+          # compose.prod.yml); reach it through gateway's own /api/<svc>
+          # proxy, itself behind the public /api/gateway prefix.
+          RESPONSE=$(curl -s -H "Authorization: Bearer $K6_TOKEN" \
+            "$BASE_URL/api/market-sim/admin/market-hours" || echo '{}')
+          OPEN_COUNT=$(echo "$RESPONSE" | jq '[.assetClasses[] | select(.isOpen == true)] | length' 2>/dev/null || echo "-1")
+          if [ "$OPEN_COUNT" -gt 0 ] 2>/dev/null; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+            echo "$OPEN_COUNT asset class(es) open; proceeding with scheduled load test."
+          elif [ "$OPEN_COUNT" = "-1" ]; then
+            # Fail closed: skip rather than risk load-testing on a bad
+            # assumption. The next scheduled run tries again in 24h.
+            echo "open=false" >> "$GITHUB_OUTPUT"
+            echo "Market-hours check failed (bad response, timeout, or unexpected shape); skipping scheduled load test as a precaution."
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+            echo "All asset classes report closed; skipping scheduled load test."
+          fi
+
       - name: Run k6 scenario
         id: run
+        if: github.event_name != 'schedule' || steps.hours.outputs.open != 'false'
         env:
           BASE_URL: ${{ steps.cfg.outputs.base_url }}
           K6_TOKEN: ${{ secrets.K6_TOKEN }}
