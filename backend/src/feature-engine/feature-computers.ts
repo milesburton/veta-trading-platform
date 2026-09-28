@@ -1,4 +1,4 @@
-import type { MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
+import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
 
 export function buildSectorPeers(symbolSectors: Map<string, string>): Map<string, string[]> {
   const sectorPeers = new Map<string, string[]>();
@@ -115,4 +115,16 @@ export function computeSentimentDelta(
   const olderAvg = older.reduce((a, n) => a + n.sentimentScore, 0) / older.length;
 
   return newerAvg - olderAvg;
+}
+
+export function backoffDelayMs(failures: number, baseMs: number, maxMs: number): number {
+  if (failures <= 0) return 0;
+  return Math.min(baseMs * 2 ** (failures - 1), maxMs);
+}
+
+export function flushedSymbols(
+  pending: ReadonlyMap<string, FeatureVector>,
+  batch: readonly FeatureVector[],
+): string[] {
+  return batch.filter((fv) => pending.get(fv.symbol) === fv).map((fv) => fv.symbol);
 }

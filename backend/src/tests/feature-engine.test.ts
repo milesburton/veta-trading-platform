@@ -1,5 +1,6 @@
 import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  backoffDelayMs,
   buildSectorPeers,
   computeEventScore,
   computeMomentum,
@@ -8,6 +9,7 @@ import {
   computeRelativeVolume,
   computeSectorRelativeStrength,
   computeSentimentDelta,
+  flushedSymbols,
 } from "../feature-engine/feature-computers.ts";
 import { buildBatchInsert } from "../feature-engine/feature-store.ts";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
@@ -296,4 +298,43 @@ Deno.test("buildSectorPeers: does not mutate the input map", () => {
   buildSectorPeers(symbolSectors);
   assertEquals(symbolSectors.size, 1);
   assertEquals(symbolSectors.get("AAPL"), "Technology");
+});
+
+Deno.test("backoffDelayMs: zero or negative failures → no delay", () => {
+  assertEquals(backoffDelayMs(0, 250, 30_000), 0);
+  assertEquals(backoffDelayMs(-1, 250, 30_000), 0);
+});
+
+Deno.test("backoffDelayMs: doubles per consecutive failure", () => {
+  assertEquals(backoffDelayMs(1, 250, 30_000), 250);
+  assertEquals(backoffDelayMs(2, 250, 30_000), 500);
+  assertEquals(backoffDelayMs(3, 250, 30_000), 1_000);
+  assertEquals(backoffDelayMs(4, 250, 30_000), 2_000);
+});
+
+Deno.test("backoffDelayMs: caps at maxMs regardless of failure count", () => {
+  assertEquals(backoffDelayMs(20, 250, 30_000), 30_000);
+  assertEquals(backoffDelayMs(1_000_000, 250, 30_000), 30_000);
+});
+
+Deno.test("flushedSymbols: returns symbols whose pending entry is the flushed vector", () => {
+  const aapl = makeFv("AAPL", 1);
+  const msft = makeFv("MSFT", 1);
+  const pending = new Map([["AAPL", aapl], ["MSFT", msft]]);
+  assertEquals(flushedSymbols(pending, [aapl, msft]), ["AAPL", "MSFT"]);
+});
+
+Deno.test("flushedSymbols: keeps symbols updated while the insert was in flight", () => {
+  const stale = makeFv("AAPL", 1);
+  const fresh = makeFv("AAPL", 2);
+  const msft = makeFv("MSFT", 1);
+  const pending = new Map([["AAPL", fresh], ["MSFT", msft]]);
+  assertEquals(flushedSymbols(pending, [stale, msft]), ["MSFT"]);
+});
+
+Deno.test("flushedSymbols: does not mutate the pending map", () => {
+  const aapl = makeFv("AAPL", 1);
+  const pending = new Map([["AAPL", aapl]]);
+  flushedSymbols(pending, [aapl]);
+  assertEquals(pending.size, 1);
 });
