@@ -376,9 +376,9 @@ services:
 
   minio:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    # Docker Hub's minio/minio now requires auth to pull; quay.io/minio/minio
-    # is the same image, still open.
-    image: quay.io/minio/minio:RELEASE.2025-04-08T15-41-24Z
+    # MinIO no longer serves images anonymously from Docker Hub or quay.io.
+    # This is the pinned upstream image mirrored unmodified into GHCR (#673).
+    image: ghcr.io/milesburton/veta-trading-platform/minio:RELEASE.2025-04-08T15-41-24Z
     container_name: minio
     command: server /data --console-address ":9001"
     networks:
@@ -418,8 +418,8 @@ services:
 
   minio-init:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    # Same Docker Hub access restriction as minio/minio above.
-    image: quay.io/minio/mc:RELEASE.2025-04-08T15-39-49Z
+    # Mirrored into GHCR for the same reason as minio above.
+    image: ghcr.io/milesburton/veta-trading-platform/minio-mc:RELEASE.2025-04-08T15-39-49Z
     container_name: minio-init
     networks:
       - trading-net
