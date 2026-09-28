@@ -38,7 +38,7 @@ check_ownership() {
     # cannot break a deploy, so it must not block one.
     local me path
     me=$(id -un)
-    local trees=("$STACK_DIR/.good-sha" "$STACK_DIR/deploy.sh" "$STACK_DIR/state")
+    local trees=("$GOOD_SHA_FILE" "$STACK_DIR/deploy.sh" "$STACK_DIR/state")
     local dirs=("$STACK_DIR")
     for path in "${CONFIG_PATHS[@]}"; do
         trees+=("$STACK_DIR/${path%/}")
@@ -54,7 +54,7 @@ check_ownership() {
     if [[ -n "$foreign" ]]; then
         log "❌ ERROR: deploy-managed paths in $STACK_DIR are not owned by $me:"
         echo "$foreign" | sed 's/^/  /'
-        log "  Fix: sudo chown $me:$me <each path above>"
+        log "  Fix: sudo chown -R $me:$me <each path above>"
         return 1
     fi
 }
