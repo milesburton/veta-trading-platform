@@ -1,0 +1,5 @@
+[Unit]
+Description=CI runner and testcontainers (Docker default cgroup parent)
+
+[Slice]
+AllowedCPUs=17,19-23

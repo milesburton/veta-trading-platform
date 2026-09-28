@@ -81,6 +81,8 @@ This job runs on a self-hosted runner (`runs-on: [self-hosted, homelab]`) rather
 
 That homelab box also runs the full production VETA stack around the clock, so it isn't idle spare capacity the way a GitHub-hosted VM is. `backend/src/tests/smoke.full.tc.test.ts` sets its startup/test timeouts from a `TC_TIMEOUT_SCALE` env var (default `1`, everywhere else unchanged) so cold-starting 15 to 30 Deno subprocesses per test group has enough headroom under that background load; this job sets `TC_TIMEOUT_SCALE=3`. See [Testcontainers integration tests](/development/testing/testcontainers/) for more on that variable.
 
+The runner and production are kept apart at the CPU level with systemd slices. The runner's Docker daemon uses `ci.slice` as its default cgroup parent, so the runner and every testcontainer it starts share one small CPU set. Production compose services opt into `veta.slice`, which has a separate, larger CPU set, via `cgroup_parent: ${VETA_CGROUP_PARENT:-}`. With `VETA_CGROUP_PARENT` unset, as it is in development and on hosted runners, compose behaves as before. Per-container `cpus:` limits alone were not enough: they cap each container but not the total, so a full integration run could still saturate the box. Setup steps are in `scripts/homelab-systemd/README.md`.
+
 ### playwright-ui (sharded, target under 5 minutes wall-clock)
 
 - Runs the full Playwright E2E suite in 2 parallel shards
@@ -258,7 +260,7 @@ If the status page is clean and the failures correlate with a specific PR or ser
 - **`Deploy gate` Playwright test times out at 60s**: usually CI runner slowness, but check the trace artifact under `gate-diagnostics` for what state the page actually reached. Real backend regressions show up as Playwright passing but the test asserting wrong content; CI-load failures show the dashboard rendered but the test gave up.
 - **`Publish *-algo :latest (gated)` fails after `Deploy gate` passed**: a GHCR push flake. Rerun. If it persists across reruns, check whether GHCR has the previous image tag (rare cache-state issue).
 - **`Integration tests` queues indefinitely / never picks up**: the self-hosted homelab runner is offline or its container failed to re-register. Check `gh api repos/:owner/:repo/actions/runners` for status `online`; if it isn't, the runner needs attention on the homelab box.
-- **`Integration tests` fails with a health-check or startup timeout that wasn't present before**: check whether this is a genuine regression or homelab contention before changing test code. The homelab runner shares its box with the always-on production VETA stack, not idle capacity, so timeouts are more sensitive to whatever else the box is doing at the time. See [Testcontainers integration tests](/development/testing/testcontainers/) for the `TC_TIMEOUT_SCALE` mechanism that already compensates for this.
+- **`Integration tests` fails with a health-check or startup timeout that wasn't present before**: check whether this is a genuine regression or homelab contention before changing test code. The homelab runner shares its box with the always-on production VETA stack. CPU slices stop the two competing for the same cores, but the runner's own CPU set is small, so timeouts are more sensitive to parallelism within a run. See [Testcontainers integration tests](/development/testing/testcontainers/) for the `TC_TIMEOUT_SCALE` mechanism that already compensates for this.
 
 ### Stuck check suites
 
