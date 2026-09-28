@@ -188,7 +188,7 @@ The full ruleset:
 gh api repos/:owner/:repo/branches/main/protection --jq '.required_status_checks.contexts'
 ```
 
-To update which checks are required, the same endpoint accepts a `PUT` with the new context list. There's a CODEOWNERS-style review gate too — `required_pull_request_reviews` requires one approval before merging, which `trusted-automerge` provides automatically.
+To update which checks are required, the same endpoint accepts a `PUT` with the new context list. There's a CODEOWNERS-style review gate too: `required_pull_request_reviews` requires one approval before merging, which `trusted-automerge` provides automatically.
 
 ## Run the CI checks locally
 
