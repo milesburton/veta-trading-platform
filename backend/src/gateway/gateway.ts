@@ -1133,7 +1133,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (svcMatch) {
     const svcName = svcMatch[1];
     const svcPath = svcMatch[2] ?? "/";
-    const target = SVC_PROXY[svcName];
+    const target = Object.hasOwn(SVC_PROXY, svcName) ? SVC_PROXY[svcName] : undefined;
     if (target) {
       // docs: /reference/api-gateway/
       const PROXY_PUBLIC =
