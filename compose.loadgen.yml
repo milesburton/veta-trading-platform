@@ -3,6 +3,7 @@ services:
   # Disable rate limiting on the gateway when load gen is active.
   # Rate limit per-IP would otherwise throttle k6's ramp-up scenarios.
   gateway:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     environment:
       RATE_LIMIT_ENABLED: "false"
 

@@ -43,10 +43,12 @@ opts into `veta.slice`:
 sudo install -m 0644 /path/to/repo/scripts/homelab-systemd/{veta,ci}.slice /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl start veta.slice ci.slice
+[ -f /etc/docker/daemon.json ] || echo '{}' | sudo tee /etc/docker/daemon.json
 sudo jq '. + {"cgroup-parent": "ci.slice"}' /etc/docker/daemon.json > /tmp/daemon.json
 sudo install -m 0644 /tmp/daemon.json /etc/docker/daemon.json
 sudo systemctl restart docker
-echo 'VETA_CGROUP_PARENT=veta.slice' | sudo tee -a /opt/stacks/veta/.env
+sudo grep -q '^VETA_CGROUP_PARENT=' /opt/stacks/veta/.env \
+  || echo 'VETA_CGROUP_PARENT=veta.slice' | sudo tee -a /opt/stacks/veta/.env
 ```
 
 `AllowedCPUs` in each slice must be CPU IDs visible to the host; check with
