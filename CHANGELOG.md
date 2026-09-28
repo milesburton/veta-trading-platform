@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.70.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.70.0...veta-trading-platform-v1.70.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **feature-engine:** exponential backoff on batch insert failures ([#661](https://github.com/milesburton/veta-trading-platform/issues/661)) ([ac1b568](https://github.com/milesburton/veta-trading-platform/commit/ac1b56878a39b8e65d36d84ee752e00bc3811966))
+
 ## [1.70.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.69.5...veta-trading-platform-v1.70.0) (2026-09-22)
 
 
