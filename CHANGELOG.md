@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.70.2...veta-trading-platform-v1.71.0) (2026-09-28)
+
+
+### Features
+
+* **registry:** add Grafana and Prometheus to the service registry ([#671](https://github.com/milesburton/veta-trading-platform/issues/671)) ([96e67b4](https://github.com/milesburton/veta-trading-platform/commit/96e67b4c09e7ecca840115149aeca43ea1e5a56b))
+
 ## [1.70.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.70.1...veta-trading-platform-v1.70.2) (2026-09-28)
 
 
