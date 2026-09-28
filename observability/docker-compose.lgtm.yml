@@ -1,5 +1,6 @@
 services:
   alloy:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/alloy:v1.7.0
     container_name: lgtm-alloy
     ports:
@@ -24,6 +25,7 @@ services:
     mem_limit: 512m
 
   loki:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/loki:3.3.2
     container_name: lgtm-loki
     ports:
@@ -35,6 +37,7 @@ services:
     mem_limit: 512m
 
   prometheus:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: prom/prometheus:v3.1.0
     container_name: lgtm-prometheus
     ports:
@@ -54,6 +57,7 @@ services:
     mem_limit: 768m
 
   tempo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/tempo:2.7.1
     container_name: lgtm-tempo
     ports:
@@ -69,6 +73,7 @@ services:
     mem_limit: 512m
 
   grafana:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/grafana:11.4.0
     container_name: lgtm-grafana
     ports:
@@ -162,6 +167,7 @@ services:
     mem_limit: 512m
 
   renderer:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/grafana-image-renderer:3.12.5
     container_name: lgtm-renderer
     environment:

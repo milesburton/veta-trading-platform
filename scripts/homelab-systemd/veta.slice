@@ -1,0 +1,5 @@
+[Unit]
+Description=VETA production containers
+
+[Slice]
+AllowedCPUs=1-9,15

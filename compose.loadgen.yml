@@ -10,6 +10,7 @@ services:
   # Performs OAuth PKCE every REFRESH_INTERVAL seconds and writes the access
   # token to a shared volume. k6 containers read the token on each iteration.
   loadgen-token:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: alpine:3.21
     profiles: [loadgen]
     restart: unless-stopped
@@ -43,6 +44,7 @@ services:
   # Constant ~50 VUs forever. Restarts soak.js every 50min to pick up rotated
   # tokens. Output goes to Prometheus via remote_write.
   loadgen-soak:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/k6:0.55.0
     profiles: [loadgen]
     # on-failure (not unless-stopped) so the loop's clean exit on
@@ -87,6 +89,7 @@ services:
   # Cycles baseline → mixed → burst-open → risk-stress on a loop.
   # Output goes to Prometheus via remote_write.
   loadgen-matrix:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/k6:0.55.0
     profiles: [loadgen]
     # on-failure (not unless-stopped) so the loop's clean exit on

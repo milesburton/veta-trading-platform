@@ -9,6 +9,7 @@ each are in Astro.
 | `veta-auto-pull.{service,timer}` | Polls `origin/main` every 5 min, runs `deploy.sh` on SHA change | [veta-auto-pull](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-auto-pull/) |
 | `veta-tunnel.service` | `autossh` reverse tunnel to the OVH edge — public traffic comes back via this | [veta-tunnel](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-tunnel/) |
 | `veta-host-prune.{service,timer}` | Daily Docker prune (04:00 UTC). Stops auto-pull image churn from filling disk | [veta-host-prune](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-host-prune/) |
+| `veta.slice`, `ci.slice` | CPU isolation between production containers and the self-hosted CI runner | [CI/CD](https://milesburton.github.io/veta-trading-platform/development/ci-cd/) |
 
 ## One-time install (all three)
 
@@ -31,6 +32,30 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now veta-auto-pull.timer veta-tunnel.service veta-host-prune.timer
 ```
 
+## CPU isolation (slices)
+
+The self-hosted CI runner shares the box with production. Its testcontainers
+are siblings on the host Docker daemon, so pinning the runner container alone
+has no effect. Instead every container defaults to `ci.slice`, and production
+opts into `veta.slice`:
+
+```bash
+sudo install -m 0644 /path/to/repo/scripts/homelab-systemd/{veta,ci}.slice /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl start veta.slice ci.slice
+sudo jq '. + {"cgroup-parent": "ci.slice"}' /etc/docker/daemon.json > /tmp/daemon.json
+sudo install -m 0644 /tmp/daemon.json /etc/docker/daemon.json
+sudo systemctl restart docker
+echo 'VETA_CGROUP_PARENT=veta.slice' | sudo tee -a /opt/stacks/veta/.env
+```
+
+`AllowedCPUs` in each slice must be CPU IDs visible to the host; check with
+`cat /sys/fs/cgroup/cpuset.cpus.effective`. Give production the faster cores.
+Containers created before the daemon change keep an empty cgroup parent and
+land in `ci.slice` on their next start, so recreate production with
+`docker compose up -d --force-recreate` after setting `VETA_CGROUP_PARENT`.
+Verify with `cat /proc/<pid>/cgroup` for a container's main process.
+
 Per-unit operational commands (`systemctl status`, `journalctl`, etc.)
 are documented on each Astro page linked above.
 
@@ -52,6 +77,9 @@ end-to-end. Both live in `/opt/stacks/veta/.env`:
 - **`OAUTH_ALLOW_PUBLIC_REGISTER`** — when `true`, the LoginPage
   Create-account form is reachable and new users land as trader with
   starter limits.
+- **`VETA_CGROUP_PARENT`**: set to `veta.slice` so every compose service
+  runs on the production CPU set. Unset means Docker's default cgroup
+  parent. See [CPU isolation](#cpu-isolation-slices) above.
 - **`PUBLIC_GUEST_TRADING`** — when `true`, anonymous users can place
   rate-limited orders via the `/oauth/guest` endpoint. See
   [synthetic probe](https://milesburton.github.io/veta-trading-platform/platform/supporting/synthetic-probe/)

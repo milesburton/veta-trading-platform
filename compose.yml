@@ -67,6 +67,7 @@ x-deno-medium: &deno-medium
 
 services:
   redpanda:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: redpandadata/redpanda:v24.3.6
     container_name: redpanda
     command:
@@ -98,6 +99,7 @@ services:
       - "traefik.enable=false"
 
   redpanda-init:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: redpandadata/redpanda:v24.3.6
     container_name: redpanda-init
     networks:
@@ -155,6 +157,7 @@ services:
       - "traefik.enable=false"
 
   redpanda-console:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: redpandadata/console:v2.7.2
     networks:
       - trading-net
@@ -181,6 +184,7 @@ services:
       - "traefik.http.routers.redpanda-console.priority=15"
 
   postgres:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: postgres:16-alpine
     networks:
       - trading-net
@@ -223,6 +227,7 @@ services:
     logging: *logging
 
   postgres-health:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     build:
       context: .
       dockerfile: docker/postgres-health/Dockerfile
@@ -259,6 +264,7 @@ services:
     logging: *logging
 
   db-migrate:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     build:
       context: .
       dockerfile: docker/db-migrate/Dockerfile
@@ -280,6 +286,7 @@ services:
     logging: *logging
 
   traefik:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: traefik:v3.3
     restart: unless-stopped
     # Needs egress-net in addition to trading-net: the public ingress, so it
@@ -316,6 +323,7 @@ services:
     logging: *logging
 
   ollama:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: ollama/ollama:latest
     profiles: [trading, on-demand]
     networks:
@@ -340,6 +348,7 @@ services:
     logging: *logging
 
   ollama-model-pull:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: ollama/ollama:latest
     profiles: [trading, on-demand]
     # Needs both: trading-net to reach the ollama container it configures via
@@ -366,6 +375,7 @@ services:
     logging: *logging
 
   minio:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     # Docker Hub's minio/minio now requires auth to pull; quay.io/minio/minio
     # is the same image, still open.
     image: quay.io/minio/minio:RELEASE.2025-04-08T15-41-24Z
@@ -407,6 +417,7 @@ services:
       - "traefik.http.routers.minio.priority=15"
 
   minio-init:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     # Same Docker Hub access restriction as minio/minio above.
     image: quay.io/minio/mc:RELEASE.2025-04-08T15-39-49Z
     container_name: minio-init
@@ -450,6 +461,7 @@ services:
       - "traefik.enable=false"
 
   frontend:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile
@@ -481,6 +493,7 @@ services:
     logging: *logging
 
   market-sim:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     mem_limit: 1536m
     cpus: 1
@@ -516,6 +529,7 @@ services:
       - "traefik.http.routers.market-sim.priority=10"
 
   ems:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     command: [
       "deno",
@@ -551,6 +565,7 @@ services:
       - "traefik.http.routers.ems.priority=10"
 
   oms:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     command: [
       "deno",
@@ -600,6 +615,7 @@ services:
       - "traefik.http.routers.oms.priority=10"
 
   limit-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -638,6 +654,7 @@ services:
       - "traefik.http.routers.limit-algo.priority=10"
 
   twap-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -677,6 +694,7 @@ services:
       - "traefik.http.routers.twap-algo.priority=10"
 
   pov-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -718,6 +736,7 @@ services:
       - "traefik.http.routers.pov-algo.priority=10"
 
   vwap-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -757,6 +776,7 @@ services:
       - "traefik.http.routers.vwap-algo.priority=10"
 
   iceberg-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -795,6 +815,7 @@ services:
       - "traefik.http.routers.iceberg-algo.priority=10"
 
   sniper-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -833,6 +854,7 @@ services:
       - "traefik.http.routers.sniper-algo.priority=10"
 
   arrival-price-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -871,6 +893,7 @@ services:
       - "traefik.http.routers.arrival-price-algo.priority=10"
 
   momentum-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -909,6 +932,7 @@ services:
       - "traefik.http.routers.momentum-algo.priority=10"
 
   is-algo:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -947,6 +971,7 @@ services:
       - "traefik.http.routers.is-algo.priority=10"
 
   rfq-service:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -978,6 +1003,7 @@ services:
       - "traefik.http.routers.rfq-service.priority=10"
 
   ccp-service:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1014,6 +1040,7 @@ services:
       - "traefik.http.routers.ccp-service.priority=10"
 
   product-service:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1044,6 +1071,7 @@ services:
       - "traefik.http.routers.product-service.priority=10"
 
   replay-service:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1077,6 +1105,7 @@ services:
       - "traefik.http.routers.replay-service.priority=10"
 
   risk-engine:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     command: [
       "deno",
@@ -1114,6 +1143,7 @@ services:
       - "traefik.http.routers.risk-engine.priority=10"
 
   dark-pool:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1152,6 +1182,7 @@ services:
       - "traefik.http.routers.dark-pool.priority=10"
 
   kafka-relay:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: ["deno", "run", "--allow-all", "/app/observability/kafka-relay.ts"]
@@ -1177,6 +1208,7 @@ services:
       - "traefik.http.routers.kafka-relay.priority=10"
 
   user-service:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     command: [
       "deno",
@@ -1216,6 +1248,7 @@ services:
       - "traefik.http.routers.user-service.priority=10"
 
   journal:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     mem_limit: 512m
     command: [
@@ -1252,6 +1285,7 @@ services:
       - "traefik.http.routers.journal.priority=10"
 
   fix-exchange:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     command: [
       "deno",
@@ -1284,6 +1318,7 @@ services:
       - "traefik.http.routers.fix-exchange.priority=10"
 
   fix-gateway:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1314,6 +1349,7 @@ services:
       - "traefik.http.routers.fix-gateway.priority=10"
 
   fix-archive:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1347,6 +1383,7 @@ services:
       - "traefik.http.routers.fix-archive.priority=10"
 
   analytics:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     command: [
@@ -1383,6 +1420,7 @@ services:
       - "traefik.http.routers.analytics.priority=10"
 
   market-data:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     # Needs egress-net in addition to the anchor's trading-net: fetches from
@@ -1425,6 +1463,7 @@ services:
       - "traefik.http.routers.market-data.priority=10"
 
   market-data-adapters:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     command: [
@@ -1459,6 +1498,7 @@ services:
       - "traefik.http.routers.market-data-adapters.priority=10"
 
   feature-engine:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     mem_limit: 2560m
@@ -1503,6 +1543,7 @@ services:
       - "traefik.http.routers.feature-engine.priority=10"
 
   signal-engine:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     cpus: 0.75
@@ -1540,6 +1581,7 @@ services:
       - "traefik.http.routers.signal-engine.priority=10"
 
   recommendation-engine:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1570,6 +1612,7 @@ services:
       - "traefik.http.routers.recommendation-engine.priority=10"
 
   scenario-engine:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1603,6 +1646,7 @@ services:
       - "traefik.http.routers.scenario-engine.priority=10"
 
   news-aggregator:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     command: [
@@ -1630,6 +1674,7 @@ services:
       - "traefik.enable=false"
 
   discord-bot:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [trading, on-demand]
     # Needs egress-net in addition to the anchor's trading-net: connects
@@ -1669,6 +1714,7 @@ services:
       - "traefik.enable=false"
 
   llm-advisory:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     restart: unless-stopped
@@ -1718,6 +1764,7 @@ services:
       - "traefik.http.routers.llm-advisory.priority=10"
 
   llm-worker:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     profiles: [trading, on-demand]
     restart: unless-stopped
@@ -1758,6 +1805,7 @@ services:
       - "traefik.enable=false"
 
   gateway:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-medium
     # Needs egress-net in addition to the anchor's trading-net: the Discord
     # webhook notifier (discord-notifier.ts) runs inside this service.
@@ -1928,6 +1976,7 @@ services:
   # differing by env var. Each has its own account (see the seed migration),
   # port, and enable/dry-run gate so desks can be turned on independently.
   synthetic-trader-equity-high-touch:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -1965,6 +2014,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-equity-low-touch:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2002,6 +2052,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-fx-electronic:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2039,6 +2090,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-fx-high-touch:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2076,6 +2128,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-fi-voice:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2113,6 +2166,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-derivatives-high-touch:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2150,6 +2204,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-derivatives-low-touch:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2187,6 +2242,7 @@ services:
       - "traefik.enable=false"
 
   synthetic-trader-commodities-voice:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *deno-service
     profiles: [on-demand]
     command: [
@@ -2224,6 +2280,7 @@ services:
       - "traefik.enable=false"
 
   disk-monitor:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: python:3.12-alpine
     container_name: veta-disk-monitor
     restart: unless-stopped
@@ -2263,6 +2320,7 @@ services:
     logging: *logging
 
   k6:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: grafana/k6:0.55.0
     profiles: [loadtest]
     user: "${K6_UID:-1000}:${K6_GID:-1000}"
