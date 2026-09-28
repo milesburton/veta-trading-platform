@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 102,
-      "cases": 1176,
+      "cases": 1178,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -82,7 +82,7 @@
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-position-tracker.unit.test.ts": 7,
         "synthetic-trader-token-client.unit.test.ts": 3,
-        "infra-health-paths.unit.test.ts": 4,
+        "infra-health-paths.unit.test.ts": 6,
         "admin-route.unit.test.ts": 11,
         "apply-shocks.unit.test.ts": 7,
         "bond-pricing.unit.test.ts": 11,

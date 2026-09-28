@@ -114,6 +114,8 @@ const EXPECTED_TIER_0_IDS = new Set([
   "fixExchange",
   "postgresHealth",
   "redpanda",
+  "grafana",
+  "prometheus",
 ]);
 
 Deno.test("[registry] Tier 0 (always-on) is exactly the intended core set", () => {

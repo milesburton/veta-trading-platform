@@ -96,6 +96,8 @@ const SYNTHETIC_TRADER_COMMODITIES_VOICE_URL = `http://${Deno.env.get("SYNTHETIC
 const POSTGRES_HEALTH_URL = `http://${Deno.env.get("POSTGRES_HEALTH_HOST") ?? "localhost"}:${Deno.env.get("POSTGRES_HEALTH_PORT") ?? "8100"}`;
 const REDPANDA_ADMIN_URL = `http://${Deno.env.get("REDPANDA_ADMIN_HOST") ?? "localhost"}:${Deno.env.get("REDPANDA_ADMIN_PORT") ?? "9644"}`;
 const OLLAMA_URL = `http://${Deno.env.get("OLLAMA_HOST") ?? "localhost"}:${Deno.env.get("OLLAMA_PORT") ?? "11434"}`;
+const GRAFANA_URL = `http://${Deno.env.get("GRAFANA_HOST") ?? "localhost"}:${Deno.env.get("GRAFANA_PORT") ?? "3000"}`;
+const PROMETHEUS_URL = `http://${Deno.env.get("PROMETHEUS_HOST") ?? "localhost"}:${Deno.env.get("PROMETHEUS_PORT") ?? "9090"}`;
 
 const SVC_PROXY: Record<string, string> = {
   "market-sim": MARKET_SIM_URL,
@@ -146,6 +148,8 @@ const SVC_PROXY: Record<string, string> = {
   "postgres-health": POSTGRES_HEALTH_URL,
   redpanda: REDPANDA_ADMIN_URL,
   ollama: OLLAMA_URL,
+  grafana: GRAFANA_URL,
+  prometheus: PROMETHEUS_URL,
 };
 
 const SVC_SPEC_BY_COMPOSE_NAME = new Map(SERVICE_REGISTRY.map((s) => [s.composeName, s]));
