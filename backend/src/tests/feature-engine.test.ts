@@ -9,6 +9,7 @@ import {
   computeRelativeVolume,
   computeSectorRelativeStrength,
   computeSentimentDelta,
+  flushedSymbols,
 } from "../feature-engine/feature-computers.ts";
 import { buildBatchInsert } from "../feature-engine/feature-store.ts";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
@@ -314,4 +315,26 @@ Deno.test("backoffDelayMs: doubles per consecutive failure", () => {
 Deno.test("backoffDelayMs: caps at maxMs regardless of failure count", () => {
   assertEquals(backoffDelayMs(20, 250, 30_000), 30_000);
   assertEquals(backoffDelayMs(1_000_000, 250, 30_000), 30_000);
+});
+
+Deno.test("flushedSymbols: returns symbols whose pending entry is the flushed vector", () => {
+  const aapl = makeFv("AAPL", 1);
+  const msft = makeFv("MSFT", 1);
+  const pending = new Map([["AAPL", aapl], ["MSFT", msft]]);
+  assertEquals(flushedSymbols(pending, [aapl, msft]), ["AAPL", "MSFT"]);
+});
+
+Deno.test("flushedSymbols: keeps symbols updated while the insert was in flight", () => {
+  const stale = makeFv("AAPL", 1);
+  const fresh = makeFv("AAPL", 2);
+  const msft = makeFv("MSFT", 1);
+  const pending = new Map([["AAPL", fresh], ["MSFT", msft]]);
+  assertEquals(flushedSymbols(pending, [stale, msft]), ["MSFT"]);
+});
+
+Deno.test("flushedSymbols: does not mutate the pending map", () => {
+  const aapl = makeFv("AAPL", 1);
+  const pending = new Map([["AAPL", aapl]]);
+  flushedSymbols(pending, [aapl]);
+  assertEquals(pending.size, 1);
 });

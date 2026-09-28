@@ -17,6 +17,7 @@ import {
   computeRelativeVolume,
   computeSectorRelativeStrength,
   computeSentimentDelta,
+  flushedSymbols,
 } from "./feature-computers.ts";
 import { createFeatureStore } from "./feature-store.ts";
 
@@ -180,7 +181,7 @@ async function flushFeatures(): Promise<void> {
 
   try {
     await store.insertBatch(batch);
-    pendingFeatures.clear();
+    for (const symbol of flushedSymbols(pendingFeatures, batch)) pendingFeatures.delete(symbol);
     consecutiveInsertFailures = 0;
     nextFlushAt = 0;
   } catch (err) {
