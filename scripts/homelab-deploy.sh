@@ -33,18 +33,28 @@ check_ownership() {
     # earlier setup, leaving the auto-pull unable to sync compose changes
     # for ~3 days.
     #
-    # secrets/ is exempt: github_ticketing_token is deliberately root:1993
-    # (matching the gateway's unprivileged deno user) so the credential is
-    # never readable outside the container that needs it. This check exists
-    # to catch accidental drift, not to fight an intentional security
-    # boundary — deploy.sh never writes into secrets/, so ownership there
-    # is irrelevant to the rsync failure mode this guard protects against.
+    # Only paths the deploy writes are checked. Anything else in the stack
+    # directory (.env backups, secrets/ which is deliberately root:1993)
+    # cannot break a deploy, so it must not block one.
+    local me path
+    me=$(id -un)
+    local trees=("$GOOD_SHA_FILE" "$STACK_DIR/deploy.sh" "$STACK_DIR/state")
+    local dirs=("$STACK_DIR")
+    for path in "${CONFIG_PATHS[@]}"; do
+        trees+=("$STACK_DIR/${path%/}")
+        dirs+=("$(dirname "$STACK_DIR/${path%/}")")
+    done
     local foreign
-    foreign=$(find "$STACK_DIR" -not -path "$STACK_DIR/secrets/*" -not -user "$(id -un)" 2>/dev/null | head -10)
+    foreign=$(
+        {
+            find "${dirs[@]}" -maxdepth 0 -not -user "$me"
+            find "${trees[@]}" -not -user "$me"
+        } 2>/dev/null | sort -u | head -10
+    ) || true
     if [[ -n "$foreign" ]]; then
-        log "❌ ERROR: files in $STACK_DIR are not owned by $(id -un):"
+        log "❌ ERROR: deploy-managed paths in $STACK_DIR are not owned by $me:"
         echo "$foreign" | sed 's/^/  /'
-        log "  Fix: sudo chown -R $(id -un):$(id -un) $STACK_DIR"
+        log "  Fix: sudo chown -R $me:$me <each path above>"
         return 1
     fi
 }
