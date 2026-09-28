@@ -1,14 +1,17 @@
-const REDPANDA_HEALTH_PATH = "/v1/cluster/health_overview";
-const OLLAMA_HEALTH_PATH = "/api/version";
-
 /**
- * Redpanda's admin API and Ollama's API are broad control surfaces (cluster
- * config / partition management; model pull / generation) — the gateway
- * only ever proxies their single read-only health path, pinned here rather
- * than passing the caller's requested path straight through.
+ * Redpanda's admin API, Ollama's API, Grafana's HTTP API and Prometheus's API
+ * are broad control surfaces. For each of them the gateway maps the caller's
+ * /health onto the one read-only health endpoint the service exposes, rather
+ * than forwarding a path the service does not serve.
  */
+const PINNED_HEALTH_PATHS: ReadonlyMap<string, string> = new Map([
+  ["redpanda", "/v1/cluster/health_overview"],
+  ["ollama", "/api/version"],
+  ["grafana", "/grafana/api/health"],
+  ["prometheus", "/-/healthy"],
+]);
+
 export function resolveInfraHealthPath(svcName: string, svcPath: string): string {
-  if (svcName === "redpanda" && svcPath === "/health") return REDPANDA_HEALTH_PATH;
-  if (svcName === "ollama" && svcPath === "/health") return OLLAMA_HEALTH_PATH;
-  return svcPath;
+  if (svcPath !== "/health") return svcPath;
+  return PINNED_HEALTH_PATHS.get(svcName) ?? svcPath;
 }

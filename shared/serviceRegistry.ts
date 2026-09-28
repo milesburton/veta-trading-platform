@@ -530,6 +530,28 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     optional: true,
     tier: 3,
   },
+  {
+    id: "grafana",
+    displayName: "Grafana",
+    envPrefix: "GRAFANA",
+    composeName: "grafana",
+    defaultPort: 3000,
+    category: "observability",
+    description: "Dashboards and alerting over Loki, Prometheus and Tempo, health via /grafana/api/health",
+    optional: true,
+    tier: 0,
+  },
+  {
+    id: "prometheus",
+    displayName: "Prometheus",
+    envPrefix: "PROMETHEUS",
+    composeName: "prometheus",
+    defaultPort: 9090,
+    category: "observability",
+    description: "Platform metrics store and alert rule evaluation, health via /-/healthy",
+    optional: true,
+    tier: 0,
+  },
 ];
 
 export function findService(predicate: (s: ServiceSpec) => boolean): ServiceSpec | undefined {

@@ -9,12 +9,23 @@ Deno.test("[infra-health-paths] pins ollama's /health to /api/version", () => {
   assertEquals(resolveInfraHealthPath("ollama", "/health"), "/api/version");
 });
 
+Deno.test("[infra-health-paths] pins grafana's /health to /grafana/api/health", () => {
+  assertEquals(resolveInfraHealthPath("grafana", "/health"), "/grafana/api/health");
+});
+
+Deno.test("[infra-health-paths] pins prometheus's /health to /-/healthy", () => {
+  assertEquals(resolveInfraHealthPath("prometheus", "/health"), "/-/healthy");
+});
+
 Deno.test("[infra-health-paths] leaves other services' paths untouched", () => {
   assertEquals(resolveInfraHealthPath("market-sim", "/health"), "/health");
   assertEquals(resolveInfraHealthPath("postgres-health", "/health"), "/health");
+  assertEquals(resolveInfraHealthPath("constructor", "/health"), "/health");
 });
 
-Deno.test("[infra-health-paths] leaves non-/health paths on redpanda/ollama untouched", () => {
+Deno.test("[infra-health-paths] leaves non-/health paths on pinned services untouched", () => {
   assertEquals(resolveInfraHealthPath("redpanda", "/topics"), "/topics");
   assertEquals(resolveInfraHealthPath("ollama", "/api/generate"), "/api/generate");
+  assertEquals(resolveInfraHealthPath("grafana", "/api/dashboards"), "/api/dashboards");
+  assertEquals(resolveInfraHealthPath("prometheus", "/api/v1/query"), "/api/v1/query");
 });
