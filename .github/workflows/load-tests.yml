@@ -82,7 +82,7 @@ jobs:
             exit 0
           fi
           # Load-testing an idle platform wastes CPU on an already
-          # resource-constrained homelab box for no signal — skip the
+          # resource-constrained homelab box for no signal, so skip the
           # scheduled run entirely when every asset class is closed.
           # A manual workflow_dispatch run always proceeds regardless.
           # market-sim isn't public on its own (traefik.enable=false, see
@@ -106,7 +106,7 @@ jobs:
 
       - name: Run k6 scenario
         id: run
-        if: github.event_name != 'schedule' || steps.hours.outputs.open != 'false'
+        if: github.event_name != 'schedule' || steps.hours.outputs.open == 'true'
         env:
           BASE_URL: ${{ steps.cfg.outputs.base_url }}
           K6_TOKEN: ${{ secrets.K6_TOKEN }}
