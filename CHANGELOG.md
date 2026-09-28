@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.70.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.70.1...veta-trading-platform-v1.70.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **deploy:** scope ownership guard to paths the deploy writes ([#665](https://github.com/milesburton/veta-trading-platform/issues/665)) ([0b3a71d](https://github.com/milesburton/veta-trading-platform/commit/0b3a71daa437b2b97d3ceb1e1911e6b8e5c52f65))
+
 ## [1.70.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.70.0...veta-trading-platform-v1.70.1) (2026-09-28)
 
 
