@@ -186,12 +186,12 @@ function generate() {
     .map((n) => pkgRow(n, frontendPackages.get(n)));
 
   // Container image table (VETA services grouped, third-party listed)
-  const vetaImages = [...imageSet]
-    .filter((i) => i.startsWith("ghcr.io/milesburton"))
-    .sort();
-  const thirdPartyImages = [...imageSet]
-    .filter((i) => !i.startsWith("ghcr.io/milesburton"))
-    .sort();
+  const mirroredImages = new Set(["minio", "minio-mc"]);
+  const isVetaImage = (i) =>
+    i.startsWith("ghcr.io/milesburton") &&
+    !mirroredImages.has(i.split("/").pop().split(":")[0]);
+  const vetaImages = [...imageSet].filter(isVetaImage).sort();
+  const thirdPartyImages = [...imageSet].filter((i) => !isVetaImage(i)).sort();
 
   const vetaRows = vetaImages.map((i) => `| [${i.split("/").pop().split(":")[0]}](${dockerLink(i)}) |`);
   const tpRows = thirdPartyImages.map((i) => `| [${i}](${dockerLink(i)}) |`);
