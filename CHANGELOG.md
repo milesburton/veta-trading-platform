@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.0...veta-trading-platform-v1.71.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **compose:** pull MinIO images from the GHCR mirror ([#675](https://github.com/milesburton/veta-trading-platform/issues/675)) ([ff31150](https://github.com/milesburton/veta-trading-platform/commit/ff31150ea20dbe92f893305a3be654df8b1f68aa)), closes [#673](https://github.com/milesburton/veta-trading-platform/issues/673)
+
 ## [1.71.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.70.2...veta-trading-platform-v1.71.0) (2026-09-28)
 
 
