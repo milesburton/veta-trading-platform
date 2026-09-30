@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 102,
-      "cases": 1181,
+      "cases": 1184,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -68,7 +68,7 @@
         "request-source.unit.test.ts": 4,
         "yield-curve.unit.test.ts": 6,
         "access-log-throttle.test.ts": 5,
-        "messaging.test.ts": 10,
+        "messaging.test.ts": 13,
         "parse-ticket-handler.unit.test.ts": 11,
         "runtime-config-store.test.ts": 13,
         "price-fan.unit.test.ts": 7,

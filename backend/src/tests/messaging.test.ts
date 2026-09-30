@@ -48,9 +48,13 @@ class FakeConsumer {
   disconnectCalls = 0;
   subscriptions: { topic: string; fromBeginning: boolean }[] = [];
   runConfig: {
-    eachMessage: (payload: { topic: string; message: FakeMessage }) => Promise<void>;
+    eachMessage: (
+      payload: { topic: string; message: FakeMessage },
+    ) => Promise<void>;
   } | null = null;
-  crashHandler: ((event: { payload: { error?: Error } }) => Promise<void>) | null = null;
+  crashHandler:
+    | ((event: { payload: { error?: Error } }) => Promise<void>)
+    | null = null;
   connectError: Error | null = null;
 
   connect(): Promise<void> {
@@ -64,18 +68,27 @@ class FakeConsumer {
     return Promise.resolve();
   }
 
-  on(event: string, handler: (event: { payload: { error?: Error } }) => Promise<void>): void {
+  on(
+    event: string,
+    handler: (event: { payload: { error?: Error } }) => Promise<void>,
+  ): void {
     if (event === "consumer.crash") this.crashHandler = handler;
   }
 
   run(config: {
-    eachMessage: (payload: { topic: string; message: FakeMessage }) => Promise<void>;
+    eachMessage: (
+      payload: { topic: string; message: FakeMessage },
+    ) => Promise<void>;
   }): Promise<void> {
     this.runConfig = config;
     return Promise.resolve();
   }
 
-  async emitMessage(topic: string, value: unknown, headers?: Record<string, unknown>) {
+  async emitMessage(
+    topic: string,
+    value: unknown,
+    headers?: Record<string, unknown>,
+  ) {
     await this.runConfig?.eachMessage({
       topic,
       message: {
@@ -112,7 +125,7 @@ async function waitFor(predicate: () => boolean, attempts = 10): Promise<void> {
 
 function installHooks(
   factory: (clientId: string) => KafkaFactoryLike,
-  delays: number[] = []
+  delays: number[] = [],
 ): void {
   __setMessagingTestHooks({
     kafkaFactory: factory,
@@ -127,7 +140,8 @@ function installHooks(
 }
 
 Deno.test({
-  name: "[messaging] producer drops sends before initial connection, then serializes sends after connect",
+  name:
+    "[messaging] producer holds order sends until the initial connection and drops droppable sends",
   async fn() {
     const producerClient = new FakeProducer();
     const gate = deferred();
@@ -140,25 +154,35 @@ Deno.test({
     }));
 
     const producer = await createProducer("producer-shape");
-    await producer.send("orders.new", { id: 1 });
+    await producer.send("market.ticks", { px: 100 });
+    let delivered = false;
+    const pending = producer.send("orders.new", { id: 1 }).then(() => {
+      delivered = true;
+    });
+    await drainMicrotasks();
     assertEquals(producerClient.sends.length, 0);
+    assert(!delivered);
 
     gate.resolve();
-    await drainMicrotasks();
-    await drainMicrotasks();
+    await pending;
     assert(producer.isReady());
 
     await producer.send("orders.new", { id: 2, side: "BUY" });
-    assertEquals(producerClient.sends.length, 1);
-    assertEquals(producerClient.sends[0], {
-      topic: "orders.new",
-      messages: [
-        {
-          value: JSON.stringify({ id: 2, side: "BUY" }),
-          headers: {},
-        },
-      ],
-    });
+    assertEquals(producerClient.sends, [
+      {
+        topic: "orders.new",
+        messages: [{ value: JSON.stringify({ id: 1 }), headers: {} }],
+      },
+      {
+        topic: "orders.new",
+        messages: [
+          {
+            value: JSON.stringify({ id: 2, side: "BUY" }),
+            headers: {},
+          },
+        ],
+      },
+    ]);
 
     await producer.disconnect();
     assertEquals(producerClient.disconnectCalls, 1);
@@ -167,7 +191,71 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] producer retries failed connect and reconnects after send failure",
+  name: "[messaging] producer delivers order sends issued while reconnecting",
+  async fn() {
+    const failing = new FakeProducer();
+    failing.sendError = new Error("broker gone");
+    const replacement = new FakeProducer();
+    const gate = deferred();
+    replacement.connectGate = gate.promise;
+    const attempts = [failing, replacement];
+    installHooks(() => ({
+      producer: () => attempts.shift() as never,
+      consumer: () => {
+        throw new Error("unused");
+      },
+    }));
+
+    const producer = await createProducer("reconnecting-producer");
+    await waitFor(() => producer.isReady());
+    await assertRejects(
+      () => producer.send("orders.new", { id: 1 }),
+      Error,
+      "broker gone",
+    );
+    assert(!producer.isReady());
+
+    await producer.send("market.ticks", { px: 101 });
+    const pending = producer.send("orders.new", { id: 2 });
+    gate.resolve();
+    await pending;
+
+    assertEquals(replacement.sends, [
+      {
+        topic: "orders.new",
+        messages: [{ value: JSON.stringify({ id: 2 }), headers: {} }],
+      },
+    ]);
+
+    await producer.disconnect();
+    __setMessagingTestHooks(null);
+  },
+});
+
+Deno.test({
+  name: "[messaging] disconnect releases order sends waiting for a connection",
+  async fn() {
+    const producerClient = new FakeProducer();
+    producerClient.connectGate = new Promise(() => {});
+    installHooks(() => ({
+      producer: () => producerClient as never,
+      consumer: () => {
+        throw new Error("unused");
+      },
+    }));
+
+    const producer = await createProducer("stopping-producer");
+    const pending = producer.send("orders.new", { id: 1 });
+    await producer.disconnect();
+    await pending;
+    assertEquals(producerClient.sends.length, 0);
+    __setMessagingTestHooks(null);
+  },
+});
+
+Deno.test({
+  name:
+    "[messaging] producer retries failed connect and reconnects after send failure",
   async fn() {
     const first = new FakeProducer();
     first.connectError = new Error("connect down");
@@ -184,7 +272,7 @@ Deno.test({
           throw new Error("unused");
         },
       }),
-      delays
+      delays,
     );
 
     const producer = await createProducer("retrying-producer");
@@ -193,7 +281,11 @@ Deno.test({
     assertEquals(delays, [2000]);
     assert(producer.isReady());
 
-    await assertRejects(() => producer.send("market.ticks", { px: 101 }), Error, "send blew up");
+    await assertRejects(
+      () => producer.send("market.ticks", { px: 101 }),
+      Error,
+      "send blew up",
+    );
     assertEquals(second.sends.length, 1);
 
     await waitFor(() => producer.isReady());
@@ -209,7 +301,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] isDroppableTopic sheds tick-derived topics and keeps order topics",
+  name:
+    "[messaging] isDroppableTopic sheds tick-derived topics and keeps order topics",
   fn() {
     assert(isDroppableTopic("market.ticks"));
     assert(isDroppableTopic("market.signals"));
@@ -221,7 +314,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] saturated producer drops droppable sends and queues order sends",
+  name:
+    "[messaging] saturated producer drops droppable sends and queues order sends",
   async fn() {
     const producerClient = new FakeProducer();
     const gate = deferred();
@@ -249,7 +343,7 @@ Deno.test({
     await Promise.all([first, second, queued]);
 
     const sentValues = producerClient.sends.map(
-      (s) => (s as { messages: { value: string }[] }).messages[0].value
+      (s) => (s as { messages: { value: string }[] }).messages[0].value,
     );
     assertEquals(sentValues, ['{"n":1}', '{"n":2}', '{"n":4}']);
 
@@ -262,7 +356,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] disconnect releases sends waiting for a slot without sending them",
+  name:
+    "[messaging] disconnect releases sends waiting for a slot without sending them",
   async fn() {
     const producerClient = new FakeProducer();
     const gate = deferred();
@@ -292,7 +387,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] consumer subscribes topics, parses valid messages, and ignores empty or invalid payloads",
+  name:
+    "[messaging] consumer subscribes topics, parses valid messages, and ignores empty or invalid payloads",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -330,7 +426,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] consumer swallows handler failures and timeouts and reconnects after crash",
+  name:
+    "[messaging] consumer swallows handler failures and timeouts and reconnects after crash",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -345,9 +442,14 @@ Deno.test({
       consumer: () => consumers.shift() as never,
     }));
 
-    const consumer = await createConsumer("risk-group", ["risk.alerts"], "risk-client", {
-      handlerTimeoutMs: 1,
-    });
+    const consumer = await createConsumer(
+      "risk-group",
+      ["risk.alerts"],
+      "risk-client",
+      {
+        handlerTimeoutMs: 1,
+      },
+    );
 
     const calls: string[] = [];
     consumer.onMessage((_topic, value) => {
@@ -358,7 +460,9 @@ Deno.test({
     });
     consumer.onMessage(() => new Promise<void>(() => {}));
 
-    await waitFor(() => first.runConfig !== null && first.crashHandler !== null);
+    await waitFor(() =>
+      first.runConfig !== null && first.crashHandler !== null
+    );
     assert(first.crashHandler);
 
     await first.emitMessage("risk.alerts", JSON.stringify({ x: 1 }), {
@@ -395,7 +499,7 @@ Deno.test({
         },
         consumer: () => consumers.shift() as never,
       }),
-      delays
+      delays,
     );
 
     const consumer = await createConsumer("boot-group", ["boot.topic"]);
@@ -416,7 +520,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] typed consumer validates payloads, reports invalid, and ignores unbound topics",
+  name:
+    "[messaging] typed consumer validates payloads, reports invalid, and ignores unbound topics",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -445,12 +550,15 @@ Deno.test({
         onInvalid: (topic, raw, error) => {
           invalid.push({ topic, raw, message: error.message });
         },
-      }
+      },
     );
 
     await waitFor(() => fakeConsumer.runConfig !== null);
     await fakeConsumer.emitMessage("typed.topic", JSON.stringify({ qty: 5 }));
-    await fakeConsumer.emitMessage("typed.topic", JSON.stringify({ qty: "bad" }));
+    await fakeConsumer.emitMessage(
+      "typed.topic",
+      JSON.stringify({ qty: "bad" }),
+    );
     await fakeConsumer.emitMessage("other.topic", JSON.stringify({ qty: 7 }));
     await drainMicrotasks();
 
@@ -465,7 +573,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[messaging] createTypedConsumer throws synchronously on duplicate topic binding",
+  name:
+    "[messaging] createTypedConsumer throws synchronously on duplicate topic binding",
   fn() {
     let err: unknown;
     try {
@@ -486,5 +595,35 @@ Deno.test({
     }
     assert(err instanceof Error);
     assert(err.message.includes("duplicate binding for topic 't1'"));
+  },
+});
+
+Deno.test({
+  name: "[messaging] producer rejects order sends once the wait queue is full",
+  async fn() {
+    const producerClient = new FakeProducer();
+    producerClient.connectGate = new Promise(() => {});
+    installHooks(() => ({
+      producer: () => producerClient as never,
+      consumer: () => {
+        throw new Error("unused");
+      },
+    }));
+
+    const producer = await createProducer("backlogged", { maxInFlight: 1 });
+    const held = [
+      producer.send("orders.new", { id: 1 }),
+      producer.send("orders.new", { id: 2 }),
+    ];
+    await drainMicrotasks();
+    await assertRejects(
+      () => producer.send("orders.new", { id: 3 }),
+      Error,
+      "backlog full",
+    );
+
+    await producer.disconnect();
+    await Promise.all(held);
+    __setMessagingTestHooks(null);
   },
 });
