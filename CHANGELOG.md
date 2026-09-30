@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.2...veta-trading-platform-v1.71.3) (2026-09-30)
+
+
+### Bug Fixes
+
+* **messaging:** bound in-flight producer sends ([#683](https://github.com/milesburton/veta-trading-platform/issues/683)) ([0e4f026](https://github.com/milesburton/veta-trading-platform/commit/0e4f026e5ae884133773ef02d018176bf91c0a2f)), closes [#667](https://github.com/milesburton/veta-trading-platform/issues/667)
+
 ## [1.71.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.1...veta-trading-platform-v1.71.2) (2026-09-30)
 
 
