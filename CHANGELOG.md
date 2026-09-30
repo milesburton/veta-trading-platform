@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.1...veta-trading-platform-v1.71.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **compose:** let minio-init complete ([#678](https://github.com/milesburton/veta-trading-platform/issues/678)) ([315c7fb](https://github.com/milesburton/veta-trading-platform/commit/315c7fb2f51ee130e8f8e29a22af3c35af755c68)), closes [#666](https://github.com/milesburton/veta-trading-platform/issues/666)
+
 ## [1.71.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.0...veta-trading-platform-v1.71.1) (2026-09-29)
 
 
