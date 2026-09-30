@@ -7,6 +7,7 @@ import {
   createConsumer,
   createProducer,
   createTypedConsumer,
+  isDroppableTopic,
   type KafkaFactoryLike,
 } from "../lib/messaging.ts";
 
@@ -22,6 +23,7 @@ class FakeProducer {
   connectError: Error | null = null;
   sendError: Error | null = null;
   connectGate: Promise<void> | null = null;
+  sendGate: Promise<void> | null = null;
 
   async connect(): Promise<void> {
     this.connectCalls += 1;
@@ -29,10 +31,10 @@ class FakeProducer {
     if (this.connectError) throw this.connectError;
   }
 
-  send(payload: unknown): Promise<void> {
+  async send(payload: unknown): Promise<void> {
     this.sends.push(payload);
+    if (this.sendGate) await this.sendGate;
     if (this.sendError) throw this.sendError;
-    return Promise.resolve();
   }
 
   disconnect(): Promise<void> {
@@ -202,6 +204,89 @@ Deno.test({
 
     await producer.disconnect();
     assertEquals(third.disconnectCalls, 1);
+    __setMessagingTestHooks(null);
+  },
+});
+
+Deno.test({
+  name: "[messaging] isDroppableTopic sheds tick-derived topics and keeps order topics",
+  fn() {
+    assert(isDroppableTopic("market.ticks"));
+    assert(isDroppableTopic("market.signals"));
+    assert(isDroppableTopic("algo.heartbeat"));
+    assert(!isDroppableTopic("orders.child"));
+    assert(!isDroppableTopic("orders.expired"));
+    assert(!isDroppableTopic("fix.execution"));
+  },
+});
+
+Deno.test({
+  name: "[messaging] saturated producer drops droppable sends and queues order sends",
+  async fn() {
+    const producerClient = new FakeProducer();
+    const gate = deferred();
+    producerClient.sendGate = gate.promise;
+    installHooks(() => ({
+      producer: () => producerClient as never,
+      consumer: () => {
+        throw new Error("unused");
+      },
+    }));
+
+    const producer = await createProducer("bounded", { maxInFlight: 2 });
+    await waitFor(() => producer.isReady());
+
+    const first = producer.send("market.ticks", { n: 1 });
+    const second = producer.send("orders.child", { n: 2 });
+    await waitFor(() => producerClient.sends.length === 2);
+
+    await producer.send("market.ticks", { n: 3 });
+    const queued = producer.send("orders.child", { n: 4 });
+    await drainMicrotasks();
+    assertEquals(producerClient.sends.length, 2);
+
+    gate.resolve();
+    await Promise.all([first, second, queued]);
+
+    const sentValues = producerClient.sends.map(
+      (s) => (s as { messages: { value: string }[] }).messages[0].value
+    );
+    assertEquals(sentValues, ['{"n":1}', '{"n":2}', '{"n":4}']);
+
+    await producer.send("market.ticks", { n: 5 });
+    assertEquals(producerClient.sends.length, 4);
+
+    await producer.disconnect();
+    __setMessagingTestHooks(null);
+  },
+});
+
+Deno.test({
+  name: "[messaging] disconnect releases sends waiting for a slot without sending them",
+  async fn() {
+    const producerClient = new FakeProducer();
+    const gate = deferred();
+    producerClient.sendGate = gate.promise;
+    installHooks(() => ({
+      producer: () => producerClient as never,
+      consumer: () => {
+        throw new Error("unused");
+      },
+    }));
+
+    const producer = await createProducer("bounded-stop", { maxInFlight: 1 });
+    await waitFor(() => producer.isReady());
+
+    const inFlight = producer.send("orders.child", { n: 1 });
+    await waitFor(() => producerClient.sends.length === 1);
+    const waiting = producer.send("orders.child", { n: 2 });
+
+    await producer.disconnect();
+    await waiting;
+    assertEquals(producerClient.sends.length, 1);
+
+    gate.resolve();
+    await inFlight;
     __setMessagingTestHooks(null);
   },
 });

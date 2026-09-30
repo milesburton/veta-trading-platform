@@ -24,13 +24,32 @@ import {
 } from "npm:kafkajs@2.2.4";
 import { logger } from "@veta/logger";
 import type { z } from "@veta/zod";
-import { injectTraceContext, withExtractedContext } from "./telemetry.ts";
+import {
+  injectTraceContext,
+  recordGauge,
+  withExtractedContext,
+} from "./telemetry.ts";
 
 const LIB = { component: "messaging" };
 
 const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092")
   .split(",")
   .map((b) => b.trim());
+
+const DEFAULT_MAX_IN_FLIGHT = 500;
+
+const DROPPABLE_TOPIC_PREFIXES = ["market.", "algo.heartbeat"];
+
+export function isDroppableTopic(topic: string): boolean {
+  return DROPPABLE_TOPIC_PREFIXES.some((prefix) => topic.startsWith(prefix));
+}
+
+function maxInFlightFromEnv(): number {
+  const parsed = Number(Deno.env.get("PRODUCER_MAX_IN_FLIGHT"));
+  return Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_MAX_IN_FLIGHT;
+}
 
 // fallow-ignore-next-line unused-type
 export interface KafkaFactoryLike {
@@ -76,10 +95,65 @@ export interface MsgProducer {
  */
 export function createProducer(
   clientId = "veta-producer",
+  options: { maxInFlight?: number } = {},
 ): Promise<MsgProducer> {
   let activeProducer: Producer | null = null;
   let stopped = false;
   let reconnecting = false;
+  const maxInFlight = options.maxInFlight ?? maxInFlightFromEnv();
+  let inFlight = 0;
+  let droppedTotal = 0;
+  let saturated = false;
+  const slotWaiters: Array<() => void> = [];
+
+  function setSaturated(next: boolean) {
+    if (next === saturated) return;
+    saturated = next;
+    const attrs = { client_id: clientId };
+    recordGauge("messaging_producer_saturated", next ? 1 : 0, {
+      description: "1 while the producer is at its in-flight send limit",
+      attributes: attrs,
+    }).catch(() => {});
+    const fields = { ...LIB, clientId, maxInFlight, droppedTotal };
+    if (next) {
+      logger.warn("producer saturated, shedding droppable sends", fields);
+    } else {
+      logger.info("producer no longer saturated", fields);
+    }
+  }
+
+  function recordDrop(topic: string) {
+    droppedTotal += 1;
+    recordGauge("messaging_producer_dropped_total", droppedTotal, {
+      description: "Sends dropped because the producer was saturated",
+      attributes: { client_id: clientId },
+    }).catch(() => {});
+    logger.debug("producer dropped send", { ...LIB, clientId, topic });
+  }
+
+  async function acquireSlot(topic: string): Promise<boolean> {
+    if (inFlight < maxInFlight) {
+      inFlight += 1;
+      return true;
+    }
+    setSaturated(true);
+    if (isDroppableTopic(topic)) {
+      recordDrop(topic);
+      return false;
+    }
+    await new Promise<void>((resolve) => slotWaiters.push(resolve));
+    return true;
+  }
+
+  function releaseSlot() {
+    const next = slotWaiters.shift();
+    if (next) {
+      next();
+      return;
+    }
+    inFlight -= 1;
+    if (inFlight < maxInFlight) setSaturated(false);
+  }
 
   const MAX_DELAY_MS = 30_000;
 
@@ -117,10 +191,18 @@ export function createProducer(
       if (!activeProducer) {
         return;
       }
+      if (!(await acquireSlot(topic))) {
+        return;
+      }
+      const target = activeProducer;
+      if (stopped || !target) {
+        releaseSlot();
+        return;
+      }
       try {
         const headers: Record<string, string> = {};
         await injectTraceContext(headers);
-        await activeProducer.send({
+        await target.send({
           topic,
           messages: [{ value: JSON.stringify(value), headers }],
         });
@@ -136,10 +218,16 @@ export function createProducer(
           connectLoop();
         }
         throw err; // re-throw so callers know the send failed
+      } finally {
+        releaseSlot();
       }
     },
     async disconnect(): Promise<void> {
       stopped = true;
+      slotWaiters.splice(0).forEach((wake) => {
+        inFlight += 1;
+        wake();
+      });
       await activeProducer?.disconnect();
     },
   });
