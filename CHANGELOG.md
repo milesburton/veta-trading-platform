@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.3...veta-trading-platform-v1.71.4) (2026-10-01)
+
+
+### Bug Fixes
+
+* **messaging:** hold order sends while the producer reconnects ([#686](https://github.com/milesburton/veta-trading-platform/issues/686)) ([52ab729](https://github.com/milesburton/veta-trading-platform/commit/52ab72941f5e41c5163ed6b8ae922a54692620b6)), closes [#681](https://github.com/milesburton/veta-trading-platform/issues/681)
+
 ## [1.71.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.2...veta-trading-platform-v1.71.3) (2026-09-30)
 
 
