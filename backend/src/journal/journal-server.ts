@@ -7,12 +7,14 @@ import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { GridQueryRequest, GridQueryResponse } from "@veta/types/grid-query";
 import { ingestTick, MAX_CANDLES } from "./candles.ts";
+import { createSingleFlightCache } from "./data-depth-cache.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;
 const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const DATA_DEPTH_TTL_MS = 60_000;
 
 const CONSUME_TOPICS = [
   "orders.submitted",
@@ -371,6 +373,46 @@ function rowToEntry(row: unknown[]) {
   };
 }
 
+async function loadDataDepth() {
+  const client = await journalPool.connect();
+  try {
+    const { rows } = await client.queryArray(
+      `SELECT instrument,
+              COUNT(*)::int AS candle_count,
+              MIN(time) AS earliest,
+              MAX(time) AS latest
+       FROM journal.candles
+       WHERE interval = '1m'
+       GROUP BY instrument
+       ORDER BY instrument`
+    );
+    const now = Date.now();
+    const symbols = rows.map(([instrument, count, earliest, latest]) => {
+      const earliestMs = earliest instanceof Date ? earliest.getTime() : Number(earliest);
+      const latestMs = latest instanceof Date ? latest.getTime() : Number(latest);
+      const spanDays = (latestMs - earliestMs) / 86_400_000;
+      return {
+        instrument,
+        candleCount: count,
+        earliestMs,
+        latestMs,
+        spanDays: Math.round(spanDays * 10) / 10,
+      };
+    });
+    const totalSymbols = symbols.length;
+    const avgDays =
+      totalSymbols > 0
+        ? Math.round((symbols.reduce((s, r) => s + r.spanDays, 0) / totalSymbols) * 10) / 10
+        : 0;
+    const minDays = totalSymbols > 0 ? Math.min(...symbols.map((r) => r.spanDays)) : 0;
+    return { totalSymbols, avgDays, minDays, queriedAt: now, symbols };
+  } finally {
+    client.release();
+  }
+}
+
+const dataDepthCache = createSingleFlightCache(loadDataDepth, DATA_DEPTH_TTL_MS);
+
 async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return corsOptions();
 
@@ -395,41 +437,7 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "GET" && path === "/data-depth") {
-    const client = await journalPool.connect();
-    try {
-      const { rows } = await client.queryArray(
-        `SELECT instrument,
-                COUNT(*)::int AS candle_count,
-                MIN(time) AS earliest,
-                MAX(time) AS latest
-         FROM journal.candles
-         WHERE interval = '1m'
-         GROUP BY instrument
-         ORDER BY instrument`
-      );
-      const now = Date.now();
-      const symbols = rows.map(([instrument, count, earliest, latest]) => {
-        const earliestMs = earliest instanceof Date ? earliest.getTime() : Number(earliest);
-        const latestMs = latest instanceof Date ? latest.getTime() : Number(latest);
-        const spanDays = (latestMs - earliestMs) / 86_400_000;
-        return {
-          instrument,
-          candleCount: count,
-          earliestMs,
-          latestMs,
-          spanDays: Math.round(spanDays * 10) / 10,
-        };
-      });
-      const totalSymbols = symbols.length;
-      const avgDays =
-        totalSymbols > 0
-          ? Math.round((symbols.reduce((s, r) => s + r.spanDays, 0) / totalSymbols) * 10) / 10
-          : 0;
-      const minDays = totalSymbols > 0 ? Math.min(...symbols.map((r) => r.spanDays)) : 0;
-      return json({ totalSymbols, avgDays, minDays, queriedAt: now, symbols });
-    } finally {
-      client.release();
-    }
+    return json(await dataDepthCache.get());
   }
 
   if (req.method === "GET" && path === "/candles") {
