@@ -89,9 +89,10 @@ export interface MsgProducer {
 
 /**
  * Returns a producer immediately. Internally retries the Redpanda connection
- * with exponential backoff (2 s → 30 s). Messages sent before the broker is
- * ready are silently dropped (fire-and-forget services) or should be retried
- * by the caller. Once connected, the producer is reused for all sends.
+ * with exponential backoff (2 s → 30 s). While the broker is unavailable,
+ * droppable sends are discarded and counted, and all other sends hold an
+ * in-flight slot and wait for the connection. Once connected, the producer is
+ * reused for all sends.
  */
 export function createProducer(
   clientId = "veta-producer",
@@ -105,6 +106,18 @@ export function createProducer(
   let droppedTotal = 0;
   let saturated = false;
   const slotWaiters: Array<() => void> = [];
+  const connectionWaiters: Array<() => void> = [];
+
+  function waitForConnection(): Promise<Producer | null> {
+    if (activeProducer || stopped) return Promise.resolve(activeProducer);
+    return new Promise((resolve) =>
+      connectionWaiters.push(() => resolve(activeProducer))
+    );
+  }
+
+  function wakeConnectionWaiters() {
+    connectionWaiters.splice(0).forEach((wake) => wake());
+  }
 
   function setSaturated(next: boolean) {
     if (next === saturated) return;
@@ -122,13 +135,14 @@ export function createProducer(
     }
   }
 
-  function recordDrop(topic: string) {
+  function recordDrop(topic: string, reason: "saturated" | "disconnected") {
     droppedTotal += 1;
     recordGauge("messaging_producer_dropped_total", droppedTotal, {
-      description: "Sends dropped because the producer was saturated",
+      description:
+        "Droppable sends discarded because the producer was saturated or disconnected",
       attributes: { client_id: clientId },
     }).catch(() => {});
-    logger.debug("producer dropped send", { ...LIB, clientId, topic });
+    logger.debug("producer dropped send", { ...LIB, clientId, topic, reason });
   }
 
   async function acquireSlot(topic: string): Promise<boolean> {
@@ -138,8 +152,13 @@ export function createProducer(
     }
     setSaturated(true);
     if (isDroppableTopic(topic)) {
-      recordDrop(topic);
+      recordDrop(topic, "saturated");
       return false;
+    }
+    if (slotWaiters.length >= maxInFlight) {
+      throw new Error(
+        `producer ${clientId} backlog full (${maxInFlight} in flight, ${slotWaiters.length} waiting), rejecting send to ${topic}`,
+      );
     }
     await new Promise<void>((resolve) => slotWaiters.push(resolve));
     return true;
@@ -167,6 +186,7 @@ export function createProducer(
         activeProducer = p;
         reconnecting = false;
         logger.info("producer connected", { ...LIB, clientId });
+        wakeConnectionWaiters();
         return;
       } catch (err) {
         logger.warn("producer connect failed, retrying", {
@@ -188,13 +208,17 @@ export function createProducer(
       return activeProducer !== null;
     },
     async send(topic: string, value: unknown): Promise<void> {
-      if (!activeProducer) {
+      if (stopped) {
+        return;
+      }
+      if (!activeProducer && isDroppableTopic(topic)) {
+        recordDrop(topic, "disconnected");
         return;
       }
       if (!(await acquireSlot(topic))) {
         return;
       }
-      const target = activeProducer;
+      const target = await waitForConnection();
       if (stopped || !target) {
         releaseSlot();
         return;
@@ -228,6 +252,7 @@ export function createProducer(
         inFlight += 1;
         wake();
       });
+      wakeConnectionWaiters();
       await activeProducer?.disconnect();
     },
   });
