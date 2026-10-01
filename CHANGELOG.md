@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.5...veta-trading-platform-v1.71.6) (2026-10-01)
+
+
+### Bug Fixes
+
+* **journal:** cache data-depth and share one in-flight query ([#690](https://github.com/milesburton/veta-trading-platform/issues/690)) ([ecb82d1](https://github.com/milesburton/veta-trading-platform/commit/ecb82d10f798f4993284b2ee4a460710bf0df299))
+
 ## [1.71.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.4...veta-trading-platform-v1.71.5) (2026-10-01)
 
 
