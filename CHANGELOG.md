@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.4...veta-trading-platform-v1.71.5) (2026-10-01)
+
+
+### Bug Fixes
+
+* **db:** stop prune jobs overlapping and fix the quadratic feature prune ([#688](https://github.com/milesburton/veta-trading-platform/issues/688)) ([692678d](https://github.com/milesburton/veta-trading-platform/commit/692678d920a4184aefb08076f74e6a18b3adec86))
+
 ## [1.71.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.3...veta-trading-platform-v1.71.4) (2026-10-01)
 
 
