@@ -18,6 +18,8 @@ interface FakeClient {
 interface FakePool {
   connect(): Promise<FakeClient>;
   __setCleanupFailure(shouldFail: boolean): void;
+  __holdCleanup(): () => void;
+  __cleanupCount(): number;
   __releaseCount(): number;
 }
 
@@ -38,6 +40,8 @@ function makeFeature(symbol: string, ts: number, momentum: number): FeatureVecto
 function makeFakePool(seed: FeatureVector[] = []): FakePool {
   let nextId = 1;
   let cleanupFails = false;
+  let cleanupGate: Promise<void> | null = null;
+  let cleanups = 0;
   let releases = 0;
   const rows: StoredFeatureVector[] = seed.map((fv) => ({
     ...fv,
@@ -126,6 +130,8 @@ function makeFakePool(seed: FeatureVector[] = []): FakePool {
           }
 
           if (sql.includes("DELETE FROM intelligence.feature_vectors")) {
+            cleanups++;
+            if (cleanupGate) await cleanupGate;
             if (cleanupFails) {
               throw new Error("cleanup blew up");
             }
@@ -157,6 +163,19 @@ function makeFakePool(seed: FeatureVector[] = []): FakePool {
     }),
     __setCleanupFailure(shouldFail: boolean) {
       cleanupFails = shouldFail;
+    },
+    __holdCleanup() {
+      let open: () => void = () => {};
+      cleanupGate = new Promise<void>((resolve) => {
+        open = () => {
+          cleanupGate = null;
+          resolve();
+        };
+      });
+      return open;
+    },
+    __cleanupCount() {
+      return cleanups;
     },
     __releaseCount() {
       return releases;
@@ -235,6 +254,37 @@ Deno.test("[feature-store] startCleanup prunes old rows per symbol and swallows 
 
     pool.__setCleanupFailure(true);
     await callback?.();
+  } finally {
+    globalThis.setInterval = realSetInterval;
+  }
+});
+
+Deno.test("[feature-store] startCleanup skips a tick while the previous prune is still running", async () => {
+  const pool = makeFakePool([makeFeature("AAPL", 1000, 0.1)]);
+  const store = createFeatureStore(pool as unknown as Parameters<typeof createFeatureStore>[0]);
+
+  const realSetInterval = globalThis.setInterval;
+  let callback: (() => Promise<void>) | undefined;
+  const globalWithInterval = globalThis as typeof globalThis & {
+    setInterval(cb: () => Promise<void>): number;
+  };
+  globalWithInterval.setInterval = ((cb: () => Promise<void>) => {
+    callback = cb;
+    return 1;
+  }) as typeof setInterval;
+
+  try {
+    store.startCleanup(10);
+    const release = pool.__holdCleanup();
+    const first = callback?.();
+    await new Promise((r) => setTimeout(r, 0));
+    await callback?.();
+    assertEquals(pool.__cleanupCount(), 1);
+
+    release();
+    await first;
+    await callback?.();
+    assertEquals(pool.__cleanupCount(), 2);
   } finally {
     globalThis.setInterval = realSetInterval;
   }

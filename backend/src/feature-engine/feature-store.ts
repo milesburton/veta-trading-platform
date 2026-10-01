@@ -132,23 +132,31 @@ export function createFeatureStore(pool: Pool): FeatureStore {
     },
 
     startCleanup(intervalMs = 5 * 60 * 1000): ReturnType<typeof setInterval> {
+      let running = false;
       return setInterval(async () => {
-        const client = await pool.connect();
+        if (running) return;
+        running = true;
         try {
-          await client.queryArray(
-            `DELETE FROM intelligence.feature_vectors
-             WHERE id NOT IN (
-               SELECT id FROM (
-                 SELECT id, ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY ts DESC) AS rn
-                 FROM intelligence.feature_vectors
-               ) ranked WHERE rn <= $1
-             )`,
-            [MAX_PER_SYMBOL]
-          );
+          const client = await pool.connect();
+          try {
+            await client.queryArray(
+              `DELETE FROM intelligence.feature_vectors fv
+               USING (
+                 SELECT id FROM (
+                   SELECT id, ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY ts DESC) AS rn
+                   FROM intelligence.feature_vectors
+                 ) ranked WHERE rn > $1
+               ) stale
+               WHERE fv.id = stale.id`,
+              [MAX_PER_SYMBOL]
+            );
+          } finally {
+            client.release();
+          }
         } catch (err) {
           logger.warn("cleanup error", { err: err as Error });
         } finally {
-          client.release();
+          running = false;
         }
       }, intervalMs);
     },

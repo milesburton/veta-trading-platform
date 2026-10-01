@@ -14,27 +14,33 @@ function bucketStart(ts: number, intervalMs: number): number {
 }
 
 let lastPruneTs = 0;
+let pruning = false;
 
 async function maybePruneCandles(now: number): Promise<void> {
-  if (now - lastPruneTs < 60_000) return;
+  if (pruning || now - lastPruneTs < 60_000) return;
   lastPruneTs = now;
-  const client = await journalPool.connect();
+  pruning = true;
   try {
-    for (const { key } of INTERVALS) {
-      await client.queryArray(
-        `DELETE FROM journal.candles
-         WHERE (interval, instrument, time) IN (
-           SELECT interval, instrument, time FROM (
-             SELECT interval, instrument, time,
-                    ROW_NUMBER() OVER (PARTITION BY instrument ORDER BY time DESC) AS rn
-             FROM journal.candles WHERE interval = $1
-           ) ranked WHERE rn > $2
-         )`,
-        [key, MAX_CANDLES]
-      );
+    const client = await journalPool.connect();
+    try {
+      for (const { key } of INTERVALS) {
+        await client.queryArray(
+          `DELETE FROM journal.candles
+           WHERE (interval, instrument, time) IN (
+             SELECT interval, instrument, time FROM (
+               SELECT interval, instrument, time,
+                      ROW_NUMBER() OVER (PARTITION BY instrument ORDER BY time DESC) AS rn
+               FROM journal.candles WHERE interval = $1
+             ) ranked WHERE rn > $2
+           )`,
+          [key, MAX_CANDLES]
+        );
+      }
+    } finally {
+      client.release();
     }
   } finally {
-    client.release();
+    pruning = false;
   }
 }
 
