@@ -8,6 +8,7 @@ import {
   createProducer,
   createTypedConsumer,
   isDroppableTopic,
+  sendInChunks,
   type KafkaFactoryLike,
 } from "../lib/messaging.ts";
 
@@ -626,4 +627,39 @@ Deno.test({
     await Promise.all(held);
     __setMessagingTestHooks(null);
   },
+});
+
+Deno.test("[messaging] sendInChunks keeps concurrent sends within the chunk size", async () => {
+  let active = 0;
+  let peak = 0;
+  const sent: unknown[] = [];
+  const producer = {
+    async send(_topic: string, value: unknown) {
+      active++;
+      peak = Math.max(peak, active);
+      await new Promise((r) => setTimeout(r, 0));
+      sent.push(value);
+      active--;
+    },
+  };
+
+  await sendInChunks(producer, "market.features", Array.from({ length: 250 }, (_, i) => i), 100);
+
+  assertEquals(sent.length, 250);
+  assertEquals(peak, 100);
+});
+
+Deno.test("[messaging] sendInChunks continues past a failed send", async () => {
+  const sent: unknown[] = [];
+  const producer = {
+    send(_topic: string, value: unknown) {
+      if (value === 1) return Promise.reject(new Error("boom"));
+      sent.push(value);
+      return Promise.resolve();
+    },
+  };
+
+  await sendInChunks(producer, "market.features", [0, 1, 2, 3], 2);
+
+  assertEquals(sent, [0, 2, 3]);
 });

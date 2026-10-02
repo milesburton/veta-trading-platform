@@ -3,7 +3,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { intelligencePool } from "@veta/db";
 import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createConsumer, createProducer, sendInChunks } from "@veta/messaging";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
 import { waitForUrl } from "@veta/wait-for";
 import { armConsumerIdleExit } from "../shared/idle-exit.ts";
@@ -166,6 +166,7 @@ let consecutiveInsertFailures = 0;
 let nextFlushAt = 0;
 
 const FLUSH_INTERVAL_MS = 250;
+const PUBLISH_CHUNK_SIZE = 100;
 const BACKOFF_BASE_MS = 250;
 const BACKOFF_MAX_MS = 30_000;
 
@@ -199,7 +200,7 @@ async function flushFeatures(): Promise<void> {
   }
 
   if (producer) {
-    await Promise.all(batch.map((fv) => producer.send("market.features", fv).catch(() => {})));
+    await sendInChunks(producer, "market.features", batch, PUBLISH_CHUNK_SIZE);
   }
 
   flushInFlight = false;

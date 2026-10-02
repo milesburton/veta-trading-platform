@@ -258,6 +258,19 @@ export function createProducer(
   });
 }
 
+export async function sendInChunks(
+  producer: Pick<MsgProducer, "send">,
+  topic: string,
+  values: readonly unknown[],
+  chunkSize: number,
+): Promise<void> {
+  for (let start = 0; start < values.length; start += chunkSize) {
+    await Promise.allSettled(
+      values.slice(start, start + chunkSize).map((value) => producer.send(topic, value)),
+    );
+  }
+}
+
 type MessageHandler = (topic: string, value: unknown) => Promise<void> | void;
 
 export interface MsgConsumer {
