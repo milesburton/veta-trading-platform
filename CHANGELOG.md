@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.71.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.6...veta-trading-platform-v1.71.7) (2026-10-02)
+
+
+### Bug Fixes
+
+* **compose:** give postgres a 256 MiB /dev/shm ([#695](https://github.com/milesburton/veta-trading-platform/issues/695)) ([23d3221](https://github.com/milesburton/veta-trading-platform/commit/23d3221928ba2139709d989a0a64bf8b4811a83a))
+* **feature-engine:** publish market.features in bounded chunks ([#694](https://github.com/milesburton/veta-trading-platform/issues/694)) ([d31b8db](https://github.com/milesburton/veta-trading-platform/commit/d31b8db52567a60c7adece1cc42ac5e03d9af3be))
+
 ## [1.71.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.5...veta-trading-platform-v1.71.6) (2026-10-01)
 
 
