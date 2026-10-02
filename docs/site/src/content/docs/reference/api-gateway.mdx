@@ -7,7 +7,7 @@ import Svc from "@docs/components/Svc.astro";
 import Source from "@docs/components/Source.astro";
 import CodeBlock from "@docs/components/CodeBlock.astro";
 
-The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser traffic. All routes require a valid `veta_user` session cookie except `/health` and `/ready`.
+The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser traffic. All routes require a valid `veta_user` session cookie except `/health`, `/ready` and `/services/status`.
 
 ## Health & readiness
 
@@ -15,6 +15,7 @@ The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser t
 | --- | --- | --- | --- |
 | GET | `/health` | No | Service health check |
 | GET | `/ready` | No | All-services readiness with per-service status |
+| GET | `/services/status` | No | Classified status of every registry service; the source for the status bar and host MOTD |
 | GET | `/system` | No | Disk usage, memory stats |
 
 ## WebSocket
@@ -71,9 +72,21 @@ Order events for a specific user are additionally broadcast to `compliance` and 
 
 ## Health check refresh
 
-<Source path="backend/src/gateway/gateway.ts" line={452} label="HEALTH_REFRESH_MS" />
+<Source path="backend/src/gateway/gateway.ts" line={649} label="HEALTH_REFRESH_MS" />
 
-`/ready` reports status for all 29 backend services. Fetching health from all of them synchronously on every request would mean 29 concurrent fetches per `/ready` call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
+The gateway polls `/health` on every service in `shared/serviceRegistry.ts`. Fetching health from all of them on every request would mean dozens of concurrent fetches per call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
+
+`/services/status` applies the same rule: anonymous callers get only the counts, authenticated callers also get the per-service list. Each probe is classified by `classifyProbe` in `shared/serviceState.ts`:
+
+| Status | Meaning |
+| --- | --- |
+| `ok` | `/health` returned 2xx and the body reports no problem |
+| `starting` | 503 with `status: "starting"` |
+| `degraded` | 2xx reporting unhealthy, 503 with `status: "critical"`, or an on-demand or optional service that timed out or returned an error |
+| `standby` | An on-demand (tier 1 or above) or optional service that is not running |
+| `error` | Any failure of a required tier 0 service |
+
+`ok` and `standby` count as up in `/ready`, the daily summary and the service up-ratio statistics.
 
 ## Per-service RBAC
 

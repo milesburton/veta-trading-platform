@@ -6,6 +6,7 @@ import { getCookieToken } from "@veta/auth";
 import { logger, registerLogSink } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
+import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
@@ -21,8 +22,6 @@ import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
-import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
-import { proxyWithWake } from "./wake.ts";
 import { createRefPriceCache } from "./ref-prices.ts";
 import { classifyRequestSource } from "./request-source.ts";
 import { handleAdminRoute } from "./routes/admin.ts";
@@ -36,8 +35,16 @@ import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleTicketAttachmentsRoute } from "./routes/ticket-attachments.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
+import {
+  buildServicesStatus,
+  type ProbeTarget,
+  pollServices,
+  type ServiceStatusEntry,
+  toHealthFlags,
+} from "./service-status.ts";
 import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system-status.ts";
 import { getTicketingHealth, startTicketingHealthMonitor } from "./ticketing.ts";
+import { proxyWithWake } from "./wake.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -308,7 +315,7 @@ const guestSubmitLimiter = new RateLimiter({
   refillPerSecond: Number(Deno.env.get("GUEST_SUBMIT_REFILL")) || 1,
 });
 
-const RATE_LIMIT_BYPASS_PATHS = new Set(["/health", "/ready", "/metrics"]);
+const RATE_LIMIT_BYPASS_PATHS = new Set(["/health", "/ready", "/services/status", "/metrics"]);
 
 function isWebSocketUpgrade(req: Request): boolean {
   return req.headers.get("upgrade")?.toLowerCase() === "websocket";
@@ -641,46 +648,12 @@ await startConsumers();
 // docs: /reference/api-gateway/
 const HEALTH_REFRESH_MS = 5_000;
 
-type ServiceHealth = {
-  marketSim: boolean;
-  ems: boolean;
-  oms: boolean;
-  journal: boolean;
-  userService: boolean;
-  fixArchive: boolean;
-  fixGateway: boolean;
-  observability: boolean;
-  limitAlgo: boolean;
-  twapAlgo: boolean;
-  povAlgo: boolean;
-  vwapAlgo: boolean;
-  icebergAlgo: boolean;
-  sniperAlgo: boolean;
-  arrivalPriceAlgo: boolean;
-  momentumAlgo: boolean;
-  isAlgo: boolean;
-  darkPool: boolean;
-  ccpService: boolean;
-  rfqService: boolean;
-  productService: boolean;
-  analytics: boolean;
-  marketData: boolean;
-  featureEngine: boolean;
-  signalEngine: boolean;
-  recommendationEngine: boolean;
-  scenarioEngine: boolean;
-  newsAggregator: boolean;
-  llmAdvisory: boolean;
-  replay: boolean;
-  riskEngine: boolean;
-  discordBot: boolean;
-  bus: boolean;
-};
-
 let upgradeInProgress = Deno.env.get("UPGRADE_IN_PROGRESS") === "true";
 let upgradeMessage: string | null = Deno.env.get("UPGRADE_MESSAGE") ?? null;
 
-let cachedHealth: ServiceHealth | null = null;
+let cachedEntries: ServiceStatusEntry[] | null = null;
+let cachedHealth: Record<string, boolean> | null = null;
+let cachedCheckedAt = 0;
 
 interface DataDepthSummary {
   totalSymbols: number;
@@ -708,124 +681,21 @@ async function refreshDataDepth(): Promise<void> {
   }
 }
 
-async function refreshHealth(): Promise<void> {
-  const chk = (url: string) =>
-    fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) })
-      .then((r) => r.ok)
-      .catch(() => false);
-  const [
-    marketSim,
-    ems,
-    oms,
-    journal,
-    userService,
-    fixArchive,
-    fixGateway,
-    observability,
-    limitAlgo,
-    twapAlgo,
-    povAlgo,
-    vwapAlgo,
-    icebergAlgo,
-    sniperAlgo,
-    arrivalPriceAlgo,
-    momentumAlgo,
-    isAlgo,
-    darkPool,
-    ccpService,
-    rfqService,
-    productService,
-    analytics,
-    marketData,
-    featureEngine,
-    signalEngine,
-    recommendationEngine,
-    scenarioEngine,
-    newsAggregator,
-    llmAdvisory,
-    replay,
-    riskEngine,
-    discordBot,
-    bus,
-  ] = await Promise.all([
-    chk(MARKET_SIM_URL),
-    chk(EMS_URL),
-    chk(OMS_URL),
-    chk(JOURNAL_URL),
-    chk(USER_SERVICE_URL),
-    chk(FIX_ARCHIVE_URL),
-    chk(FIX_GATEWAY_URL),
-    chk(KAFKA_RELAY_URL),
-    chk(LIMIT_ALGO_URL),
-    chk(TWAP_ALGO_URL),
-    chk(POV_ALGO_URL),
-    chk(VWAP_ALGO_URL),
-    chk(ICEBERG_ALGO_URL),
-    chk(SNIPER_ALGO_URL),
-    chk(ARRIVAL_PRICE_ALGO_URL),
-    chk(MOMENTUM_ALGO_URL),
-    chk(IS_ALGO_URL),
-    chk(DARK_POOL_URL),
-    chk(CCP_SERVICE_URL),
-    chk(RFQ_SERVICE_URL),
-    chk(PRODUCT_SERVICE_URL),
-    chk(ANALYTICS_URL),
-    chk(MARKET_DATA_URL),
-    chk(FEATURE_ENGINE_URL),
-    chk(SIGNAL_ENGINE_URL),
-    chk(RECOMMENDATION_ENGINE_URL),
-    chk(SCENARIO_ENGINE_URL),
-    chk(NEWS_AGGREGATOR_URL),
-    chk(LLM_ADVISORY_URL),
-    chk(REPLAY_URL),
-    chk(RISK_ENGINE_URL),
-    chk(DISCORD_BOT_URL),
-    chk(KAFKA_RELAY_URL),
-  ]);
-  cachedHealth = {
-    marketSim,
-    ems,
-    oms,
-    journal,
-    userService,
-    fixArchive,
-    fixGateway,
-    observability,
-    limitAlgo,
-    twapAlgo,
-    povAlgo,
-    vwapAlgo,
-    icebergAlgo,
-    sniperAlgo,
-    arrivalPriceAlgo,
-    momentumAlgo,
-    isAlgo,
-    darkPool,
-    ccpService,
-    rfqService,
-    productService,
-    analytics,
-    marketData,
-    featureEngine,
-    signalEngine,
-    recommendationEngine,
-    scenarioEngine,
-    newsAggregator,
-    llmAdvisory,
-    replay,
-    riskEngine,
-    discordBot,
-    bus,
-  };
-}
+const HEALTH_PROBE_TARGETS: ProbeTarget[] = SERVICE_REGISTRY.flatMap((spec) => {
+  const base = Object.hasOwn(SVC_PROXY, spec.composeName) ? SVC_PROXY[spec.composeName] : undefined;
+  return base
+    ? [{ spec, url: `${base}${resolveInfraHealthPath(spec.composeName, "/health")}` }]
+    : [];
+});
 
 async function refreshHealthAndRecord(): Promise<void> {
-  await refreshHealth();
-  if (cachedHealth) {
-    const entries = Object.values(cachedHealth);
-    const up = entries.filter((ok) => ok).length;
-    platformStats.recordServiceSnapshot(up, entries.length);
-  }
+  const entries = await pollServices(HEALTH_PROBE_TARGETS, 8_000);
+  const flags = toHealthFlags(entries);
+  cachedEntries = entries;
+  cachedCheckedAt = Date.now();
+  cachedHealth = { ...flags, bus: flags.kafkaRelay, observability: flags.kafkaRelay };
+  const up = Object.values(flags).filter(Boolean).length;
+  platformStats.recordServiceSnapshot(up, entries.length);
 }
 
 refreshHealthAndRecord();
@@ -846,7 +716,7 @@ startDailySummary({
   environment: Deno.env.get("VETA_ENV") ?? "dev",
   startedAt: STARTED_AT,
   getStats: () => platformStats.snapshot(),
-  getServices: () => cachedHealth,
+  getServices: () => (cachedEntries ? toHealthFlags(cachedEntries) : null),
   hourUtc: resolveDailySummaryHourUtc(Deno.env.get("DISCORD_DAILY_SUMMARY_HOUR_UTC")),
   sender: sendDailySummary,
 });
@@ -925,7 +795,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         environment: Deno.env.get("VETA_ENV") ?? "dev",
         startedAt: STARTED_AT,
         uptimeMs: Date.now() - STARTED_AT,
-        services: cachedHealth ?? {},
+        services: cachedEntries ? toHealthFlags(cachedEntries) : {},
         stats: platformStats.snapshot(),
         ticketing: getTicketingHealth(),
       }),
@@ -934,6 +804,25 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       }
     );
+  }
+
+  if (path === "/services/status" && req.method === "GET") {
+    if (!cachedEntries) {
+      return new Response(JSON.stringify({ error: "status not yet available" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
+    }
+    const tokenCookie = getCookieToken(req);
+    const isAuthed = tokenCookie ? (await validateToken(tokenCookie)) !== null : false;
+    const status = buildServicesStatus(VERSION, cachedEntries, cachedCheckedAt);
+    const body = isAuthed
+      ? status
+      : { commit: status.commit, checkedAt: status.checkedAt, counts: status.counts };
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    });
   }
 
   if (path === "/ready" && req.method === "GET") {
