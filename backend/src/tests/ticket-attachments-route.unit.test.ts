@@ -95,6 +95,36 @@ Deno.test("rejects an oversized file", async () => {
   }
 });
 
+for (const contentType of ["image/svg+xml", "text/html", "video/x-unknown"]) {
+  Deno.test(`rejects ${contentType} attachments`, async () => {
+    setConfiguredEnv();
+    try {
+      const res = await handleTicketAttachmentsRoute(
+        req({ fileName: "a.bin", contentType, sizeBytes: 100 }),
+        "/ticket-attachments/presign",
+        makeContext()
+      );
+      assertEquals(res?.status, 400);
+    } finally {
+      restoreEnv();
+    }
+  });
+}
+
+Deno.test("accepts an allowlisted content type regardless of case", async () => {
+  setConfiguredEnv();
+  try {
+    const res = await handleTicketAttachmentsRoute(
+      req({ fileName: "clip.mp4", contentType: "Video/MP4", sizeBytes: 100 }),
+      "/ticket-attachments/presign",
+      makeContext()
+    );
+    assertEquals(res?.status, 200);
+  } finally {
+    restoreEnv();
+  }
+});
+
 Deno.test("rejects a disallowed content type", async () => {
   setConfiguredEnv();
   try {

@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 102,
-      "cases": 1187,
+      "cases": 1189,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -58,7 +58,7 @@
         "platform-stats.unit.test.ts": 11,
         "daily-summary.unit.test.ts": 23,
         "tick-diff.unit.test.ts": 23,
-        "ticket-attachments-route.unit.test.ts": 10,
+        "ticket-attachments-route.unit.test.ts": 12,
         "redpanda-init-topic-wait.unit.test.ts": 3,
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,

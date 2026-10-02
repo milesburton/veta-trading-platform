@@ -354,6 +354,23 @@ describe("BugReportModal", () => {
     resolvePresign();
   });
 
+  it.each([
+    ["drawing.svg", "image/svg+xml"],
+    ["notes", ""],
+  ])("rejects %s without requesting an upload", async (name, type) => {
+    renderModal();
+
+    const file = new File(["bytes"], name, { type });
+    fireEvent.change(screen.getByTestId("bug-report-file-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText(/Unsupported file type/i)
+      ).toBeInTheDocument();
+    });
+    expect(mockPresign).not.toHaveBeenCalled();
+  });
+
   it("marks an attachment as errored when upload fails", async () => {
     mockPresign.mockReturnValue({
       unwrap: () => Promise.reject(new Error("network down")),
