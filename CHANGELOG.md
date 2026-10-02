@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.72.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.7...veta-trading-platform-v1.72.0) (2026-10-02)
+
+
+### Features
+
+* **gateway:** classify service status from the registry and serve GET /services/status ([#698](https://github.com/milesburton/veta-trading-platform/issues/698)) ([a53b6d4](https://github.com/milesburton/veta-trading-platform/commit/a53b6d47f0e1394288a5fbfff15c0fbf93a3527a))
+
+
+### Bug Fixes
+
+* **attachments:** restrict ticket attachments to a raster image and video allowlist ([#697](https://github.com/milesburton/veta-trading-platform/issues/697)) ([ac91815](https://github.com/milesburton/veta-trading-platform/commit/ac91815a20b3edbd781835541f886000096dbdfe))
+
 ## [1.71.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.6...veta-trading-platform-v1.71.7) (2026-10-02)
 
 
