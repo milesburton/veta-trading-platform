@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { ATTACHMENT_CONTENT_TYPES, isAllowedAttachmentType } from "@shared/attachmentTypes";
 import {
   captureScreenshotBlob,
   MAX_ATTACHMENT_BYTES,
@@ -114,6 +115,18 @@ export function BugReportModal({ open, onClose }: Props) {
     const files = event.target.files;
     if (!files) return;
     for (const file of Array.from(files)) {
+      if (!isAllowedAttachmentType(file.type)) {
+        attachments.value = [
+          ...attachments.value,
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: file.name,
+            status: "error",
+            error: "Unsupported file type.",
+          },
+        ];
+        continue;
+      }
       if (file.size > MAX_ATTACHMENT_BYTES) {
         attachments.value = [
           ...attachments.value,
@@ -383,7 +396,7 @@ export function BugReportModal({ open, onClose }: Props) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept={ATTACHMENT_CONTENT_TYPES.join(",")}
                   multiple
                   onChange={handleFileSelect}
                   className="hidden"

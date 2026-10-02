@@ -1,9 +1,9 @@
 import { json, jsonError, parseBody } from "@veta/http";
 import { z } from "@veta/zod";
+import { isAllowedAttachmentType } from "../../../../shared/attachmentTypes.ts";
 import { type GatewayContext, isResponse } from "../context.ts";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const ALLOWED_CONTENT_TYPE = /^(image|video)\//;
 const PRESIGN_EXPIRY_SECONDS = 300;
 
 const PresignRequestSchema = z.object({
@@ -147,8 +147,8 @@ export async function handleTicketAttachmentsRoute(
   if (sizeBytes > MAX_ATTACHMENT_BYTES) {
     return jsonError("file exceeds 10MB limit", 413);
   }
-  if (!ALLOWED_CONTENT_TYPE.test(contentType)) {
-    return jsonError("only image and video attachments are supported", 400);
+  if (!isAllowedAttachmentType(contentType)) {
+    return jsonError("only PNG, JPEG, GIF, WebP, MP4, WebM and QuickTime attachments are supported", 400);
   }
 
   const objectKey = `${authResult.user.id}/${crypto.randomUUID()}-${sanitizeFileName(fileName)}`;
