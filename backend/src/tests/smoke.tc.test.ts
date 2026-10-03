@@ -8,7 +8,7 @@
  * cross-cutting service contracts (RFQ + dark-pool stats).
  *
  * The full 61-check legacy smoke suite (backend/src/tests/smoke.test.ts) is
- * still the post-deploy gate on Fly + homelab; this file is the in-CI
+ * still the post-deploy gate on the homelab; this file is the in-CI
  * smoke check that runs alongside the Testcontainers integration suite.
  */
 import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";

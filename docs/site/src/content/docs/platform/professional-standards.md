@@ -84,7 +84,7 @@ responses.
   visibly in raw error rate, but it represents transient slowness,
   not a real failure.
 - `/api/overview`: Traefik dashboard endpoint, only reachable on
-  the server; absence is expected on Fly.
+  the server; absence is expected through the public edge.
 - `/logs/query`: the gateway's logs route, returns 403 to viewer
   roles. By-design auth gating, not a server error.
 - HTTP `401`, `403`, `404`: by-design auth/authz responses. A
@@ -145,8 +145,8 @@ sometimes time out under load. Each follow-up PR named in the
 | Data classification documented                    | Deferred    | Need to identify which fields are PII / PII-equivalent / operational. |
 | Retention policy per data class                   | Deferred    | Journal events currently retained indefinitely.                       |
 | Log scrubbing (no PII / tokens leaking into logs) | Partially   | Logger has some redaction; no test proving completeness.              |
-| Encryption at rest                                | Partially   | Postgres on encrypted disk on the server; not enforced for Fly.       |
-| Encryption in transit (public surfaces only)      | Implemented | TLS at the Cloudflare/Fly edge.                                       |
+| Encryption at rest                                | Partially   | Postgres on encrypted disk on the server; not enforced in the stack.  |
+| Encryption in transit (public surfaces only)      | Implemented | TLS at the public edge proxy.                                         |
 
 ## Performance and capacity
 
