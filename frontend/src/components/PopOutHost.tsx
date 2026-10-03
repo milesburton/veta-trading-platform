@@ -30,7 +30,6 @@ import { OrderTicket } from "./OrderTicket.tsx";
 const ENV_TITLE_TAG: Record<string, string> = {
   local: "[LOCAL]",
   uat: "[UAT]",
-  fly: "[DEMO]",
 };
 const envTag = ENV_TITLE_TAG[DEPLOYMENT] ?? `[${DEPLOYMENT.toUpperCase()}]`;
 

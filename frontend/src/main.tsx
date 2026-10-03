@@ -14,7 +14,6 @@ import { DEPLOYMENT } from "./store/servicesApi.ts";
 const ENV_TITLE_TAG: Record<string, string> = {
   local: "[LOCAL]",
   uat: "[UAT]",
-  fly: "[DEMO]",
 };
 const envTag = ENV_TITLE_TAG[DEPLOYMENT] ?? `[${DEPLOYMENT.toUpperCase()}]`;
 document.title = `${envTag} VETA Trading Platform`;

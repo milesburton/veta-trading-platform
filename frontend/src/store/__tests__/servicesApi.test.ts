@@ -79,7 +79,7 @@ describe("servicesApi – RTK Query endpoints", () => {
           url: "http://example/health",
           link: "http://example/health",
           optional: false,
-          alertOnDeployments: ["fly"],
+          alertOnDeployments: ["prod"],
         })
       );
       expect(result.data).toBeDefined();
@@ -89,7 +89,7 @@ describe("servicesApi – RTK Query endpoints", () => {
       expect(data.url).toBe("http://example/health");
       expect(data.link).toBe("http://example/health");
       expect(data.optional).toBe(false);
-      expect(data.alertOnDeployments).toEqual(["fly"]);
+      expect(data.alertOnDeployments).toEqual(["prod"]);
       expect(data.state).toBe("ok");
       expect(data.version).toBe("abc123");
       expect(data.meta).toEqual({ asset: "AAPL" });

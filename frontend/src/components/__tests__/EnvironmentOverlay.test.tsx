@@ -35,8 +35,8 @@ describe("EnvironmentOverlay", () => {
     expect(screen.queryByTestId("environment-overlay")).not.toBeInTheDocument();
   });
 
-  it("renders nothing on fly (production)", async () => {
-    mockedDeployment = "fly";
+  it("renders nothing on prod", async () => {
+    mockedDeployment = "prod";
     const Overlay = await importOverlay();
     render(<Overlay />);
     expect(screen.queryByTestId("environment-overlay")).not.toBeInTheDocument();

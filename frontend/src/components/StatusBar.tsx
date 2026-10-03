@@ -330,11 +330,6 @@ const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: stri
     title: "Internal UAT environment — not production",
     cls: "bg-semantic-status-pending/6 text-semantic-status-pending border-semantic-status-pending/30",
   },
-  fly: {
-    label: "Demo",
-    title: "Public Fly.io demo deployment",
-    cls: "bg-semantic-status-success/6 text-semantic-status-success border-semantic-status-success/30",
-  },
   prod: {
     label: "Production",
     title: "Production deployment",
