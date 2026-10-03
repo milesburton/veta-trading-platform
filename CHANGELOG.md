@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.72.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.72.0...veta-trading-platform-v1.72.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **compose:** point fix-exchange at the Redpanda broker ([#700](https://github.com/milesburton/veta-trading-platform/issues/700)) ([ae63af3](https://github.com/milesburton/veta-trading-platform/commit/ae63af31188c7b82f2bdc5b3b1b6f1d0661beb67)), closes [#677](https://github.com/milesburton/veta-trading-platform/issues/677)
+
 ## [1.72.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.71.7...veta-trading-platform-v1.72.0) (2026-10-02)
 
 
