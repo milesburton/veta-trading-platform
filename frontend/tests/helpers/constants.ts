@@ -29,6 +29,8 @@ export {
 
 export type { AuthUser, TradingLimits, AssetDef } from "./authFixtures.ts";
 
+import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+
 // ── Health / Ready helpers ───────────────────────────────────────────────────
 
 /**
@@ -65,6 +67,25 @@ export function buildReadyBody(extraServices?: Record<string, boolean>): Record<
  * Default ready body (no extra services).
  */
 export const DEFAULT_READY_BODY = buildReadyBody();
+
+export function buildServicesStatusBody(): Record<string, unknown> {
+  const checkedAt = Date.now();
+  const entry = (
+    id: string,
+    name: string,
+    composeName: string,
+    category: string,
+    tier: number,
+    optional: boolean
+  ) => ({ id, name, composeName, category, tier, optional, status: "ok", version: "test", meta: {}, checkedAt });
+  const services = [
+    entry("gateway", "Gateway", "gateway", "core", 0, false),
+    ...SERVICE_REGISTRY.filter((s) => s.excludeFromFrontendServices !== true).map((s) =>
+      entry(s.id, s.displayName, s.composeName, s.category, s.tier, s.optional === true)
+    ),
+  ];
+  return { commit: "test", checkedAt, counts: { ok: services.length }, services };
+}
 
 // ── Market data ──────────────────────────────────────────────────────────────
 

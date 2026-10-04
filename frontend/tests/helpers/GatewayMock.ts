@@ -5,6 +5,7 @@ import {
   DEFAULT_LIMITS,
   DEFAULT_ASSETS,
   DEFAULT_READY_BODY,
+  buildServicesStatusBody,
   MOCK_BOND_PRICE_RESPONSE,
   MOCK_SPREAD_ANALYSIS_RESPONSE,
   MOCK_DURATION_LADDER_RESPONSE,
@@ -123,6 +124,14 @@ export class GatewayMock {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ status: "ok", version: "mock" }),
+      })
+    );
+
+    await page.route("/api/gateway/services/status", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildServicesStatusBody()),
       })
     );
 
