@@ -1,0 +1,91 @@
+#!/bin/bash
+
+GATEWAY_CONTAINER="${VETA_GATEWAY_CONTAINER:-veta-gateway-1}"
+PLATFORM_URL="${VETA_PLATFORM_URL:-http://veta.home}"
+
+BOLD='\033[1m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+DIM='\033[2m'
+RESET='\033[0m'
+
+echo ''
+echo -e "  ██╗   ██╗███████╗████████╗ █████╗ "
+echo -e "  ██║   ██║██╔════╝╚══██╔══╝██╔══██╗"
+echo -e "  ██║   ██║█████╗     ██║   ███████║"
+echo -e "  ╚██╗ ██╔╝██╔══╝     ██║   ██╔══██║"
+echo -e "   ╚████╔╝ ███████╗   ██║   ██║  ██║"
+echo -e "    ╚═══╝  ╚══════╝   ╚═╝   ╚═╝  ╚═╝"
+echo -e "  Virtual Equities Trading Application"
+echo ''
+
+fetch_status() {
+  docker exec "$GATEWAY_CONTAINER" curl -sf --max-time 3 http://localhost:5011/services/status 2>/dev/null
+}
+
+count_of() {
+  jq -r --arg s "$1" '[.services[] | select(.status == $s)] | length' <<<"$2"
+}
+
+print_services() {
+  local body="$1"
+  local total ok starting degraded standby error up colour icon
+  total=$(jq -r '.services | length' <<<"$body")
+  ok=$(count_of ok "$body")
+  starting=$(count_of starting "$body")
+  degraded=$(count_of degraded "$body")
+  standby=$(count_of standby "$body")
+  error=$(count_of error "$body")
+  up=$((ok + standby))
+
+  if [ "$error" -gt 0 ]; then
+    colour="$RED"; icon="✗"
+  elif [ "$degraded" -gt 0 ] || [ "$starting" -gt 0 ]; then
+    colour="$YELLOW"; icon="~"
+  else
+    colour="$GREEN"; icon="✓"
+  fi
+
+  local detail="${ok} ok, ${standby} standby"
+  [ "$starting" -gt 0 ] && detail+=", ${starting} starting"
+  [ "$degraded" -gt 0 ] && detail+=", ${degraded} degraded"
+  [ "$error" -gt 0 ] && detail+=", ${error} error"
+
+  echo -e "  VETA Services   ${colour}${icon} ${up}/${total} up${RESET} ${DIM}(${detail})${RESET}"
+  echo -e "  Platform URL    ${PLATFORM_URL}"
+
+  local failing
+  failing=$(jq -r '.services[] | select(.status == "error" or .status == "degraded") | "    \(.name) (\(.status))"' <<<"$body")
+  if [ -n "$failing" ]; then
+    echo ''
+    echo -e "  ${BOLD}Needs attention${RESET}"
+    echo "$failing"
+  fi
+}
+
+print_containers_only() {
+  local total
+  total=$(docker ps --filter 'name=veta-' --format '{{.Names}}' 2>/dev/null | wc -l)
+  echo -e "  VETA Services   ${YELLOW}? gateway status unavailable${RESET} ${DIM}(${total} veta containers running)${RESET}"
+  echo -e "  Platform URL    ${PLATFORM_URL}"
+}
+
+if command -v docker &>/dev/null; then
+  body=""
+  command -v jq &>/dev/null && body=$(fetch_status)
+  if [ -n "$body" ] && jq -e '.services | type == "array"' <<<"$body" &>/dev/null; then
+    print_services "$body"
+  else
+    print_containers_only
+  fi
+fi
+
+CPU=$(top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1 2>/dev/null || echo '?')
+MEM_USED=$(free -h | awk '/^Mem:/ {print $3}')
+MEM_TOTAL=$(free -h | awk '/^Mem:/ {print $2}')
+DISK=$(df -h / | awk 'NR==2 {print $5}')
+
+echo ''
+echo -e "  Resources       CPU: ${CPU}%  Mem: ${MEM_USED}/${MEM_TOTAL}  Disk: ${DISK}"
+echo ''
