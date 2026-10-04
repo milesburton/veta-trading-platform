@@ -76,7 +76,7 @@ Order events for a specific user are additionally broadcast to `compliance` and 
 
 The gateway polls `/health` on every service in `shared/serviceRegistry.ts`. Fetching health from all of them on every request would mean dozens of concurrent fetches per call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
 
-`/services/status` applies the same rule: anonymous callers get only the counts, authenticated callers also get the per-service list. Each probe is classified by `classifyProbe` in `shared/serviceState.ts`:
+`/services/status` returns the per-service list to everyone, because each service's `/health` is already reachable anonymously through the gateway proxy. Only authenticated callers get each service's `meta` detail. Each probe is classified by `classifyProbe` in `shared/serviceState.ts`:
 
 | Status | Meaning |
 | --- | --- |

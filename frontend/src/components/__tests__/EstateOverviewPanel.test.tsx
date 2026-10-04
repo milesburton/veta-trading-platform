@@ -24,32 +24,30 @@ vi.mock("recharts", () => {
   };
 });
 
-vi.mock("../../store/servicesApi.ts", () => ({
-  SERVICES: [
+const { SERVICE_SPECS } = vi.hoisted(() => ({
+  SERVICE_SPECS: [
     { name: "OMS", url: "http://oms/health", category: "core" },
     { name: "Gateway", url: "http://gw/health", category: "core" },
   ],
-  useGetServiceHealthQuery: (svc: { name: string; url: string }) => {
-    const row = byService[svc.name];
-    if (!row?.ok) {
+}));
+
+vi.mock("../../store/servicesApi.ts", () => ({
+  SERVICES: SERVICE_SPECS,
+}));
+
+vi.mock("../../hooks/useAllServiceHealth", () => ({
+  useAllServiceHealth: () =>
+    SERVICE_SPECS.map((svc) => {
+      const row = byService[svc.name];
       return {
-        data: undefined,
-        isError: true,
-        error: row?.warn ? { name: svc.name, state: "warn", meta: {} } : undefined,
-      };
-    }
-    return {
-      data: {
         name: svc.name,
         url: svc.url,
-        state: "ok",
-        version: row.version,
+        state: row?.ok ? "ok" : row?.warn ? "warn" : "error",
+        version: row?.ok ? row.version : "—",
         meta: {},
         lastChecked: 1,
-      },
-      isError: false,
-    };
-  },
+      };
+    }),
 }));
 
 function renderPanel(
@@ -85,7 +83,7 @@ describe("EstateOverviewPanel", () => {
     byService.Gateway = { ok: false, version: "-" };
   });
 
-  it("renders service rows, empty timeline, and service alert feed", () => {
+  it("renders service rows and an empty timeline without raising its own service alerts", () => {
     renderPanel();
 
     expect(screen.getByText(/Estate Overview/i)).toBeInTheDocument();
@@ -93,7 +91,8 @@ describe("EstateOverviewPanel", () => {
     expect(screen.getByText("Gateway")).toBeInTheDocument();
     expect(screen.getByText(/Event Timeline/i)).toBeInTheDocument();
     expect(screen.getByText(/No events yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/Gateway: service down/i)).toBeInTheDocument();
+    expect(screen.getByText("DOWN")).toBeInTheDocument();
+    expect(screen.getByText(/No active alerts/i)).toBeInTheDocument();
   });
 
   it("dismisses visible alerts from the feed", () => {
@@ -188,7 +187,6 @@ describe("EstateOverviewPanel", () => {
     byService.OMS = { ok: true, version: "1.0.0" };
     byService.Gateway = { ok: true, version: "2.0.0" };
     renderPanel();
-    // OMS is in REQUIRED_SERVICES set so should be visible with OK
     const okEls = screen.getAllByText(/OK/i);
     expect(okEls.length).toBeGreaterThan(0);
   });

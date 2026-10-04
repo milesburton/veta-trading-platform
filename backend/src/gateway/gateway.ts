@@ -41,6 +41,7 @@ import {
   pollServices,
   type ServiceStatusEntry,
   toHealthFlags,
+  withoutMeta,
 } from "./service-status.ts";
 import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system-status.ts";
 import { getTicketingHealth, startTicketingHealthMonitor } from "./ticketing.ts";
@@ -816,9 +817,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const tokenCookie = getCookieToken(req);
     const isAuthed = tokenCookie ? (await validateToken(tokenCookie)) !== null : false;
     const status = buildServicesStatus(VERSION, cachedEntries, cachedCheckedAt);
-    const body = isAuthed
-      ? status
-      : { commit: status.commit, checkedAt: status.checkedAt, counts: status.counts };
+    const body = isAuthed ? status : withoutMeta(status);
     return new Response(JSON.stringify(body), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },

@@ -13,6 +13,9 @@ const { useAllServiceHealth } = vi.hoisted(() => ({
 
 vi.mock("../StatusBar", () => ({
   AppHeader: () => <div data-testid="app-header-mock" />,
+}));
+
+vi.mock("../../hooks/useAllServiceHealth", () => ({
   useAllServiceHealth,
 }));
 

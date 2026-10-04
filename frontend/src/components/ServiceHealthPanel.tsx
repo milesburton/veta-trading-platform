@@ -1,122 +1,11 @@
 import { useSignal } from "@preact/signals-react";
-import {
-  deriveDisplayState,
-  isHibernating,
-  type ServiceDisplayState,
-} from "@veta/frontend/lib/serviceHealth.ts";
-import { alertAdded, purgeServiceAlerts } from "@veta/frontend/store/alertsSlice.ts";
+import { useAllServiceHealth } from "@veta/frontend/hooks/useAllServiceHealth.ts";
+import { countsAsUp } from "@veta/frontend/lib/serviceHealth.ts";
+import { alertAdded } from "@veta/frontend/store/alertsSlice.ts";
 import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
-import type { AppDispatch } from "@veta/frontend/store/index.ts";
-import {
-  SERVICES,
-  useGetServiceHealthQuery,
-  useGetSystemMetricsQuery,
-} from "@veta/frontend/store/servicesApi.ts";
-import type { ServiceHealth } from "@veta/frontend/types.ts";
-import { useCallback, useEffect, useRef } from "react";
-
-const REQUIRED_SERVICES = new Set([
-  "Market Sim",
-  "EMS",
-  "OMS",
-  "Limit Algo",
-  "TWAP Algo",
-  "POV Algo",
-  "VWAP Algo",
-]);
-
-interface ServiceRowProps {
-  svc: (typeof SERVICES)[number];
-  onUpdate: (health: ServiceHealth) => void;
-  dispatch: AppDispatch;
-}
-
-function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
-  const { data, isError, error } = useGetServiceHealthQuery(svc, {
-    pollingInterval: 10_000,
-  });
-
-  const prevRef = useRef<ServiceHealth | null>(null);
-
-  useEffect(() => {
-    if (data && data !== prevRef.current) {
-      const prev = prevRef.current;
-      prevRef.current = data;
-      onUpdate(data);
-
-      // Transition: error → ok — recovery alert + purge prior service alerts
-      if (prev?.state === "error" && data.state === "ok") {
-        dispatch(purgeServiceAlerts());
-        dispatch(
-          alertAdded({
-            severity: "INFO",
-            source: "service",
-            message: `${svc.name}: recovered`,
-            ts: Date.now(),
-          })
-        );
-      }
-    }
-  }, [data, onUpdate, dispatch, svc.name]);
-
-  useEffect(() => {
-    if (isError) {
-      // transformErrorResponse encodes a deliberate warn signal (e.g.
-      // disk-monitor's 503 when disk crosses WARN_PCT) as `state: "warn"`
-      // on the error payload — that's degraded, not down, so it must not
-      // trigger the same "service down" alert as a genuine failure.
-      const errData = error as ServiceHealth | undefined;
-      const isWarn = errData?.state === "warn";
-      const errHealth: ServiceHealth = {
-        name: svc.name,
-        url: svc.url,
-        link: svc.link,
-        optional: svc.optional,
-        alertOnDeployments: svc.alertOnDeployments,
-        tier: svc.tier,
-        state: isWarn ? "warn" : "error",
-        connectionRefused: errData?.connectionRefused,
-        version: "—",
-        meta: errData?.meta ?? {},
-        lastChecked: Date.now(),
-      };
-      if (prevRef.current?.state !== errHealth.state) {
-        prevRef.current = errHealth;
-        onUpdate(errHealth);
-
-        if (isWarn) {
-          dispatch(
-            alertAdded({
-              severity: "WARNING",
-              source: "service",
-              message: `${svc.name}: degraded`,
-              detail: svc.url,
-              ts: Date.now(),
-            })
-          );
-          return;
-        }
-
-        // A hibernating service is expected to be unreachable, not down.
-        if (isHibernating(errHealth)) return;
-
-        // Transition: ok/unknown/warn → error — tiered alert
-        const isRequired = REQUIRED_SERVICES.has(svc.name);
-        dispatch(
-          alertAdded({
-            severity: isRequired ? "CRITICAL" : "WARNING",
-            source: "service",
-            message: `${svc.name}: service down`,
-            detail: svc.url,
-            ts: Date.now(),
-          })
-        );
-      }
-    }
-  }, [isError, error, svc, dispatch, onUpdate]);
-
-  return null;
-}
+import { useGetSystemMetricsQuery } from "@veta/frontend/store/servicesApi.ts";
+import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
+import { useEffect, useRef } from "react";
 
 interface RowDisplayProps {
   health: ServiceHealth;
@@ -124,17 +13,17 @@ interface RowDisplayProps {
   now: number;
 }
 
-const ROW_STATE_STYLE: Record<ServiceDisplayState, { dot: string; text: string; label: string }> = {
+const ROW_STATE_STYLE: Record<ServiceState, { dot: string; text: string; label: string }> = {
   ok: { dot: "bg-green-500", text: "text-green-400", label: "ok" },
   warn: { dot: "bg-amber-500", text: "text-amber-400", label: "warn" },
   error: { dot: "bg-red-500", text: "text-red-400", label: "error" },
   starting: { dot: "bg-sky-500", text: "text-sky-400", label: "starting" },
-  asleep: { dot: "bg-muted", text: "text-subtle", label: "asleep" },
+  standby: { dot: "bg-muted", text: "text-subtle", label: "standby" },
   unknown: { dot: "bg-muted", text: "text-muted", label: "—" },
 };
 
 function RowDisplay({ health, index, now }: RowDisplayProps) {
-  const style = ROW_STATE_STYLE[deriveDisplayState(health)];
+  const style = ROW_STATE_STYLE[health.state];
   const ageSecs = health.lastChecked != null ? Math.floor((now - health.lastChecked) / 1000) : null;
 
   return (
@@ -250,8 +139,7 @@ function HostResourcesSection() {
 }
 
 export function ServiceHealthPanel() {
-  const dispatch = useAppDispatch();
-  const healthMap = useSignal<Map<string, ServiceHealth>>(new Map());
+  const services = useAllServiceHealth();
   const now = useSignal(Date.now());
 
   useEffect(() => {
@@ -261,25 +149,11 @@ export function ServiceHealthPanel() {
     return () => clearInterval(id);
   }, [now]);
 
-  const handleUpdate = useCallback(
-    (health: ServiceHealth) => {
-      const next = new Map(healthMap.value);
-      next.set(health.name, health);
-      healthMap.value = next;
-    },
-    [healthMap]
-  );
-
-  const allOk =
-    healthMap.value.size > 0 &&
-    Array.from(healthMap.value.values()).every((h) => h.state === "ok" || h.optional);
+  const polled = services.filter((h) => h.state !== "unknown");
+  const allOk = polled.length > 0 && polled.every((h) => countsAsUp(h.state) || h.optional);
 
   return (
     <div className="h-full flex flex-col bg-page text-secondary overflow-auto">
-      {SERVICES.map((svc) => (
-        <ServiceRow key={svc.name} svc={svc} onUpdate={handleUpdate} dispatch={dispatch} />
-      ))}
-
       <div className="flex items-center justify-between px-3 py-2 border-b border-panel flex-shrink-0">
         <span className="text-xs font-semibold text-primary tracking-wide uppercase">
           Service Health
@@ -333,27 +207,9 @@ export function ServiceHealthPanel() {
             </tr>
           </thead>
           <tbody>
-            {SERVICES.map((svc, idx) => {
-              const health = healthMap.value.get(svc.name) ?? {
-                name: svc.name,
-                url: svc.url,
-                link: svc.link,
-                optional: svc.optional,
-                alertOnDeployments: svc.alertOnDeployments,
-                state: "unknown" as const,
-                version: "—",
-                meta: {},
-                lastChecked: null,
-              };
-              return (
-                <RowDisplay
-                  key={svc.name}
-                  health={health as ServiceHealth}
-                  index={idx}
-                  now={now.value}
-                />
-              );
-            })}
+            {services.map((health, idx) => (
+              <RowDisplay key={health.name} health={health} index={idx} now={now.value} />
+            ))}
           </tbody>
         </table>
       </div>

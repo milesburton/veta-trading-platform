@@ -5,6 +5,7 @@ import {
   pollServices,
   probe,
   toHealthFlags,
+  withoutMeta,
 } from "../gateway/service-status.ts";
 
 function spec(overrides: Partial<ServiceSpec>): ServiceSpec {
@@ -131,4 +132,18 @@ Deno.test("[toHealthFlags] counts ok and standby as up, everything else as down"
     fetchFn
   );
   assertEquals(toHealthFlags(entries), { ok: true, standby: true, error: false });
+});
+
+Deno.test("[withoutMeta] keeps every service but drops its meta", async () => {
+  const entries = await pollServices(
+    [{ spec: spec({ id: "a" }), url: "http://a" }],
+    1_000,
+    () => Promise.resolve(jsonResponse(200, { uptime: 9 })),
+    () => 1
+  );
+  const payload = withoutMeta(buildServicesStatus("sha", entries, 1));
+  assertEquals(payload.services.map((s) => [s.id, s.meta]), [
+    ["gateway", {}],
+    ["a", {}],
+  ]);
 });
