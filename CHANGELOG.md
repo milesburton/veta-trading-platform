@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.72.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.72.1...veta-trading-platform-v1.72.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* **frontend:** stop page glow ending in a hard edge on tall viewports ([#703](https://github.com/milesburton/veta-trading-platform/issues/703)) ([11fd7f8](https://github.com/milesburton/veta-trading-platform/commit/11fd7f81d48328447821e84a86cbd70dd4b07d7a))
+
 ## [1.72.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.72.0...veta-trading-platform-v1.72.1) (2026-10-03)
 
 
