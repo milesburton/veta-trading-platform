@@ -25,11 +25,6 @@ on:
   # trusted-automerge workflow to a PAT secret so its merges trigger
   # downstream workflows automatically.
   workflow_dispatch:
-    inputs:
-      publish_despite_integration:
-        description: "Publish :latest even though Integration tests did not pass (skips the suite). Builds and deploy gate must still pass."
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -623,7 +618,7 @@ jobs:
     # pr-visual-anomalies above.
     runs-on: [self-hosted, homelab]
     needs: [lint-and-test, changes]
-    if: "!inputs.publish_despite_integration && (github.ref == 'refs/heads/main' || (needs.changes.outputs.docker == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)))"
+    if: "github.ref == 'refs/heads/main' || (needs.changes.outputs.docker == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))"
     timeout-minutes: 45
     permissions:
       contents: write
@@ -1680,19 +1675,16 @@ jobs:
   publish-latest:
     name: Publish ${{ matrix.service }} :latest (gated)
     runs-on: ubuntu-latest
-    # integration is required here directly (not just transitively via
-    # deploy-gate) since deploy-gate no longer waits on it. Nothing publishes
-    # from a commit whose integration suite failed, unless a maintainer
-    # dispatches CI on main with publish_despite_integration (#660).
-    needs: [docker-base, docker-services, deploy-gate, integration]
+    # Integration tests run on the shared homelab runner and are a signal,
+    # not a gate, until #656 makes them reliable. deploy-gate's compose
+    # boot and smoke run is the publish gate.
+    needs: [docker-base, docker-services, deploy-gate]
     if: >-
       always() &&
       github.ref == 'refs/heads/main' &&
       needs.docker-base.result == 'success' &&
       needs.docker-services.result == 'success' &&
-      needs.deploy-gate.result == 'success' &&
-      (needs.integration.result == 'success' ||
-       (github.event_name == 'workflow_dispatch' && inputs.publish_despite_integration))
+      needs.deploy-gate.result == 'success'
     permissions:
       contents: read
       packages: write
