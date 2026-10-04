@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.73.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.72.2...veta-trading-platform-v1.73.0) (2026-10-04)
+
+
+### Features
+
+* **frontend:** read service health from the gateway status endpoint ([#705](https://github.com/milesburton/veta-trading-platform/issues/705)) ([f9f9eab](https://github.com/milesburton/veta-trading-platform/commit/f9f9eab7156aa6d068dec7103f684f58486e89dd))
+* **scripts:** homelab MOTD reads gateway service status ([#708](https://github.com/milesburton/veta-trading-platform/issues/708)) ([3007813](https://github.com/milesburton/veta-trading-platform/commit/3007813866ed443016bb64f0b94b59ea80f3d3a6))
+
 ## [1.72.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.72.1...veta-trading-platform-v1.72.2) (2026-10-04)
 
 
