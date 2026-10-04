@@ -94,6 +94,10 @@ function ServiceRow({ health, category }: { health: ServiceHealth; category: str
   );
 }
 
+const CATEGORY_BY_NAME: ReadonlyMap<string, string> = new Map(
+  SERVICES.map((s) => [s.name, s.category])
+);
+
 function ServiceHealthTable() {
   const services = useAllServiceHealth();
   return (
@@ -117,8 +121,12 @@ function ServiceHealthTable() {
           </tr>
         </thead>
         <tbody>
-          {services.map((health, i) => (
-            <ServiceRow key={health.name} health={health} category={SERVICES[i].category} />
+          {services.map((health) => (
+            <ServiceRow
+              key={health.name}
+              health={health}
+              category={CATEGORY_BY_NAME.get(health.name) ?? "core"}
+            />
           ))}
         </tbody>
       </table>
