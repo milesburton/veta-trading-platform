@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import { NON_TRADING_ROLES } from "@veta/frontend/auth/rbac.ts";
+import { useAllServiceHealth } from "@veta/frontend/hooks/useAllServiceHealth.ts";
 import { useFrontendMemoryTelemetry } from "@veta/frontend/hooks/useFrontendMemoryTelemetry.ts";
 import type { AlertSeverity } from "@veta/frontend/store/alertsSlice.ts";
 import {
@@ -9,12 +10,7 @@ import {
 } from "@veta/frontend/store/alertsSlice.ts";
 import { clearUser } from "@veta/frontend/store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
-import {
-  DEPLOYMENT,
-  SERVICES,
-  useGetDataDepthQuery,
-  useGetServiceHealthQuery,
-} from "@veta/frontend/store/servicesApi.ts";
+import { DEPLOYMENT, useGetDataDepthQuery } from "@veta/frontend/store/servicesApi.ts";
 import type { Theme } from "@veta/frontend/store/themeSlice.ts";
 import { saveTheme, setTheme } from "@veta/frontend/store/themeSlice.ts";
 import { dismissUpdateAvailable } from "@veta/frontend/store/uiSlice.ts";
@@ -37,37 +33,6 @@ import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { OverflowBar } from "./OverflowBar.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
-
-function useAllServiceHealth(): ServiceHealth[] {
-  return SERVICES.map((svc) => {
-    // docs: /development/contributing/
-    // biome-ignore lint/correctness/useHookAtTopLevel: stable iteration over module-level constant
-    const result = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
-    if (result.data) return result.data;
-    const base = {
-      name: svc.name,
-      url: svc.url,
-      link: svc.link,
-      optional: svc.optional,
-      alertOnDeployments: svc.alertOnDeployments,
-      tier: svc.tier,
-      version: "—",
-      meta: {},
-    };
-    if (result.isError) {
-      const errData = result.error as ServiceHealth | undefined;
-      return {
-        ...base,
-        state: errData?.state === "warn" ? ("warn" as const) : ("error" as const),
-        connectionRefused: errData?.connectionRefused,
-        lastChecked: Date.now(),
-      };
-    }
-    return { ...base, state: "unknown" as const, lastChecked: null };
-  });
-}
-
-export { useAllServiceHealth };
 
 const THEME_OPTIONS: { id: Theme; label: string }[] = [
   { id: "dark", label: "Dark" },

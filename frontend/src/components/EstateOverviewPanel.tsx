@@ -1,30 +1,19 @@
 import { useSignal } from "@preact/signals-react";
-import { deriveDisplayState, isHibernating } from "@veta/frontend/lib/serviceHealth.ts";
+import { useAllServiceHealth } from "@veta/frontend/hooks/useAllServiceHealth.ts";
 import {
   alertAdded,
   alertDismissed,
-  purgeServiceAlerts,
   selectActiveAlerts,
 } from "@veta/frontend/store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
-import { SERVICES, useGetServiceHealthQuery } from "@veta/frontend/store/servicesApi.ts";
+import { SERVICES } from "@veta/frontend/store/servicesApi.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
-import type { ObsEvent, ServiceState } from "@veta/frontend/types.ts";
+import type { ObsEvent, ServiceHealth } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 const WINDOW_MS = 60_000;
-
-const REQUIRED_SERVICES = new Set([
-  "Market Sim",
-  "EMS",
-  "OMS",
-  "Limit Algo",
-  "TWAP Algo",
-  "POV Algo",
-  "VWAP Algo",
-]);
 
 const FILL_RATE_WARN = 50;
 const FILL_RATE_CRIT = 30;
@@ -40,67 +29,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   observability: "Obs",
 };
 
-interface ServiceRowProps {
-  svc: (typeof SERVICES)[number];
-  dispatch: ReturnType<typeof useAppDispatch>;
-}
-
-function ServiceRow({ svc, dispatch }: ServiceRowProps) {
-  const { data, isError, error } = useGetServiceHealthQuery(svc, {
-    pollingInterval: 10_000,
-  });
-  const prevRef = useRef<ServiceState | null>(null);
-
-  const errPayload = isError
-    ? (error as { state?: ServiceState; connectionRefused?: boolean } | undefined)
-    : undefined;
-  const state: ServiceState = data?.state ?? (isError ? (errPayload?.state ?? "error") : "unknown");
-  const connectionRefused = data?.connectionRefused ?? errPayload?.connectionRefused;
-  const hibernating = isHibernating({
-    state,
-    optional: svc.optional,
-    tier: svc.tier,
-    connectionRefused,
-  });
-  const displayState = deriveDisplayState({
-    state,
-    optional: svc.optional,
-    tier: svc.tier,
-    connectionRefused,
-  });
-
-  useEffect(() => {
-    if (hibernating) {
-      prevRef.current = null;
-      return;
-    }
-    if ((state === "error" || state === "warn") && prevRef.current !== state) {
-      prevRef.current = state;
-      dispatch(
-        alertAdded({
-          severity:
-            state === "warn" ? "WARNING" : REQUIRED_SERVICES.has(svc.name) ? "CRITICAL" : "WARNING",
-          source: "service",
-          message: state === "warn" ? `${svc.name}: degraded` : `${svc.name}: service down`,
-          detail: svc.url,
-          ts: Date.now(),
-        })
-      );
-    } else if (state === "ok" && (prevRef.current === "error" || prevRef.current === "warn")) {
-      prevRef.current = "ok";
-      dispatch(purgeServiceAlerts());
-      dispatch(
-        alertAdded({
-          severity: "INFO",
-          source: "service",
-          message: `${svc.name}: recovered`,
-          ts: Date.now(),
-        })
-      );
-    } else if (state === "ok" && prevRef.current === null) {
-      prevRef.current = "ok";
-    }
-  }, [state, hibernating, svc, dispatch]);
+function ServiceRow({ health, category }: { health: ServiceHealth; category: string }) {
+  const displayState = health.state;
 
   const dotClass =
     displayState === "ok"
@@ -127,8 +57,8 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
         ? "WARN"
         : displayState === "starting"
           ? "STARTING"
-          : displayState === "asleep"
-            ? "ASLEEP"
+          : displayState === "standby"
+            ? "STANDBY"
             : displayState === "error"
               ? "DOWN"
               : "—";
@@ -147,27 +77,29 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
         <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
       </td>
       <td className={`py-1 pr-3 text-[10px] font-mono whitespace-nowrap ${nameClass}`}>
-        {svc.link ? (
-          <a href={svc.link} target="_blank" rel="noreferrer" className="hover:underline">
-            {svc.name}
+        {health.link ? (
+          <a href={health.link} target="_blank" rel="noreferrer" className="hover:underline">
+            {health.name}
           </a>
         ) : (
-          svc.name
+          health.name
         )}
       </td>
       <td className="py-1 pr-3 text-[9px] text-subtle whitespace-nowrap">
-        {CATEGORY_LABEL[svc.category] ?? svc.category}
+        {CATEGORY_LABEL[category] ?? category}
       </td>
       <td className={`py-1 pr-3 text-[9px] font-mono tabular-nums ${statusClass}`}>{statusText}</td>
-      <td className="py-1 pr-3 text-[9px] text-subtle font-mono tabular-nums">
-        {data?.version ?? "—"}
-      </td>
+      <td className="py-1 pr-3 text-[9px] text-subtle font-mono tabular-nums">{health.version}</td>
     </tr>
   );
 }
 
+const CATEGORY_BY_NAME: ReadonlyMap<string, string> = new Map(
+  SERVICES.map((s) => [s.name, s.category])
+);
+
 function ServiceHealthTable() {
-  const dispatch = useAppDispatch();
+  const services = useAllServiceHealth();
   return (
     <div className="overflow-auto shrink-0 border-b border-panel max-h-[45%]">
       <table className="w-full text-left border-collapse">
@@ -189,8 +121,12 @@ function ServiceHealthTable() {
           </tr>
         </thead>
         <tbody>
-          {SERVICES.map((svc) => (
-            <ServiceRow key={svc.name} svc={svc} dispatch={dispatch} />
+          {services.map((health) => (
+            <ServiceRow
+              key={health.name}
+              health={health}
+              category={CATEGORY_BY_NAME.get(health.name) ?? "core"}
+            />
           ))}
         </tbody>
       </table>

@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { useAllServiceHealth } from "@veta/frontend/hooks/useAllServiceHealth.ts";
 import { sha256Async } from "@veta/frontend/lib/sha256.ts";
 import { setUser } from "@veta/frontend/store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
@@ -13,7 +14,7 @@ import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoPersonas } from "./DemoPersonas.tsx";
 import { RegistrationForm } from "./LoginPage/RegistrationForm.tsx";
-import { AppHeader, useAllServiceHealth } from "./StatusBar.tsx";
+import { AppHeader } from "./StatusBar.tsx";
 
 interface DegradedOverlayState {
   anyPolled: boolean;

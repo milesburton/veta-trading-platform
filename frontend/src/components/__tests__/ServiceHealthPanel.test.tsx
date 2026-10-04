@@ -41,72 +41,27 @@ const state: {
   },
 };
 
-const stableQueryResults: Record<
-  string,
-  {
-    signature: string;
-    data:
-      | {
-          name: string;
-          url: string;
-          optional?: boolean;
-          state: "ok";
-          version: string;
-          meta: Record<string, unknown>;
-          lastChecked: number;
-        }
-      | undefined;
-    isError: boolean;
-    error?: { name: string; state: "warn" | "error"; meta: Record<string, unknown> };
-  }
-> = {};
+const SERVICE_SPECS = [
+  { name: "OMS", url: "http://oms/health", optional: false },
+  { name: "Gateway", url: "http://gateway/health", optional: false },
+];
 
 vi.mock("../../store/servicesApi.ts", () => ({
-  SERVICES: [
-    { name: "OMS", url: "http://oms/health", optional: false },
-    { name: "Gateway", url: "http://gateway/health", optional: false },
-  ],
-  useGetServiceHealthQuery: ({
-    name,
-    url,
-    optional,
-  }: {
-    name: string;
-    url: string;
-    optional?: boolean;
-  }) => {
-    const item = state.byService[name as keyof typeof state.byService];
-    if (!item || item.kind === "error" || item.kind === "warn") {
-      const kind = item?.kind ?? "error";
-      if (stableQueryResults[name]?.signature !== kind) {
-        stableQueryResults[name] = {
-          signature: kind,
-          data: undefined,
-          isError: true,
-          error: { name, state: kind === "warn" ? "warn" : "error", meta: {} },
-        };
-      }
-      return stableQueryResults[name];
-    }
-    const signature = `ok:${item.version}`;
-    if (!stableQueryResults[name] || stableQueryResults[name].signature !== signature) {
-      stableQueryResults[name] = {
-        signature,
-        data: {
-          name,
-          url,
-          optional,
-          state: "ok",
-          version: item.version,
-          meta: {},
-          lastChecked: 1_700_000_000_000,
-        },
-        isError: false,
-      };
-    }
-    return stableQueryResults[name];
-  },
   useGetSystemMetricsQuery: () => ({ data: state.systemMetrics }),
+}));
+
+vi.mock("../../hooks/useAllServiceHealth", () => ({
+  useAllServiceHealth: () =>
+    SERVICE_SPECS.map((svc) => {
+      const item = state.byService[svc.name];
+      return {
+        ...svc,
+        state: item?.kind ?? "error",
+        version: item?.version ?? "—",
+        meta: {},
+        lastChecked: 1_700_000_000_000,
+      };
+    }),
 }));
 
 function renderPanel() {

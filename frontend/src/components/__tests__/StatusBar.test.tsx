@@ -12,7 +12,7 @@ import { feedSlice } from "@veta/frontend/store/feedSlice";
 import { killSwitchSlice } from "@veta/frontend/store/killSwitchSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { ordersSlice } from "@veta/frontend/store/ordersSlice";
-import { servicesApi } from "@veta/frontend/store/servicesApi";
+import { SERVICES, servicesApi } from "@veta/frontend/store/servicesApi";
 import { themeSlice } from "@veta/frontend/store/themeSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
@@ -27,6 +27,7 @@ const serviceHealthHolder = vi.hoisted(() => ({
       isError: boolean;
       isLoading: boolean;
     },
+  status: () => ({ data: undefined, isError: false }) as { data: unknown; isError: boolean },
 }));
 
 const dataDepthHolder = vi.hoisted(() => ({
@@ -52,6 +53,7 @@ vi.mock("../../store/servicesApi", async (importOriginal) => {
   return {
     ...original,
     useGetServiceHealthQuery: (svc: { name: string }) => serviceHealthHolder.resolve(svc),
+    useGetServicesStatusQuery: () => serviceHealthHolder.status(),
     useGetDataDepthQuery: () => dataDepthHolder.resolve(),
   };
 });
@@ -793,6 +795,7 @@ const DEFAULT_SERVICE_RESULT = {
 
 afterEach(() => {
   serviceHealthHolder.resolve = () => DEFAULT_SERVICE_RESULT;
+  serviceHealthHolder.status = () => ({ data: undefined, isError: false });
 });
 
 function setServiceHealth(state: ServiceHealth["state"]) {
@@ -808,6 +811,26 @@ function setServiceHealth(state: ServiceHealth["state"]) {
     isError: false,
     isLoading: false,
   });
+  const statusResult = {
+    data: {
+      commit: "1.2.3",
+      checkedAt: Date.now(),
+      counts: {},
+      services: SERVICES.map((svc) => ({
+        id: svc.name,
+        name: svc.name,
+        composeName: svc.name,
+        tier: 0,
+        optional: false,
+        status: state === "warn" ? "degraded" : state,
+        version: "1.2.3",
+        meta: {},
+        checkedAt: Date.now(),
+      })),
+    },
+    isError: false,
+  };
+  serviceHealthHolder.status = () => statusResult;
 }
 
 function renderWithDrawers(store: ReturnType<typeof makeStore>) {
@@ -911,6 +934,30 @@ describe("StatusBar – service health data", () => {
         (a) => a.severity === "INFO" && a.message.startsWith("Service recovered:")
       );
     expect(recovered).toBe(true);
+  });
+
+  it("raises no alert when a service moves to standby", () => {
+    setServiceHealth("ok");
+    const store = makeStore(true);
+    authenticateStore(store);
+    const { rerender } = renderWithDrawers(store);
+
+    setServiceHealth("standby");
+    act(() => {
+      rerender(drawerTree(store));
+    });
+
+    expect(store.getState().alerts.alerts.filter((a) => a.source === "service")).toEqual([]);
+  });
+
+  it("counts standby services as up in the services summary", () => {
+    setServiceHealth("standby");
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithDrawers(store);
+
+    const total = SERVICES.length;
+    expect(screen.getByTestId("services-status-btn")).toHaveTextContent(`${total}/${total}`);
   });
 });
 

@@ -17,13 +17,12 @@ function createHarness() {
   return { dispatched, next, invoke, storeAPI };
 }
 
-// Minimal fulfilled action shape that matches servicesApi.endpoints.getServiceHealth.matchFulfilled
-function makeHealthFulfilled(name: string, version: string, state = "ok") {
+function makeHealthFulfilled(name: string, version: string, status = "ok") {
   return {
     type: "servicesApi/executeQuery/fulfilled",
-    payload: { name, version, state },
+    payload: { services: [{ name, version, status }] },
     meta: {
-      arg: { endpointName: "getServiceHealth" },
+      arg: { endpointName: "getServicesStatus" },
       requestStatus: "fulfilled",
     },
   };
@@ -128,7 +127,7 @@ describe("versionWatchMiddleware – backend service version tracking", () => {
     expect(next).toHaveBeenCalledWith(action);
   });
 
-  it("records backend baseline on first getServiceHealth fulfilled", () => {
+  it("records backend baseline on first getServicesStatus fulfilled", () => {
     const { dispatched, invoke } = createHarness();
     invoke(makeHealthFulfilled("EMS", "1.2.3"));
     expect(dispatched.some((a) => setUpdateAvailable.match(a as { type: string }))).toBe(false);

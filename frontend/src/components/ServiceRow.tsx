@@ -1,19 +1,13 @@
-import {
-  deriveDisplayState,
-  isExpectedAbsence,
-  isHibernating,
-} from "@veta/frontend/lib/serviceHealth.ts";
-import type { ServiceHealth } from "@veta/frontend/types.ts";
+import { isExpectedAbsence } from "@veta/frontend/lib/serviceHealth.ts";
+import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { StatusDot } from "./StatusDot";
 
 export function ServiceRow({ svc }: { svc: ServiceHealth }) {
   const unavailable = isExpectedAbsence(svc);
-  const asleep = isHibernating(svc);
-  const displayState = deriveDisplayState(svc);
 
-  function label(state: ReturnType<typeof deriveDisplayState>) {
-    if (asleep) return <span className="text-subtle">asleep</span>;
+  function label(state: ServiceState) {
+    if (state === "standby") return <span className="text-subtle">standby</span>;
     if (svc.optional && state === "error") return <span className="text-subtle">unavailable</span>;
     if (state === "ok") return <span className="text-emerald-400">ok</span>;
     if (state === "warn") return <span className="text-amber-400">warn</span>;
@@ -35,7 +29,7 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
     <tr className={`border-b border-panel/40 ${unavailable ? "opacity-40" : ""}`}>
       <td className="px-3 py-2 max-w-0 truncate">
         <span className="flex items-center gap-2">
-          <StatusDot state={unavailable && !asleep ? "unknown" : displayState} />
+          <StatusDot state={unavailable ? "unknown" : svc.state} />
           {svc.link ? (
             <a
               href={svc.link}
@@ -53,7 +47,7 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
           )}
         </span>
       </td>
-      <td className="px-3 py-2 whitespace-nowrap">{label(displayState)}</td>
+      <td className="px-3 py-2 whitespace-nowrap">{label(svc.state)}</td>
       <td className="px-3 py-2 max-w-0 font-mono text-label">
         <span className="block truncate" title={svc.version}>
           {svc.version}

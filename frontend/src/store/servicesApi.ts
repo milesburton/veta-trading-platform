@@ -4,7 +4,8 @@ import {
   SERVICE_REGISTRY,
   type ServiceCategory,
 } from "@shared/serviceRegistry";
-import type { ServiceHealth } from "@veta/frontend/types.ts";
+import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
+import { z } from "zod";
 
 interface DiskMetrics {
   total_gb: number;
@@ -102,6 +103,58 @@ export const SERVICES = SERVICES_ALL.filter(
   (s) => !s.showOnDeployments || s.showOnDeployments.includes(DEPLOYMENT)
 );
 
+export const GATEWAY_SERVICE = GATEWAY_SPEC;
+export const TRAEFIK_SERVICE = SERVICES.find((s) => s === TRAEFIK_SPEC);
+
+const ServiceStatusEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  composeName: z.string(),
+  tier: z.number(),
+  optional: z.boolean(),
+  status: z.enum(["ok", "starting", "degraded", "standby", "error"]),
+  version: z.string(),
+  meta: z.record(z.string(), z.unknown()),
+  checkedAt: z.number(),
+});
+
+const ServicesStatusSchema = z.object({
+  commit: z.string(),
+  checkedAt: z.number(),
+  counts: z.record(z.string(), z.number()),
+  services: z.array(ServiceStatusEntrySchema),
+});
+
+export type ServiceStatusEntry = z.infer<typeof ServiceStatusEntrySchema>;
+export type ServicesStatus = z.infer<typeof ServicesStatusSchema>;
+
+const STATE_BY_STATUS: Record<ServiceStatusEntry["status"], ServiceState> = {
+  ok: "ok",
+  starting: "starting",
+  degraded: "warn",
+  standby: "standby",
+  error: "error",
+};
+
+export function toServiceHealth(
+  spec: (typeof SERVICES)[number],
+  entry: ServiceStatusEntry | undefined,
+  fallback: ServiceState
+): ServiceHealth {
+  return {
+    name: spec.name,
+    url: spec.url,
+    link: spec.link,
+    optional: entry?.optional ?? spec.optional,
+    alertOnDeployments: spec.alertOnDeployments,
+    tier: entry?.tier ?? spec.tier,
+    state: entry ? STATE_BY_STATUS[entry.status] : fallback,
+    version: entry?.version ?? "—",
+    meta: entry?.meta ?? {},
+    lastChecked: entry?.checkedAt ?? null,
+  };
+}
+
 export const servicesApi = createApi({
   reducerPath: "servicesApi",
   baseQuery: fetchBaseQuery({ baseUrl: "" }),
@@ -141,18 +194,12 @@ export const servicesApi = createApi({
         };
       },
       transformErrorResponse: (response, _meta, arg) => {
-        // A service can report 503 deliberately to signal "warn" (e.g.
-        // disk-monitor crossing WARN_PCT) or "starting" rather than being
-        // unreachable. Every other non-2xx or network failure is "error",
-        // except a gateway-confirmed connectionRefused 502 (see wake.ts),
-        // which is the only signal isHibernating() may treat as asleep.
         const data =
           typeof response.status === "number" && response.data && typeof response.data === "object"
             ? (response.data as Record<string, unknown>)
             : null;
         const isWarn = response.status === 503 && data?.status === "critical";
         const isStarting = response.status === 503 && data?.status === "starting";
-        const connectionRefused = response.status === 502 && data?.connectionRefused === true;
         const state = isStarting
           ? ("starting" as const)
           : isWarn
@@ -166,12 +213,15 @@ export const servicesApi = createApi({
           alertOnDeployments: arg.alertOnDeployments,
           tier: arg.tier,
           state,
-          connectionRefused,
           version: "—",
           meta: (data ?? {}) as Record<string, unknown>,
           lastChecked: Date.now(),
         };
       },
+    }),
+    getServicesStatus: builder.query<ServicesStatus, void>({
+      query: () => ({ url: "/api/gateway/services/status" }),
+      transformResponse: (body: unknown) => ServicesStatusSchema.parse(body),
     }),
     getSystemMetrics: builder.query<SystemMetrics, void>({
       query: () => ({ url: "/api/gateway/system" }),
@@ -274,6 +324,7 @@ export interface BugReportResponse {
 
 export const {
   useGetServiceHealthQuery,
+  useGetServicesStatusQuery,
   useGetSystemMetricsQuery,
   useGetDataDepthQuery,
   useGetPlatformStatusQuery,

@@ -79,17 +79,16 @@ export const versionWatchMiddleware: Middleware = (storeAPI) => {
   return (next) => (action) => {
     const result = next(action);
 
-    if (servicesApi.endpoints.getServiceHealth.matchFulfilled(action)) {
-      const svc = action.payload;
-      if (svc.state !== "ok" || svc.version === "dev" || svc.version === "—") {
-        return result;
-      }
-      const known = backendBaseline.get(svc.name);
-      if (known === undefined) {
+    if (servicesApi.endpoints.getServicesStatus.matchFulfilled(action)) {
+      const versioned = action.payload.services.filter(
+        (svc) => svc.status === "ok" && svc.version !== "dev" && svc.version !== "—"
+      );
+      for (const svc of versioned) {
+        const known = backendBaseline.get(svc.name);
         backendBaseline.set(svc.name, svc.version);
-      } else if (known !== svc.version) {
-        backendBaseline.set(svc.name, svc.version);
-        notifyOnce(`backend:${svc.name}:${svc.version}`);
+        if (known !== undefined && known !== svc.version) {
+          notifyOnce(`backend:${svc.name}:${svc.version}`);
+        }
       }
     }
 

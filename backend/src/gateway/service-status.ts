@@ -134,6 +134,10 @@ export function buildServicesStatus(
   };
 }
 
+export function withoutMeta(payload: ServicesStatusPayload): ServicesStatusPayload {
+  return { ...payload, services: payload.services.map((s) => ({ ...s, meta: {} })) };
+}
+
 export function toHealthFlags(entries: readonly ServiceStatusEntry[]): Record<string, boolean> {
   return Object.fromEntries(entries.map((e) => [e.id, isServiceUp(e.status)]));
 }
