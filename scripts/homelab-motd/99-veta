@@ -25,18 +25,18 @@ fetch_status() {
 }
 
 count_of() {
-  jq -r --arg s "$1" '[.services[] | select(.status == $s)] | length' <<<"$2"
+  jq -r --arg s "$1" '.counts[$s] // 0' <<<"$2"
 }
 
 print_services() {
   local body="$1"
   local total ok starting degraded standby error up colour icon
-  total=$(jq -r '.services | length' <<<"$body")
   ok=$(count_of ok "$body")
   starting=$(count_of starting "$body")
   degraded=$(count_of degraded "$body")
   standby=$(count_of standby "$body")
   error=$(count_of error "$body")
+  total=$((ok + starting + degraded + standby + error))
   up=$((ok + standby))
 
   if [ "$error" -gt 0 ]; then
@@ -56,7 +56,7 @@ print_services() {
   echo -e "  Platform URL    ${PLATFORM_URL}"
 
   local failing
-  failing=$(jq -r '.services[] | select(.status == "error" or .status == "degraded") | "    \(.name) (\(.status))"' <<<"$body")
+  failing=$(jq -r '(.services // [])[] | select(.status == "error" or .status == "degraded") | "    \(.name) (\(.status))"' <<<"$body")
   if [ -n "$failing" ]; then
     echo ''
     echo -e "  ${BOLD}Needs attention${RESET}"
@@ -74,14 +74,15 @@ print_containers_only() {
 if command -v docker &>/dev/null; then
   body=""
   command -v jq &>/dev/null && body=$(fetch_status)
-  if [ -n "$body" ] && jq -e '.services | type == "array"' <<<"$body" &>/dev/null; then
+  if [ -n "$body" ] && jq -e '.counts | type == "object"' <<<"$body" &>/dev/null; then
     print_services "$body"
   else
     print_containers_only
   fi
 fi
 
-CPU=$(top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1 2>/dev/null || echo '?')
+CPU=$(top -bn1 2>/dev/null | awk '/Cpu\(s\)/ {print $2; exit}')
+CPU="${CPU:-?}"
 MEM_USED=$(free -h | awk '/^Mem:/ {print $3}')
 MEM_TOTAL=$(free -h | awk '/^Mem:/ {print $2}')
 DISK=$(df -h / | awk 'NR==2 {print $5}')
