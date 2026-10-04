@@ -29,8 +29,6 @@ export {
 
 export type { AuthUser, TradingLimits, AssetDef } from "./authFixtures.ts";
 
-import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
-
 // ── Health / Ready helpers ───────────────────────────────────────────────────
 
 /**
@@ -68,22 +66,31 @@ export function buildReadyBody(extraServices?: Record<string, boolean>): Record<
  */
 export const DEFAULT_READY_BODY = buildReadyBody();
 
+const MOCK_STATUS_SERVICES: readonly [string, string, string, string, number][] = [
+  ["gateway", "Gateway", "gateway", "core", 0],
+  ["marketSim", "Market Sim", "market-sim", "core", 0],
+  ["userService", "User Service", "user-service", "core", 0],
+  ["journal", "Journal", "journal", "core", 0],
+  ["ems", "EMS", "ems", "core", 0],
+  ["oms", "OMS", "oms", "core", 0],
+  ["analytics", "Analytics", "analytics", "data", 1],
+  ["marketData", "Market Data", "market-data-service", "data", 0],
+];
+
 export function buildServicesStatusBody(): Record<string, unknown> {
   const checkedAt = Date.now();
-  const entry = (
-    id: string,
-    name: string,
-    composeName: string,
-    category: string,
-    tier: number,
-    optional: boolean
-  ) => ({ id, name, composeName, category, tier, optional, status: "ok", version: "test", meta: {}, checkedAt });
-  const services = [
-    entry("gateway", "Gateway", "gateway", "core", 0, false),
-    ...SERVICE_REGISTRY.filter((s) => s.excludeFromFrontendServices !== true).map((s) =>
-      entry(s.id, s.displayName, s.composeName, s.category, s.tier, s.optional === true)
-    ),
-  ];
+  const services = MOCK_STATUS_SERVICES.map(([id, name, composeName, category, tier]) => ({
+    id,
+    name,
+    composeName,
+    category,
+    tier,
+    optional: false,
+    status: "ok",
+    version: "test",
+    meta: {},
+    checkedAt,
+  }));
   return { commit: "test", checkedAt, counts: { ok: services.length }, services };
 }
 
