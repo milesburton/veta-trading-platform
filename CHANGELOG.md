@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.75.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.75.1...veta-trading-platform-v1.75.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **market-sim:** glide towards real quotes instead of snapping to them ([#722](https://github.com/milesburton/veta-trading-platform/issues/722)) ([e98ea0b](https://github.com/milesburton/veta-trading-platform/commit/e98ea0b09def4cff9d44316d06195b133a99e026))
+
 ## [1.75.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.75.0...veta-trading-platform-v1.75.1) (2026-10-05)
 
 
