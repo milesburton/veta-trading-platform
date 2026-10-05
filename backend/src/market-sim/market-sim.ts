@@ -25,6 +25,7 @@ import {
   openPrices,
   refreshSectorShocks,
   seedPrice,
+  setAnchorPrice,
   snapshotOpenPrices,
   warmUpPrices,
 } from "./price-engine.ts";
@@ -49,7 +50,6 @@ const MARKET_DATA_URL = `http://${
   Deno.env.get("MARKET_DATA_HOST") ?? "localhost"
 }:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
 
-const realPriceCache = new Map<string, number>();
 let overriddenSymbols = new Set<string>();
 
 async function refreshOverrides(): Promise<void> {
@@ -73,8 +73,8 @@ async function fetchRealPrice(symbol: string): Promise<void> {
     if (!res.ok) return;
     const data = (await res.json()) as { price: number };
     if (data.price > 0) {
-      realPriceCache.set(symbol, data.price);
-      logger.info(`Seeding ${symbol} with real price: $${data.price.toFixed(4)}`);
+      setAnchorPrice(symbol, data.price);
+      logger.info(`Anchoring ${symbol} to real price: $${data.price.toFixed(4)}`);
     }
   } catch {
     /* keep cached/GBM price */
@@ -345,10 +345,6 @@ setInterval(() => {
   }
   advanceRegime();
   refreshSectorShocks();
-  for (const sym of overriddenSymbols) {
-    const real = realPriceCache.get(sym);
-    if (real) seedPrice(sym, real);
-  }
   const openAssetClasses = new Set(
     ASSET_CLASSES.filter((ac) => allowOutOfHours[ac] || isAssetClassOpen(ac))
   );
