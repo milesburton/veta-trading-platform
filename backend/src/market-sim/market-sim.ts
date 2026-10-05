@@ -19,6 +19,7 @@ import {
 import {
   advanceRegime,
   generatePrice,
+  isPrewarmInProgress,
   isResetInProgress,
   marketData,
   openPrices,
@@ -34,6 +35,7 @@ import {
   buildTickDiff,
   createSingleFlightPublisher,
   createTickDiffState,
+  fanOutTick,
   isEmptyDiff,
   symbolsNeedingFreshBook,
 } from "./tick-diff.ts";
@@ -306,6 +308,20 @@ function deriveSessionPhase(minute: number): SessionPhase {
 }
 
 const clients = new Set<WebSocket>();
+let laggingClients: ReadonlySet<WebSocket> = new Set();
+
+function buildSnapshotMessage(): string {
+  const allSymbols = Object.keys(marketData);
+  const snapshot = {
+    full: true as const,
+    prices: { ...marketData },
+    volumes: computeTickVolumes(marketMinute),
+    marketMinute,
+    orderBook: computeOrderBook(marketData, allSymbols),
+    venueBooks: computeVenueBooks(marketData, allSymbols),
+  };
+  return JSON.stringify({ event: "marketData", data: snapshot });
+}
 
 let tickDiffState = createTickDiffState();
 
@@ -323,7 +339,7 @@ publishMarketOpenGauges();
 setInterval(publishMarketOpenGauges, 60_000);
 
 setInterval(() => {
-  if (isResetInProgress()) return;
+  if (isResetInProgress() || isPrewarmInProgress()) return;
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
     marketMinute = (marketMinute + 1) % 390;
@@ -365,13 +381,9 @@ setInterval(() => {
 
   if (!isEmptyDiff(diff)) {
     const msg = JSON.stringify({ event: "marketUpdate", data: diff });
-    for (const socket of clients) {
-      try {
-        socket.send(msg);
-      } catch {
-        clients.delete(socket);
-      }
-    }
+    const { lagging, failed } = fanOutTick(clients, msg, laggingClients, buildSnapshotMessage);
+    laggingClients = lagging;
+    for (const socket of failed) clients.delete(socket);
     // docs: /platform/market-simulator/
     // #region docs:venuebooks-sniper-only
     const { venueBooks: _venueBooks, ...kafkaDiff } = diff;
@@ -459,19 +471,7 @@ Deno.serve({ port: PORT }, async (req) => {
   socket.onopen = () => {
     logger.info(`New WebSocket connection`);
     clients.add(socket);
-    const volumes = computeTickVolumes(marketMinute);
-    const allSymbols = Object.keys(marketData);
-    const orderBook = computeOrderBook(marketData, allSymbols);
-    const venueBooks = computeVenueBooks(marketData, allSymbols);
-    const snapshot = {
-      full: true as const,
-      prices: { ...marketData },
-      volumes,
-      marketMinute,
-      orderBook,
-      venueBooks,
-    };
-    socket.send(JSON.stringify({ event: "marketData", data: snapshot }));
+    socket.send(buildSnapshotMessage());
   };
 
   socket.onmessage = (event) => {
