@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.74.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.74.0...veta-trading-platform-v1.74.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **market-sim:** hold ticks until journal seeding finishes ([#714](https://github.com/milesburton/veta-trading-platform/issues/714)) ([5ddeb3f](https://github.com/milesburton/veta-trading-platform/commit/5ddeb3ffc27183c76635482e43010deb8b57bec4))
+
 ## [1.74.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.73.0...veta-trading-platform-v1.74.0) (2026-10-05)
 
 
