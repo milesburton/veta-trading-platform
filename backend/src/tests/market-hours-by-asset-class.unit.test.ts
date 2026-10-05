@@ -6,6 +6,12 @@ import {
   isAssetClass,
   isAssetClassOpen,
 } from "../market-sim/market-hours-by-asset-class.ts";
+import {
+  applyMarketHoursUpdate,
+  createMarketHoursSettingsStore,
+  marketHoursUpdateSchema,
+  mergeStoredAllowOutOfHours,
+} from "../market-sim/market-hours-settings.ts";
 
 function allowNone(): Record<AssetClass, boolean> {
   return { equity: false, fx: false, commodity: false, bond: false };
@@ -72,3 +78,71 @@ Deno.test(
     }
   }
 );
+
+function allowAll(): Record<AssetClass, boolean> {
+  return { equity: true, fx: true, commodity: true, bond: true };
+}
+
+function fakePool(rows: { value: unknown }[], calls: unknown[][] = [], fail = false) {
+  return {
+    connect: () =>
+      fail
+        ? Promise.reject(new Error("connection refused"))
+        : Promise.resolve({
+            queryObject: <T>(_query: string, args?: unknown[]) => {
+              calls.push(args ?? []);
+              return Promise.resolve({ rows: rows as T[] });
+            },
+            release: () => {},
+          }),
+  };
+}
+
+Deno.test("[market-hours-settings] update without assetClass switches every asset class", () => {
+  assertEquals(applyMarketHoursUpdate(allowAll(), { allowOutOfHours: false }), allowNone());
+});
+
+Deno.test("[market-hours-settings] update with assetClass only changes that class", () => {
+  assertEquals(applyMarketHoursUpdate(allowAll(), { assetClass: "fx", allowOutOfHours: false }), {
+    ...allowAll(),
+    fx: false,
+  });
+});
+
+Deno.test("[market-hours-settings] update schema rejects unknown asset classes", () => {
+  assertEquals(
+    marketHoursUpdateSchema.safeParse({ assetClass: "crypto", allowOutOfHours: true }).success,
+    false
+  );
+  assertEquals(marketHoursUpdateSchema.safeParse({ allowOutOfHours: "yes" }).success, false);
+});
+
+Deno.test("[market-hours-settings] stored value fills missing classes from defaults", () => {
+  assertEquals(mergeStoredAllowOutOfHours(allowAll(), { equity: false }), {
+    ...allowAll(),
+    equity: false,
+  });
+  assertEquals(mergeStoredAllowOutOfHours(allowAll(), "garbage"), null);
+});
+
+Deno.test("[market-hours-settings] load returns the saved mode", async () => {
+  const store = createMarketHoursSettingsStore(fakePool([{ value: allowNone() }]));
+  assertEquals(await store.load(allowAll()), allowNone());
+});
+
+Deno.test("[market-hours-settings] load returns null when nothing is saved", async () => {
+  const store = createMarketHoursSettingsStore(fakePool([]));
+  assertEquals(await store.load(allowAll()), null);
+});
+
+Deno.test("[market-hours-settings] load falls back to null when the database is down", async () => {
+  const store = createMarketHoursSettingsStore(fakePool([], [], true));
+  assertEquals(await store.load(allowAll()), null);
+});
+
+Deno.test("[market-hours-settings] save upserts the value with the updater", async () => {
+  const calls: unknown[][] = [];
+  const store = createMarketHoursSettingsStore(fakePool([], calls));
+  await store.save(allowNone(), "admin-1");
+  assertEquals(calls, [["allow_out_of_hours", JSON.stringify(allowNone()), "admin-1"]]);
+});

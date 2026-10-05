@@ -84,7 +84,7 @@ const MarketHoursConfigSchema = z.object({
 });
 
 export interface UpdateMarketHoursRequest {
-  assetClass: MarketHoursAssetClass;
+  assetClass?: MarketHoursAssetClass;
   allowOutOfHours: boolean;
 }
 

@@ -13,6 +13,7 @@ import {
 } from "@veta/frontend/store/userApi.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useEffect } from "react";
+import { MarketHoursModeSwitch } from "./MarketHoursModeSwitch.tsx";
 
 interface JournalEntry {
   id: number;
@@ -208,6 +209,13 @@ export function AdminPanel() {
           Market Hours
         </div>
         <div className="border border-panel rounded overflow-hidden divide-y divide-panel">
+          <MarketHoursModeSwitch
+            config={marketHours}
+            disabled={!isAdmin || marketHoursLoading || marketHoursSaving}
+            onChange={(allowOutOfHours) => {
+              updateMarketHours({ allowOutOfHours });
+            }}
+          />
           {MARKET_HOURS_ASSET_CLASSES.map(({ id, label }) => {
             const entry = marketHours?.assetClasses[id];
             const allowOutOfHours = entry?.allowOutOfHoursOverride ?? false;

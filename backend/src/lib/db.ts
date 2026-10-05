@@ -23,6 +23,7 @@ const SPECS: PoolSpec[] = [
   { key: "REPLAY", size: 3, lazy: true },
   { key: "RISK", size: 3, lazy: true },
   { key: "SCENARIOS", size: 4, lazy: true },
+  { key: "MARKET_SIM", size: 2, lazy: true },
 ];
 
 const cache: Record<string, Pool> = {};
@@ -50,5 +51,6 @@ export const llmAdvisoryPool = lazyExport("LLM_ADVISORY", 12, true);
 export const replayPool = lazyExport("REPLAY", 3, true);
 export const riskPool = lazyExport("RISK", 3, true);
 export const scenariosPool = lazyExport("SCENARIOS", 4, true);
+export const marketSimPool = lazyExport("MARKET_SIM", 2, true);
 
 export const _SPECS = SPECS;
