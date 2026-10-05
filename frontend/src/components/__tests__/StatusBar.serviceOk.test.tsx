@@ -16,6 +16,8 @@ import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("../MarketHoursModeBadge.tsx", () => ({ MarketHoursModeBadge: () => null }));
+
 vi.mock("../../store/servicesApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/servicesApi")>();
   return {

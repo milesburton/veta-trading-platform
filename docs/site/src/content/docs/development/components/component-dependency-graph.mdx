@@ -28,7 +28,7 @@ graph TD
 
 ## Component Inventory
 
-`217` components analysed.
+`219` components analysed.
 
 | Component | Path | Imports | Imported By |
 | --- | --- | --- | --- |
@@ -92,6 +92,7 @@ graph TD
 | MarketFeedControlPanel | `components/MarketFeedControlPanel.tsx` | 0 (—) | 0 (—) |
 | MarketHeatmap | `components/MarketHeatmap.tsx` | 1 (Tooltip) | 1 (PopOutHost) |
 | Tooltip | `components/MarketHeatmap/Tooltip.tsx` | 0 (—) | 1 (MarketHeatmap) |
+| MarketHoursModeBadge | `components/MarketHoursModeBadge.tsx` | 0 (—) | 1 (StatusBar) |
 | MarketLadder | `components/MarketLadder.tsx` | 3 (ContextMenu, panelRegistry, PopOutButton) | 1 (PopOutHost) |
 | MarketMatch | `components/MarketMatch.tsx` | 2 (ContextMenu, ResizableHeader) | 1 (PopOutHost) |
 | MyPositionsPanel | `components/MyPositionsPanel.tsx` | 1 (PopOutButton) | 0 (—) |
@@ -136,7 +137,7 @@ graph TD
 | SpreadAnalysisPanel | `components/SpreadAnalysisPanel.tsx` | 0 (—) | 0 (—) |
 | StartupOverlay | `components/StartupOverlay.tsx` | 2 (BuildInfo, serviceCatalog) | 1 (App) |
 | serviceCatalog | `components/StartupOverlay/serviceCatalog.ts` | 0 (—) | 1 (StartupOverlay) |
-| StatusBar | `components/StatusBar.tsx` | 13 (AlertDrawer, BugReportModal, BuildInfo, ComponentPicker, DashboardContext, panelRegistry, +7 more) | 2 (App, LoginPage) |
+| StatusBar | `components/StatusBar.tsx` | 14 (AlertDrawer, BugReportModal, BuildInfo, ComponentPicker, DashboardContext, panelRegistry, +8 more) | 2 (App, LoginPage) |
 | StatusDot | `components/StatusDot.tsx` | 0 (—) | 2 (ServiceRow, ServiceStatus) |
 | StrategyParams | `components/StrategyParams.tsx` | 0 (—) | 1 (OrderTicket) |
 | SymbolSearchBar | `components/SymbolSearchBar.tsx` | 0 (—) | 0 (—) |
@@ -153,6 +154,7 @@ graph TD
 | ChannelContext | `contexts/ChannelContext.tsx` | 0 (—) | 0 (—) |
 | bondUniverse | `data/bondUniverse.ts` | 0 (—) | 0 (—) |
 | financialCenters | `domain/market/financialCenters.ts` | 0 (—) | 0 (—) |
+| marketHoursMode | `domain/market/marketHoursMode.ts` | 0 (—) | 0 (—) |
 | marketSession | `domain/market/marketSession.ts` | 0 (—) | 1 (tradingCalendar) |
 | tradingCalendar | `domain/market/tradingCalendar.ts` | 1 (marketSession) | 0 (—) |
 | venueCapabilities | `domain/market/venueCapabilities.ts` | 0 (—) | 0 (—) |

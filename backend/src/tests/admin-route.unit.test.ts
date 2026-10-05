@@ -195,3 +195,40 @@ Deno.test("/admin/market-hours returns 502 when market-sim is unreachable", asyn
     globalThis.fetch = realFetch;
   }
 });
+
+Deno.test("/market-hours lets any authenticated role read the market-hours mode", async () => {
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response(JSON.stringify({ assetClasses: {} }), { status: 200 })
+    )) as typeof fetch;
+  try {
+    const res = await handleAdminRoute(
+      new Request("http://localhost/market-hours"),
+      "/market-hours",
+      makeContext("trader")
+    );
+    if (!res) throw new Error("expected a response");
+    assertEquals(res.status, 200);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("/market-hours rejects an unauthenticated request", async () => {
+  const res = await handleAdminRoute(
+    new Request("http://localhost/market-hours"),
+    "/market-hours",
+    unauthContext()
+  );
+  if (!res) throw new Error("expected a response");
+  assertEquals(res.status, 401);
+});
+
+Deno.test("/market-hours is read-only", () => {
+  const result = handleAdminRoute(
+    new Request("http://localhost/market-hours", { method: "PUT", body: "{}" }),
+    "/market-hours",
+    makeContext("admin")
+  );
+  assertEquals(result, null);
+});

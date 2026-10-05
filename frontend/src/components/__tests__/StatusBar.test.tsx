@@ -787,6 +787,8 @@ import { DrawersProvider } from "@veta/frontend/components/drawers/DrawersContex
 import type { ServiceHealth } from "@veta/frontend/types";
 import { afterEach, beforeEach } from "vitest";
 
+vi.mock("../MarketHoursModeBadge.tsx", () => ({ MarketHoursModeBadge: () => null }));
+
 const DEFAULT_SERVICE_RESULT = {
   data: undefined,
   isError: false,
