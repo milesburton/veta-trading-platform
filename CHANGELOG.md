@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.75.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.74.1...veta-trading-platform-v1.75.0) (2026-10-05)
+
+
+### Features
+
+* **frontend:** show real or simulated market hours in the header ([#716](https://github.com/milesburton/veta-trading-platform/issues/716)) ([3f99d0a](https://github.com/milesburton/veta-trading-platform/commit/3f99d0a43de29ff88acd26a6add8e44c1b558b73))
+
+
+### Bug Fixes
+
+* **frontend:** remove desk presets a trader's style no longer allows ([#717](https://github.com/milesburton/veta-trading-platform/issues/717)) ([92bbceb](https://github.com/milesburton/veta-trading-platform/commit/92bbceb6a6f4d61e78f12aa9224f0690ad6c07e1))
+
 ## [1.74.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.74.0...veta-trading-platform-v1.74.1) (2026-10-05)
 
 
