@@ -18,6 +18,7 @@ CONFIG_PATHS=(
     "scripts/load.sh"
     "scripts/lib/"
     "scripts/loadgen/"
+    "scripts/homelab-motd/"
     "k6/"
 )
 
@@ -100,6 +101,20 @@ sync_configs() {
     return $any_error
 }
 
+MOTD_SRC="$STACK_DIR/scripts/homelab-motd/99-veta"
+MOTD_DST="${MOTD_DST:-/etc/update-motd.d/99-veta}"
+
+install_motd() {
+    if [[ ! -f "$MOTD_SRC" ]] || cmp -s "$MOTD_SRC" "$MOTD_DST"; then
+        return 0
+    fi
+    if sudo -n install -m 0755 "$MOTD_SRC" "$MOTD_DST" 2>/dev/null; then
+        log "Installed login MOTD at $MOTD_DST"
+    else
+        log "⚠️  Could not install login MOTD (needs passwordless sudo); run: sudo install -m 0755 $MOTD_SRC $MOTD_DST"
+    fi
+}
+
 CRITICAL_SERVICES="gateway oms ems risk-engine journal market-sim user-service"
 
 log "Checking ownership of $STACK_DIR..."
@@ -112,6 +127,8 @@ if ! sync_configs; then
     log "❌ Config sync failed; aborting deploy. Investigate the rsync errors above."
     exit 1
 fi
+
+install_motd
 
 # Compose files in load order (later overlays merge on top of earlier ones).
 # - compose.yml: base service definitions
