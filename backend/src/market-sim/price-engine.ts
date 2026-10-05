@@ -52,6 +52,10 @@ export function seedPrice(symbol: string, price: number): void {
   }
 }
 
+export function setAnchorPrice(symbol: string, price: number): void {
+  if (price > 0 && symbol in anchorPrices) anchorPrices[symbol] = price;
+}
+
 const sectorShocks: Record<string, number> = {};
 
 let marketDrift = 0;

@@ -12,6 +12,7 @@ import {
   resetPriceEngine,
   resetRegime,
   seedPrice,
+  setAnchorPrice,
   snapshotOpenPrices,
   warmUpPrices,
 } from "../market-sim/price-engine.ts";
@@ -110,6 +111,28 @@ Deno.test("generatePrice per-tick move is much smaller than daily volatility", (
     true,
     `max move ${(maxMovePct * 100).toFixed(4)}% exceeded 0.5%`
   );
+});
+
+Deno.test("a new anchor price is reached gradually, without a jump", () => {
+  seedRng(7);
+  resetRegime();
+  const asset = "AAPL";
+  seedPrice(asset, 100);
+  setAnchorPrice(asset, 110);
+  let maxMovePct = 0;
+  for (let i = 0; i < 3_500; i++) {
+    refreshSectorShocks();
+    const before = marketData[asset];
+    const after = generatePrice(asset);
+    maxMovePct = Math.max(maxMovePct, Math.abs(after - before) / before);
+  }
+  assertEquals(maxMovePct < 0.002, true, `max tick move ${(maxMovePct * 100).toFixed(4)}%`);
+  assertEquals(
+    marketData[asset] > 103 && marketData[asset] < 108,
+    true,
+    `price ${marketData[asset]} after one half-life should sit between 100 and 110`
+  );
+  seedPrice(asset, 100);
 });
 
 Deno.test("prewarmPrices moves prices away from their initial values", () => {
