@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.75.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.75.0...veta-trading-platform-v1.75.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **frontend:** skip market-hours polling while signed out ([#720](https://github.com/milesburton/veta-trading-platform/issues/720)) ([6153031](https://github.com/milesburton/veta-trading-platform/commit/61530310e20f4c670cc074db07eabd37666c8939))
+
 ## [1.75.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.74.1...veta-trading-platform-v1.75.0) (2026-10-05)
 
 
