@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.76.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.75.2...veta-trading-platform-v1.76.0) (2026-10-05)
+
+
+### Features
+
+* **market-sim:** persisted switch between simulated and real market hours ([#719](https://github.com/milesburton/veta-trading-platform/issues/719)) ([049f961](https://github.com/milesburton/veta-trading-platform/commit/049f9612b285a2880d4d5122d5950b251e9b4c41))
+
 ## [1.75.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.75.1...veta-trading-platform-v1.75.2) (2026-10-05)
 
 
