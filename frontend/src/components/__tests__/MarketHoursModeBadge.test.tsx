@@ -3,9 +3,15 @@ import { MarketHoursModeBadge } from "@veta/frontend/components/MarketHoursModeB
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const queryResult = vi.fn();
+let signedIn = true;
 
 vi.mock("../../store/gatewayApi.ts", () => ({
-  useGetMarketHoursModeQuery: () => queryResult(),
+  useGetMarketHoursModeQuery: (arg: unknown, options: unknown) => queryResult(arg, options),
+}));
+
+vi.mock("../../store/hooks.ts", () => ({
+  useAppSelector: (selector: (s: unknown) => unknown) =>
+    selector({ auth: { user: signedIn ? { id: "u-1" } : null } }),
 }));
 
 function entry(allowOutOfHoursOverride: boolean) {
@@ -22,7 +28,17 @@ function assetClasses(override: boolean) {
 }
 
 describe("MarketHoursModeBadge", () => {
-  beforeEach(() => queryResult.mockReset());
+  beforeEach(() => {
+    queryResult.mockReset();
+    signedIn = true;
+  });
+
+  it("does not poll market hours on the login page", () => {
+    signedIn = false;
+    queryResult.mockReturnValue({ data: undefined });
+    render(<MarketHoursModeBadge />);
+    expect(queryResult).toHaveBeenCalledWith(undefined, expect.objectContaining({ skip: true }));
+  });
 
   it("renders nothing until the market-hours mode has loaded", () => {
     queryResult.mockReturnValue({ data: undefined });
