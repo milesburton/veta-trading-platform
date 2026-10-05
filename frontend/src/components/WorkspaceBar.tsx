@@ -186,15 +186,20 @@ export function seedWorkspaces(
   return { workspaces, layouts };
 }
 
+const ALL_PRESET_IDS = new Set(
+  [...TRADER_PRESET_WORKSPACES, ...ADMIN_PRESET_WORKSPACES].map((preset) => preset.id)
+);
+
 /**
  * Reconciles a user's saved workspace list against the current preset definitions.
  *
  * For each preset workspace the user is missing (e.g. added in a newer release),
  * this inserts it at the correct position so the preset ordering is preserved.
- * Existing workspaces (including custom user ones) are kept intact.
+ * Preset workspaces outside the user's role or trading style (e.g. saved before
+ * presets were scoped by desk) are removed. Custom user workspaces are kept intact.
  *
- * Returns the merged workspace list and any newly-seeded layout JSON that must be
- * saved alongside it.
+ * Returns the merged workspace list, the layout JSON to save alongside it, and the
+ * names of presets that were restored or removed.
  */
 export function reconcilePresetWorkspaces(
   saved: Workspace[],
@@ -205,11 +210,23 @@ export function reconcilePresetWorkspaces(
   workspaces: Workspace[];
   layouts: Record<string, IJsonModel>;
   restored: string[];
+  removed: string[];
 } {
   const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : traderPresetsForStyle(tradingStyle);
-  const savedIds = new Set(saved.map((w) => w.id));
+  const canPrune = role === "admin" || !!tradingStyle;
+  const allowedIds = new Set(presets.map((preset) => preset.id));
+  const isDisallowedPreset = (w: Workspace) =>
+    canPrune && ALL_PRESET_IDS.has(w.id) && !allowedIds.has(w.id);
+  const removed = saved.filter(isDisallowedPreset).map((w) => w.name);
+  const kept = saved.filter((w) => !isDisallowedPreset(w));
+  const keptIds = new Set(kept.map((w) => w.id));
+  const keptLayouts = Object.fromEntries(
+    Object.entries(layouts).filter(([id]) => keptIds.has(id) || !ALL_PRESET_IDS.has(id))
+  );
+
+  const savedIds = new Set(kept.map((w) => w.id));
   const restored: string[] = [];
-  const merged = [...saved];
+  const merged = [...kept];
   const newLayouts: Record<string, IJsonModel> = {};
 
   for (let i = 0; i < presets.length; i++) {
@@ -227,8 +244,9 @@ export function reconcilePresetWorkspaces(
 
   return {
     workspaces: merged,
-    layouts: { ...layouts, ...newLayouts },
+    layouts: { ...keptLayouts, ...newLayouts },
     restored,
+    removed,
   };
 }
 

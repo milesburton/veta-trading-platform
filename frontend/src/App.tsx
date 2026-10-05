@@ -206,7 +206,7 @@ function TradingApp() {
           userRole,
           tradingStyle
         );
-        if (reconciled.restored.length > 0) {
+        if (reconciled.restored.length > 0 || reconciled.removed.length > 0) {
           finalWorkspaces = reconciled.workspaces;
           finalLayoutsJson = reconciled.layouts;
           saveWorkspacePrefs({

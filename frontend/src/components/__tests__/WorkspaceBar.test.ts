@@ -682,3 +682,78 @@ describe("WorkspaceSidebar", () => {
     expect(screen.getByTestId("workspace-tab-ws-1")).toHaveTextContent("T");
   });
 });
+
+describe("reconcilePresetWorkspaces desk scoping", () => {
+  const custom = { id: "ws-1787899105216", name: "My layout" };
+
+  function legacyAllPresets() {
+    const { workspaces, layouts } = seedWorkspaces(undefined, "oversight");
+    return {
+      workspaces: [...workspaces, custom],
+      layouts: { ...layouts, [custom.id]: { global: {}, layout: { type: "row", children: [] } } },
+    };
+  }
+
+  test("removes presets saved before desk scoping that the trading style cannot see", () => {
+    const legacy = legacyAllPresets();
+    const { workspaces, layouts, removed } = reconcilePresetWorkspaces(
+      legacy.workspaces,
+      legacy.layouts,
+      "trader",
+      "high_touch"
+    );
+    const ids = workspaces.map((w) => w.id);
+    expect(ids).toEqual(["ws-trading", "ws-analysis", "ws-research", "ws-overview", custom.id]);
+    expect(removed).toEqual([
+      "Algo",
+      "Options",
+      "Commodities",
+      "Cmdty Analysis",
+      "FI Trading",
+      "FI Analysis",
+      "FI Research",
+    ]);
+    expect(layouts["ws-fi-trading"]).toBeUndefined();
+    expect(layouts[custom.id]).toBeDefined();
+  });
+
+  test("keeps only FI presets and shared ones for an FI voice trader", () => {
+    const legacy = legacyAllPresets();
+    const { workspaces } = reconcilePresetWorkspaces(
+      legacy.workspaces,
+      legacy.layouts,
+      "trader",
+      "fi_voice"
+    );
+    expect(workspaces.map((w) => w.id)).toEqual([
+      "ws-fi-trading",
+      "ws-fi-analysis",
+      "ws-fi-research",
+      "ws-overview",
+      custom.id,
+    ]);
+  });
+
+  test("oversight keeps every desk preset", () => {
+    const legacy = legacyAllPresets();
+    const { removed } = reconcilePresetWorkspaces(
+      legacy.workspaces,
+      legacy.layouts,
+      "trader",
+      "oversight"
+    );
+    expect(removed).toEqual([]);
+  });
+
+  test("does not prune a trader whose trading style has not loaded", () => {
+    const legacy = legacyAllPresets();
+    const { workspaces, removed } = reconcilePresetWorkspaces(
+      legacy.workspaces,
+      legacy.layouts,
+      "trader",
+      undefined
+    );
+    expect(removed).toEqual([]);
+    expect(workspaces).toHaveLength(legacy.workspaces.length);
+  });
+});
