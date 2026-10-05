@@ -6,9 +6,10 @@ The script runs `curl` inside the gateway container, because the gateway port is
 
 ## Install
 
+`scripts/homelab-deploy.sh` syncs this directory into the stack and installs `99-veta` to `/etc/update-motd.d/` whenever the copy there differs, so every deploy keeps the MOTD current. The install uses `sudo -n` and is skipped with a warning when the deploying user lacks passwordless sudo. The host needs `jq`:
+
 ```bash
 sudo apt-get install -y jq
-sudo install -m 0755 /path/to/repo/scripts/homelab-motd/99-veta /etc/update-motd.d/99-veta
 ```
 
 | Variable | Default | Purpose |
