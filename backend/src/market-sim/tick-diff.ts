@@ -59,6 +59,49 @@ export function createSingleFlightPublisher<T>(
   };
 }
 
+export const MAX_CLIENT_BUFFERED_BYTES = 4 * 1024 * 1024;
+
+export interface FanOutSocket {
+  readonly bufferedAmount: number;
+  send(data: string): void;
+}
+
+export interface FanOutResult<S> {
+  readonly lagging: ReadonlySet<S>;
+  readonly failed: readonly S[];
+}
+
+export function fanOutTick<S extends FanOutSocket>(
+  clients: Iterable<S>,
+  message: string,
+  lagging: ReadonlySet<S>,
+  buildSnapshot: () => string,
+  maxBufferedBytes = MAX_CLIENT_BUFFERED_BYTES,
+): FanOutResult<S> {
+  const nextLagging = new Set<S>();
+  const failed: S[] = [];
+  let snapshot: string | undefined;
+
+  for (const socket of clients) {
+    if (socket.bufferedAmount > maxBufferedBytes) {
+      nextLagging.add(socket);
+      continue;
+    }
+    try {
+      if (lagging.has(socket)) {
+        snapshot ??= buildSnapshot();
+        socket.send(snapshot);
+      } else {
+        socket.send(message);
+      }
+    } catch {
+      failed.push(socket);
+    }
+  }
+
+  return { lagging: nextLagging, failed };
+}
+
 export function createTickDiffState(): TickDiffState {
   return {
     lastPrices: {},

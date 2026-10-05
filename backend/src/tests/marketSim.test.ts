@@ -3,9 +3,11 @@ import { isUsEquityRegularSession, parseAllowOutOfHours } from "../market-sim/ma
 import {
   advanceRegime,
   generatePrice,
+  isPrewarmInProgress,
   marketData,
   openPrices,
   prewarmPrices,
+  prewarmPricesAsync,
   refreshSectorShocks,
   resetPriceEngine,
   resetRegime,
@@ -183,4 +185,21 @@ Deno.test("generatePrice price floor holds against extreme downward shocks", asy
   for (let i = 0; i < 5000; i++) generatePrice("AAPL");
   const p = marketData.AAPL;
   if (p <= 0) throw new Error(`floor breached: got ${p}`);
+});
+
+Deno.test("isPrewarmInProgress is true only while an async prewarm is running", async () => {
+  assertEquals(isPrewarmInProgress(), false);
+  const running = prewarmPricesAsync(400);
+  assertEquals(isPrewarmInProgress(), true);
+  await running;
+  assertEquals(isPrewarmInProgress(), false);
+});
+
+Deno.test("isPrewarmInProgress stays true until every overlapping prewarm finishes", async () => {
+  const long = prewarmPricesAsync(1_000);
+  const short = prewarmPricesAsync(200);
+  await short;
+  assertEquals(isPrewarmInProgress(), true);
+  await long;
+  assertEquals(isPrewarmInProgress(), false);
 });

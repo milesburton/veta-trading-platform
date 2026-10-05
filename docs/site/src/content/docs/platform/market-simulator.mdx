@@ -32,6 +32,8 @@ Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector
 
 `prewarmPrices` runs the GBM step synchronously for thousands of ticks so a freshly seeded market starts with realistic intraday drift instead of a flat line. At the full expanded instrument universe size, running that loop synchronously in one go can take long enough to block the event loop, which starves HTTP handling, including the `/health` check other services poll. `prewarmPricesAsync` breaks the same work into `PREWARM_CHUNK_TICKS`-sized chunks and yields to the event loop between chunks, so the server stays responsive while prewarming completes in the background.
 
+The tick loop does not broadcast while any prewarm is running (`isPrewarmInProgress()`). Each chunk moves prices by hundreds of simulated ticks, so a tick taken between chunks marks nearly every symbol as book-worthy and carries full order books for every venue. At the full universe size those frames reach several megabytes every 250 ms. The first tick after prewarm finishes is a full snapshot, because the diff state has no baseline yet.
+
 ## Reset-in-progress guard
 
 <CodeBlock
@@ -41,6 +43,10 @@ Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector
 />
 
 `resetPriceEngine` (used by [scenario replay](/veta-trading-platform/platform/scenarios/) reseeding and the `/seed` route) reruns the chunked prewarm, which yields to the event loop repeatedly. The live tick loop in `market-sim.ts` runs on its own `setInterval` and would otherwise be free to fire a tick between prewarm chunks, mutating `marketData` and consuming RNG state mid-reset. `isResetInProgress()` lets the tick loop skip itself while a reset is underway, so a reset's outcome does not depend on how ticks happen to interleave with prewarm chunks.
+
+## Client backpressure
+
+`fanOutTick` (in `tick-diff.ts`) sends each tick only to sockets whose `bufferedAmount` is within `MAX_CLIENT_BUFFERED_BYTES` (4 MiB). Unsent frames are buffered natively by the runtime, outside the V8 heap, so a consumer that stops reading would otherwise grow memory until the container is killed. A socket over the limit skips ticks and is marked lagging. Once its buffer drains, it receives a full `marketData` snapshot in place of the next diff, which replaces its state rather than merging into a stale one.
 
 ## Session timing
 

@@ -4,6 +4,7 @@ import {
   buildTickDiff,
   createSingleFlightPublisher,
   createTickDiffState,
+  fanOutTick,
   FULL_SNAPSHOT_INTERVAL_MS,
   isEmptyDiff,
   symbolsNeedingFreshBook,
@@ -520,4 +521,86 @@ Deno.test("symbolsNeedingFreshBook includes a symbol if any venue's book is stal
   const needed = symbolsNeedingFreshBook({ AAPL: movedOnce }, afterVenuelessMove, 1500);
 
   assertEquals(needed, ["AAPL"]);
+});
+
+interface FakeSocket {
+  bufferedAmount: number;
+  sent: string[];
+  send(data: string): void;
+}
+
+function fakeSocket(bufferedAmount = 0): FakeSocket {
+  const sent: string[] = [];
+  return { bufferedAmount, sent, send: (data) => void sent.push(data) };
+}
+
+Deno.test("fanOutTick sends the tick to sockets under the buffer limit", () => {
+  const a = fakeSocket();
+  const b = fakeSocket(10);
+
+  const result = fanOutTick([a, b], "tick", new Set(), () => "snapshot", 100);
+
+  assertEquals(a.sent, ["tick"]);
+  assertEquals(b.sent, ["tick"]);
+  assertEquals(result.lagging.size, 0);
+  assertEquals(result.failed, []);
+});
+
+Deno.test("fanOutTick skips a socket over the buffer limit and marks it lagging", () => {
+  const slow = fakeSocket(101);
+  const fast = fakeSocket();
+
+  const result = fanOutTick([slow, fast], "tick", new Set(), () => "snapshot", 100);
+
+  assertEquals(slow.sent, []);
+  assertEquals(fast.sent, ["tick"]);
+  assert(result.lagging.has(slow));
+  assert(!result.lagging.has(fast));
+});
+
+Deno.test("fanOutTick resyncs a drained lagging socket with one shared snapshot", () => {
+  const a = fakeSocket();
+  const b = fakeSocket();
+  const fresh = fakeSocket();
+  let builds = 0;
+
+  const result = fanOutTick(
+    [a, b, fresh],
+    "tick",
+    new Set([a, b]),
+    () => {
+      builds++;
+      return "snapshot";
+    },
+    100
+  );
+
+  assertEquals(a.sent, ["snapshot"]);
+  assertEquals(b.sent, ["snapshot"]);
+  assertEquals(fresh.sent, ["tick"]);
+  assertEquals(builds, 1);
+  assertEquals(result.lagging.size, 0);
+});
+
+Deno.test("fanOutTick does not build a snapshot when no lagging socket has drained", () => {
+  const slow = fakeSocket(500);
+  let builds = 0;
+
+  const result = fanOutTick([slow], "tick", new Set([slow]), () => {
+    builds++;
+    return "snapshot";
+  }, 100);
+
+  assertEquals(builds, 0);
+  assert(result.lagging.has(slow));
+});
+
+Deno.test("fanOutTick reports sockets whose send throws", () => {
+  const broken = { bufferedAmount: 0, send: () => { throw new Error("closed"); } };
+  const ok = fakeSocket();
+
+  const result = fanOutTick([broken, ok], "tick", new Set(), () => "snapshot", 100);
+
+  assertEquals(result.failed, [broken]);
+  assertEquals(ok.sent, ["tick"]);
 });

@@ -127,15 +127,26 @@ const PREWARM_CHUNK_TICKS = 200;
 // docs: /platform/market-simulator/
 // #region docs:prewarm-async
 export async function prewarmPricesAsync(ticks = 28_080): Promise<void> {
-  let done = 0;
-  while (done < ticks) {
-    const chunk = Math.min(PREWARM_CHUNK_TICKS, ticks - done);
-    prewarmPrices(chunk);
-    done += chunk;
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  prewarmsInProgress++;
+  try {
+    let done = 0;
+    while (done < ticks) {
+      const chunk = Math.min(PREWARM_CHUNK_TICKS, ticks - done);
+      prewarmPrices(chunk);
+      done += chunk;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  } finally {
+    prewarmsInProgress--;
   }
 }
 // #endregion docs:prewarm-async
+
+let prewarmsInProgress = 0;
+
+export function isPrewarmInProgress(): boolean {
+  return prewarmsInProgress > 0;
+}
 
 export function refreshSectorShocks() {
   const sectors = new Set(ALL_SEEDED_ASSETS.map((a) => a.sector));
