@@ -563,7 +563,16 @@ async function handleMarketHours(req: Request, ctx: GatewayContext): Promise<Res
   if (isResponse(auth)) return auth;
   const rej = requireAdmin(auth);
   if (rej) return rej;
+  return proxyMarketHours(req, ctx);
+}
 
+async function handleMarketHoursRead(req: Request, ctx: GatewayContext): Promise<Response> {
+  const auth = await ctx.requireAuth(req);
+  if (isResponse(auth)) return auth;
+  return proxyMarketHours(req, ctx);
+}
+
+async function proxyMarketHours(req: Request, ctx: GatewayContext): Promise<Response> {
   try {
     const init: RequestInit = { method: req.method, signal: AbortSignal.timeout(5_000) };
     if (req.method === "PUT") {
@@ -590,6 +599,9 @@ export function handleAdminRoute(
 ): Promise<Response | null> | null {
   if (path === "/admin/market-hours" && (req.method === "GET" || req.method === "PUT")) {
     return handleMarketHours(req, ctx);
+  }
+  if (path === "/market-hours" && req.method === "GET") {
+    return handleMarketHoursRead(req, ctx);
   }
   if (path === "/load-test" && req.method === "POST") {
     return handleLoadTest(req, ctx);

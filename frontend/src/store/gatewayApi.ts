@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { z } from "zod";
 
 interface LoadTestRequest {
   orderCount: number;
@@ -66,6 +67,22 @@ export interface MarketHoursConfig {
   assetClasses: Record<MarketHoursAssetClass, AssetClassMarketHours>;
 }
 
+const AssetClassMarketHoursSchema = z.object({
+  calendarLabel: z.string(),
+  isOpen: z.boolean(),
+  phase: z.string(),
+  allowOutOfHoursOverride: z.boolean(),
+});
+
+const MarketHoursConfigSchema = z.object({
+  assetClasses: z.object({
+    equity: AssetClassMarketHoursSchema,
+    fx: AssetClassMarketHoursSchema,
+    commodity: AssetClassMarketHoursSchema,
+    bond: AssetClassMarketHoursSchema,
+  }),
+});
+
 export interface UpdateMarketHoursRequest {
   assetClass: MarketHoursAssetClass;
   allowOutOfHours: boolean;
@@ -119,6 +136,11 @@ export const gatewayApi = createApi({
   endpoints: (builder) => ({
     getMarketHours: builder.query<MarketHoursConfig, void>({
       query: () => "/admin/market-hours",
+      providesTags: ["MarketHours"],
+    }),
+    getMarketHoursMode: builder.query<MarketHoursConfig, void>({
+      query: () => "/market-hours",
+      transformResponse: (body: unknown) => MarketHoursConfigSchema.parse(body),
       providesTags: ["MarketHours"],
     }),
     updateMarketHours: builder.mutation<MarketHoursConfig, UpdateMarketHoursRequest>({
@@ -178,6 +200,7 @@ export const gatewayApi = createApi({
 
 export const {
   useGetMarketHoursQuery,
+  useGetMarketHoursModeQuery,
   useUpdateMarketHoursMutation,
   useRunLoadTestMutation,
   useRunDemoDayMutation,

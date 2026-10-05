@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 102,
-      "cases": 1198,
+      "cases": 1201,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -83,7 +83,7 @@
         "synthetic-trader-position-tracker.unit.test.ts": 7,
         "synthetic-trader-token-client.unit.test.ts": 3,
         "infra-health-paths.unit.test.ts": 6,
-        "admin-route.unit.test.ts": 11,
+        "admin-route.unit.test.ts": 14,
         "apply-shocks.unit.test.ts": 7,
         "bond-pricing.unit.test.ts": 11,
         "dark-pool-matching.unit.test.ts": 12,
@@ -155,8 +155,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 183,
-      "cases": 2205
+      "files": 185,
+      "cases": 2212
     },
     "playwright": {
       "files": 19,

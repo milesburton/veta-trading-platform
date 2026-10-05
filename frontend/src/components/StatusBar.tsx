@@ -30,6 +30,7 @@ import { DATA_DEPTH_DRAWER_ID, DataDepthDrawer } from "./drawers/DataDepthDrawer
 import { useDrawers } from "./drawers/DrawersContext.tsx";
 import { LOGS_DRAWER_ID, LogsDrawer } from "./drawers/LogsDrawer.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
+import { MarketHoursModeBadge } from "./MarketHoursModeBadge.tsx";
 import { OverflowBar } from "./OverflowBar.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
@@ -551,6 +552,7 @@ export function AppHeader() {
             version={import.meta.env.VITE_APP_VERSION}
             className="px-2 py-0.5 rounded border border-panel bg-page/60 text-[10px] text-label tabular-nums"
           />
+          <MarketHoursModeBadge />
         </div>
 
         <div className="w-px self-stretch my-2 bg-panel shrink-0" />

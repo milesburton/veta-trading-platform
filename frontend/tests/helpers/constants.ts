@@ -8,26 +8,25 @@
 
 // ── Auth / User constants ────────────────────────────────────────────────────
 
+export type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
 export {
-  DEFAULT_TRADER,
   ALGO_TRADER,
-  FI_TRADER,
-  DERIVATIVES_TRADER,
-  RESEARCH_ANALYST,
-  DEFAULT_ADMIN,
-  SALES_USER,
-  EXTERNAL_CLIENT_USER,
-  DEFAULT_LIMITS,
   ALGO_TRADER_LIMITS,
-  FI_TRADER_LIMITS,
-  DERIVATIVES_TRADER_LIMITS,
   ANALYST_LIMITS,
-  SALES_LIMITS,
-  EXTERNAL_CLIENT_LIMITS,
+  DEFAULT_ADMIN,
   DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_TRADER,
+  DERIVATIVES_TRADER,
+  DERIVATIVES_TRADER_LIMITS,
+  EXTERNAL_CLIENT_LIMITS,
+  EXTERNAL_CLIENT_USER,
+  FI_TRADER,
+  FI_TRADER_LIMITS,
+  RESEARCH_ANALYST,
+  SALES_LIMITS,
+  SALES_USER,
 } from "./authFixtures.ts";
-
-export type { AuthUser, TradingLimits, AssetDef } from "./authFixtures.ts";
 
 // ── Health / Ready helpers ───────────────────────────────────────────────────
 
@@ -128,7 +127,11 @@ export const SAMPLE_ARCHETYPE_IDS = {
 /**
  * Sample archetype IDs as an array for iteration in registration tests.
  */
-export const SAMPLE_ARCHETYPE_IDS_LIST = ["equity-high-touch", "fi-voice", "derivatives-high-touch"] as const;
+export const SAMPLE_ARCHETYPE_IDS_LIST = [
+  "equity-high-touch",
+  "fi-voice",
+  "derivatives-high-touch",
+] as const;
 
 // ── Mock analytics responses ─────────────────────────────────────────────────
 
@@ -211,4 +214,33 @@ export const MOCK_VOL_SURFACE_RESPONSE = {
     );
   })(),
   computedAt: Date.now(),
+};
+
+export const MARKET_HOURS_BODY = {
+  assetClasses: {
+    equity: {
+      calendarLabel: "XNAS",
+      isOpen: false,
+      phase: "Market Closed",
+      allowOutOfHoursOverride: true,
+    },
+    fx: {
+      calendarLabel: "FX",
+      isOpen: true,
+      phase: "Continuous Trading",
+      allowOutOfHoursOverride: true,
+    },
+    commodity: {
+      calendarLabel: "XCME",
+      isOpen: false,
+      phase: "Market Closed",
+      allowOutOfHoursOverride: true,
+    },
+    bond: {
+      calendarLabel: "SIFMA",
+      isOpen: false,
+      phase: "Market Closed",
+      allowOutOfHoursOverride: true,
+    },
+  },
 };

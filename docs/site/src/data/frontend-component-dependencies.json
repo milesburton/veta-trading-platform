@@ -1,6 +1,6 @@
 {
-  "totalComponents": 217,
-  "totalEdges": 219,
+  "totalComponents": 219,
+  "totalEdges": 220,
   "nodes": [
     {
       "name": "App",
@@ -273,6 +273,12 @@
       "importedByCount": 1
     },
     {
+      "name": "MarketHoursModeBadge",
+      "path": "components/MarketHoursModeBadge.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
       "name": "MarketLadder",
       "path": "components/MarketLadder.tsx",
       "importCount": 3,
@@ -527,7 +533,7 @@
     {
       "name": "StatusBar",
       "path": "components/StatusBar.tsx",
-      "importCount": 13,
+      "importCount": 14,
       "importedByCount": 2
     },
     {
@@ -725,6 +731,12 @@
     {
       "name": "financialCenters",
       "path": "domain/market/financialCenters.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "marketHoursMode",
+      "path": "domain/market/marketHoursMode.ts",
       "importCount": 0,
       "importedByCount": 0
     },

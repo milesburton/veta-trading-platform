@@ -1,41 +1,42 @@
 import type { Page } from "@playwright/test";
-import type { AuthUser, TradingLimits, AssetDef } from "./authFixtures.ts";
+import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
 import {
-  DEFAULT_TRADER,
-  DEFAULT_LIMITS,
-  DEFAULT_ASSETS,
-  DEFAULT_READY_BODY,
   buildServicesStatusBody,
+  DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_READY_BODY,
+  DEFAULT_TRADER,
+  MARKET_HOURS_BODY,
   MOCK_BOND_PRICE_RESPONSE,
-  MOCK_SPREAD_ANALYSIS_RESPONSE,
   MOCK_DURATION_LADDER_RESPONSE,
+  MOCK_SPREAD_ANALYSIS_RESPONSE,
   MOCK_VOL_SURFACE_RESPONSE,
 } from "./constants.ts";
 
 // ── Re-exports for backward compatibility ──
 
 export {
-  DEFAULT_TRADER,
-  DEFAULT_LIMITS,
-  DEFAULT_ASSETS,
-  DEFAULT_READY_BODY,
-  MOCK_BOND_PRICE_RESPONSE,
-  MOCK_SPREAD_ANALYSIS_RESPONSE,
-  MOCK_DURATION_LADDER_RESPONSE,
-  MOCK_VOL_SURFACE_RESPONSE,
   ALGO_TRADER,
-  FI_TRADER,
-  DERIVATIVES_TRADER,
-  RESEARCH_ANALYST,
-  DEFAULT_ADMIN,
-  SALES_USER,
-  EXTERNAL_CLIENT_USER,
   ALGO_TRADER_LIMITS,
-  FI_TRADER_LIMITS,
-  DERIVATIVES_TRADER_LIMITS,
   ANALYST_LIMITS,
-  SALES_LIMITS,
+  DEFAULT_ADMIN,
+  DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_READY_BODY,
+  DEFAULT_TRADER,
+  DERIVATIVES_TRADER,
+  DERIVATIVES_TRADER_LIMITS,
   EXTERNAL_CLIENT_LIMITS,
+  EXTERNAL_CLIENT_USER,
+  FI_TRADER,
+  FI_TRADER_LIMITS,
+  MOCK_BOND_PRICE_RESPONSE,
+  MOCK_DURATION_LADDER_RESPONSE,
+  MOCK_SPREAD_ANALYSIS_RESPONSE,
+  MOCK_VOL_SURFACE_RESPONSE,
+  RESEARCH_ANALYST,
+  SALES_LIMITS,
+  SALES_USER,
 } from "./constants.ts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -132,6 +133,14 @@ export class GatewayMock {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(buildServicesStatusBody()),
+      })
+    );
+
+    await page.route("/api/gateway/market-hours", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MARKET_HOURS_BODY),
       })
     );
 
