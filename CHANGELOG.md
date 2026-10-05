@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.74.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.73.0...veta-trading-platform-v1.74.0) (2026-10-05)
+
+
+### Features
+
+* **scripts:** deploy installs the login MOTD from the repo ([#712](https://github.com/milesburton/veta-trading-platform/issues/712)) ([3c75450](https://github.com/milesburton/veta-trading-platform/commit/3c75450de9db7e0f1924745b98bf37ed21a41e0f))
+
+
+### Bug Fixes
+
+* **market-sim:** stop startup prewarm and slow clients exhausting memory ([#711](https://github.com/milesburton/veta-trading-platform/issues/711)) ([dee8ad7](https://github.com/milesburton/veta-trading-platform/commit/dee8ad77a75a2aff42c8229ab86da00f2b141932)), closes [#710](https://github.com/milesburton/veta-trading-platform/issues/710)
+
 ## [1.73.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.72.2...veta-trading-platform-v1.73.0) (2026-10-04)
 
 
