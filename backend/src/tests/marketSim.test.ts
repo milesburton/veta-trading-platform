@@ -13,6 +13,7 @@ import {
   resetRegime,
   seedPrice,
   snapshotOpenPrices,
+  warmUpPrices,
 } from "../market-sim/price-engine.ts";
 import { seedRng } from "../market-sim/rng.ts";
 
@@ -201,5 +202,25 @@ Deno.test("isPrewarmInProgress stays true until every overlapping prewarm finish
   await short;
   assertEquals(isPrewarmInProgress(), true);
   await long;
+  assertEquals(isPrewarmInProgress(), false);
+});
+
+Deno.test("warmUpPrices holds ticks back until journal seeding finishes", async () => {
+  let release: () => void = () => {};
+  const seeding = new Promise<void>((resolve) => (release = resolve));
+  let seedStarted = false;
+  const warming = warmUpPrices(200, async () => {
+    seedStarted = true;
+    await seeding;
+  });
+  while (!seedStarted) await new Promise((resolve) => setTimeout(resolve, 0));
+  assertEquals(isPrewarmInProgress(), true);
+  release();
+  await warming;
+  assertEquals(isPrewarmInProgress(), false);
+});
+
+Deno.test("warmUpPrices releases ticks when seeding fails", async () => {
+  await warmUpPrices(0, () => Promise.reject(new Error("journal down"))).catch(() => {});
   assertEquals(isPrewarmInProgress(), false);
 });
