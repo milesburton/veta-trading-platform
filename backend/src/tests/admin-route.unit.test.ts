@@ -232,3 +232,46 @@ Deno.test("/market-hours is read-only", () => {
   );
   assertEquals(result, null);
 });
+
+Deno.test("/admin/market-hours PUT stamps the admin's id over any client-supplied updatedBy", async () => {
+  let forwarded: unknown;
+  globalThis.fetch = ((_url: string, init?: RequestInit) => {
+    forwarded = JSON.parse(String(init?.body));
+    return Promise.resolve(new Response(JSON.stringify({ assetClasses: {} }), { status: 200 }));
+  }) as typeof fetch;
+  try {
+    const res = await handleAdminRoute(
+      new Request("http://localhost/admin/market-hours", {
+        method: "PUT",
+        body: JSON.stringify({ allowOutOfHours: false, updatedBy: "someone-else" }),
+      }),
+      "/admin/market-hours",
+      makeContext("admin")
+    );
+    if (!res) throw new Error("expected a response");
+    assertEquals(res.status, 200);
+    assertEquals(forwarded, { allowOutOfHours: false, updatedBy: "u-1" });
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("/admin/market-hours PUT rejects a non-object body without calling market-sim", async () => {
+  let called = false;
+  globalThis.fetch = (() => {
+    called = true;
+    return Promise.resolve(new Response("{}"));
+  }) as typeof fetch;
+  try {
+    const res = await handleAdminRoute(
+      new Request("http://localhost/admin/market-hours", { method: "PUT", body: "not json" }),
+      "/admin/market-hours",
+      makeContext("admin")
+    );
+    if (!res) throw new Error("expected a response");
+    assertEquals(res.status, 400);
+    assertEquals(called, false);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});

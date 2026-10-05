@@ -104,6 +104,16 @@ describe("AdminPanel", () => {
     });
   });
 
+  it("switches every asset class to real hours from the mode switch", () => {
+    render(<AdminPanel />);
+    expect(screen.getByRole("button", { name: "Simulated 24/7" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Real hours" }));
+    expect(updateMarketHours).toHaveBeenCalledWith({ allowOutOfHours: false });
+  });
+
   it("renders a market-hours row for every asset class", () => {
     render(<AdminPanel />);
     expect(

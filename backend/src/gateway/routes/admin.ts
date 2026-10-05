@@ -563,21 +563,32 @@ async function handleMarketHours(req: Request, ctx: GatewayContext): Promise<Res
   if (isResponse(auth)) return auth;
   const rej = requireAdmin(auth);
   if (rej) return rej;
-  return proxyMarketHours(req, ctx);
+  return proxyMarketHours(req, ctx, auth.user.id);
 }
 
 async function handleMarketHoursRead(req: Request, ctx: GatewayContext): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
-  return proxyMarketHours(req, ctx);
+  return proxyMarketHours(req, ctx, auth.user.id);
 }
 
-async function proxyMarketHours(req: Request, ctx: GatewayContext): Promise<Response> {
+async function proxyMarketHours(
+  req: Request,
+  ctx: GatewayContext,
+  userId: string
+): Promise<Response> {
   try {
     const init: RequestInit = { method: req.method, signal: AbortSignal.timeout(5_000) };
     if (req.method === "PUT") {
+      const body = await req.json().catch(() => null);
+      if (body === null || typeof body !== "object" || Array.isArray(body)) {
+        return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
       init.headers = { "Content-Type": "application/json" };
-      init.body = await req.text();
+      init.body = JSON.stringify({ ...body, updatedBy: userId });
     }
     const upstream = await fetch(`${ctx.urls.marketSim}/admin/market-hours`, init);
     return new Response(upstream.body, {

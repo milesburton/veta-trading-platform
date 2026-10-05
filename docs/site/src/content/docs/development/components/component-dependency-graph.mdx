@@ -28,13 +28,13 @@ graph TD
 
 ## Component Inventory
 
-`219` components analysed.
+`220` components analysed.
 
 | Component | Path | Imports | Imported By |
 | --- | --- | --- | --- |
 | App | `App.tsx` | 20 (AlertToast, ConnectionLostBanner, DashboardLayout, DrawersContext, EnvironmentOverlay, LoginPage, +14 more) | 1 (main) |
 | rbac | `auth/rbac.ts` | 0 (—) | 0 (—) |
-| AdminPanel | `components/AdminPanel.tsx` | 0 (—) | 1 (PopOutHost) |
+| AdminPanel | `components/AdminPanel.tsx` | 1 (MarketHoursModeSwitch) | 1 (PopOutHost) |
 | AdvisoryPanel | `components/AdvisoryPanel.tsx` | 0 (—) | 1 (InstrumentAnalysisPanel) |
 | AlertDrawer | `components/AlertDrawer.tsx` | 2 (DashboardContext, Drawer) | 3 (AlertToast, AlertsPanel, StatusBar) |
 | AlertsPanel | `components/AlertsPanel.tsx` | 1 (AlertDrawer) | 0 (—) |
@@ -93,6 +93,7 @@ graph TD
 | MarketHeatmap | `components/MarketHeatmap.tsx` | 1 (Tooltip) | 1 (PopOutHost) |
 | Tooltip | `components/MarketHeatmap/Tooltip.tsx` | 0 (—) | 1 (MarketHeatmap) |
 | MarketHoursModeBadge | `components/MarketHoursModeBadge.tsx` | 0 (—) | 1 (StatusBar) |
+| MarketHoursModeSwitch | `components/MarketHoursModeSwitch.tsx` | 0 (—) | 1 (AdminPanel) |
 | MarketLadder | `components/MarketLadder.tsx` | 3 (ContextMenu, panelRegistry, PopOutButton) | 1 (PopOutHost) |
 | MarketMatch | `components/MarketMatch.tsx` | 2 (ContextMenu, ResizableHeader) | 1 (PopOutHost) |
 | MyPositionsPanel | `components/MyPositionsPanel.tsx` | 1 (PopOutButton) | 0 (—) |

@@ -1,6 +1,6 @@
 {
-  "totalComponents": 219,
-  "totalEdges": 220,
+  "totalComponents": 220,
+  "totalEdges": 221,
   "nodes": [
     {
       "name": "App",
@@ -17,7 +17,7 @@
     {
       "name": "AdminPanel",
       "path": "components/AdminPanel.tsx",
-      "importCount": 0,
+      "importCount": 1,
       "importedByCount": 1
     },
     {
@@ -275,6 +275,12 @@
     {
       "name": "MarketHoursModeBadge",
       "path": "components/MarketHoursModeBadge.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "MarketHoursModeSwitch",
+      "path": "components/MarketHoursModeSwitch.tsx",
       "importCount": 0,
       "importedByCount": 1
     },
