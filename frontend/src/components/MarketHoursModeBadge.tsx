@@ -4,6 +4,7 @@ import {
   marketHoursModeDetail,
 } from "@veta/frontend/domain/market/marketHoursMode.ts";
 import { useGetMarketHoursModeQuery } from "@veta/frontend/store/gatewayApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 const MODE_STYLES: Record<MarketHoursMode, { label: string; summary: string; cls: string }> = {
   real: {
@@ -26,7 +27,11 @@ const MODE_STYLES: Record<MarketHoursMode, { label: string; summary: string; cls
 const POLL_INTERVAL_MS = 60_000;
 
 export function MarketHoursModeBadge() {
-  const { data } = useGetMarketHoursModeQuery(undefined, { pollingInterval: POLL_INTERVAL_MS });
+  const signedIn = useAppSelector((s) => s.auth.user !== null);
+  const { data } = useGetMarketHoursModeQuery(undefined, {
+    pollingInterval: POLL_INTERVAL_MS,
+    skip: !signedIn,
+  });
   if (!data) return null;
   const mode = marketHoursMode(data);
   const style = MODE_STYLES[mode];
