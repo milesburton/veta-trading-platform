@@ -23,10 +23,10 @@ import {
   isResetInProgress,
   marketData,
   openPrices,
-  prewarmPricesAsync,
   refreshSectorShocks,
   seedPrice,
   snapshotOpenPrices,
+  warmUpPrices,
 } from "./price-engine.ts";
 import { nextBookRandom, nextRandom } from "./rng.ts";
 import { handleSeedRoute } from "./seed-route.ts";
@@ -144,13 +144,12 @@ async function seedFromJournal(): Promise<void> {
 
 snapshotOpenPrices();
 const PREWARM_TICKS = Number(Deno.env.get("MARKET_SIM_PREWARM_TICKS")) || 28_080;
-prewarmPricesAsync(PREWARM_TICKS).then(() => {
+warmUpPrices(PREWARM_TICKS, async () => {
   snapshotOpenPrices();
   logger.info(`Price engine pre-warmed — intraday moves seeded`);
-  seedFromJournal()
-    .then(() => snapshotOpenPrices())
-    .catch((err) => logger.error("seedFromJournal failed", { err: err as Error }));
-});
+  await seedFromJournal();
+  snapshotOpenPrices();
+}).catch((err) => logger.error("Price warm-up failed", { err: err as Error }));
 
 let marketMinute = 0;
 let tickCount = 0;

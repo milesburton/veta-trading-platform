@@ -2,11 +2,11 @@
   "backend": {
     "unit": {
       "files": 102,
-      "cases": 1196,
+      "cases": 1198,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
-        "marketSim.test.ts": 18,
+        "marketSim.test.ts": 20,
         "market-hours-by-asset-class.unit.test.ts": 7,
         "trading-calendar.unit.test.ts": 14,
         "settlement.unit.test.ts": 4,

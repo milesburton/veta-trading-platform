@@ -34,6 +34,8 @@ Prices follow a geometric Brownian motion (GBM) step with mean reversion, sector
 
 The tick loop does not broadcast while any prewarm is running (`isPrewarmInProgress()`). Each chunk moves prices by hundreds of simulated ticks, so a tick taken between chunks marks nearly every symbol as book-worthy and carries full order books for every venue. At the full universe size those frames reach several megabytes every 250 ms. The first tick after prewarm finishes is a full snapshot, because the diff state has no baseline yet.
 
+At startup, `warmUpPrices` keeps the same flag set until seeding from journal candle history has also finished. Prewarm walks every symbol through a full simulated day, and seeding then resets each symbol to its last recorded close. If ticks went out between the two steps, charts would show a jump away from the last close and straight back after every restart.
+
 ## Reset-in-progress guard
 
 <CodeBlock

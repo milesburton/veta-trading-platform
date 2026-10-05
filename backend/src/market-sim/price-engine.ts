@@ -142,6 +142,16 @@ export async function prewarmPricesAsync(ticks = 28_080): Promise<void> {
 }
 // #endregion docs:prewarm-async
 
+export async function warmUpPrices(ticks: number, seed: () => Promise<void>): Promise<void> {
+  prewarmsInProgress++;
+  try {
+    await prewarmPricesAsync(ticks);
+    await seed();
+  } finally {
+    prewarmsInProgress--;
+  }
+}
+
 let prewarmsInProgress = 0;
 
 export function isPrewarmInProgress(): boolean {
