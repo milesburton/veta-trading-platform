@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.77.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.76.0...veta-trading-platform-v1.77.0) (2026-10-06)
+
+
+### Features
+
+* **deploy:** render homelab .env from a SOPS + age encrypted file ([#727](https://github.com/milesburton/veta-trading-platform/issues/727)) ([b215f7d](https://github.com/milesburton/veta-trading-platform/commit/b215f7df2605cfcda18af887abc05b0c7cc15a0e))
+
 ## [1.76.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.75.2...veta-trading-platform-v1.76.0) (2026-10-05)
 
 
