@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 103,
-      "cases": 1225,
+      "cases": 1231,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -17,7 +17,7 @@
         "journal.test.ts": 10,
         "grid-query.test.ts": 31,
         "analytics.unit.test.ts": 22,
-        "llm-policy.test.ts": 18,
+        "llm-policy.test.ts": 20,
         "llm-dedupe.test.ts": 13,
         "llm-pg-retry.unit.test.ts": 6,
         "job-store.unit.test.ts": 2,
@@ -68,7 +68,7 @@
         "request-source.unit.test.ts": 4,
         "yield-curve.unit.test.ts": 6,
         "access-log-throttle.test.ts": 5,
-        "messaging.test.ts": 15,
+        "messaging.test.ts": 19,
         "parse-ticket-handler.unit.test.ts": 11,
         "runtime-config-store.test.ts": 13,
         "price-fan.unit.test.ts": 7,
