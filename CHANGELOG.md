@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.78.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.0...veta-trading-platform-v1.78.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **messaging:** drop duplicate deliveries after producer retries ([#738](https://github.com/milesburton/veta-trading-platform/issues/738)) ([2a42ea7](https://github.com/milesburton/veta-trading-platform/commit/2a42ea792e36b27a67992119c14c405fd783c864))
+
 ## [1.78.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.77.1...veta-trading-platform-v1.78.0) (2026-10-06)
 
 
