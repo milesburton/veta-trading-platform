@@ -9,7 +9,8 @@
 # polls GitHub — sidesteps the network problem entirely without a
 # tunnel.
 #
-# State file:  $STATE_DIR/last-deployed-sha   (full 40-char SHA)
+# State files: $STATE_DIR/last-deployed-sha     (full 40-char SHA)
+#              $STATE_DIR/last-deployed-digest  (gateway :latest digest)
 # Lock file:   $STATE_DIR/auto-pull.lock
 #
 # Logs to journald via stdout when invoked under systemd; falls back
@@ -23,8 +24,11 @@ REPO_URL="${REPO_URL:-https://github.com/milesburton/veta-trading-platform.git}"
 REPO_REF="${REPO_REF:-main}"
 REPO_SLUG="${REPO_SLUG:-milesburton/veta-trading-platform}"
 DEPLOY_SCRIPT="${DEPLOY_SCRIPT:-$STACK_DIR/deploy.sh}"
+DIGEST_IMAGE="${DIGEST_IMAGE:-gateway}"
+AUTO_PULL_SCRIPT="${AUTO_PULL_SCRIPT:-$STACK_DIR/auto-pull.sh}"
 
 LAST_DEPLOYED_FILE="$STATE_DIR/last-deployed-sha"
+LAST_DIGEST_FILE="$STATE_DIR/last-deployed-digest"
 LOCK_FILE="$STATE_DIR/auto-pull.lock"
 
 mkdir -p "$STATE_DIR"
@@ -159,6 +163,30 @@ has_no_check_runs() {
   [[ "$total" == "0" ]]
 }
 
+latest_digest() {
+  local token
+  token=$(curl -sf --max-time 10 \
+    "https://ghcr.io/token?scope=repository:$REPO_SLUG/$DIGEST_IMAGE:pull" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' 2>/dev/null) \
+    || return 1
+  curl -sfI --max-time 10 \
+    -H "Authorization: Bearer $token" \
+    -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json" \
+    "https://ghcr.io/v2/$REPO_SLUG/$DIGEST_IMAGE/manifests/latest" \
+    | awk 'tolower($1)=="docker-content-digest:" {print $2}' | tr -d '\r'
+}
+
+ci_idle_on_ref() {
+  local status total
+  for status in in_progress queued; do
+    total=$(curl -sf --max-time 10 \
+      "https://api.github.com/repos/$REPO_SLUG/actions/workflows/ci.yml/runs?branch=$REPO_REF&status=$status&per_page=1" \
+      | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total_count", -1))' 2>/dev/null) \
+      || return 1
+    [[ "$total" == "0" ]] || return 1
+  done
+}
+
 REMOTE=$(remote_sha)
 if [[ -z "$REMOTE" ]]; then
   log "could not fetch remote SHA — network problem? exiting without deploying"
@@ -166,12 +194,24 @@ if [[ -z "$REMOTE" ]]; then
 fi
 
 LAST=$(last_sha)
-if [[ "$REMOTE" == "$LAST" ]]; then
-  log "already at $REMOTE — nothing to do"
-  exit 0
-fi
+DIGEST=$(latest_digest || true)
+LAST_DIGEST=$(cat "$LAST_DIGEST_FILE" 2>/dev/null || true)
 
-if has_no_check_runs "$REMOTE"; then
+if [[ "$REMOTE" == "$LAST" ]]; then
+  if [[ -z "$DIGEST" || "$DIGEST" == "$LAST_DIGEST" ]]; then
+    log "already at $REMOTE — nothing to do"
+    exit 0
+  fi
+  if ! ci_idle_on_ref; then
+    log ":latest digest changed for ${REMOTE:0:7} but CI on $REPO_REF is still running; deferring to next tick"
+    exit 0
+  fi
+  log ":latest digest changed (${LAST_DIGEST:-none} -> $DIGEST) with no new commit, redeploying ${REMOTE:0:7}"
+elif has_no_check_runs "$REMOTE"; then
+  if ! ci_idle_on_ref; then
+    log "remote=${REMOTE:0:7} has no CI run but CI on $REPO_REF is still running; deferring to next tick"
+    exit 0
+  fi
   log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — no CI check-runs at all (skip-ci or actions disabled), running deploy"
 elif ! publish_checks_ready "$REMOTE"; then
   log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — publish not confirmed complete; deferring to next tick"
@@ -191,12 +231,20 @@ if git clone --depth 1 --branch "$REPO_REF" --filter=blob:none "$REPO_URL" "$che
     install -m 0755 "$checkout/scripts/homelab-deploy.sh" "$DEPLOY_SCRIPT"
     log "refreshed $DEPLOY_SCRIPT from main"
   fi
+  if [[ -f "$checkout/scripts/homelab-auto-pull.sh" && -f "$AUTO_PULL_SCRIPT" ]] \
+    && ! cmp -s "$checkout/scripts/homelab-auto-pull.sh" "$AUTO_PULL_SCRIPT"; then
+    install -m 0755 "$checkout/scripts/homelab-auto-pull.sh" "$AUTO_PULL_SCRIPT"
+    log "refreshed $AUTO_PULL_SCRIPT from main; takes effect next tick"
+  fi
 else
   log "could not refresh $DEPLOY_SCRIPT from main; running existing copy"
 fi
 
 if GITHUB_SHA="$REMOTE" "$DEPLOY_SCRIPT"; then
   printf '%s' "$REMOTE" > "$LAST_DEPLOYED_FILE"
+  if [[ -n "$DIGEST" ]]; then
+    printf '%s' "$DIGEST" > "$LAST_DIGEST_FILE"
+  fi
   log "deployed ${REMOTE:0:7} successfully"
 else
   log "deploy failed; leaving $LAST_DEPLOYED_FILE unchanged so we retry next tick"
