@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.78.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.2...veta-trading-platform-v1.78.3) (2026-10-06)
+
+
+### Bug Fixes
+
+* **backend:** resolve outstanding review findings in bot, gateway and matcher ([#743](https://github.com/milesburton/veta-trading-platform/issues/743)) ([535ad2f](https://github.com/milesburton/veta-trading-platform/commit/535ad2fa4c97b57dd5b0db2e079e3559124bad93))
+* **frontend:** resolve outstanding review findings in recorder, chart and bug report test ([#744](https://github.com/milesburton/veta-trading-platform/issues/744)) ([78c65ec](https://github.com/milesburton/veta-trading-platform/commit/78c65eca2eb95e9335e1ec54e45c9ae19121b98e))
+
 ## [1.78.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.1...veta-trading-platform-v1.78.2) (2026-10-06)
 
 
