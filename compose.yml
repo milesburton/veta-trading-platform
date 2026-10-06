@@ -1781,6 +1781,7 @@ services:
       LLM_MODEL_ID: ${LLM_MODEL_ID:-qwen2.5:3b}
       LLM_OLLAMA_BASE_URL: ${LLM_OLLAMA_BASE_URL:-http://ollama:11434}
       LLM_TRIGGER_MODE: on-demand-ui
+      LLM_WORKER_IDLE_TIMEOUT_SECONDS: "0"
       FEATURE_ENGINE_URL: http://feature-engine:5017
       SIGNAL_ENGINE_URL: http://signal-engine:5018
       JOURNAL_URL: http://journal:5009

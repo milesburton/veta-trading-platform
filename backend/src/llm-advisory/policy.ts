@@ -41,6 +41,10 @@ export function isWorkerAllowed(policy: LlmPolicy): boolean {
   return policy.enabled && policy.workerEnabled;
 }
 
+export function isIdleWindowOpen(idleTimeoutMs: number, deadline: number, now: number): boolean {
+  return idleTimeoutMs <= 0 || now < deadline;
+}
+
 export function canAutoTrigger(policy: LlmPolicy): boolean {
   if (!policy.enabled) return false;
   return (

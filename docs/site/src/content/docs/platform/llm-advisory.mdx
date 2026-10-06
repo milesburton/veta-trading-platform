@@ -65,6 +65,7 @@ The cap is a compile-time constant. Tune in [`backend/src/llm-advisory/orchestra
 | `LLM_OLLAMA_BASE_URL` | both | `http://ollama:11434` (local) / `http://<gpu-host>:11434` (the server) | Ollama inference endpoint |
 | `LLM_MODEL_ID` | both | `qwen2.5:3b` (local) / `qwen3-coder:30b` (Spark) | Model tag |
 | `LLM_TRIGGER_MODE` | orchestrator | `on-demand-ui` | `manual` / `on-demand-ui` / `event-driven` |
+| `LLM_WORKER_IDLE_TIMEOUT_SECONDS` | worker | `120` (supervisord) / `0` (compose) | Seconds the worker waits on an empty queue before ending its session. `0` keeps it running, which compose uses because nothing restarts the worker on demand there |
 
 Runtime policy is also stored in postgres (`llm_advisory.runtime_config`) and overrides env on a per-row basis. Migration `0019_llm_advisory_runtime_config_seed.sql` seeds defaults on first deploy.
 

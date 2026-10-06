@@ -5,7 +5,7 @@ import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
 import { createJobStore } from "./job-store.ts";
 import { handleParseTicket } from "./parse-ticket-handler.ts";
-import { isWorkerAllowed, loadPolicy } from "./policy.ts";
+import { isIdleWindowOpen, isWorkerAllowed, loadPolicy } from "./policy.ts";
 import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
 import { createAnthropicProvider } from "./providers/anthropic.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
@@ -276,9 +276,13 @@ outer: while (true) {
 
   const job = await store.claimNextJob(sessionId);
   if (!job) {
-    logger.info(`Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`);
+    logger.info(
+      IDLE_TIMEOUT_MS > 0
+        ? `Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`
+        : `Queue empty — waiting for new jobs`
+    );
     const deadline = Date.now() + IDLE_TIMEOUT_MS;
-    while (Date.now() < deadline) {
+    while (isIdleWindowOpen(IDLE_TIMEOUT_MS, deadline, Date.now())) {
       await new Promise((r) => setTimeout(r, 2_000));
       const next = await store.claimNextJob(sessionId);
       if (next) {
