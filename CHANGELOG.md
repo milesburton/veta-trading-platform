@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.79.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.3...veta-trading-platform-v1.79.0) (2026-10-06)
+
+
+### Features
+
+* **ems:** route each child to the venue whose book fills it best ([#748](https://github.com/milesburton/veta-trading-platform/issues/748)) ([4c91bb6](https://github.com/milesburton/veta-trading-platform/commit/4c91bb650a6d239cdcb6f6f46a80308c27590d55))
+* **frontend:** show exchange and market status next to asset symbols ([#739](https://github.com/milesburton/veta-trading-platform/issues/739)) ([de182d8](https://github.com/milesburton/veta-trading-platform/commit/de182d8a6f9bd69e1263392e36198b301d994430))
+
+
+### Bug Fixes
+
+* **deps:** patch vulnerable transitive packages without a Tailwind major ([#746](https://github.com/milesburton/veta-trading-platform/issues/746)) ([581d970](https://github.com/milesburton/veta-trading-platform/commit/581d9702da852991bebe4dba68f2276399f842f6))
+* **scripts:** sort route files so API docs generate in a stable order ([#749](https://github.com/milesburton/veta-trading-platform/issues/749)) ([89f1670](https://github.com/milesburton/veta-trading-platform/commit/89f1670cf604df31e9710b4fff91695f6def315a))
+
 ## [1.78.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.2...veta-trading-platform-v1.78.3) (2026-10-06)
 
 
