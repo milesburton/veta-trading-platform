@@ -25,6 +25,7 @@ REPO_REF="${REPO_REF:-main}"
 REPO_SLUG="${REPO_SLUG:-milesburton/veta-trading-platform}"
 DEPLOY_SCRIPT="${DEPLOY_SCRIPT:-$STACK_DIR/deploy.sh}"
 DIGEST_IMAGE="${DIGEST_IMAGE:-gateway}"
+AUTO_PULL_SCRIPT="${AUTO_PULL_SCRIPT:-$STACK_DIR/auto-pull.sh}"
 
 LAST_DEPLOYED_FILE="$STATE_DIR/last-deployed-sha"
 LAST_DIGEST_FILE="$STATE_DIR/last-deployed-digest"
@@ -229,6 +230,11 @@ if git clone --depth 1 --branch "$REPO_REF" --filter=blob:none "$REPO_URL" "$che
   if [[ -f "$checkout/scripts/homelab-deploy.sh" ]]; then
     install -m 0755 "$checkout/scripts/homelab-deploy.sh" "$DEPLOY_SCRIPT"
     log "refreshed $DEPLOY_SCRIPT from main"
+  fi
+  if [[ -f "$checkout/scripts/homelab-auto-pull.sh" && -f "$AUTO_PULL_SCRIPT" ]] \
+    && ! cmp -s "$checkout/scripts/homelab-auto-pull.sh" "$AUTO_PULL_SCRIPT"; then
+    install -m 0755 "$checkout/scripts/homelab-auto-pull.sh" "$AUTO_PULL_SCRIPT"
+    log "refreshed $AUTO_PULL_SCRIPT from main; takes effect next tick"
   fi
 else
   log "could not refresh $DEPLOY_SCRIPT from main; running existing copy"

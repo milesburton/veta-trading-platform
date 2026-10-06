@@ -12,7 +12,9 @@ production server. Every 5 minutes a systemd timer fires a script that:
 3. If either differs, waits until the commit's gated publish has
    finished (or, for a commit with no CI run or an unchanged SHA, until
    no CI run on main is queued or in progress), then clones main shallow and self-installs the latest
-   `homelab-deploy.sh` over `/opt/stacks/veta/deploy.sh`
+   `homelab-deploy.sh` over `/opt/stacks/veta/deploy.sh` and the latest
+   `homelab-auto-pull.sh` over `/opt/stacks/veta/auto-pull.sh` (used from
+   the next tick)
 4. Runs `deploy.sh` which rsyncs compose files and runs
    `docker compose up -d` with healthcheck gating
 5. On success, writes the new SHA to `state/last-deployed-sha` and the
