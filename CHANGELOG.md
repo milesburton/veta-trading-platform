@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.78.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.1...veta-trading-platform-v1.78.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* **algo:** bound idle exit and health-check curls ([#733](https://github.com/milesburton/veta-trading-platform/issues/733)) ([20becbe](https://github.com/milesburton/veta-trading-platform/commit/20becbe383c00b93876af53cb919698a54918879)), closes [#670](https://github.com/milesburton/veta-trading-platform/issues/670)
+
 ## [1.78.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.0...veta-trading-platform-v1.78.1) (2026-10-06)
 
 
