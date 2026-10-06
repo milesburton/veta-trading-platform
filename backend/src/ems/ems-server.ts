@@ -30,7 +30,7 @@ import {
   VALID_VENUES,
   type VenueMIC,
 } from "./fill-math.ts";
-import { matchAgainstSnapshot } from "./matching-engine.ts";
+import { ALL_VENUES, routeToBestVenue } from "./venue-router.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -97,32 +97,34 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     return;
   }
 
-  const venue = child.venue && VALID_VENUES.has(child.venue)
+  const directedVenue = child.venue && VALID_VENUES.has(child.venue)
     ? (child.venue as VenueMIC)
-    : pickWeightedVenue();
+    : null;
 
-  const snapshot = tick.venueBooks?.[venue]?.[child.asset];
   const requestedPrice = child.limitPrice ??
     child.effectivePrice ??
     (child.side === "BUY" ? midPrice * 1.05 : midPrice * 0.95);
+
+  const route = routeToBestVenue({
+    childId: child.childId,
+    asset: child.asset,
+    side: child.side,
+    quantity: child.quantity,
+    limitPrice: requestedPrice,
+    venueBooks: tick.venueBooks,
+    candidates: directedVenue ? [directedVenue] : ALL_VENUES,
+    now: Date.now(),
+  });
+  const venue = route?.venue ?? directedVenue ?? pickWeightedVenue();
 
   let filledQty: number;
   let remainingQty: number;
   let avgFillPrice: number;
 
-  if (snapshot && (snapshot.bids.length > 0 || snapshot.asks.length > 0)) {
-    const match = matchAgainstSnapshot(
-      child.childId,
-      child.asset,
-      child.side,
-      child.quantity,
-      requestedPrice,
-      snapshot,
-      Date.now(),
-    );
-    filledQty = match.filledQty;
-    remainingQty = match.remainingQty;
-    avgFillPrice = match.avgFillPrice ?? midPrice;
+  if (route) {
+    filledQty = route.match.filledQty;
+    remainingQty = route.match.remainingQty;
+    avgFillPrice = route.match.avgFillPrice ?? midPrice;
   } else {
     const tickVolume = tick.volumes[child.asset] ?? 1_000;
     const fallback = computeFill(
