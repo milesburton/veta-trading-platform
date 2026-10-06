@@ -13,7 +13,19 @@ import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startJournalProgressSweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
+import {
+  createProgressReader,
+  type InFlightChild,
+  journalBaseUrl,
+  readSliceBudget,
+  type TrackedOrder,
+} from "./fill-progress.ts";
 
 const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5005;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -33,30 +45,39 @@ const producer = await createProducer("pov-algo").catch((err) => {
   return null;
 });
 
-interface PovOrder {
-  id: number;
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice?: number;
-  expiresAt: number; // absolute ms
-  filledQty: number;
-  costBasis: number;
+interface PovOrder extends TrackedOrder {
+  readonly id: number;
+  readonly limitPrice?: number;
+  readonly inFlight: InFlightChild | null;
 }
 
 let nextId = 1;
 const activeOrders = new Map<number, PovOrder>();
+const evaluating = new Set<number>();
+const readProgress = createProgressReader(journalBaseUrl());
+
+function setInFlight(id: number, inFlight: InFlightChild | null): void {
+  const current = activeOrders.get(id);
+  if (current) activeOrders.set(id, { ...current, inFlight });
+}
+
+function povSliceQty(tickVolume: number, remaining: number): number {
+  const target = Math.max(MIN_SLICE, Math.min(MAX_SLICE, Math.round(tickVolume * POV_RATE)));
+  return Math.min(remaining, target);
+}
 
 async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<void> {
   const tickVolume = tick.volumes[state.asset] ?? 0;
-  const remaining = state.quantity - state.filledQty;
-  if (tickVolume === 0 || remaining <= 0) return;
+  if (tickVolume === 0) return;
 
-  const rawSlice = Math.round(tickVolume * POV_RATE);
-  const sliceQty = Math.max(MIN_SLICE, Math.min(MAX_SLICE, Math.min(rawSlice, remaining)));
-  const childId = `${state.orderId}-pov-${Date.now()}`;
+  const now = Date.now();
+  const budget = await readSliceBudget(readProgress, state.orderId, state.quantity, state.inFlight, now);
+  if (!budget) return;
+  setInFlight(state.id, budget.inFlight);
+  if (budget.inFlight || budget.remaining <= 0) return;
+
+  const sliceQty = povSliceQty(tickVolume, budget.remaining);
+  const childId = `${state.orderId}-pov-${now}`;
 
   await producer
     ?.send("orders.child", {
@@ -71,9 +92,10 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
       marketPrice: tick.prices[state.asset] ?? 0,
       tickVolume,
       algoParams: { povRate: POV_RATE, minSlice: MIN_SLICE, maxSlice: MAX_SLICE },
-      ts: Date.now(),
+      ts: now,
     })
     .catch(() => {});
+  setInFlight(state.id, { childId, quantity: sliceQty, sentAt: now });
 }
 
 const IDLE_TIMEOUT_MS = Number(Deno.env.get("POV_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
@@ -97,8 +119,7 @@ await createTypedConsumer("pov-algo-routed", [
         quantity: order.quantity,
         limitPrice: order.limitPrice,
         expiresAt: Date.now() + Number(order.expiresAt ?? 300) * 1_000,
-        filledQty: 0,
-        costBasis: 0,
+        inFlight: null,
       };
       activeOrders.set(id, state);
       logger.info(
@@ -115,26 +136,13 @@ marketClient.onTick(async (tick) => {
   const now = Date.now();
 
   for (const [id, state] of activeOrders) {
-    if (now >= state.expiresAt || state.filledQty >= state.quantity) {
-      if (now >= state.expiresAt && state.filledQty < state.quantity) {
-        await producer
-          ?.send("orders.expired", {
-            orderId: state.orderId,
-            clientOrderId: state.clientOrderId,
-            algo: "POV",
-            asset: state.asset,
-            side: state.side,
-            quantity: state.quantity,
-            filledQty: state.filledQty,
-            avgFillPrice: state.filledQty > 0 ? state.costBasis / state.filledQty : 0,
-            ts: now,
-          })
-          .catch(() => {});
-      }
-      activeOrders.delete(id);
-      continue;
+    if (now >= state.expiresAt || evaluating.has(id)) continue;
+    evaluating.add(id);
+    try {
+      await processTickForOrder(state, tick);
+    } finally {
+      evaluating.delete(id);
     }
-    await processTickForOrder(state, tick);
   }
 
   await producer
@@ -146,7 +154,7 @@ marketClient.onTick(async (tick) => {
     .catch(() => {});
 });
 
-startExpirySweepIndexed(activeOrders, producer, "POV", "pov-algo");
+startJournalProgressSweep(activeOrders, readProgress, producer, "POV", "pov-algo");
 
 serveAlgoHealth(PORT, "pov", VERSION, () => activeOrders.size);
 

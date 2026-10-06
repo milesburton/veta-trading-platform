@@ -14,6 +14,15 @@ import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
+import {
+  CHILD_SETTLE_MS,
+  completeHeartbeat,
+  createProgressReader,
+  expiredEvent,
+  type InFlightChild,
+  journalBaseUrl,
+  readSliceBudget,
+} from "./fill-progress.ts";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5004;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -35,13 +44,23 @@ let activeOrderCount = 0;
 const IDLE_TIMEOUT_MS = Number(Deno.env.get("TWAP_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrderCount === 0, "twap-algo");
 
+const readProgress = createProgressReader(journalBaseUrl());
+
+function twapSliceQty(remaining: number, slicesLeft: number): number {
+  return Math.min(remaining, Math.ceil(remaining / Math.max(1, slicesLeft)));
+}
+
 async function executeTWAP(order: RoutedOrder): Promise<void> {
   const durationMs = (order.expiresAt ?? 300) * 1_000;
   const numSlices = Math.max(1, Math.round(durationMs / INTERVAL_MS));
-  const baseSliceQty = order.quantity / numSlices;
-
-  let filledQty = 0;
-  let costBasis = 0;
+  const tracked = {
+    orderId: order.orderId,
+    clientOrderId: order.clientOrderId,
+    asset: order.asset,
+    side: order.side,
+    quantity: order.quantity,
+    expiresAt: Date.now() + durationMs,
+  };
 
   logger.info(
     `Started ${order.orderId}: ${order.quantity} ${order.asset} over ${numSlices} slices`
@@ -59,13 +78,22 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     })
     .catch(() => {});
 
-  for (let i = 0; i < numSlices && filledQty < order.quantity; i++) {
+  let inFlight: InFlightChild | null = null;
+
+  for (let i = 0; i < numSlices; i++) {
     if (i > 0) await new Promise<void>((r) => setTimeout(r, INTERVAL_MS));
 
-    const remaining = order.quantity - filledQty;
-    const sliceQty = Math.min(Math.round(baseSliceQty), remaining);
-    if (sliceQty <= 0) break;
+    const now = Date.now();
+    const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, inFlight, now);
+    if (!budget) {
+      logger.warn(`Slice ${i + 1}/${numSlices} skipped for ${order.orderId}: journal unavailable`);
+      continue;
+    }
+    inFlight = budget.inFlight;
+    if (budget.progress.filledQty >= order.quantity) break;
+    if (inFlight || budget.remaining <= 0) continue;
 
+    const sliceQty = twapSliceQty(budget.remaining, numSlices - i);
     const tick = marketClient.getLatest();
     const marketPrice = tick.prices[order.asset] ?? 0;
     const childId = `${order.orderId}-twap-${i + 1}`;
@@ -83,12 +111,10 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
         marketPrice,
         sliceIndex: i,
         numSlices,
-        ts: Date.now(),
+        ts: now,
       })
       .catch(() => {});
-
-    filledQty += sliceQty;
-    costBasis += sliceQty * marketPrice;
+    inFlight = { childId, quantity: sliceQty, sentAt: now };
 
     logger.info(`Slice ${i + 1}/${numSlices}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`);
 
@@ -103,20 +129,23 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
       .catch(() => {});
   }
 
-  const avgFill = filledQty > 0 ? (costBasis / filledQty).toFixed(4) : "N/A";
-  await producer
-    ?.send("algo.heartbeat", {
-      algo: "TWAP",
-      orderId: order.orderId,
-      event: "complete",
-      asset: order.asset,
-      filled: filledQty,
-      avgFillPrice: avgFill,
-      ts: Date.now(),
-    })
-    .catch(() => {});
+  if (inFlight) await new Promise<void>((r) => setTimeout(r, CHILD_SETTLE_MS));
 
-  logger.info(`Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`);
+  const now = Date.now();
+  const progress = await readProgress(order.orderId);
+  if (progress && progress.filledQty >= order.quantity) {
+    await producer
+      ?.send("algo.heartbeat", completeHeartbeat(tracked, "TWAP", progress, now))
+      .catch(() => {});
+  } else {
+    await producer
+      ?.send("orders.expired", expiredEvent(tracked, "TWAP", progress, now))
+      .catch(() => {});
+  }
+
+  logger.info(
+    `Complete ${order.orderId}: filled=${progress?.filledQty ?? "unknown"}/${order.quantity}`
+  );
   activeOrderCount--;
 }
 

@@ -20,7 +20,7 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
 
 1. **Create the strategy file** at `backend/src/algo/<lowercase-name>-strategy.ts`. Pattern to follow: [`backend/src/algo/twap-strategy.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/algo/twap-strategy.ts) is the most digestible reference. Required behaviour:
    - Subscribe to `orders.routed` for parents that name your strategy
-   - Subscribe to `orders.filled` so you can mark active orders complete
+   - Read fill progress from the journal with `readSliceBudget()` from `fill-progress.ts`, not from local counters (see [Fill progress from the journal](#fill-progress-from-the-journal))
    - Publish to `orders.child` for each child slice you generate
    - Emit `algo.heartbeat` every 5s so the frontend's AlgoHeartbeat panel stays green
 2. **Add a port + env var** to `compose.yml`. Use the next free port in the 5000-range. Add `<UPPER>_ALGO_PORT` and `<UPPER>_ALGO_HOST` to the `gateway` service env block so SVC_PROXY can route to it.
@@ -75,11 +75,19 @@ When adverse drift is negative (the market is moving in the order's favour), the
 
 ARRIVAL_PRICE uses a similar 20%-acceleration-on-favourable-drift rule, but scales its base slice interval by `urgency / 50` first: `urgency=50` is the neutral point (1x pace), `urgency=100` doubles the pace, and `urgency=25` halves it. Keep this convention (50 as the neutral midpoint of a 0-100 urgency parameter) if a new algo exposes a similar urgency knob, so the parameter behaves consistently across algos from a trader's perspective.
 
+### Fill progress from the journal
+
+<Source path="backend/src/algo/fill-progress.ts" label="Journal-backed fill progress" />
+
+TWAP, VWAP, POV and LIMIT do not count their own fills. Sending a child order is not the same as filling it: the matching engine can partially fill a child or fill none of it, and EMS children are IOC, so a zero fill produces no event. Before each slice the algo calls `readSliceBudget()`, which reads `GET /journal/order/:id/progress` (filled quantity, average price and filled child IDs, summed from `orders.filled` rows) and returns the quantity still to send.
+
+At most one child is in flight per parent order. A child counts against the remaining quantity until its ID appears in `filledChildIds` or `ALGO_CHILD_SETTLE_MS` (default 3000) elapses, after which it is treated as unfilled and the quantity becomes available again. If the journal is unreachable the slice is skipped rather than sent blind.
+
+`startJournalProgressSweep()` in `common-http.ts` polls the same endpoint every 5s and removes each order once it is complete (publishing a `complete` heartbeat) or expired (publishing `orders.expired` with the journal's filled quantity).
+
 ### Claim before await
 
-<Source path="backend/src/algo/limit-strategy.ts" label="LIMIT trigger handling" />
-
-When a tick triggers a fill, LIMIT marks the order filled (`order.remainingQty = 0`) and removes it from `pendingOrders` synchronously, before the `await producer.send(...)` that follows. Every algo here runs its tick handler on a single-threaded event loop, but `await` still yields control, and another tick can arrive and re-evaluate the same order while the `send()` is in flight. Claiming the order synchronously, before the first `await` in the triggered branch, closes that window: a second tick sees `remainingQty === 0` or finds the order already removed, and cannot re-trigger the same fill. Any new algo with a similar "trigger once, then do async work" shape should claim state the same way, before its first await.
+Tick handlers run on a single-threaded event loop, but each `await` yields, so a second tick can re-evaluate an order while a journal read or `producer.send()` is in progress. VWAP, POV and LIMIT add the order to an `evaluating` set before their first `await` and skip any order already in it. Order state is replaced through `setInFlight()`, which only updates an entry still present in the map, so a sweep that removes an order mid-evaluation is not undone. A new algo with the same shape should follow both rules.
 
 ### Front-loaded slice schedules
 

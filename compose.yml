@@ -628,6 +628,8 @@ services:
       EMS_PORT: "5001"
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
       KAFKA_RELAY_HOST: kafka-relay
       KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
@@ -667,6 +669,8 @@ services:
       EMS_PORT: "5001"
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
       TWAP_INTERVAL_MS: "5000"
       KAFKA_RELAY_HOST: kafka-relay
       KAFKA_RELAY_PORT: "5007"
@@ -707,6 +711,8 @@ services:
       EMS_PORT: "5001"
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
       POV_PERCENTAGE: "10"
       POV_MIN_SLICE: "10"
       POV_MAX_SLICE: "5000"
@@ -749,6 +755,8 @@ services:
       EMS_PORT: "5001"
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
       VWAP_WINDOW_TICKS: "20"
       KAFKA_RELAY_HOST: kafka-relay
       KAFKA_RELAY_PORT: "5007"

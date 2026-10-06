@@ -2,6 +2,13 @@ import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createTypedConsumer } from "@veta/messaging";
 import { NewsSignalSchema, type NewsSignal } from "@veta/schemas/news";
+import {
+  classifyOrder,
+  completeHeartbeat,
+  expiredEvent,
+  type ProgressReader,
+  type TrackedOrder,
+} from "./fill-progress.ts";
 
 // isQuiescent() must reflect zero pending/active orders — never exit owing a fill.
 export function armAlgoIdleExit(
@@ -81,32 +88,32 @@ export function startExpirySweep<T extends ExpirableOrder>(
   }, 5_000);
 }
 
-export function startExpirySweepIndexed<T extends Omit<ExpirableOrder, never>>(
-  activeOrders: Map<number, T>,
+export function startJournalProgressSweep<K, T extends TrackedOrder>(
+  activeOrders: Map<K, T>,
+  readProgress: ProgressReader,
   producer: { send: (topic: string, msg: unknown) => Promise<void> } | null,
   algo: string,
-  label: string
+  label: string,
+  intervalMs = 5_000
 ): void {
   setInterval(async () => {
-    const now = Date.now();
-    for (const [id, order] of [...activeOrders.entries()]) {
-      if (now >= order.expiresAt) {
-        const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-        logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
-        activeOrders.delete(id);
+    for (const [key, order] of [...activeOrders.entries()]) {
+      const now = Date.now();
+      const progress = await readProgress(order.orderId);
+      const outcome = classifyOrder(order, progress, now);
+      if (outcome === "working") continue;
+      activeOrders.delete(key);
+      if (outcome === "complete" && progress) {
+        logger.info(`[${label}] Complete ${order.orderId}: filled=${progress.filledQty}`);
         await producer
-          ?.send("orders.expired", {
-            orderId: order.orderId,
-            clientOrderId: order.clientOrderId,
-            algo,
-            filledQty: order.filledQty,
-            avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-            ts: now,
-          })
+          ?.send("algo.heartbeat", completeHeartbeat(order, algo, progress, now))
           .catch(() => {});
+        continue;
       }
+      logger.info(`[${label}] Expired ${order.orderId}: filled=${progress?.filledQty ?? "unknown"}`);
+      await producer?.send("orders.expired", expiredEvent(order, algo, progress, now)).catch(() => {});
     }
-  }, 5_000);
+  }, intervalMs);
 }
 
 export function subscribeNewsSignals(groupId: string, label: string): void {
