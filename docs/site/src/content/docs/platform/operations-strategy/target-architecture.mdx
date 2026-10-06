@@ -12,7 +12,7 @@ Two environments, no overlap of running services:
 | **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
 | **prod** | server (Proxmox LXC), ports `5xxx` (dev container internal), public via secure tunnel at the deployment URL | every merge to `main` deploys here automatically via the systemd auto-pull + plain-compose pipeline | continuous |
 
-A previous version of this doc proposed a third **UAT** environment co-located on the server. We dropped it in favour of a simpler two-tier model: the server box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and per-service healthchecks plus the auto-pull cadence give us enough deploy safety. If a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box. The operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in `compose.yml`.
+A previous version of this doc proposed a third **UAT** environment co-located on the server. We dropped it in favour of a simpler two-tier model: the server (16 cores, 64 GB RAM) is already shared with the CI runner and has no spare capacity for a third stack, the public demo audience is small, and per-service healthchecks plus the auto-pull cadence give us enough deploy safety. If a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box. The operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in `compose.yml`.
 
 Dev runs on the workstation when actively coding; no public route, no automatic promotion path.
 
