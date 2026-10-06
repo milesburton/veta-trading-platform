@@ -128,17 +128,19 @@ const extractEndpointsFromRoute = async (routeFile: string): Promise<Endpoint[]>
 };
 
 const extractAllEndpoints = async (): Promise<Endpoint[]> => {
-  const endpoints: Endpoint[] = [];
   try {
-    for await (const file of Deno.readDir(ROUTES_DIR)) {
-      if (file.isFile && file.name.endsWith(".ts")) {
-        endpoints.push(...(await extractEndpointsFromRoute(join(ROUTES_DIR, file.name))));
-      }
-    }
+    const names = (await Array.fromAsync(Deno.readDir(ROUTES_DIR)))
+      .filter((file) => file.isFile && file.name.endsWith(".ts"))
+      .map((file) => file.name)
+      .sort();
+    const perFile = await Promise.all(
+      names.map((name) => extractEndpointsFromRoute(join(ROUTES_DIR, name)))
+    );
+    return perFile.flat();
   } catch (error) {
     console.error("Error reading route files:", error);
+    return [];
   }
-  return endpoints;
 };
 
 const groupByService = (endpoints: Endpoint[]): Record<string, Endpoint[]> => {
