@@ -18,7 +18,7 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { json, serveJsonService } from "@veta/http";
+import { decodePathSegment, json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { armIdleExit } from "../shared/idle-exit.ts";
 import { blackScholes } from "./black-scholes.ts";
@@ -293,7 +293,7 @@ serveJsonService({
     }
 
     if (path.startsWith("/vol-profile/") && req.method === "GET") {
-      const symbol = decodeURIComponent(path.slice("/vol-profile/".length));
+      const symbol = decodePathSegment(path.slice("/vol-profile/".length));
       if (!symbol) return err("Missing symbol");
 
       const profile = await estimateVolProfile(JOURNAL_URL, symbol);
@@ -313,7 +313,7 @@ serveJsonService({
     }
 
     if (path.startsWith("/greeks-surface/") && req.method === "GET") {
-      const symbol = decodeURIComponent(path.slice("/greeks-surface/".length));
+      const symbol = decodePathSegment(path.slice("/greeks-surface/".length));
       if (!symbol) return err("Missing symbol");
 
       const expirySecs = Number(url.searchParams.get("expirySecs")) || 30 * 86_400;
@@ -380,7 +380,7 @@ serveJsonService({
     }
 
     if (path.startsWith("/price-fan/") && req.method === "GET") {
-      const symbol = decodeURIComponent(path.slice("/price-fan/".length));
+      const symbol = decodePathSegment(path.slice("/price-fan/".length));
       if (!symbol) return err("Missing symbol");
 
       const steps = Math.max(1, Math.min(200, Number(url.searchParams.get("steps")) || 24));
@@ -437,7 +437,7 @@ serveJsonService({
     }
 
     if (path.startsWith("/vol-surface/") && req.method === "GET") {
-      const symbol = decodeURIComponent(path.slice("/vol-surface/".length));
+      const symbol = decodePathSegment(path.slice("/vol-surface/".length));
       if (!symbol) return err("Missing symbol");
 
       const spot = await resolveSpot(symbol);

@@ -61,6 +61,11 @@ Deno.test("clampHeartbeatIntervalMs floors a too-small value to the 1s minimum",
   assertEquals(clampHeartbeatIntervalMs(-1), 1_000);
 });
 
+Deno.test("clampHeartbeatIntervalMs falls back to Discord's default interval for a non-finite value", () => {
+  assertEquals(clampHeartbeatIntervalMs(Number.NaN), 41_250);
+  assertEquals(clampHeartbeatIntervalMs(Number.POSITIVE_INFINITY), 41_250);
+});
+
 Deno.test("clampHeartbeatIntervalMs caps a too-large value to the 60s maximum", () => {
   assertEquals(clampHeartbeatIntervalMs(1_000_000_000), 60_000);
 });
@@ -379,6 +384,17 @@ Deno.test("parseTriageResponse parses a valid JSON object", () => {
   if (result.ok) {
     assertEquals(result.title, "Chart bug");
     assertEquals(result.description, "Bars are blank");
+  }
+});
+
+Deno.test("parseTriageResponse ignores braces inside JSON strings", () => {
+  const result = parseTriageResponse(
+    'Here you go: {"title":"Closing } brace","description":"Shows {x} and \\"quoted }\\" text"} trailing'
+  );
+  assert(result.ok);
+  if (result.ok) {
+    assertEquals(result.title, "Closing } brace");
+    assertEquals(result.description, 'Shows {x} and "quoted }" text');
   }
 });
 

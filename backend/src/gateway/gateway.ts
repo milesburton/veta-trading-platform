@@ -3,6 +3,7 @@ import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 import { getCookieToken } from "@veta/auth";
+import { decodePathSegment } from "@veta/http";
 import { logger, registerLogSink } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
@@ -1041,7 +1042,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             ? new Set(["admin"])
             : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
         const isOwnPositions =
-          ownPositionsMatch !== null && decodeURIComponent(ownPositionsMatch[1]) === auth.user.id;
+          ownPositionsMatch !== null && decodePathSegment(ownPositionsMatch[1]) === auth.user.id;
         const isRecordingParticipantRoute =
           (svcName === "replay" || svcName === "replay-service") &&
           ((svcPath === "/config" && req.method === "GET") ||

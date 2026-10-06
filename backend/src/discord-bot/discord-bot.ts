@@ -214,9 +214,16 @@ function extractFirstJsonObject(raw: string): string | null {
   const start = stripped.indexOf("{");
   if (start < 0) return null;
   let depth = 0;
+  let inString = false;
+  let escaped = false;
   for (let i = start; i < stripped.length; i++) {
     const ch = stripped[i];
-    if (ch === "{") depth++;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
     else if (ch === "}") {
       depth--;
       if (depth === 0) return stripped.slice(start, i + 1);
@@ -424,6 +431,7 @@ function identify(ws: WebSocket): void {
 }
 
 export function clampHeartbeatIntervalMs(intervalMs: number): number {
+  if (!Number.isFinite(intervalMs)) return DEFAULT_HEARTBEAT_INTERVAL_MS;
   if (intervalMs < MIN_HEARTBEAT_INTERVAL_MS) return MIN_HEARTBEAT_INTERVAL_MS;
   if (intervalMs > MAX_HEARTBEAT_INTERVAL_MS) return MAX_HEARTBEAT_INTERVAL_MS;
   return intervalMs;

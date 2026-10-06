@@ -1,7 +1,7 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { intelligencePool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
+import { corsOptions, decodePathSegment, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, Signal } from "@veta/types/intelligence";
@@ -87,7 +87,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const sigMatch = path.match(/^\/signals\/([^/]+)$/);
   if (sigMatch && req.method === "GET") {
-    const symbol = decodeURIComponent(sigMatch[1]);
+    const symbol = decodePathSegment(sigMatch[1]);
+    if (symbol === null) return json({ error: "Invalid path encoding" }, 400);
     const signal = latestSignals.get(symbol);
     if (!signal) return json({ error: "No signal data for symbol" }, 404);
     return json(signal);
