@@ -55,6 +55,7 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
     entrypoint: "backend/src/market-sim/market-sim.ts",
     port: 5000,
     health: "/health",
+    readyLog: /Seeded \d+\/\d+ assets from journal|Journal unavailable or empty/,
   },
   ems: {
     entrypoint: "backend/src/ems/ems-server.ts",
@@ -278,6 +279,7 @@ function buildBaseEnv(pg: ManagedPostgres, rp: ManagedRedpanda): Record<string, 
     VETA_ALLOW_DEFAULT_PASSCODE: "true",
     VETA_DEMO_MODE: "true",
     RISK_ENGINE_ENABLED: "false",
+    MARKET_SIM_PREWARM_TICKS: "240",
     LOG_LEVEL: Deno.env.get("STACK_LOG_LEVEL") ?? "info",
     OTEL_DENO: "false",
   };
