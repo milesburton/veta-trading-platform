@@ -1,6 +1,6 @@
 ---
 title: Visual anomalies
-description: Non-gating Playwright suite that detects DOM overflows and accessibility violations. Catches bugs that pixel-diff regression misses.
+description: Required Playwright merge gate that detects DOM overflows and accessibility violations. Catches bugs that pixel-diff regression misses.
 ---
 
 The visual anomalies suite is a required merge gate. It walks 10 scenarios (login plus every persona's dashboard plus four theme variants of the trader dashboard) and reports two classes of problem that traditional pixel-diff testing misses. Any overflow or axe-core violation fails the check and prevents the pull request from merging.
@@ -85,7 +85,7 @@ After all tests run, the suite writes the array of reports to `docs/visual-anoma
 
 ## In CI
 
-The [`pr-visual-anomalies` job](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) runs the spec on every pull request, uploads the report JSON as an artefact, and posts a summary comment to the PR with the diff against the latest `main` run. This makes regressions visible to reviewers without blocking merge; the team can decide per-issue whether to address before or after merge.
+The [`pr-visual-anomalies` job](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) runs the spec on every pull request, uploads the report JSON as an artefact, and posts a summary comment to the PR, then fails the job if the report contains any finding. `PR visual anomalies` is a required status check on `main`, so a PR with an overflow or axe-core violation cannot merge until it is fixed.
 
 ## Adding a scenario
 

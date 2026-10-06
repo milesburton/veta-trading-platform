@@ -29,6 +29,9 @@ Tests drive a real Chromium instance against the real frontend. The gateway is m
 | `panels.spec.ts` | Panel picker, add/remove panels, persistence |
 | `panel-walkthrough.spec.ts` | Touches every panel to confirm none crashes |
 | `dashboard-drag.spec.ts` | flexlayout-react drag/drop, tab moves |
+| `empty-workspace.spec.ts` | Layout chooser flows across the screen and scrolls rather than clipping |
+| `price-format.spec.ts` | Price formatting in the blotter and market ladder |
+| `registration.spec.ts` | Trader-type picker and new-user registration |
 | `workflows.spec.ts` | Multi-step persona scenarios |
 | `connection-recovery.spec.ts` | Gateway disconnect and reconnect handling |
 | `ui.spec.ts` | Themes, header chrome, build-info chip |
@@ -40,7 +43,7 @@ Tests drive a real Chromium instance against the real frontend. The gateway is m
 ```mermaid
 graph TD
     A["npx playwright test"] --> B["Vite dev server starts<br/>(webServer config in playwright.config.ts)"]
-    B --> C["Worker pool spawns<br/>(4 in CI, default locally)"]
+    B --> C["Worker pool spawns<br/>(2 in CI, default locally)"]
     C --> D["Per-spec: role fixture imported<br/>(traderTest / algoTest / fiTest / adminTest)"]
     D --> E["GatewayMock.attach() intercepts<br/>the WebSocket route"]
     E --> F["Fixture logs in, mounts dashboard,<br/>seeds initial prices"]
@@ -60,14 +63,14 @@ Tests run independently. Each spawns its own `GatewayMock`, so message-shape cha
 | Aspect | Local | CI |
 | --- | --- | --- |
 | Vite dev server | spawned by Playwright | spawned by Playwright |
-| Workers | default (CPU-detected) | 4 |
+| Workers | default (CPU-detected) | 2 |
 | Retries | 0 | 1 |
 | Trace | `on-first-retry` (never recorded locally without `--retries 1`) | recorded on first retry, uploaded as artefact |
 | Browser | Chromium | Chromium (headless) |
 
 ## Custom fixtures (by role)
 
-The suite exports four role-specific fixtures from [`tests/helpers/fixtures.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/tests/helpers/fixtures.ts):
+The suite exports five role-specific fixtures from [`tests/helpers/fixtures.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/tests/helpers/fixtures.ts):
 
 ```typescript
 import { traderTest as test } from "./helpers/fixtures.ts";
@@ -85,6 +88,7 @@ Available fixtures:
 - **`algoTest`**: logs in as algo trader with TWAP/VWAP permissions.
 - **`fiTest`**: logs in as fixed-income trader, mounts FI workspace.
 - **`adminTest`**: logs in as admin, mounts admin dashboard with Mission Control panels.
+- **`ladderTest`**: logs in as the default trader and returns a `MarketLadderPage` for depth-ladder specs.
 
 Each fixture handles auth, layout reset, and initial price seeding before yielding the test context.
 
@@ -117,7 +121,7 @@ To exercise the live gateway instead, omit `GatewayMock.attach()`; the dev serve
 
 - **Browser:** Chromium only. The packaged Electron app uses the same engine, so cross-browser parity is not a requirement.
 - **Retries:** 1 in CI, 0 locally.
-- **Workers:** 4 in CI. Specs are independent; each constructs its own `GatewayMock`.
+- **Workers:** 2 in CI, with the suite split across 2 shards. Specs are independent; each constructs its own `GatewayMock`.
 - **Test timeout:** 30s.
 - **Tracing:** `on-first-retry`. The trace zip uploads as a CI artefact on retry.
 - **Screenshot:** `only-on-failure`.
@@ -126,7 +130,7 @@ The Vite dev server starts automatically before tests run.
 
 ## Test selection
 
-Specs are grouped by fixture (`traderTest`, `algoTest`, `fiTest`, `adminTest`) rather than by tag. No `@flaky` or `@a11y` tags are used.
+Specs are grouped by fixture (`traderTest`, `algoTest`, `fiTest`, `adminTest`, `ladderTest`) rather than by tag. No `@flaky` or `@a11y` tags are used.
 
 ```sh
 npx playwright test --grep "trader"   # specs that import traderTest

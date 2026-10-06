@@ -6,7 +6,9 @@ This document describes all available API endpoints in the VETA system.
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| POST | /load-test | originator of a trade. | ✅ |
+| GET | /admin/market-hours | docs: /user-guide/admin-tools/ | ✅ |
+| GET | /market-hours | Endpoint for /market-hours | ✅ |
+| POST | /load-test | Endpoint for /load-test | ✅ |
 | POST | /demo-day | Endpoint for /demo-day | ✅ |
 | POST | /load-gen/start | Endpoint for /load-gen/start | ✅ |
 | POST | /load-gen/stop | Endpoint for /load-gen/stop | ✅ |
@@ -103,7 +105,7 @@ This document describes all available API endpoints in the VETA system.
 
 | Service | Endpoints | Auth Required |
 |---------|-----------|---------------|
-| General | 28 | ✅ |
+| General | 30 | ✅ |
 | Market Simulator | 1 | ✅ |
 | Journal Service | 3 | ✅ |
 | Dark Pool | 1 | ✅ |

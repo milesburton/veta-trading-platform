@@ -51,22 +51,34 @@ deno task test:testcontainers
 
 The task wraps each `.tc.test.ts` file in `scripts/run-testcontainers.sh`, which sets up the Docker plumbing the helpers need (see [Dev-container quirks](#dev-container-quirks)).
 
-End-to-end runtime is around 80 seconds across the full suite. Each individual file boots its slice of the stack in 5 to 15 seconds depending on how many services it needs.
+Each individual file boots its slice of the stack in 5 to 15 seconds depending on how many services it needs.
 
 ## Suites
 
-All seven suites run as part of `deno task test:testcontainers`:
+Every file listed in the `test:testcontainers` task in `deno.json` runs as part of `deno task test:testcontainers`. The task lists files explicitly rather than globbing, so a new `.tc.test.ts` file does not run until it is added there (see [Adding a new test](#adding-a-new-test)).
 
 | File | Boots | What it covers |
 | --- | --- | --- |
 | `testcontainers.smoke.test.ts` | postgres + redpanda | Helpers themselves: connection works, migrations apply, broker accepts |
 | `testcontainers.stack.test.ts` | postgres + redpanda + 2 services | Helper API: `startStack()` brings up multiple services and tears them down |
-| `journal.http.tc.test.ts` | journal | Journal HTTP contracts (8 steps) |
-| `market-data.http.tc.test.ts` | market-data | Market-data HTTP contracts (9 steps) |
-| `intelligence.integration.tc.test.ts` | feature/signal/scenario engines + gateway | Intelligence pipeline + gateway proxy (10 steps) |
-| `integration.tc.test.ts` | full service surface | Service contracts + order flow + shared-workspaces lifecycle (20 steps) |
+| `smoke.tc.test.ts` | 8 core services | Fast critical-path smoke subset (see [Smoke tests](../smoke/)) |
+| `smoke.full.tc.test.ts` | up to the full service set | Full backend smoke (see [Smoke tests](../smoke/)) |
+| `journal.http.tc.test.ts` | journal | Journal HTTP contracts |
+| `market-data.http.tc.test.ts` | market-data | Market-data HTTP contracts |
+| `intelligence.integration.tc.test.ts` | feature/signal/scenario engines + gateway | Intelligence pipeline and gateway proxy |
+| `integration.tc.test.ts` | full service surface | Service contracts, order flow, shared-workspaces lifecycle |
 | `scenarios.integration.tc.test.ts` | scenarios stack | Same-seed determinism (plus or minus 5bps tolerance) and different-seed divergence |
-| `algo.integration.tc.test.ts` | gateway + journal + 9 algo services | All 9 algo strategies via WebSocket (10 steps; 4 timing-sensitive steps gated behind `RUN_FLAKY_ALGOS=1`) |
+| `algo.integration.tc.test.ts` | gateway + journal + 9 algo services | All 9 algo strategies via WebSocket (timing-sensitive steps gated behind `RUN_FLAKY_ALGOS=1`) |
+| `risk-rejection.integration.tc.test.ts` | OMS + risk-engine stack | Pre-trade risk rejections reach the client |
+| `job-store.integration.tc.test.ts` | postgres | LLM advisory job-store lifecycle |
+| `weight-store.integration.tc.test.ts` | postgres | Signal weight seeding and round-trip saves |
+| `messaging.integration.tc.test.ts` | redpanda | `@veta/messaging` producer and consumer round trip |
+| `typed-consumer.integration.tc.test.ts` | redpanda | Per-topic Zod schema validation on consume |
+| `registration.integration.tc.test.ts` | user-service | Registration persists the trader archetype to `trading_limits` |
+| `preferences.integration.tc.test.ts` | user-service + gateway | User preferences and saved workspaces |
+| `venues.integration.tc.test.ts` | RFQ, dark pool, CCP stack | RFQ sell-side, dark-pool crossing, CCP novation |
+| `product-service.integration.tc.test.ts` | product-service | Structured-product lifecycle |
+| `analytics-services.integration.tc.test.ts` | analytics, news, recommendation stack | Analytics, news and recommendation HTTP behaviour |
 
 ### Known exclusion: Discord delivery
 
@@ -95,7 +107,7 @@ await pg.teardown();
 
 ### `startEphemeralRedpanda()`
 
-Boots a `redpandadata/redpanda:v24.3.4` container in `dev-container` mode with a single broker on a picked free port. Honours `TESTCONTAINERS_HOST_OVERRIDE` so the advertised broker address matches what the host can reach.
+Boots a `redpandadata/redpanda:v24.3.4` container (pinned separately from the `v24.3.6` image `compose.yml` uses) in `dev-container` mode with a single broker on a picked free port. Honours `TESTCONTAINERS_HOST_OVERRIDE` so the advertised broker address matches what the host can reach.
 
 ```typescript
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";
