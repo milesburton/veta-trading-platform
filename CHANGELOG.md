@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.77.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.77.0...veta-trading-platform-v1.77.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **test:** wait for market-sim warm-up and gateway health in testcontainers suites ([#730](https://github.com/milesburton/veta-trading-platform/issues/730)) ([8a4956c](https://github.com/milesburton/veta-trading-platform/commit/8a4956c91748bc7227910f0cbb508ed31dbc1f31))
+
 ## [1.77.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.76.0...veta-trading-platform-v1.77.0) (2026-10-06)
 
 
