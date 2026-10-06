@@ -18,6 +18,7 @@ let onStopCallback: OnStopFn | null = null;
 let startedAt = 0;
 let durationTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingChunkRetries = 0;
+let flushChain: Promise<void> = Promise.resolve();
 
 function pushEvent(event: eventWithTime): void {
   buffer.push(event);
@@ -26,7 +27,7 @@ function pushEvent(event: eventWithTime): void {
   }
 }
 
-async function flush(): Promise<void> {
+async function flushOnce(): Promise<void> {
   if (buffer.length === 0 || !uploadFn) return;
   const chunk = [...buffer];
   buffer = [];
@@ -45,12 +46,18 @@ async function flush(): Promise<void> {
   }
 }
 
+function flush(): Promise<void> {
+  flushChain = flushChain.then(flushOnce);
+  return flushChain;
+}
+
 export function startRecording(upload: UploadFn, onStop?: OnStopFn): void {
   if (stopFn) return;
 
   buffer = [];
   seq = 0;
   pendingChunkRetries = 0;
+  flushChain = Promise.resolve();
   uploadFn = upload;
   onStopCallback = onStop ?? null;
   startedAt = Date.now();

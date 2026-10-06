@@ -263,6 +263,7 @@ function useCandlestickData(
   chartSizedRef: MutableRefObject<boolean>,
   pendingLoadRef: MutableRefObject<(() => void) | null>,
   loadedKeyRef: MutableRefObject<string>,
+  loadedSmaKeyRef: MutableRefObject<string>,
   lastBarTimeRef: MutableRefObject<number>,
   loadedBarCountRef: MutableRefObject<number>,
   fitOnNextTickRef: MutableRefObject<boolean>
@@ -276,8 +277,10 @@ function useCandlestickData(
     const raw = getIntervalCandles(candles, interval);
     if (raw.length === 0) return;
 
-    const newKey = `${symbol}:${interval}:${smaPeriod}:${smaVisible}`;
+    const newKey = `${symbol}:${interval}`;
+    const newSmaKey = `${smaPeriod}:${smaVisible}`;
     const isNewSeries = loadedKeyRef.current !== newKey;
+    const isSmaChanged = loadedSmaKeyRef.current !== newSmaKey;
     const last = raw[raw.length - 1];
     const lastTime = last.time;
     const isFullReplace =
@@ -296,6 +299,7 @@ function useCandlestickData(
         vs.setData(raw.map(toVolData));
         ss.setData(smaVisible ? computeSma(raw, smaPeriod) : []);
         loadedKeyRef.current = newKey;
+        loadedSmaKeyRef.current = newSmaKey;
         lastBarTimeRef.current = lastTime;
         loadedBarCountRef.current = raw.length;
         fitOnNextTickRef.current = true;
@@ -305,7 +309,10 @@ function useCandlestickData(
       } else {
         cs.update(toBarData(last));
         vs.update(toVolData(last));
-        if (smaVisible && raw.length >= smaPeriod) {
+        if (isSmaChanged) {
+          ss.setData(smaVisible ? computeSma(raw, smaPeriod) : []);
+          loadedSmaKeyRef.current = newSmaKey;
+        } else if (smaVisible && raw.length >= smaPeriod) {
           const smaTail = computeSma(raw.slice(-smaPeriod - 1), smaPeriod);
           const latestSma = smaTail[smaTail.length - 1];
           if (latestSma) ss.update(latestSma);
@@ -334,6 +341,7 @@ function useCandlestickData(
     lastBarTimeRef,
     loadedBarCountRef,
     loadedKeyRef,
+    loadedSmaKeyRef,
     pendingLoadRef,
     smaPeriod,
     smaSeriesRef,
@@ -354,6 +362,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
   const smaPeriod = useSignal<number>(DEFAULT_SMA_PERIOD);
   const smaVisible = useSignal<boolean>(true);
   const loadedKeyRef = useRef<string>("");
+  const loadedSmaKeyRef = useRef<string>("");
   const lastBarTimeRef = useRef<number>(0);
   const loadedBarCountRef = useRef<number>(0);
   const fitOnNextTickRef = useRef(false);
@@ -395,6 +404,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
     chartSizedRef,
     pendingLoadRef,
     loadedKeyRef,
+    loadedSmaKeyRef,
     lastBarTimeRef,
     loadedBarCountRef,
     fitOnNextTickRef
@@ -443,6 +453,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
           <input
             type="number"
             data-testid="sma-period-input"
+            aria-label="SMA period"
             value={smaPeriod.value}
             disabled={!smaVisible.value}
             min={MIN_SMA_PERIOD}

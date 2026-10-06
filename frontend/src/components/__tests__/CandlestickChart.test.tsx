@@ -126,6 +126,11 @@ describe("CandlestickChart – SMA overlay", () => {
     expect(screen.getByTestId("sma-period-input")).toHaveValue(20);
   });
 
+  it("labels the period input for assistive technology", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    expect(screen.getByLabelText("SMA period")).toBe(screen.getByTestId("sma-period-input"));
+  });
+
   it("disables the period input when toggled off", () => {
     renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
     fireEvent.click(screen.getByTestId("sma-toggle"));
@@ -277,6 +282,18 @@ describe("CandlestickChart – chart wiring", () => {
     expect(seriesStub.setData).toHaveBeenCalled();
     const barData = seriesStub.setData.mock.calls[0][0];
     expect(barData[0]).toEqual({ time: 60, open: 150, high: 155, low: 148, close: 152 });
+  });
+
+  it("redraws only the SMA line when the SMA is toggled", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    observers[0].fire(800, 500);
+    expect(seriesStub.setData).toHaveBeenCalledTimes(3);
+    seriesStub.setData.mockClear();
+
+    fireEvent.click(screen.getByTestId("sma-toggle"));
+
+    expect(seriesStub.setData).toHaveBeenCalledTimes(1);
+    expect(seriesStub.setData).toHaveBeenCalledWith([]);
   });
 
   it("colours volume bars by candle direction", () => {
