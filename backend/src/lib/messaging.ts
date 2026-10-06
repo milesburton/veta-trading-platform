@@ -44,6 +44,31 @@ export function isDroppableTopic(topic: string): boolean {
   return DROPPABLE_TOPIC_PREFIXES.some((prefix) => topic.startsWith(prefix));
 }
 
+export const MESSAGE_ID_HEADER = "veta-msg-id";
+const DEDUPE_WINDOW_SIZE = 10_000;
+
+export function createDedupeWindow(capacity: number): (id: string) => boolean {
+  const seen = new Set<string>();
+  return (id) => {
+    if (seen.has(id)) return true;
+    seen.add(id);
+    if (seen.size > capacity) {
+      const oldest = seen.values().next().value;
+      if (oldest !== undefined) seen.delete(oldest);
+    }
+    return false;
+  };
+}
+
+export function headerString(
+  headers: KafkaMessage["headers"],
+  name: string,
+): string | undefined {
+  const raw = headers?.[name];
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  return first === undefined ? undefined : first.toString();
+}
+
 function maxInFlightFromEnv(): number {
   const parsed = Number(Deno.env.get("PRODUCER_MAX_IN_FLIGHT"));
   return Number.isInteger(parsed) && parsed > 0
@@ -224,7 +249,9 @@ export function createProducer(
         return;
       }
       try {
-        const headers: Record<string, string> = {};
+        const headers: Record<string, string> = {
+          [MESSAGE_ID_HEADER]: crypto.randomUUID(),
+        };
         await injectTraceContext(headers);
         await target.send({
           topic,
@@ -290,6 +317,8 @@ export function createConsumer(
   let stopped = false;
   let reconnecting = false;
   let generation = 0;
+  const isDuplicate = createDedupeWindow(DEDUPE_WINDOW_SIZE);
+  let duplicatesSkipped = 0;
 
   async function connectLoop() {
     const MAX_DELAY_MS = 30_000;
@@ -332,6 +361,18 @@ export function createConsumer(
             { topic, message }: { topic: string; message: KafkaMessage },
           ) => {
             if (!message.value) return;
+            const messageId = headerString(message.headers, MESSAGE_ID_HEADER);
+            if (messageId && isDuplicate(messageId)) {
+              duplicatesSkipped += 1;
+              logger.debug("consumer skipped duplicate message", {
+                ...LIB,
+                groupId,
+                topic,
+                messageId,
+                duplicatesSkipped,
+              });
+              return;
+            }
             let parsed: unknown;
             try {
               parsed = JSON.parse(message.value.toString());

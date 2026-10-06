@@ -5,9 +5,12 @@ import { z } from "@veta/zod";
 import {
   __setMessagingTestHooks,
   createConsumer,
+  createDedupeWindow,
   createProducer,
   createTypedConsumer,
+  headerString,
   isDroppableTopic,
+  MESSAGE_ID_HEADER,
   sendInChunks,
   type KafkaFactoryLike,
 } from "../lib/messaging.ts";
@@ -105,6 +108,23 @@ class FakeConsumer {
   }
 }
 
+type SentPayload = {
+  topic: string;
+  messages: { value: string; headers: Record<string, string> }[];
+};
+
+function withoutMessageIds(sends: unknown[]): unknown[] {
+  return (sends as SentPayload[]).map(({ topic, messages }) => ({
+    topic,
+    messages: messages.map(({ value, headers }) => ({
+      value,
+      headers: Object.fromEntries(
+        Object.entries(headers).filter(([key]) => key !== MESSAGE_ID_HEADER),
+      ),
+    })),
+  }));
+}
+
 function drainMicrotasks(): Promise<void> {
   return Promise.resolve();
 }
@@ -169,7 +189,7 @@ Deno.test({
     assert(producer.isReady());
 
     await producer.send("orders.new", { id: 2, side: "BUY" });
-    assertEquals(producerClient.sends, [
+    assertEquals(withoutMessageIds(producerClient.sends), [
       {
         topic: "orders.new",
         messages: [{ value: JSON.stringify({ id: 1 }), headers: {} }],
@@ -221,7 +241,7 @@ Deno.test({
     gate.resolve();
     await pending;
 
-    assertEquals(replacement.sends, [
+    assertEquals(withoutMessageIds(replacement.sends), [
       {
         topic: "orders.new",
         messages: [{ value: JSON.stringify({ id: 2 }), headers: {} }],
@@ -662,4 +682,85 @@ Deno.test("[messaging] sendInChunks continues past a failed send", async () => {
   await sendInChunks(producer, "market.features", [0, 1, 2, 3], 2);
 
   assertEquals(sent, [0, 2, 3]);
+});
+
+Deno.test("[messaging] dedupe window flags repeats and evicts the oldest id", () => {
+  const isDuplicate = createDedupeWindow(2);
+  assertEquals(isDuplicate("a"), false);
+  assertEquals(isDuplicate("a"), true);
+  assertEquals(isDuplicate("b"), false);
+  assertEquals(isDuplicate("c"), false);
+  assertEquals(isDuplicate("a"), false);
+  assertEquals(isDuplicate("c"), true);
+});
+
+Deno.test("[messaging] headerString reads string, buffer and array header values", () => {
+  const buf = new TextEncoder().encode("from-buffer");
+  const headers = {
+    s: "plain",
+    b: { toString: () => new TextDecoder().decode(buf) },
+    a: ["first", "second"],
+  } as never;
+  assertEquals(headerString(headers, "s"), "plain");
+  assertEquals(headerString(headers, "b"), "from-buffer");
+  assertEquals(headerString(headers, "a"), "first");
+  assertEquals(headerString(headers, "missing"), undefined);
+  assertEquals(headerString(undefined, "s"), undefined);
+});
+
+Deno.test({
+  name: "[messaging] producer stamps every send with a unique message id",
+  async fn() {
+    const producerClient = new FakeProducer();
+    installHooks(() => ({
+      producer: () => producerClient as never,
+      consumer: () => {
+        throw new Error("unused");
+      },
+    }));
+    const producer = await createProducer("id-stamp");
+    await waitFor(() => producer.isReady());
+    await producer.send("orders.new", { id: 1 });
+    await producer.send("orders.new", { id: 2 });
+    const ids = producerClient.sends.map((payload) =>
+      (payload as { messages: { headers: Record<string, string> }[] })
+        .messages[0].headers[MESSAGE_ID_HEADER]
+    );
+    assertEquals(ids.length, 2);
+    assert(ids.every((id) => typeof id === "string" && id.length > 0));
+    assert(ids[0] !== ids[1]);
+    await producer.disconnect();
+    __setMessagingTestHooks(null);
+  },
+});
+
+Deno.test({
+  name: "[messaging] consumer delivers a redelivered message id only once",
+  async fn() {
+    const fakeConsumer = new FakeConsumer();
+    installHooks(() => ({
+      producer: () => {
+        throw new Error("unused");
+      },
+      consumer: () => fakeConsumer as never,
+    }));
+    const consumer = await createConsumer("dedupe-group", ["orders.child"]);
+    const seen: unknown[] = [];
+    consumer.onMessage((_topic, value) => {
+      seen.push(value);
+    });
+    await waitFor(() => fakeConsumer.runConfig !== null);
+
+    const body = JSON.stringify({ id: 7 });
+    await fakeConsumer.emitMessage("orders.child", body, { [MESSAGE_ID_HEADER]: "m-1" });
+    await fakeConsumer.emitMessage("orders.child", body, { [MESSAGE_ID_HEADER]: "m-1" });
+    await fakeConsumer.emitMessage("orders.child", body, { [MESSAGE_ID_HEADER]: "m-2" });
+    await fakeConsumer.emitMessage("orders.child", body);
+    await fakeConsumer.emitMessage("orders.child", body);
+    await drainMicrotasks();
+
+    assertEquals(seen.length, 4);
+    await consumer.disconnect();
+    __setMessagingTestHooks(null);
+  },
 });
