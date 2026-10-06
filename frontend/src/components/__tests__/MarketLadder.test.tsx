@@ -11,6 +11,10 @@ import type { AssetDef, MarketPrices, PriceHistory } from "@veta/frontend/types"
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
+  ExchangeBadge: () => null,
+}));
+
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },
   {

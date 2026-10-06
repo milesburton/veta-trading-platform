@@ -13,6 +13,10 @@ import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
+  ExchangeBadge: () => null,
+}));
+
 // ── Mock useGridQuery ─────────────────────────────────────────────────────────
 
 const mockUseGridQuery = vi.fn();

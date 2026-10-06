@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { ExchangeBadge } from "@veta/frontend/components/ExchangeBadge.tsx";
 import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
 import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
@@ -224,6 +225,7 @@ const Row = memo(function Row({
             }}
           >
             {asset.symbol}
+            <ExchangeBadge symbol={asset.symbol} />
           </div>
           <div className="text-muted text-[9px] leading-tight truncate">{asset.sector}</div>
           {asset.beta !== undefined && (

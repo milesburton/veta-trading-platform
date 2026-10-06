@@ -14,6 +14,10 @@ import type { AssetDef, MarketPrices } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
+  ExchangeBadge: () => null,
+}));
+
 const MOCK_BOND_PRICE = {
   price: 99.5,
   modifiedDuration: 7.5,

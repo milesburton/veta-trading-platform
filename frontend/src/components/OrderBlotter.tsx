@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { ExchangeBadge } from "@veta/frontend/components/ExchangeBadge.tsx";
 import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
 import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
@@ -623,6 +624,7 @@ export function OrderBlotter() {
                                 className={`px-3 py-1.5 font-semibold text-secondary ${cellCls} ${stickyClass}`}
                               >
                                 {order.asset}
+                                <ExchangeBadge symbol={order.asset} />
                               </td>
                             );
                           case "side":
