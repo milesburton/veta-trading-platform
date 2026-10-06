@@ -10,6 +10,28 @@ import {
   type TrackedOrder,
 } from "./fill-progress.ts";
 
+const FORCED_KILL_AFTER_MS = 10_000;
+
+export function spawnKillWatchdog(pid: number, afterMs: number): void {
+  try {
+    new Deno.Command("sh", {
+      args: ["-c", `sleep ${afterMs / 1000}; kill -9 ${pid}`],
+      stdin: "null",
+      stdout: "null",
+      stderr: "null",
+    })
+      .spawn()
+      .unref();
+  } catch (err) {
+    logger.warn("Could not spawn exit watchdog", { err });
+  }
+}
+
+const exitWithWatchdog = (code: number): void => {
+  spawnKillWatchdog(Deno.pid, FORCED_KILL_AFTER_MS);
+  Deno.exit(code);
+};
+
 // isQuiescent() must reflect zero pending/active orders — never exit owing a fill.
 export function armAlgoIdleExit(
   timeoutMs: number,
@@ -18,7 +40,7 @@ export function armAlgoIdleExit(
   options: { checkIntervalMs?: number; exit?: (code: number) => void } = {}
 ): { touch: () => void; checkNow: () => void; stop: () => void } {
   const checkIntervalMs = options.checkIntervalMs ?? 5_000;
-  const exit = options.exit ?? Deno.exit;
+  const exit = options.exit ?? exitWithWatchdog;
   let lastActivity = Date.now();
   const touch = () => {
     lastActivity = Date.now();

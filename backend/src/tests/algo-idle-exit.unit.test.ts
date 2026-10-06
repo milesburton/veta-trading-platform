@@ -77,3 +77,20 @@ Deno.test("[armAlgoIdleExit] becoming non-quiescent again blocks a previously-du
     Date.now = realDateNow;
   }
 });
+
+Deno.test("[spawnKillWatchdog] kills a process whose main thread is blocked", async () => {
+  const modulePath = new URL("../algo/common-http.ts", import.meta.url).href;
+  const script = `
+    const { spawnKillWatchdog } = await import(${JSON.stringify(modulePath)});
+    spawnKillWatchdog(Deno.pid, 300);
+    while (true) {}
+  `;
+  const started = Date.now();
+  const status = await new Deno.Command(Deno.execPath(), {
+    args: ["eval", script],
+    stdout: "null",
+    stderr: "null",
+  }).output();
+  assertEquals(status.signal, "SIGKILL");
+  assertEquals(Date.now() - started < 15_000, true, "watchdog must fire within a bounded time");
+});
