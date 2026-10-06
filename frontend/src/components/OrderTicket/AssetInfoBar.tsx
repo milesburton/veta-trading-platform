@@ -1,9 +1,11 @@
+import { ExchangeBadge, useExchangeStatus } from "@veta/frontend/components/ExchangeBadge.tsx";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 
 export function AssetInfoBar({ symbol }: { symbol: string }) {
   const assets = useAppSelector((s) => s.market.assets);
   const orderBook = useAppSelector((s) => s.market.orderBook);
+  const exchange = useExchangeStatus(symbol);
   const asset = assets.find((a) => a.symbol === symbol);
   if (!asset) return null;
 
@@ -61,7 +63,9 @@ export function AssetInfoBar({ symbol }: { symbol: string }) {
       </div>
       <div className="flex justify-between">
         <span className="text-muted">Exchange</span>
-        <span className="tabular-nums text-label">{asset.exchange ?? "—"}</span>
+        <span className="tabular-nums text-label">
+          {exchange ? <ExchangeBadge symbol={symbol} /> : (asset.exchange ?? "—")}
+        </span>
       </div>
     </div>
   );

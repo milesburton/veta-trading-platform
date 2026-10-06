@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MarketLadder } from "@veta/frontend/components/MarketLadder";
 import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import type { ExchangeStatus } from "@veta/frontend/domain/market/exchangeStatus";
 import { channelsSlice } from "@veta/frontend/store/channelsSlice";
 import { gridPrefsSlice } from "@veta/frontend/store/gridPrefsSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
@@ -10,6 +11,13 @@ import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { AssetDef, MarketPrices, PriceHistory } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const exchangeStatusMock = vi.hoisted(() => vi.fn<() => ExchangeStatus | null>(() => null));
+
+vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
+  ExchangeBadge: () => null,
+  useExchangeStatus: exchangeStatusMock,
+}));
 
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },
@@ -182,6 +190,21 @@ describe("MarketLadder – row interaction", () => {
     // ContextMenu renders Trade in ladder / Set as primary / Copy symbol etc.
     // Just assert the row is still present and didn't throw
     expect(row).toBeInTheDocument();
+  });
+
+  it("includes the exchange's open or closed state in the row's accessible name", () => {
+    exchangeStatusMock.mockReturnValue({
+      label: "NASDAQ",
+      mic: "XNAS",
+      isOpen: false,
+      phase: "closed",
+    });
+    renderLadder();
+    expect(screen.getByTestId("asset-row-AAPL")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("NASDAQ market closed.")
+    );
+    exchangeStatusMock.mockReturnValue(null);
   });
 
   it("renders correctly when asset has no price (price=0)", () => {

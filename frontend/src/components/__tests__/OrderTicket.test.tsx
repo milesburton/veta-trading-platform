@@ -14,6 +14,11 @@ import type { AssetDef, MarketPrices } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
+  ExchangeBadge: () => null,
+  useExchangeStatus: () => null,
+}));
+
 const MOCK_QUOTE = {
   symbol: "AAPL",
   optionType: "call" as const,

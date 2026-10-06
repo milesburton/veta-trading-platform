@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { ExchangeBadge, useExchangeStatus } from "@veta/frontend/components/ExchangeBadge.tsx";
 import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
 import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
@@ -164,6 +165,7 @@ const Row = memo(function Row({
   ariaAttributes,
 }: RowComponentProps) {
   const asset = filtered[index];
+  const exchange = useExchangeStatus(asset?.symbol ?? "");
   if (!asset) return null;
 
   const price = prices[asset.symbol] ?? 0;
@@ -203,7 +205,9 @@ const Row = memo(function Row({
         onClick={handleSelect}
         onContextMenu={(e) => onContextMenu(e, asset.symbol)}
         aria-pressed={isSelected}
-        aria-label={`${asset.symbol} — ${asset.sector}. Bid ${
+        aria-label={`${asset.symbol} — ${asset.sector}.${
+          exchange ? ` ${exchange.label} market ${exchange.isOpen ? "open" : "closed"}.` : ""
+        } Bid ${
           price > 0 ? formatPrice(asset.symbol, bid) : "unavailable"
         }, Ask ${price > 0 ? formatPrice(asset.symbol, ask) : "unavailable"}, Last ${
           price > 0 ? formatPrice(asset.symbol, price) : "unavailable"
@@ -224,6 +228,7 @@ const Row = memo(function Row({
             }}
           >
             {asset.symbol}
+            <ExchangeBadge symbol={asset.symbol} />
           </div>
           <div className="text-muted text-[9px] leading-tight truncate">{asset.sector}</div>
           {asset.beta !== undefined && (
