@@ -2,6 +2,7 @@ import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   canAutoTrigger,
   canTriggerFromUi,
+  isIdleWindowOpen,
   isPolicyEnabled,
   isWithinAllowedHours,
   isWorkerAllowed,
@@ -308,4 +309,14 @@ Deno.test("[llm-policy] isWithinAllowedHours wraps midnight for ranges where sta
 
 Deno.test("[llm-policy] isWithinAllowedHours returns true for 0-24 all-day window", () => {
   assert(isWithinAllowedHours(policy({ allowedHours: "0-24" })));
+});
+
+Deno.test("[isIdleWindowOpen] closes once the deadline passes", () => {
+  assertEquals(isIdleWindowOpen(1_000, 2_000, 1_999), true);
+  assertEquals(isIdleWindowOpen(1_000, 2_000, 2_000), false);
+});
+
+Deno.test("[isIdleWindowOpen] a zero or negative timeout never closes", () => {
+  assertEquals(isIdleWindowOpen(0, 0, Number.MAX_SAFE_INTEGER), true);
+  assertEquals(isIdleWindowOpen(-1, 0, Number.MAX_SAFE_INTEGER), true);
 });
