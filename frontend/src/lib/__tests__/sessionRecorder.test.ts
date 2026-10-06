@@ -173,6 +173,29 @@ describe("sessionRecorder", () => {
     expect(upload).toHaveBeenLastCalledWith(expect.any(Number), [fakeEvent(9000)]);
   });
 
+  it("does not start a second upload while the previous one is still in flight", async () => {
+    let releaseFirst: () => void = () => {};
+    const upload = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<void>((resolve) => (releaseFirst = resolve)))
+      .mockResolvedValue(undefined);
+    startRecording(upload);
+
+    emitCallback?.(fakeEvent(1000));
+    await vi.advanceTimersByTimeAsync(30_000);
+    emitCallback?.(fakeEvent(2000));
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(upload).toHaveBeenCalledTimes(1);
+
+    releaseFirst();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(upload).toHaveBeenCalledTimes(2);
+    expect(upload.mock.calls.map((call) => call[0])).toEqual([0, 1]);
+    expect(upload).toHaveBeenLastCalledWith(1, [fakeEvent(2000)]);
+  });
+
   it("caps the buffer so a stuck upload cannot grow it without bound", async () => {
     const upload = vi.fn().mockRejectedValue(new Error("network error"));
     startRecording(upload);

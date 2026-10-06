@@ -352,6 +352,11 @@ describe("BugReportModal", () => {
     });
     expect(mockSubmit).not.toHaveBeenCalled();
     resolvePresign();
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText("Done")
+      ).toBeInTheDocument();
+    });
   });
 
   it.each([
