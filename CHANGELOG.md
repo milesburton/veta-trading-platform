@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.78.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.77.1...veta-trading-platform-v1.78.0) (2026-10-06)
+
+
+### Features
+
+* **algo:** read fill progress from the journal in TWAP, VWAP, POV and LIMIT ([#726](https://github.com/milesburton/veta-trading-platform/issues/726)) ([d7da512](https://github.com/milesburton/veta-trading-platform/commit/d7da512e17eb5214a823b350baa7655542cf3818))
+
+
+### Bug Fixes
+
+* **llm-worker:** stay running when idle under compose ([#734](https://github.com/milesburton/veta-trading-platform/issues/734)) ([dc52120](https://github.com/milesburton/veta-trading-platform/commit/dc52120d072e72056c669895307d2e0ee27a0a0c)), closes [#668](https://github.com/milesburton/veta-trading-platform/issues/668)
+
 ## [1.77.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.77.0...veta-trading-platform-v1.77.1) (2026-10-06)
 
 
