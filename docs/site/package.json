@@ -38,6 +38,12 @@
   },
   "overrides": {
     "esbuild": "^0.28.1",
-    "nanoid": "^3.3.18"
+    "nanoid": "^3.3.18",
+    "sharp": "^0.35.5",
+    "smol-toml": "^1.9.0",
+    "katex": "^0.18.2",
+    "source-map-js": "^1.2.2",
+    "postcss-selector-parser": "^7.1.6",
+    "http-cache-semantics": "^4.3.0"
   }
 }
