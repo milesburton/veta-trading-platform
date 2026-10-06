@@ -7,12 +7,16 @@ description: systemd timer that polls origin/main every 5 minutes and runs deplo
 production server. Every 5 minutes a systemd timer fires a script that:
 
 1. Polls `origin/main` via `git ls-remote` (no full clone)
-2. Compares the remote SHA against `state/last-deployed-sha`
-3. If different, clones main shallow and self-installs the latest
+2. Compares the remote SHA against `state/last-deployed-sha`, and the
+   registry digest of `gateway:latest` against `state/last-deployed-digest`
+3. If either differs, waits until the commit's gated publish has
+   finished (or, for a commit with no CI run or an unchanged SHA, until
+   no CI run on main is queued or in progress), then clones main shallow and self-installs the latest
    `homelab-deploy.sh` over `/opt/stacks/veta/deploy.sh`
 4. Runs `deploy.sh` which rsyncs compose files and runs
    `docker compose up -d` with healthcheck gating
-5. On success, writes the new SHA to `state/last-deployed-sha`
+5. On success, writes the new SHA to `state/last-deployed-sha` and the
+   digest seen before the deploy to `state/last-deployed-digest`
 6. On failure, leaves the file unchanged so the next tick retries
 
 This replaced Watchtower in 2026-05 (Watchtower had a recreate-name
@@ -63,6 +67,7 @@ sudo systemctl enable --now veta-auto-pull.timer
 | Path | Written by | Meaning |
 | --- | --- | --- |
 | `state/last-deployed-sha` | `auto-pull.sh` | Last main SHA we successfully ran `deploy.sh` for |
+| `state/last-deployed-digest` | `auto-pull.sh` | `gateway:latest` digest when that deploy started. A later publish without a new main commit (a `[skip ci]` commit racing a publish, or a manual `workflow_dispatch` publish) changes the digest and triggers a redeploy |
 | `state/auto-pull.lock` | `auto-pull.sh` | `flock` for single-instance guard |
 | `.good-sha` | `deploy.sh` | Last SHA the gateway *reported* as its baked-in version after a successful deploy |
 
