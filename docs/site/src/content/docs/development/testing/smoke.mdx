@@ -15,16 +15,16 @@ Smoke does not assert correctness of business logic; that is the job of [unit](.
 **Run:** `deno task test:testcontainers`
 **Checks:** {testInventory.backend.testcontainers.perFile["smoke.tc.test.ts"]} critical-path checks (fast subset), plus {testInventory.backend.testcontainers.perFile["smoke.full.tc.test.ts"]} end-to-end checks across the full suite
 
-The full backend smoke (`smoke.full.tc.test.ts`) groups its 62 checks into three top-level `Deno.test` blocks so each block can boot the minimum service set it needs:
+The full backend smoke (`smoke.full.tc.test.ts`) groups its checks into three top-level `Deno.test` blocks so each block can boot the minimum service set it needs:
 
-| Block | Services booted | Checks |
-| --- | --- | --- |
-| Service health and version | All 29 services | 3 |
-| Core trading flows | 9 core services, all 9 algo strategies | 41 |
-| Peripheral services | 4 core services, 12 peripheral services | 18 |
+| Block | Services booted |
+| --- | --- |
+| Service health and version | 30 services: the core trading services, all 9 algo strategies, and the intelligence, venue and data services |
+| Core trading flows | 9 core services, all 9 algo strategies, and llm-advisory |
+| Peripheral services | 4 core services and 14 peripheral services |
 
 - **Core trading flows** boots: market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine.
-- **Peripheral services** boots: market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data.
+- **Peripheral services** boots: market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data, market-data-adapters, observability.
 
 Every block is gated on `RUN_TESTCONTAINERS=1`, runs inside `scripts/run-testcontainers.sh`, and wraps its body in `try { ... } finally { await stack.teardown() }`.
 
@@ -36,7 +36,7 @@ Every block is gated on `RUN_TESTCONTAINERS=1`, runs inside `scripts/run-testcon
 
 ### Why two files
 
-`smoke.tc.test.ts` is a curated {testInventory.backend.testcontainers.perFile["smoke.tc.test.ts"]}-check subset that boots a small 8-service stack and runs in around 30 seconds. It catches the most common deployment-class bugs quickly. `smoke.full.tc.test.ts` is the comprehensive 62-check port; it boots larger stacks and takes longer, but covers every check the legacy `smoke.test.ts` used to assert.
+`smoke.tc.test.ts` is a curated {testInventory.backend.testcontainers.perFile["smoke.tc.test.ts"]}-check subset that boots a small 8-service stack and runs in around 30 seconds. It catches the most common deployment-class bugs quickly. `smoke.full.tc.test.ts` is the comprehensive suite; it boots larger stacks and takes longer, but covers every check the legacy `smoke.test.ts` used to assert.
 
 Both files use the same testcontainers helpers (`startStack`, `login` from `./testcontainers/auth.ts`) and the same `RUN_TESTCONTAINERS=1` gate.
 
@@ -46,14 +46,19 @@ Both files use the same testcontainers helpers (`startStack`, `login` from `./te
 **Run:** `cd frontend && npx playwright test --config playwright.gate.config.ts`
 **Checks:** {testInventory.frontend.gateSmoke.cases} end-user-flow assertions
 
-The frontend smoke is a small Playwright suite that runs against a deployed environment, not the dev stack. It verifies the user-visible surface is wired up:
+:::caution[Quarantined]
+The whole `deploy-gate smoke` block is currently wrapped in `test.describe.skip` (since PR #407) because it was environment-sensitive under the CI Playwright setup. Until it is re-enabled, the `Deploy gate (compose + smoke)` CI job proves only that the full compose stack boots and passes `scripts/wait-for-stack.sh`; none of the assertions below run.
+:::
+
+The frontend smoke is a small Playwright suite that runs against the compose stack the `Deploy gate` CI job brings up, not the dev server. When enabled, it verifies the user-visible surface is wired up:
 
 1. Login page renders (homepage is reachable, no 502).
 2. `/sessions/me` returns 401 for an anonymous request (the user-service is routable through the gateway and is gating on auth).
-3. After OAuth login, the dashboard mounts and the gateway-proxied market-sim `/prices` endpoint returns price data within 30s (the full happy path works).
-4. A WebSocket to the gateway emits at least one `marketUpdate` frame within 10s (real-time data is flowing).
+3. The gateway-proxied market-sim `/prices` endpoint returns price data within 30s.
+4. Logging in as `alice` reaches the dashboard.
+5. A WebSocket to the gateway emits at least one `marketUpdate` frame within 10s (real-time data is flowing).
 
-This is the gate that decides whether a deploy is good. If the backend smoke passes but this fails, the deployment's plumbing (Traefik routes, OAuth client config, WebSocket upgrade headers) is wrong: the services are up but the user-facing path is broken.
+This is designed to be the gate that decides whether a build is fit to publish. If the backend smoke passes but this fails, the deployment's plumbing (Traefik routes, OAuth client config, WebSocket upgrade headers) is wrong: the services are up but the user-facing path is broken.
 
 ## What smoke is not
 

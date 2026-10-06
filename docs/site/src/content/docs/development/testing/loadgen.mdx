@@ -1,6 +1,6 @@
 ---
 title: Continuous load generator
-description: Always-on synthetic trade flow on the production server. Two k6 runners (soak + matrix) plus a token-refresh sidecar. Distinct from the on-demand k6 harness.
+description: Opt-in synthetic trade flow on the production server. Two k6 runners (soak + matrix) plus a token-refresh sidecar. Distinct from the on-demand k6 harness.
 ---
 
 import Source from "@docs/components/Source.astro";
@@ -8,7 +8,8 @@ import Source from "@docs/components/Source.astro";
 `load.sh on` brings up three containers on the production server:
 
 - **`loadgen-soak`**: k6 with a steady ~50 VUs, restarts every 50 min to
-  pick up rotated tokens
+  pick up rotated tokens, and stops for good after `LOADGEN_MAX_RUNTIME_MIN`
+  (12 hours by default)
 - **`loadgen-matrix`**: k6 cycling through `baseline-limit`, `mixed-strategy`,
   `burst-open`, and `risk-stress` on a loop
 - **`loadgen-token`**: alpine sidecar doing OAuth PKCE every 50 min and
@@ -40,7 +41,7 @@ ADMIN_PW=$(sudo grep ^OAUTH2_USER_SECRETS /opt/stacks/veta/.env \
   | head -1 | cut -d= -f2- | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
 echo "LOADGEN_OAUTH_PASSWORD=$ADMIN_PW" | sudo tee /opt/stacks/veta/.env.loadgen
 sudo chmod 600 /opt/stacks/veta/.env.loadgen
-sudo chown miles:miles /opt/stacks/veta/.env.loadgen
+sudo chown "$USER":"$USER" /opt/stacks/veta/.env.loadgen
 ```
 
 The password is read from `OAUTH2_USER_SECRETS` (per-user) for the `admin`
@@ -57,6 +58,7 @@ Optional tuning vars in the same file:
 | `LOADGEN_SOAK_DURATION`    | `50m`                                                              | Soak iteration length before token refresh |
 | `LOADGEN_MATRIX_SLEEP`     | `30`                                                               | Pause (seconds) between matrix iterations  |
 | `LOADGEN_MATRIX_SCENARIOS` | `baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js` | Scripts the matrix cycles through          |
+| `LOADGEN_MAX_RUNTIME_MIN`  | `720`                                                              | Minutes before soak and matrix exit cleanly and stay stopped |
 
 ## Daily use
 
@@ -74,14 +76,21 @@ ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh logs'
 ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh off'
 ```
 
-## Auto-start on every deploy
+## Starting with each deploy
 
-`scripts/homelab-deploy.sh` includes `compose.loadgen.yml` whenever
-`.env.loadgen` exists on the server. Every auto-pull tick therefore brings
-loadgen up automatically, so there is no "loadgen was off, then a deploy
-re-started it" surprise.
+`scripts/homelab-deploy.sh` includes `compose.loadgen.yml` and the `loadgen`
+profile only when **both** `LOADGEN_ENABLED=true` is set in the deploy
+script's environment **and** `.env.loadgen` exists on the server. A
+credentials file on its own is not enough: the loadgen profile disables
+gateway rate limiting, so an orphaned `.env.loadgen` previously restarted a
+load storm on every auto-pull tick. With the flag unset, the deploy logs
+`Loadgen credentials present but LOADGEN_ENABLED is not 'true'` and skips it.
 
-Removing loadgen permanently: delete `/opt/stacks/veta/.env.loadgen`.
+`load.sh on` starts loadgen for the current session regardless of the flag.
+The next deploy recreates the stack without it unless the flag is set.
+
+Removing loadgen permanently: unset `LOADGEN_ENABLED` and delete
+`/opt/stacks/veta/.env.loadgen`.
 
 ## History note
 

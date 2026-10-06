@@ -6,7 +6,7 @@ description: Test suite taxonomy. What each suite catches, where it runs, and ho
 import { CardGrid, LinkCard } from "@astrojs/starlight/components";
 import testInventory from "@docs/data/test-inventory.json";
 
-VETA has nine test suites. Each addresses a distinct failure class: unit suites cover logic primitives, integration covers service boundaries, E2E covers UI composition, smoke covers deployment plumbing, the synthetic probe covers public reachability, and performance covers throughput regressions. The taxonomy below is organised by failure class rather than by tooling.
+VETA has eleven test suites. Each addresses a distinct failure class: unit suites cover logic primitives, integration covers service boundaries, E2E covers UI composition, smoke covers deployment plumbing, the synthetic probe covers public reachability, and performance covers throughput regressions. The taxonomy below is organised by failure class rather than by tooling.
 
 ## At a glance
 
@@ -14,17 +14,17 @@ VETA has nine test suites. Each addresses a distinct failure class: unit suites 
 | --- | --- | --- | --- |
 | [Backend unit](./unit/)                                       | Pure-logic bugs in algos, OMS, FIX, schemas                | Pre-commit, CI          | &lt;30s    |
 | [Frontend unit](./unit/#frontend)                             | Component + Redux + hook regressions                       | Pre-commit, CI          | ~20s       |
-| [Integration (Testcontainers)](./testcontainers/)            | Service-boundary contract breaks                           | CI (self-hosted homelab runner) | ~15min |
+| [Integration (Testcontainers)](./testcontainers/)            | Service-boundary contract breaks                           | CI on `main` and Docker-affecting PRs (self-hosted homelab runner, non-blocking) | ~15min |
 | [Playwright E2E](./playwright/)                               | UI flows that span the whole stack                         | CI                      | ~3min      |
-| [Electron E2E](./electron/)                                   | Desktop-app-specific behaviour (IPC, contextBridge)        | CI                      | ~1min      |
-| [Smoke](./smoke/)                                             | Service reachability through production-equivalent ingress | CI testcontainers gate  | ~90s       |
-| [Visual anomalies](./visual-anomalies/)                       | DOM overflows + a11y violations (non-gating)               | CI (informational)      | ~1min      |
+| [Electron E2E](./electron/)                                   | Desktop-app-specific behaviour (IPC, contextBridge)        | CI on `main`            | ~1min      |
+| [Smoke](./smoke/)                                             | Service reachability and core pipeline wiring              | CI, inside the integration job | ~90s |
+| [Visual anomalies](./visual-anomalies/)                       | DOM overflows + a11y violations                            | CI on PRs (required check) | ~1min   |
 | [Synthetic probe](../../platform/supporting/synthetic-probe/) | Live deployment is reachable from the internet             | Every 60s from edge server | continuous |
 | [Performance](../../analytics/performance/)                   | Throughput regressions, latency p99 drift                  | On demand               | varies     |
 | [k6 load testing](./k6-load-testing/)                        | Sustained throughput under realistic order flow scenarios  | On demand               | varies     |
 | [Continuous load generator](./loadgen/)                       | Always-on synthetic trade flow on the production server    | Production only         | continuous |
 
-The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs lint + type-check + unit tests + integration in seven steps. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI under the testcontainers gate rather than at pre-commit.
+The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs fourteen steps: lint, type-check and unit tests for both backend and frontend, integration tests, migration safety, Prometheus rule checks, docs drift and validation, a private-IP scan, an advisory Fallow audit, and a check that encrypted env files contain no plaintext. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI as part of the testcontainers suite rather than at pre-commit.
 
 ## How the suites fit together
 
@@ -60,24 +60,24 @@ graph LR
     subgraph PR["Pull request CI"]
         P1["lint + type-check"]
         P2["unit"]
-        P3["integration<br/>(Testcontainers)"]
+        P3["integration<br/>(Testcontainers, non-blocking)"]
         P4["Playwright E2E"]
-        P5["Electron E2E"]
-        P6["visual-anomalies<br/>(non-gating)"]
-        P7["screenshots"]
+        P6["visual-anomalies<br/>(required)"]
+        P7["PR screenshot diff"]
     end
 
     subgraph MAIN["On merge to main"]
         M1["all PR checks"]
-        M2["coverage badges<br/>auto-committed"]
+        M2["coverage badges, screenshots<br/>auto-committed"]
         M3["container images<br/>published to GHCR"]
+        M4["Electron E2E"]
     end
 
     subgraph DEPLOY["Homelab deploy (post-push)"]
         D1["systemd auto-pull<br/>(every 5 min)"]
         D2["docker compose up -d"]
         D3["docker compose healthchecks<br/>(gates rollout)"]
-        D4["frontend deploy-gate smoke<br/>(post-deploy probe)"]
+        D4["post-deploy probe<br/>(GitHub Actions)"]
     end
 
     subgraph PROD["Live production"]
@@ -92,12 +92,12 @@ graph LR
     classDef prod fill:#e0e7ff,stroke:#4f46e5,color:#000
 
     class L1,L2,L3,L4 local
-    class P1,P2,P3,P4,P5,P6,P7,M1,M2,M3 ci
+    class P1,P2,P3,P4,P6,P7,M1,M2,M3,M4 ci
     class D1,D2,D3,D4 deploy
     class R1 prod
 ```
 
-Each suite has a defined trigger. The pre-commit hook is the first line; integration auto-skips locally to keep the hook fast, but runs in CI without the auto-skip. Smoke runs in CI behind the testcontainers gate rather than at pre-commit. The post-deploy probe is the final gate before users see new code: a probe failure pages the operator.
+Each suite has a defined trigger. The pre-commit hook is the first line; integration auto-skips locally to keep the hook fast, but runs in CI without the auto-skip. Smoke runs in CI behind the testcontainers gate rather than at pre-commit. The post-deploy probe runs after a deploy lands and checks the public URL; it reports rather than gates, because the new code is already live by then.
 
 ## Where to start
 
@@ -105,7 +105,7 @@ Each suite has a defined trigger. The pre-commit hook is the first line; integra
   <LinkCard
     title="Pre-commit gate"
     href="../../development/contributing/"
-    description="Seven checks run locally on each commit. Integration auto-skips when local services are offline; remaining checks complete in ~30s."
+    description="Fourteen checks run locally on each commit. Integration auto-skips when local services are offline."
   />
   <LinkCard
     title="Backend unit tests"
@@ -130,7 +130,7 @@ Coverage is generated on every push to `main` and surfaced as badges in the READ
 
 - **Frontend**: V8 provider via Vitest. Reports `text-summary`, `lcov`, and `json-summary`. Thresholds: 80% statements, branches, functions, lines, enforced by [vitest.config.ts](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/vitest.config.ts).
 - **Backend**: Deno's native `--coverage` flag. Exported as lcov via `deno coverage --lcov > coverage.lcov`.
-- **Badge**: `docs/badges/coverage.json` is auto-committed by the CI job that runs coverage.
+- **Badges**: `docs/badges/backend-coverage.json`, `frontend-coverage.json`, `combined-coverage.json` and `overall-coverage.json` are auto-committed by the `coverage-badges` job on `main`.
 
 To run coverage locally:
 
@@ -147,11 +147,13 @@ cd frontend && npm run test:coverage
 ```mermaid
 graph LR
     LT["lint-and-test"] --> INT["integration<br/>(Testcontainers)<br/>self-hosted homelab runner"]
-    LT --> DB["docker-base"] --> DS["docker-services"]
-    FE["frontend"] --> PW["playwright-ui"]
-    FE --> SS["screenshots"]
-    FE --> VA["visual-anomalies<br/>(non-gating)"]
-    FE --> EL["electron"]
+    LT --> DB["docker-base"]
+    FE["frontend"] --> DB
+    DB --> DS["docker-services"] --> DG["deploy-gate"] --> PL["publish-latest<br/>(main only)"]
+    FE --> PW["playwright-ui<br/>(2 shards)"]
+    FE --> SS["screenshots<br/>(main only)"]
+    FE --> VA["pr-visual-anomalies<br/>(PRs, required)"]
+    FE --> EL["electron<br/>(main only)"]
 ```
 
 Playwright, screenshots, Electron, and visual-anomalies run in parallel with the integration job rather than after it. Every job in this diagram runs on a GitHub-hosted `ubuntu-latest` runner except `integration`, which runs on a self-hosted runner on the homelab (see [CI / CD](../ci-cd/#integration-15-minutes) for why). The synthetic probe and load tests are not part of the merge pipeline; they run continuously and on demand respectively.
