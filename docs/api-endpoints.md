@@ -13,11 +13,6 @@ This document describes all available API endpoints in the VETA system.
 | POST | /load-gen/start | Endpoint for /load-gen/start | ✅ |
 | POST | /load-gen/stop | Endpoint for /load-gen/stop | ✅ |
 | GET | /load-gen/status | Endpoint for /load-gen/status | ✅ |
-| GET | /scenarios | Endpoint for /scenarios | ✅ |
-| POST | /scenarios | Endpoint for /scenarios | ✅ |
-| GET | /me | Endpoint for /me | ✅ |
-| GET | /orders | Endpoint for /orders | ✅ |
-| GET | /products | Endpoint for /products | ✅ |
 | POST | /analytics/quote | Endpoint for /analytics/quote | ✅ |
 | POST | /analytics/scenario | Endpoint for /analytics/scenario | ✅ |
 | POST | /analytics/recommend | Endpoint for /analytics/recommend | ✅ |
@@ -36,6 +31,23 @@ This document describes all available API endpoints in the VETA system.
 | PUT | /advisory/admin/state | Endpoint for /advisory/admin/state | ✅ |
 | POST | /advisory/admin/watchlist-brief | Endpoint for /advisory/admin/watchlist-brief | ✅ |
 | POST | /advisory/admin/trigger-worker | Endpoint for /advisory/admin/trigger-worker | ✅ |
+| GET | /me | Endpoint for /me | ✅ |
+| GET | /orders | Endpoint for /orders | ✅ |
+| GET | /products | Endpoint for /products | ✅ |
+| GET | /scenarios | Endpoint for /scenarios | ✅ |
+| POST | /scenarios | Endpoint for /scenarios | ✅ |
+
+## User Service
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /alerts | Endpoint for /alerts | ✅ |
+| POST | /alerts | Endpoint for /alerts | ✅ |
+| PUT | /alerts/dismiss-all | Endpoint for /alerts/dismiss-all | ✅ |
+| GET | /preferences | Endpoint for /preferences | ✅ |
+| PUT | /preferences | Endpoint for /preferences | ✅ |
+| GET | /shared-workspaces | Endpoint for /shared-workspaces | ✅ |
+| POST | /shared-workspaces | Endpoint for /shared-workspaces | ✅ |
 
 ## Market Simulator
 
@@ -81,18 +93,6 @@ This document describes all available API endpoints in the VETA system.
 | GET | /products/stats | Endpoint for /products/stats | ✅ |
 | POST | /products | Endpoint for /products | ✅ |
 
-## User Service
-
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | /preferences | Endpoint for /preferences | ✅ |
-| PUT | /preferences | Endpoint for /preferences | ✅ |
-| GET | /shared-workspaces | Endpoint for /shared-workspaces | ✅ |
-| POST | /shared-workspaces | Endpoint for /shared-workspaces | ✅ |
-| GET | /alerts | Endpoint for /alerts | ✅ |
-| POST | /alerts | Endpoint for /alerts | ✅ |
-| PUT | /alerts/dismiss-all | Endpoint for /alerts/dismiss-all | ✅ |
-
 ## Market Data Service
 
 | Method | Path | Description | Auth |
@@ -106,11 +106,11 @@ This document describes all available API endpoints in the VETA system.
 | Service | Endpoints | Auth Required |
 |---------|-----------|---------------|
 | General | 30 | ✅ |
+| User Service | 7 | ✅ |
 | Market Simulator | 1 | ✅ |
 | Journal Service | 3 | ✅ |
 | Dark Pool | 1 | ✅ |
 | CCP Service | 2 | ✅ |
 | RFQ Service | 5 | ✅ |
 | Product Service | 2 | ✅ |
-| User Service | 7 | ✅ |
 | Market Data Service | 3 | ✅ |
