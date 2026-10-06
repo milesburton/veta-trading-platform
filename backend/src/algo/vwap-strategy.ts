@@ -14,7 +14,19 @@ import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startJournalProgressSweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
+import {
+  createProgressReader,
+  type InFlightChild,
+  journalBaseUrl,
+  readSliceBudget,
+  type TrackedOrder,
+} from "./fill-progress.ts";
 
 const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -52,23 +64,23 @@ function rollingVwap(asset: string): number {
   return buf.reduce((s, p) => s + p.price * p.volume, 0) / totalVol;
 }
 
-interface VwapOrder {
-  id: number;
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  totalQty: number;
-  filledQty: number;
-  costBasis: number;
-  expiresAt: number; // absolute ms
-  maxDeviation: number;
-  maxSlice: number;
-  limitPrice: number;
+interface VwapOrder extends TrackedOrder {
+  readonly id: number;
+  readonly maxDeviation: number;
+  readonly maxSlice: number;
+  readonly limitPrice: number;
+  readonly inFlight: InFlightChild | null;
 }
 
 let nextId = 1;
 const activeOrders = new Map<number, VwapOrder>();
+const evaluating = new Set<number>();
+const readProgress = createProgressReader(journalBaseUrl());
+
+function setInFlight(id: number, inFlight: InFlightChild | null): void {
+  const current = activeOrders.get(id);
+  if (current) activeOrders.set(id, { ...current, inFlight });
+}
 
 async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<void> {
   const price = tick.prices[order.asset];
@@ -78,8 +90,7 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
   updateHistory(order.asset, price, volume);
 
   const vwap = rollingVwap(order.asset);
-  const remaining = order.totalQty - order.filledQty;
-  if (remaining <= 0 || vwap === 0) return;
+  if (vwap === 0) return;
 
   const deviation = Math.abs(price - vwap) / vwap;
   if (deviation > order.maxDeviation) {
@@ -89,8 +100,14 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
     return;
   }
 
-  const sliceQty = Math.min(order.maxSlice, remaining);
-  const childId = `${order.orderId}-vwap-${Date.now()}`;
+  const now = Date.now();
+  const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, order.inFlight, now);
+  if (!budget) return;
+  setInFlight(order.id, budget.inFlight);
+  if (budget.inFlight || budget.remaining <= 0) return;
+
+  const sliceQty = Math.min(order.maxSlice, budget.remaining);
+  const childId = `${order.orderId}-vwap-${now}`;
 
   await producer
     ?.send("orders.child", {
@@ -110,9 +127,10 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
         maxSlice: order.maxSlice,
         windowTicks: VWAP_WINDOW,
       },
-      ts: Date.now(),
+      ts: now,
     })
     .catch(() => {});
+  setInFlight(order.id, { childId, quantity: sliceQty, sentAt: now });
 }
 
 const IDLE_TIMEOUT_MS = Number(Deno.env.get("VWAP_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
@@ -134,17 +152,16 @@ await createTypedConsumer("vwap-algo-routed", [
         clientOrderId: order.clientOrderId,
         asset: order.asset,
         side: order.side,
-        totalQty: order.quantity,
-        filledQty: 0,
-        costBasis: 0,
+        quantity: order.quantity,
         expiresAt: Date.now() + Number(order.expiresAt ?? 300) * 1_000,
         maxDeviation: Number(params.maxDeviation ?? 0.005),
         maxSlice: Number(params.maxSlice ?? 1_000),
         limitPrice: order.limitPrice ?? 0,
+        inFlight: null,
       };
       activeOrders.set(id, state);
       logger.info(
-        `Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`
+        `Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`
       );
     },
   },
@@ -157,26 +174,13 @@ marketClient.onTick(async (tick) => {
   const now = Date.now();
 
   for (const [id, order] of activeOrders) {
-    if (now >= order.expiresAt || order.filledQty >= order.totalQty) {
-      if (now >= order.expiresAt && order.filledQty < order.totalQty) {
-        await producer
-          ?.send("orders.expired", {
-            orderId: order.orderId,
-            clientOrderId: order.clientOrderId,
-            algo: "VWAP",
-            asset: order.asset,
-            side: order.side,
-            quantity: order.totalQty,
-            filledQty: order.filledQty,
-            avgFillPrice: order.filledQty > 0 ? order.costBasis / order.filledQty : 0,
-            ts: now,
-          })
-          .catch(() => {});
-      }
-      activeOrders.delete(id);
-      continue;
+    if (now >= order.expiresAt || evaluating.has(id)) continue;
+    evaluating.add(id);
+    try {
+      await processTickForOrder(order, tick);
+    } finally {
+      evaluating.delete(id);
     }
-    await processTickForOrder(order, tick);
   }
 
   await producer
@@ -188,7 +192,7 @@ marketClient.onTick(async (tick) => {
     .catch(() => {});
 });
 
-startExpirySweepIndexed(activeOrders, producer, "VWAP", "vwap-algo");
+startJournalProgressSweep(activeOrders, readProgress, producer, "VWAP", "vwap-algo");
 
 serveAlgoHealth(PORT, "vwap", VERSION, () => activeOrders.size);
 

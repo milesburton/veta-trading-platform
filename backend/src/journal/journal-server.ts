@@ -2,13 +2,14 @@ import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { journalPool } from "@veta/db";
 import { applyExprGroup, applySort } from "@veta/grid-query";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { GridQueryRequest, GridQueryResponse } from "@veta/types/grid-query";
 import { ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
+import { decodeOrderId, summariseFills } from "./order-progress.ts";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;
@@ -521,6 +522,23 @@ async function handle(req: Request): Promise<Response> {
         offset,
         entries: rows.map(rowToEntry),
       });
+    } finally {
+      client.release();
+    }
+  }
+
+  const progressMatch = path.match(/^\/journal\/order\/([^/]+)\/progress$/);
+  if (req.method === "GET" && progressMatch) {
+    const orderId = decodeOrderId(progressMatch[1]);
+    if (orderId === null) return jsonError("invalid order id");
+    const client = await journalPool.connect();
+    try {
+      const { rows } = await client.queryArray(
+        `SELECT child_id, filled_qty, fill_price
+         FROM journal.events WHERE order_id = $1 AND event_type = 'orders.filled'`,
+        [orderId]
+      );
+      return json(summariseFills(orderId, rows));
     } finally {
       client.release();
     }
