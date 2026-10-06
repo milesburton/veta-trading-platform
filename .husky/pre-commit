@@ -15,7 +15,7 @@ fi
 
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
-echo "  [0/13] Verifying clean working directory..."
+echo "  [0/14] Verifying clean working directory..."
 # Block unstaged changes to tracked files. Staged changes are expected —
 # those are what we're about to commit. Using `git diff-index HEAD` here
 # would also flag the staged files and make any normal commit fail.
@@ -26,27 +26,27 @@ if ! git diff --quiet; then
   exit 1
 fi
 
-echo "  [1/13] Backend lint..."
+echo "  [1/14] Backend lint..."
 cd "$REPO_ROOT"
 deno task lint
 
-echo "  [2/13] Backend type-check..."
+echo "  [2/14] Backend type-check..."
 deno task check
 
-echo "  [3/13] Backend unit tests..."
+echo "  [3/14] Backend unit tests..."
 deno task test
 
-echo "  [4/13] Frontend lint (all files)..."
+echo "  [4/14] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
 deno run -A npm:@biomejs/biome check src/
 
-echo "  [5/13] Frontend type-check (all files)..."
+echo "  [5/14] Frontend type-check (all files)..."
 ./node_modules/.bin/tsc --noEmit --skipLibCheck
 
-echo "  [6/13] Frontend unit tests..."
+echo "  [6/14] Frontend unit tests..."
 ./node_modules/.bin/vitest run
 
-echo "  [7/13] Integration tests (skipped if services offline)..."
+echo "  [7/14] Integration tests (skipped if services offline)..."
 cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   deno task test:integration
@@ -54,7 +54,7 @@ else
   echo "       Services not fully running — skipping integration tests."
 fi
 
-echo "  [8/13] Migration safety (expand/contract)..."
+echo "  [8/14] Migration safety (expand/contract)..."
 cd "$REPO_ROOT"
 STAGED_MIGRATIONS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^backend/db/migrations/.*\.sql$' || true)
 if [ -n "$STAGED_MIGRATIONS" ]; then
@@ -68,7 +68,7 @@ else
   echo "       No staged migration changes — skipping."
 fi
 
-echo "  [9/13] Prometheus alert rules..."
+echo "  [9/14] Prometheus alert rules..."
 cd "$REPO_ROOT"
 if git diff --cached --name-only | grep -qE '^observability/(prometheus-rules\.ya?ml|prometheus-rules\.test\.ya?ml)$'; then
   if command -v promtool >/dev/null 2>&1; then
@@ -82,7 +82,7 @@ else
   echo "       No staged changes to alert rules — skipping."
 fi
 
-echo "  [10/13] Docs drift check (regenerate derived files)..."
+echo "  [10/14] Docs drift check (regenerate derived files)..."
 # `npm run generate` rebuilds rbac-roles.json, panel-matrix.json,
 # services.md, algos.md, tech-stack.mdx, migrations.md, etc. from
 # the live source. If anything drifts, the gate blocks the commit
@@ -105,7 +105,7 @@ else
   echo "       docs/site/node_modules missing — skipping (run 'cd docs/site && npm ci')."
 fi
 
-echo "  [11/13] Private IPs in public docs..."
+echo "  [11/14] Private IPs in public docs..."
 # The Astro/Starlight site under docs/site/src/ is published to GitHub Pages,
 # so it is internet-public. Reject RFC1918 (10/8, 172.16/12, 192.168/16)
 # addresses in source files, which would advertise internal infrastructure.
@@ -121,7 +121,7 @@ if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.
   exit 1
 fi
 
-echo "  [12/13] Docs validation (markdown + mermaid + build + links)..."
+echo "  [12/14] Docs validation (markdown + mermaid + build + links)..."
 # Mirrors the "Docs build & lint" CI job step-for-step so broken docs can
 # never reach a push. The link checker (validate:links) scans the BUILT html
 # in dist/, so the order matters: markdownlint -> mermaid -> build -> links.
@@ -155,7 +155,7 @@ else
   echo "       No staged changes under docs/ — skipping."
 fi
 
-echo "  [13/13] Fallow audit (staged vs HEAD; advisory)..."
+echo "  [13/14] Fallow audit (staged vs HEAD; advisory)..."
 # `fallow audit` reports new findings introduced by the changeset.
 # Run as advisory rather than blocking: fallow's introduced/inherited
 # attribution flags line-shifted clones from sibling PRs as "new" even
@@ -169,5 +169,18 @@ if [ -x "./node_modules/.bin/fallow" ]; then
 else
   echo "       fallow not installed in frontend/node_modules — skipping (run npm ci)."
 fi
+
+echo "  [14/14] Encrypted env files contain no plaintext..."
+cd "$REPO_ROOT"
+STAGED_ENV=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^deploy/.*\.env$' || true)
+for f in $STAGED_ENV; do
+  PLAINTEXT=$(git show ":$f" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=(ENC\[.*)?$' | grep -vE '^sops_' || true)
+  if [ -n "$PLAINTEXT" ] || ! git show ":$f" | grep -q '^sops_mac=ENC\['; then
+    echo "❌ ERROR: $f is not a fully SOPS-encrypted dotenv file."
+    echo "Every line must be KEY=ENC[...] or sops metadata, with no comments."
+    echo "Re-create it with scripts/homelab-secrets-bootstrap.sh or 'sops edit $f'."
+    exit 1
+  fi
+done
 
 echo "Pre-commit checks passed."

@@ -47,9 +47,10 @@ sudo systemctl start veta.slice ci.slice
 sudo jq '. + {"cgroup-parent": "ci.slice"}' /etc/docker/daemon.json > /tmp/daemon.json
 sudo install -m 0644 /tmp/daemon.json /etc/docker/daemon.json
 sudo systemctl restart docker
-sudo grep -q '^VETA_CGROUP_PARENT=' /opt/stacks/veta/.env \
-  || echo 'VETA_CGROUP_PARENT=veta.slice' | sudo tee -a /opt/stacks/veta/.env
 ```
+
+Then add `VETA_CGROUP_PARENT=veta.slice` to `deploy/homelab.sops.env` (see
+[Secrets](https://milesburton.github.io/veta-trading-platform/development/deployment/#secrets)).
 
 `AllowedCPUs` in each slice must be CPU IDs visible to the host; check with
 `cat /sys/fs/cgroup/cpuset.cpus.effective`. Give production the faster cores.
@@ -63,8 +64,10 @@ are documented on each Astro page linked above.
 
 ## Related env / secrets
 
-Two homelab `.env` settings are required for production routes to work
-end-to-end. Both live in `/opt/stacks/veta/.env`:
+These homelab settings are required for production routes to work
+end-to-end. They live in the SOPS-encrypted `deploy/homelab.sops.env`,
+which each deploy renders to `/opt/stacks/veta/.env`. Edit the encrypted
+file, not the rendered `.env`, or the next deploy reverts the change:
 
 - **`OAUTH_SHARED_SECRET`** and **`OAUTH_USER_SECRETS`** — see
   [Security posture](https://milesburton.github.io/veta-trading-platform/platform/security/)

@@ -44,3 +44,26 @@ cd frontend && npm run electron:dev
 | `VETA_DEMO_MODE` | `true` | Show demo personas on login page |
 | `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
+
+## Secrets
+
+Production configuration, including credentials, is committed as a [SOPS](https://github.com/getsops/sops)-encrypted dotenv file, `deploy/homelab.sops.env`, encrypted to an [age](https://github.com/FiloSottile/age) key. The private key exists only on the production server, at the deploy user's `~/.config/sops/age/keys.txt`. `.sops.yaml` at the repo root names the public recipient.
+
+On each deploy, `scripts/homelab-deploy.sh` syncs the encrypted file and decrypts it to the stack's `.env` (mode 600). If the content changed, the previous `.env` is kept as `.env.bak.<timestamp>`. If decryption fails, the deploy aborts and leaves `.env` untouched. If the encrypted file, `sops` or the key is absent, the deploy keeps the existing `.env`.
+
+The rendered `.env` is overwritten whenever the encrypted file changes, so edit the encrypted file rather than `.env`.
+
+### Changing a value
+
+Decryption needs the private key, so edits happen on the server:
+
+```sh
+cp deploy/homelab.sops.env /tmp/homelab.sops.env   # from the synced stack directory
+sops edit --input-type dotenv --output-type dotenv /tmp/homelab.sops.env
+```
+
+Copy the edited file into `deploy/homelab.sops.env` in a repo checkout and open a PR. Do not add comments: SOPS leaves comment lines unencrypted, and the pre-commit hook rejects any line that is not an encrypted value or SOPS metadata.
+
+### First-time setup
+
+Install `sops` and `age` on the server, then run `scripts/homelab-secrets-bootstrap.sh` there. It generates the age key if none exists, encrypts the current `.env` with comments removed, verifies the round trip, and writes `state/homelab.sops.env` and `state/.sops.yaml` for you to commit as `deploy/homelab.sops.env` and `.sops.yaml`. Back up the age key offline: without it, every secret has to be re-created.

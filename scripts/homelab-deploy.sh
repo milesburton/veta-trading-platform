@@ -20,6 +20,7 @@ CONFIG_PATHS=(
     "scripts/loadgen/"
     "scripts/homelab-motd/"
     "k6/"
+    "deploy/homelab.sops.env"
 )
 
 cd "$STACK_DIR"
@@ -115,6 +116,38 @@ install_motd() {
     fi
 }
 
+SOPS_ENV_SRC="$STACK_DIR/deploy/homelab.sops.env"
+SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
+export SOPS_AGE_KEY_FILE
+
+render_env() {
+    if [[ ! -f "$SOPS_ENV_SRC" ]]; then
+        log "No encrypted env in repo; keeping existing .env"
+        return 0
+    fi
+    if ! command -v sops >/dev/null 2>&1 || [[ ! -r "$SOPS_AGE_KEY_FILE" ]]; then
+        log "⚠️  sops or age key ($SOPS_AGE_KEY_FILE) missing; keeping existing .env"
+        return 0
+    fi
+    local tmp
+    tmp=$(mktemp "$STACK_DIR/.env.render.XXXXXX")
+    chmod 600 "$tmp"
+    if ! sops --decrypt "$SOPS_ENV_SRC" > "$tmp"; then
+        rm -f "$tmp"
+        log "❌ Could not decrypt $SOPS_ENV_SRC"
+        return 1
+    fi
+    if [[ -f "$STACK_DIR/.env" ]] && cmp -s "$tmp" "$STACK_DIR/.env"; then
+        rm -f "$tmp"
+        return 0
+    fi
+    if [[ -f "$STACK_DIR/.env" ]]; then
+        cp -p "$STACK_DIR/.env" "$STACK_DIR/.env.bak.$(date -u +%Y%m%dT%H%M%SZ)"
+    fi
+    mv "$tmp" "$STACK_DIR/.env"
+    log "Rendered .env from $SOPS_ENV_SRC"
+}
+
 CRITICAL_SERVICES="gateway oms ems risk-engine journal market-sim user-service"
 
 log "Checking ownership of $STACK_DIR..."
@@ -129,6 +162,11 @@ if ! sync_configs; then
 fi
 
 install_motd
+
+if ! render_env; then
+    log "❌ Secrets render failed; aborting deploy with the existing .env untouched."
+    exit 1
+fi
 
 # Compose files in load order (later overlays merge on top of earlier ones).
 # - compose.yml: base service definitions
