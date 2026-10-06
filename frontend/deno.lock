@@ -4670,7 +4670,10 @@
       ],
       "overrides": {
         "tmp": "^0.2.6",
-        "esbuild": "^0.28.1"
+        "esbuild": "^0.28.1",
+        "postcss-selector-parser": "^7.1.6",
+        "http-cache-semantics": "^4.3.0",
+        "source-map-js": "^1.2.2"
       }
     }
   }
