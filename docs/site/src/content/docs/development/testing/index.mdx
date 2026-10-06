@@ -24,7 +24,7 @@ VETA has eleven test suites. Each addresses a distinct failure class: unit suite
 | [k6 load testing](./k6-load-testing/)                        | Sustained throughput under realistic order flow scenarios  | On demand               | varies     |
 | [Continuous load generator](./loadgen/)                       | Always-on synthetic trade flow on the production server    | Production only         | continuous |
 
-The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs thirteen steps: lint, type-check and unit tests for both backend and frontend, integration tests, migration safety, Prometheus rule checks, docs drift and validation, a private-IP scan, and an advisory Fallow audit. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI as part of the testcontainers suite rather than at pre-commit.
+The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs fourteen steps: lint, type-check and unit tests for both backend and frontend, integration tests, migration safety, Prometheus rule checks, docs drift and validation, a private-IP scan, an advisory Fallow audit, and a check that encrypted env files contain no plaintext. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI as part of the testcontainers suite rather than at pre-commit.
 
 ## How the suites fit together
 
@@ -105,7 +105,7 @@ Each suite has a defined trigger. The pre-commit hook is the first line; integra
   <LinkCard
     title="Pre-commit gate"
     href="../../development/contributing/"
-    description="Thirteen checks run locally on each commit. Integration auto-skips when local services are offline."
+    description="Fourteen checks run locally on each commit. Integration auto-skips when local services are offline."
   />
   <LinkCard
     title="Backend unit tests"

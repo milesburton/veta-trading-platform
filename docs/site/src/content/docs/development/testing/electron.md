@@ -10,7 +10,7 @@ Trading flows are not re-tested here. The web [Playwright E2E suite](../playwrig
 **Location:** `frontend/tests-electron/`
 **Config:** [`frontend/playwright.electron.config.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/playwright.electron.config.ts)
 **Run:** `cd frontend && npm run test:electron`
-**Prerequisite:** `npm run electron:build-test` (produces `dist/` and `dist-electron/` using the test-mode Vite build that CI runs)
+**Prerequisite:** `npm run electron:build` (produces `dist/` and `dist-electron/`)
 
 ## What it verifies
 
