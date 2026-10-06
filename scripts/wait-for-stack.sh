@@ -38,17 +38,21 @@ probe_internal() {
   local url="$3"
   local match="$4"
   local deadline=$((SECONDS + TIMEOUT))
+  local body="" rc=0 err=""
   while [[ $SECONDS -lt $deadline ]]; do
-    local body
+    rc=0
     body="$(docker compose -f compose.yml -f compose.gate.yml exec -T "$svc" \
-      curl -sS --max-time 5 "$url" 2>/dev/null || true)"
-    if [[ -n "$body" ]] && grep -q "$match" <<<"$body"; then
+      curl -sS --max-time 5 "$url" 2>/tmp/probe-internal.err)" || rc=$?
+    if [[ $rc -eq 0 && -n "$body" ]] && grep -q "$match" <<<"$body"; then
       echo "  [ok] $label"
       return 0
     fi
     sleep 2
   done
+  err="$(head -c 300 /tmp/probe-internal.err 2>/dev/null || true)"
   echo "  [FAIL] $label did not become ready within ${TIMEOUT}s (svc=$svc url=$url)"
+  echo "         last attempt: exit=$rc bytes=${#body} stderr=${err:-<none>}"
+  docker compose -f compose.yml -f compose.gate.yml ps "$svc" 2>/dev/null || true
   return 1
 }
 
