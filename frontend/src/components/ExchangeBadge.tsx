@@ -1,10 +1,13 @@
-import { exchangeStatus } from "@veta/frontend/domain/market/exchangeStatus.ts";
+import {
+  type ExchangeStatus,
+  exchangeStatus,
+} from "@veta/frontend/domain/market/exchangeStatus.ts";
 import { useGetMarketHoursModeQuery } from "@veta/frontend/store/gatewayApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 const POLL_INTERVAL_MS = 60_000;
 
-export function ExchangeBadge({ symbol }: { symbol: string }) {
+export function useExchangeStatus(symbol: string): ExchangeStatus | null {
   const signedIn = useAppSelector((s) => s.auth.user !== null);
   const asset = useAppSelector((s) => s.market.assets.find((a) => a.symbol === symbol));
   const { data } = useGetMarketHoursModeQuery(undefined, {
@@ -12,7 +15,11 @@ export function ExchangeBadge({ symbol }: { symbol: string }) {
     skip: !signedIn,
   });
   if (!asset || !data) return null;
-  const status = exchangeStatus(asset, data);
+  return exchangeStatus(asset, data);
+}
+
+export function ExchangeBadge({ symbol }: { symbol: string }) {
+  const status = useExchangeStatus(symbol);
   if (!status) return null;
   const state = status.isOpen ? "open" : "closed";
   return (

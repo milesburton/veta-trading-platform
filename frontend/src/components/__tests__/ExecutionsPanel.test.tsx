@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
   ExchangeBadge: () => null,
+  useExchangeStatus: () => null,
 }));
 
 let incomingChannel: unknown = null;
