@@ -96,7 +96,7 @@ export function startJournalProgressSweep<K, T extends TrackedOrder>(
   label: string,
   intervalMs = 5_000
 ): void {
-  setInterval(async () => {
+  const sweep = async () => {
     for (const [key, order] of [...activeOrders.entries()]) {
       const now = Date.now();
       const progress = await readProgress(order.orderId);
@@ -113,7 +113,15 @@ export function startJournalProgressSweep<K, T extends TrackedOrder>(
       logger.info(`[${label}] Expired ${order.orderId}: filled=${progress?.filledQty ?? "unknown"}`);
       await producer?.send("orders.expired", expiredEvent(order, algo, progress, now)).catch(() => {});
     }
-  }, intervalMs);
+  };
+  const schedule = (): void => {
+    setTimeout(() => {
+      sweep()
+        .catch((err) => logger.warn(`[${label}] Progress sweep failed`, { err }))
+        .finally(schedule);
+    }, intervalMs);
+  };
+  schedule();
 }
 
 export function subscribeNewsSignals(groupId: string, label: string): void {
