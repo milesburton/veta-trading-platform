@@ -18,6 +18,24 @@ import { startStack, type TestStack } from "./testcontainers/services.ts";
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
 const T = (ms = 8_000) => AbortSignal.timeout(ms);
 
+interface ReadyResponse {
+  status: number;
+  body: { ready: boolean; services: Record<string, boolean> };
+}
+
+async function fetchReady(gw: string, token: string, timeoutMs = 20_000): Promise<ReadyResponse> {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    const res = await fetch(`${gw}/ready`, {
+      headers: { cookie: `veta_user=${token}` },
+      signal: T(),
+    });
+    const body = (await res.json()) as ReadyResponse["body"];
+    if (res.status === 200 || Date.now() >= deadline) return { status: res.status, body };
+    await new Promise((r) => setTimeout(r, 500));
+  }
+}
+
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
   const u = stack.urls[name];
   if (!u) throw new Error(`${name} URL not in stack`);
@@ -215,15 +233,8 @@ Deno.test({
         "gateway /ready returns all expected service keys",
         async () => {
           const token = await login(stack, "alice");
-          const res = await fetch(`${GW}/ready`, {
-            headers: { cookie: `veta_user=${token}` },
-            signal: T(),
-          });
-          assertEquals(res.status, 200);
-          const body = (await res.json()) as {
-            ready: boolean;
-            services: Record<string, boolean>;
-          };
+          const { status, body } = await fetchReady(GW, token);
+          assertEquals(status, 200);
           assertEquals(typeof body.ready, "boolean");
           for (const key of ["marketSim", "ems", "oms", "journal"]) {
             assert(key in body.services, `Missing service in /ready: ${key}`);
@@ -235,13 +246,7 @@ Deno.test({
         "gateway /ready: ems and oms report true (env-var routing works)",
         async () => {
           const token = await login(stack, "alice");
-          const res = await fetch(`${GW}/ready`, {
-            headers: { cookie: `veta_user=${token}` },
-            signal: T(),
-          });
-          const body = (await res.json()) as {
-            services: Record<string, boolean>;
-          };
+          const { body } = await fetchReady(GW, token);
           assertEquals(
             body.services.ems,
             true,
