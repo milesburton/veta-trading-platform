@@ -116,3 +116,26 @@ Deno.test("[matching-engine] a sell fills against the best bid first", () => {
   assertEquals(result.filledQty, 50);
   assertEquals(result.avgFillPrice, 99.9);
 });
+
+Deno.test("[matching-engine] matching the same snapshot twice gives identical results", () => {
+  const first = matchAgainstSnapshot("o1", "AAPL", "BUY", 250, 100.2, snapshot(), 0);
+  const second = matchAgainstSnapshot("o1", "AAPL", "BUY", 250, 100.2, snapshot(), 0);
+  assertEquals(second, first);
+  assertEquals(bookFromSnapshot("AAPL", snapshot(), 0), bookFromSnapshot("AAPL", snapshot(), 0));
+});
+
+Deno.test("[matching-engine] equal-price levels fill in snapshot order", () => {
+  const result = matchAgainstSnapshot(
+    "o1",
+    "AAPL",
+    "BUY",
+    150,
+    100.1,
+    snapshot({ asks: [{ price: 100.1, size: 100 }, { price: 100.1, size: 100 }] }),
+    0,
+  );
+  assertEquals(result.fills.map((f) => [f.restingOrderId, f.matchedQty]), [
+    ["SYN-AAPL-SELL-0", 100],
+    ["SYN-AAPL-SELL-1", 50],
+  ]);
+});

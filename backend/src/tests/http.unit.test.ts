@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { z } from "@veta/zod";
-import { CORS_HEADERS, corsOptions, json, jsonError, parseBody, parseQuery, serveJsonService } from "../lib/http.ts";
+import { CORS_HEADERS, corsOptions, decodePathSegment, json, jsonError, parseBody, parseQuery, serveJsonService } from "../lib/http.ts";
 
 Deno.test("json wraps data as a 200 JSON response with CORS headers by default", async () => {
   const res = json({ ok: true });
@@ -157,3 +157,12 @@ Deno.test("serveJsonService delegates non-/health requests to the provided handl
   }
 });
 
+
+Deno.test("decodePathSegment decodes a percent-encoded segment", () => {
+  assertEquals(decodePathSegment("BRK%2EB"), "BRK.B");
+});
+
+Deno.test("decodePathSegment returns null on malformed percent-encoding instead of throwing", () => {
+  assertEquals(decodePathSegment("%E0%A4%A"), null);
+  assertEquals(decodePathSegment("%"), null);
+});

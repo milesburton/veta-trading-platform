@@ -1,7 +1,7 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { intelligencePool } from "@veta/db";
-import { json, serveJsonService } from "@veta/http";
+import { decodePathSegment, json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer, sendInChunks } from "@veta/messaging";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
@@ -301,7 +301,8 @@ serveJsonService({
   handler: async (req, url, path) => {
     const histMatch = path.match(/^\/features\/([^/]+)\/history$/);
     if (histMatch && req.method === "GET") {
-      const symbol = decodeURIComponent(histMatch[1]);
+      const symbol = decodePathSegment(histMatch[1]);
+      if (symbol === null) return json({ error: "Invalid path encoding" }, 400);
       const limit = Math.min(Number(url.searchParams.get("limit") ?? 100), 500);
       const history = await store.getHistory(symbol, limit);
       return json(history);
@@ -309,7 +310,8 @@ serveJsonService({
 
     const fvMatch = path.match(/^\/features\/([^/]+)$/);
     if (fvMatch && req.method === "GET") {
-      const symbol = decodeURIComponent(fvMatch[1]);
+      const symbol = decodePathSegment(fvMatch[1]);
+      if (symbol === null) return json({ error: "Invalid path encoding" }, 400);
       const fv = latestFeatures.get(symbol) ?? (await store.getLatest(symbol));
       if (!fv) return json({ error: "No feature data for symbol" }, 404);
       return json(fv);

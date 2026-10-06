@@ -14,6 +14,14 @@ export function json(data: unknown, status = 200, extra?: Record<string, string>
   });
 }
 
+export function decodePathSegment(raw: string): string | null {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+}
+
 export function jsonError(error: string, status = 400, extra?: Record<string, string>): Response {
   return json({ error }, status, extra);
 }

@@ -1,7 +1,7 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { llmAdvisoryPool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
+import { corsOptions, decodePathSegment, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, Signal, TradeRecommendation } from "@veta/types/intelligence";
@@ -338,7 +338,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const advisoryMatch = path.match(/^\/advisory\/([^/]+)$/);
   if (advisoryMatch && req.method === "GET") {
-    const symbol = decodeURIComponent(advisoryMatch[1]);
+    const symbol = decodePathSegment(advisoryMatch[1]);
+    if (symbol === null) return json({ error: "Invalid path encoding" }, 400);
     const note = await store.getLatestNote(symbol);
     if (!note) return json({ status: "no-advisory", symbol });
     const jobs = await store.getJobsBySymbol(symbol, 5);

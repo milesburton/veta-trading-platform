@@ -8,8 +8,6 @@ import {
   type RestingOrder,
 } from "./order-book.ts";
 
-let syntheticSeq = 0;
-
 function toRestingOrders(
   asset: string,
   side: "BUY" | "SELL",
@@ -19,14 +17,14 @@ function toRestingOrders(
   return levels
     .filter((level) => level.size > 0)
     .map((level, index) => ({
-      orderId: `SYN-${asset}-${side}-${index}-${syntheticSeq}`,
+      orderId: `SYN-${asset}-${side}-${index}`,
       asset,
       side,
       price: level.price,
       quantity: level.size,
       remainingQty: level.size,
       enteredAt: now,
-      seq: syntheticSeq++,
+      seq: index,
     }));
 }
 
@@ -70,7 +68,7 @@ export function matchAgainstSnapshot(
     quantity,
     remainingQty: quantity,
     enteredAt: now,
-    seq: syntheticSeq++,
+    seq: snapshot.bids.length + snapshot.asks.length,
   };
 
   const result = matchOrder(book, incoming, now, false);

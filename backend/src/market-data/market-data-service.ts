@@ -20,7 +20,7 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "@veta/http";
+import { corsOptions, decodePathSegment, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { alphaVantageProvider } from "./providers/alpha-vantage-equity.ts";
 import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
@@ -384,7 +384,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   // GET /quote/:symbol
   const quoteMatch = path.match(/^\/quote\/([^/]+)$/);
   if (quoteMatch && req.method === "GET") {
-    const symbol = decodeURIComponent(quoteMatch[1]).toUpperCase();
+    const symbol = decodePathSegment(quoteMatch[1])?.toUpperCase() ?? null;
+    if (symbol === null) return json({ error: "Invalid path encoding" }, 400);
     const src = overrides.get(symbol);
     if (!src || src === "synthetic") {
       return json(

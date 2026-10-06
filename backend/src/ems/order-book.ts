@@ -78,16 +78,11 @@ export function matchOrder(
       ? (contra: RestingOrder) => incoming.price >= contra.price
       : (contra: RestingOrder) => incoming.price <= contra.price;
 
-  const better = incoming.side === "BUY" ? askBetter : bidBetter;
-  const sorted = [...contraSide].sort((a, b) =>
-    better(a, b) ? -1 : better(b, a) ? 1 : a.seq - b.seq
-  );
-
   const fills: BookFill[] = [];
   let remaining = incoming.remainingQty;
   const updatedContra: RestingOrder[] = [];
 
-  for (const contra of sorted) {
+  for (const contra of contraSide) {
     if (remaining <= 0 || !crosses(contra)) {
       updatedContra.push(contra);
       continue;
