@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.80.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.79.0...veta-trading-platform-v1.80.0) (2026-10-07)
+
+
+### Features
+
+* **secrets:** move production secrets from .env into OpenBao ([#752](https://github.com/milesburton/veta-trading-platform/issues/752)) ([5e1cd74](https://github.com/milesburton/veta-trading-platform/commit/5e1cd74664c88b72f8eef219c13d125fd9f67ec1))
+
 ## [1.79.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.78.3...veta-trading-platform-v1.79.0) (2026-10-06)
 
 
