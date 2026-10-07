@@ -779,7 +779,7 @@ export const TERMS: GlossaryTerm[] = [
     category: "infrastructure",
     short:
       "Open-source fork of HashiCorp Vault. Holds VETA's production credentials at secret/veta/platform and secret/veta/loadgen; the deploy reads them and passes them to Docker Compose, so no secrets file sits on the server.",
-    long: "Runs on the production server as its own compose project (container veta-openbao), listening on 127.0.0.1:8200 only. Raft storage, static auto-unseal key under /etc/veta/openbao, file audit log with HMAC-hashed values. Edits go through the userpass admin user; the deploy reads through the veta-deploy AppRole.",
+    long: "Runs on the production server as its own compose project (container veta-openbao), listening on 127.0.0.1:8200 only. Raft storage, static auto-unseal key in the veta-openbao-unseal Docker volume, file audit log with HMAC-hashed values. Edits go through the userpass admin user; the deploy reads through the veta-deploy AppRole.",
     seeAlso: ["approle", "secret-rotation"],
     source: "deploy/openbao/compose.yml",
   },

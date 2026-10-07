@@ -10,7 +10,7 @@ services:
       - "127.0.0.1:${OPENBAO_PORT:-8200}:8200"
     volumes:
       - ./config:/openbao/config:ro
-      - ${OPENBAO_UNSEAL_DIR:-/etc/veta/openbao}:/openbao/unseal:ro
+      - openbao-unseal:/openbao/unseal:ro
       - openbao-data:/openbao/file
       - openbao-logs:/openbao/logs
     environment:
@@ -30,3 +30,6 @@ services:
 volumes:
   openbao-data:
   openbao-logs:
+  openbao-unseal:
+    name: veta-openbao-unseal
+    external: true

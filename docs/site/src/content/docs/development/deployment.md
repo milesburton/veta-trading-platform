@@ -68,9 +68,9 @@ Run any other `docker compose` command on the server through `scripts/veta-compo
 
 ### Unsealing
 
-OpenBao uses a static auto-unseal key at `/etc/veta/openbao/current.key` (32 random bytes, readable only by the container user), so it unseals itself after a restart. Anyone with root on the server can therefore read the vault; what it adds over a plaintext file is a single read-only deploy credential that can be revoked, an audit log of every access (`/openbao/logs/audit.log` in the `veta-openbao_openbao-logs` volume, values HMAC-hashed), and one place to change a value.
+OpenBao uses a static auto-unseal key, 32 random bytes in the Docker volume `veta-openbao-unseal`, readable only by the container user, so it unseals itself after a restart. The volume is declared `external`, so `docker compose down -v` never deletes it. Anyone with Docker access on the server can therefore read the vault; what it adds over a plaintext file is a single read-only deploy credential that can be revoked, an audit log of every access (`/openbao/logs/audit.log` in the `veta-openbao_openbao-logs` volume, values HMAC-hashed), and one place to change a value.
 
-Keep two things offline, in a password manager: the unseal key (`sudo base64 /etc/veta/openbao/current.key`) and the recovery key printed at initialisation. Restoring the `openbao-data` volume on another host needs the unseal key. Regenerating a root token needs the recovery key.
+Keep two things offline, in a password manager: the unseal key (`docker run --rm -u 0 -v veta-openbao-unseal:/k:ro --entrypoint base64 openbao/openbao:2.7.1 /k/current.key`) and the recovery key printed at initialisation. Restoring the `openbao-data` volume on another host needs the unseal key. Regenerating a root token needs the recovery key.
 
 ### Changing a value
 
@@ -91,12 +91,12 @@ To rotate the deploy credential, issue a new secret ID as `admin` (`bao write -f
 
 Run `scripts/openbao-bootstrap.py` on the server as the deploy user, from the synced stack directory, after a deploy has put `deploy/openbao/` there. It:
 
-1. Generates the unseal key with `sudo` if it does not exist, then starts `veta-openbao`.
+1. Creates the `veta-openbao-unseal` volume and generates the key in it if missing, then starts `veta-openbao`. Root-owned work (the key, reading `secrets/github_ticketing_token`) runs in a short-lived container, so the script needs Docker access but not `sudo`.
 2. Initialises OpenBao, writing the recovery key and root token to `~/openbao-init-<timestamp>.json` (mode 600).
 3. Enables KV v2 at `secret/`, the `veta-deploy` and `veta-admin` policies, AppRole and userpass auth, prompts for the `admin` password, and writes the AppRole credentials.
-4. Imports secret-looking variables from `.env` into `veta/platform` (names containing `PASSWORD`, `PASSWD`, `SECRET`, `TOKEN`, `WEBHOOK`, ending `_KEY`, or URLs with embedded credentials) and all of `.env.loadgen` into `veta/loadgen`. Values are resolved through `docker compose config`, so `$$` escapes and references come out exactly as containers see them today.
+4. Imports secret-looking variables from `.env`, plus the ticketing token file as `GITHUB_TICKETING_TOKEN_SECRET`, into `veta/platform` (names containing `PASSWORD`, `PASSWD`, `SECRET`, `TOKEN`, `WEBHOOK`, ending `_KEY`, or URLs with embedded credentials) and all of `.env.loadgen` into `veta/loadgen`. Values are resolved through `docker compose config`, so `$$` escapes and references come out exactly as containers see them today.
 5. Reads everything back through the deploy loader, and only if every value matches, removes the imported lines from `.env` and deletes `.env.loadgen`.
-6. Revokes the root token and lists any `.env.bak*` files that still hold old plaintext.
+6. Revokes the root token and lists files that still hold old plaintext (`.env.bak*`, the ticketing token file), with the command to shred the root-owned one.
 
 Move the recovery key into your password manager and shred the init file, then deploy and check the log for `exported N secrets from veta/platform`.
 

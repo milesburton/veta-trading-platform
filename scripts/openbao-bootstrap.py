@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import getpass
+import http.client
 import json
 import os
 import re
@@ -14,7 +15,8 @@ from pathlib import Path
 
 STACK_DIR = Path(os.environ.get("STACK_DIR", "/opt/stacks/veta"))
 OPENBAO_DIR = Path(os.environ.get("OPENBAO_DIR", STACK_DIR / "deploy" / "openbao"))
-UNSEAL_DIR = Path(os.environ.get("OPENBAO_UNSEAL_DIR", "/etc/veta/openbao"))
+UNSEAL_VOLUME = os.environ.get("OPENBAO_UNSEAL_VOLUME", "veta-openbao-unseal")
+OPENBAO_IMAGE = os.environ.get("OPENBAO_IMAGE", "openbao/openbao:2.7.1")
 ADDR = os.environ.get("OPENBAO_ADDR", "http://127.0.0.1:8200")
 APPROLE_FILE = Path(
     os.environ.get(
@@ -25,8 +27,6 @@ ENV_FILE = Path(os.environ.get("ENV_FILE", STACK_DIR / ".env"))
 LOADGEN_ENV_FILE = Path(os.environ.get("LOADGEN_ENV_FILE", STACK_DIR / ".env.loadgen"))
 TICKETING_TOKEN_FILE = Path(os.environ.get("TICKETING_TOKEN_FILE", STACK_DIR / "secrets" / "github_ticketing_token"))
 LOADER = Path(__file__).resolve().parent / "lib" / "openbao-env.sh"
-OPENBAO_UID = 100
-OPENBAO_GID = 1000
 
 SECRET_NAME = re.compile(r"(PASSWORD|PASSWD|SECRET|TOKEN|WEBHOOK|_KEY$|_KEYS$|^KEY_)")
 VARIABLE_NAME = re.compile(r"[A-Z_][A-Z0-9_]*")
@@ -92,10 +92,10 @@ def api(method, path, token=None, body=None, allow=(), probe=False):
             return error.code, {}
         detail = error.read().decode(errors="replace")
         fail(f"{method} {path} returned {error.code}: {detail}")
-    except urllib.error.URLError as error:
+    except (OSError, http.client.HTTPException) as error:
         if probe:
             return None, {}
-        fail(f"{method} {path} could not reach {ADDR}: {error.reason}")
+        fail(f"{method} {path} could not reach {ADDR}: {error}")
 
 
 def health():
@@ -108,20 +108,21 @@ def run(command, **kwargs):
     subprocess.run(command, check=True, **kwargs)
 
 
+def as_root(mounts, script, capture=False):
+    volumes = [arg for source, target in mounts for arg in ("-v", f"{source}:{target}")]
+    command = ["docker", "run", "--rm", "-u", "0", "--entrypoint", "sh", *volumes, OPENBAO_IMAGE, "-c", script]
+    return subprocess.run(command, check=True, capture_output=capture)
+
+
 def ensure_unseal_key():
-    key = UNSEAL_DIR / "current.key"
-    probe = subprocess.run(["sudo", "test", "-s", str(key)])
-    if probe.returncode == 0:
-        log(f"Using existing unseal key at {key}")
-        return False
-    run(["sudo", "install", "-d", "-m", "0750", "-o", str(OPENBAO_UID), "-g", str(OPENBAO_GID), str(UNSEAL_DIR)])
-    run(
-        ["sudo", "sh", "-c", f"umask 077 && openssl rand -out {key} 32"],
+    subprocess.run(["docker", "volume", "create", UNSEAL_VOLUME], check=True, capture_output=True)
+    result = as_root(
+        [(UNSEAL_VOLUME, "/k")],
+        "if test -s /k/current.key; then echo existing; else umask 077 && head -c 32 /dev/urandom > /k/current.key"
+        " && chown openbao:openbao /k/current.key && chmod 0400 /k/current.key && echo generated; fi",
+        capture=True,
     )
-    run(["sudo", "chown", f"{OPENBAO_UID}:{OPENBAO_GID}", str(key)])
-    run(["sudo", "chmod", "0400", str(key)])
-    log(f"Generated unseal key at {key}")
-    return True
+    log(f"{'Generated' if b'generated' in result.stdout else 'Using existing'} unseal key in volume {UNSEAL_VOLUME}")
 
 
 def ensure_server():
@@ -278,10 +279,14 @@ def secrets_in(path, everything=False):
 
 
 def ticketing_token():
-    if subprocess.run(["sudo", "test", "-s", str(TICKETING_TOKEN_FILE)]).returncode != 0:
+    if not TICKETING_TOKEN_FILE.parent.is_dir():
         return {}
-    value = subprocess.run(["sudo", "cat", str(TICKETING_TOKEN_FILE)], check=True, capture_output=True)
-    token = value.stdout.decode().strip()
+    result = as_root(
+        [(str(TICKETING_TOKEN_FILE.parent), "/s:ro")],
+        f"test -s /s/{TICKETING_TOKEN_FILE.name} && cat /s/{TICKETING_TOKEN_FILE.name} || true",
+        capture=True,
+    )
+    token = result.stdout.decode().strip()
     return {"GITHUB_TICKETING_TOKEN_SECRET": token} if token else {}
 
 
@@ -344,7 +349,7 @@ def strip_env_file(path, names):
 
 def main():
     if os.geteuid() == 0:
-        fail("run as the deploy user, not root; the script uses sudo where it needs to")
+        fail("run as the deploy user, not root")
     ensure_server()
     token, generated = initialise()
     wait_ready(token)
@@ -388,12 +393,17 @@ def main():
     log("")
     log("Done. Next:")
     log("  1. Store the recovery key from ~/openbao-init-*.json in your password manager, then shred the file")
-    log(f"  2. Back up the unseal key too: sudo base64 {UNSEAL_DIR}/current.key")
+    log(f"  2. Back up the unseal key too: docker run --rm -u 0 -v {UNSEAL_VOLUME}:/k:ro --entrypoint base64 {OPENBAO_IMAGE} /k/current.key")
     log("  3. Run a deploy and check its log says it exported secrets from OpenBao")
     if leftovers:
-        log("  4. These files still hold plaintext secrets; shred them (sudo shred -u) once the deploy is healthy:")
+        log("  4. These files still hold plaintext secrets; shred them once the deploy is healthy:")
         for item in leftovers:
             log(f"       {item}")
+        if "GITHUB_TICKETING_TOKEN_SECRET" in platform_ok:
+            log(
+                f"     The token file is root-owned: docker run --rm -u 0 -v {TICKETING_TOKEN_FILE.parent}:/s"
+                f" --entrypoint shred {OPENBAO_IMAGE} -u /s/{TICKETING_TOKEN_FILE.name}"
+            )
 
 
 if __name__ == "__main__":
