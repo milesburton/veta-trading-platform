@@ -6,6 +6,7 @@ services:
     container_name: veta-openbao
     command: ["server"]
     restart: unless-stopped
+    mem_limit: 256m
     ports:
       - "127.0.0.1:${OPENBAO_PORT:-8200}:8200"
     volumes:
