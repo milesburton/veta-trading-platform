@@ -113,7 +113,7 @@ sometimes time out under load. Each follow-up PR named in the
 | Non-root user inside containers            | Implemented | [Security posture page](../security/)                                                    |
 | `no_new_privileges: true`                  | Implemented | [Security posture page](../security/)                                                    |
 | Resource limits per container              | Implemented | `compose.yml` per-service `mem_limit` / `cpus`                                           |
-| Secrets in env vars vs proper secret store | Partially   | `.env` files used for dev; production secrets via host env. No Vault/sealed-secrets yet. |
+| Secrets in env vars vs proper secret store | Partially   | Production secrets in a self-hosted [OpenBao](../supporting/openbao/) with an audit log; `.env` used for dev only. Containers still receive them as env vars, and the vault auto-unseals on the same host. |
 | mTLS between services                      | Deferred    | Currently plain HTTP within the docker network.                                          |
 
 ## Network exposure and rate limiting

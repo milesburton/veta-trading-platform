@@ -47,7 +47,7 @@ cd frontend && npm run electron:dev
 
 ## Secrets
 
-Production credentials live in [OpenBao](https://openbao.org), a self-hosted secrets manager running on the production server as its own compose project (`deploy/openbao/compose.yml`, container `veta-openbao`). It listens on `127.0.0.1:8200` only. No container talks to it: the deploy reads secrets and passes them to Docker Compose.
+Production credentials live in [OpenBao](https://openbao.org), a self-hosted secrets manager running on the production server as its own compose project (`deploy/openbao/compose.yml`, container `veta-openbao`). It listens on `127.0.0.1:8200` only. No container talks to it: the deploy reads secrets and passes them to Docker Compose. Running the vault itself (health, upgrades, backup and restore) is covered on the [OpenBao page](/veta-trading-platform/platform/supporting/openbao/).
 
 | KV path | Holds |
 | --- | --- |

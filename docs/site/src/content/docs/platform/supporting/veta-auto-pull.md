@@ -15,8 +15,9 @@ production server. Every 5 minutes a systemd timer fires a script that:
    `homelab-deploy.sh` over `/opt/stacks/veta/deploy.sh` and the latest
    `homelab-auto-pull.sh` over `/opt/stacks/veta/auto-pull.sh` (used from
    the next tick)
-4. Runs `deploy.sh` which rsyncs compose files and runs
-   `docker compose up -d` with healthcheck gating
+4. Runs `deploy.sh` which rsyncs compose files, loads secrets from
+   [OpenBao](../openbao/) and runs `docker compose up -d` with
+   healthcheck gating
 5. On success, writes the new SHA to `state/last-deployed-sha` and the
    digest seen before the deploy to `state/last-deployed-digest`
 6. On failure, leaves the file unchanged so the next tick retries
