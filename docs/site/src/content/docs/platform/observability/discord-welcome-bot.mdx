@@ -34,9 +34,10 @@ This is a one-time setup you do yourself in the Discord Developer Portal; it can
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a **New Application**.
 2. Under **Bot**, click **Add Bot**.
 3. Under **Bot > Privileged Gateway Intents**, enable **Server Members Intent** and **Message Content Intent**. Without the first, the bot connects but never receives `GUILD_MEMBER_ADD` events; without the second, `Raise.` messages arrive with an empty `content` field and can't be triaged.
-4. Under **Bot**, click **Reset Token** and copy it. This is `DISCORD_BOT_TOKEN`. Treat it like any other credential; it grants full control of the bot identity.
-5. Under **OAuth2 > URL Generator**, select the `bot` scope and the **View Channels** + **Send Messages** + **Read Message History** permissions, then open the generated URL to invite the bot to your server.
-6. In Discord, right-click the welcome channel and **Copy Channel ID** (enable Developer Mode under User Settings > Advanced if the option isn't visible). This is `DISCORD_WELCOME_CHANNEL_ID`.
+4. Under **Bot > Authorization Flow**, make sure **Requires OAuth2 Code Grant** is off. With it on, the invite link in step 6 fails with "Integration requires code grant".
+5. Under **Bot**, click **Reset Token** and copy it. This is `DISCORD_BOT_TOKEN`. Treat it like any other credential; it grants full control of the bot identity.
+6. Under **OAuth2 > URL Generator**, select the `bot` scope and the **View Channels** + **Send Messages** + **Read Message History** permissions, then open the generated URL while signed in as a member with **Manage Server** to add the bot to your server. The equivalent hand-built URL is `https://discord.com/oauth2/authorize?client_id=<application id>&scope=bot&permissions=68608`. A bot cannot be added from the server's **Invite People** dialog: that only searches friends and existing members, so a bot's id returns no results there.
+7. In Discord, right-click the welcome channel and **Copy Channel ID** (enable Developer Mode under User Settings > Advanced if the option isn't visible). This is `DISCORD_WELCOME_CHANNEL_ID`.
 
 ## Configuration
 
@@ -113,13 +114,23 @@ Check the service health endpoint:
 curl -sf http://localhost:5034/health
 ```
 
-`configured: true` confirms both env vars are set. `connected: true` confirms the Gateway websocket is currently open. Join the server with a test account (or have a colleague join) and confirm the welcome message appears in the configured channel within a few seconds.
+`configured: true` confirms both env vars are set. `connected: true` confirms the Gateway websocket is currently open. Neither proves the bot can post: Discord accepts a Gateway connection from any valid token, even one whose bot belongs to no server. Confirm membership and channel access with the bot's own token, without printing it:
+
+```bash
+docker exec veta-discord-bot-1 sh -c 'for p in users/@me/guilds channels/$DISCORD_WELCOME_CHANNEL_ID; do curl -s -H "Authorization: Bot $DISCORD_BOT_TOKEN" https://discord.com/api/v10/$p; echo; done'
+```
+
+The first call should list the VETA server and the second should return the welcome channel. An empty list `[]` or `{"message": "Missing Access", "code": 50001}` means the bot has not been added to the server or cannot see the channel.
+
+Join the server with a test account (or have a colleague join) and confirm the welcome message appears in the configured channel within a few seconds.
 
 ## Troubleshooting
 
 - **`configured: false` in `/health`.** `DISCORD_BOT_TOKEN` or `DISCORD_WELCOME_CHANNEL_ID` is unset. Check the server `.env`.
 - **`connected: false` but `configured: true`.** The Gateway connection failed or dropped. Check service logs for `gateway websocket error` or `gateway websocket closed`; the service retries every 5 seconds.
 - **Bot is connected but no message appears on join.** Confirm **Server Members Intent** is enabled in the Developer Portal, this is the most common cause. Also confirm the bot has **Send Messages** permission in the welcome channel specifically, not just server-wide.
+- **`failed to post MOTD to welcome channel` with `status: 403` while `/health` shows `connected: true`.** The bot is not a member of the server, or cannot see the welcome channel. Run the membership check under [Verifying](#verifying). If the guild list is empty, add the bot with the OAuth2 URL from step 6 of [Creating the bot application](#creating-the-bot-application). This happens whenever the token is replaced with one from a new Developer Portal application: the new application has never been added to the server, even though its token is valid.
+- **"Integration requires code grant" when opening the invite URL.** **Requires OAuth2 Code Grant** is on under **Bot > Authorization Flow**. Turn it off and open the URL again.
 - **401 on Gateway connect.** The token is invalid or was reset in the Developer Portal. Regenerate and update `.env`.
 - **`Raise.` or @mention messages get no reply at all.** Confirm **Message Content Intent** is enabled in the Developer Portal; without it the bot receives `MESSAGE_CREATE` events but `content` is always empty, so neither trigger ever matches. Check service logs for `message triage failed`.
 - **@mentioning the bot never triggers triage, but `Raise.` works fine.** The bot only knows its own user id after the Gateway sends `READY`; if the bot just (re)connected, wait for that to complete. If it persists, check service logs around connect time for a `READY` payload missing a `user.id` field.
@@ -128,5 +139,5 @@ curl -sf http://localhost:5034/health
 - **Container shows `healthy` in `docker ps` but `Raise.`/@mention messages get no reply and no log lines appear at all.** The Docker healthcheck only proves the HTTP port is serving `/health`; it does not prove the Discord Gateway websocket is currently connected. The reconnect loop can occasionally leave the socket dead without the container's own health probe noticing. Don't trust `docker ps` alone here: check `curl -sf http://localhost:5034/health` for `connected: true`, and check log recency (`docker logs veta-discord-bot-1 --since 1h`) for a `gateway ready` line within the last hour or so, that gap is the real liveness signal. If the connection is stale, `docker restart` the service to force a fresh Gateway handshake.
 
 <Aside type="tip" title="Rotating the token">
-Discord Developer Portal → your application → Bot → Reset Token → update `DISCORD_BOT_TOKEN` in OpenBao → `scripts/veta-compose.sh up -d discord-bot`. The old token becomes inert immediately.
+Discord Developer Portal → your application → Bot → Reset Token → update `DISCORD_BOT_TOKEN` in OpenBao → `scripts/veta-compose.sh up -d discord-bot`. The old token becomes inert immediately. Resetting the token keeps the bot in the server; creating a new application instead does not, and the new bot must be added with the OAuth2 URL before it can post. Update `DISCORD_WELCOME_CHANNEL_ID` at the same time if the channel changed.
 </Aside>
