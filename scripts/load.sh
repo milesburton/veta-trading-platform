@@ -7,8 +7,9 @@
 #   load.sh status   # show current state
 #   load.sh logs     # tail logs from all loadgen containers
 #
-# Reads LOADGEN_OAUTH_PASSWORD (and optional tuning vars) from
-# $STACK_DIR/.env.loadgen. Refuses to start without it.
+# Reads platform secrets and LOADGEN_OAUTH_PASSWORD from OpenBao
+# (veta/platform, veta/loadgen), or from the legacy $STACK_DIR/.env.loadgen
+# until scripts/openbao-bootstrap.py has run. Refuses to start without them.
 
 set -euo pipefail
 
@@ -25,16 +26,24 @@ PROFILE_FLAG=(--profile loadgen --profile trading)
 log() { echo "[load] $(date -u +%H:%M:%S) $*"; }
 fail() { echo "[load] ERROR: $*" >&2; exit 1; }
 
-# Source .env.loadgen so docker compose can interpolate $LOADGEN_* values.
 # Required by every subcommand because compose.loadgen.yml references
-# ${LOADGEN_OAUTH_PASSWORD:?...} which fails interpolation if unset —
-# even on `stop`, `rm`, `ps`, `logs`.
+# ${LOADGEN_OAUTH_PASSWORD:?...} which fails interpolation if unset, and
+# compose.yml needs the platform secrets or dependencies could be
+# recreated with defaults.
 load_env() {
-  [[ -f "$ENV_FILE" ]] || fail "missing $ENV_FILE — see scripts/loadgen/README.md"
-  set -a
-  # shellcheck disable=SC1090
-  . "$ENV_FILE"
-  set +a
+  # shellcheck source=lib/openbao-env.sh
+  . "$(dirname "${BASH_SOURCE[0]}")/lib/openbao-env.sh"
+  if openbao_configured; then
+    openbao_export platform || fail "could not load platform secrets from OpenBao"
+    openbao_export_if_present loadgen || fail "could not load loadgen secrets from OpenBao"
+  elif [[ -f "$ENV_FILE" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+    set +a
+  fi
+  [[ -n "${LOADGEN_OAUTH_PASSWORD:-}" ]] \
+    || fail "no LOADGEN_OAUTH_PASSWORD in OpenBao veta/loadgen or $ENV_FILE; see scripts/loadgen/README.md"
 }
 
 cmd_on() {
@@ -85,7 +94,7 @@ Usage: $0 <on|off|status|logs>
   status  show running loadgen container state
   logs    tail logs from all loadgen containers
 
-Reads $ENV_FILE for credentials. See scripts/loadgen/README.md for setup.
+Reads credentials from OpenBao (veta/loadgen). See scripts/loadgen/README.md for setup.
 EOF
     exit 1
     ;;

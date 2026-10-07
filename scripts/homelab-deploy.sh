@@ -17,10 +17,12 @@ CONFIG_PATHS=(
     "observability/"
     "scripts/load.sh"
     "scripts/lib/"
+    "scripts/veta-compose.sh"
+    "scripts/openbao-bootstrap.py"
     "scripts/loadgen/"
     "scripts/homelab-motd/"
     "k6/"
-    "deploy/homelab.sops.env"
+    "deploy/openbao/"
 )
 
 cd "$STACK_DIR"
@@ -116,36 +118,17 @@ install_motd() {
     fi
 }
 
-SOPS_ENV_SRC="$STACK_DIR/deploy/homelab.sops.env"
-SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
-export SOPS_AGE_KEY_FILE
-
-render_env() {
-    if [[ ! -f "$SOPS_ENV_SRC" ]]; then
-        log "No encrypted env in repo; keeping existing .env"
+load_secrets() {
+    # shellcheck source=lib/openbao-env.sh
+    . "$STACK_DIR/scripts/lib/openbao-env.sh"
+    if ! openbao_configured; then
+        log "⚠️  No OpenBao AppRole credentials at $OPENBAO_APPROLE_FILE; secrets still come from .env until scripts/openbao-bootstrap.py has run"
         return 0
     fi
-    if ! command -v sops >/dev/null 2>&1 || [[ ! -r "$SOPS_AGE_KEY_FILE" ]]; then
-        log "⚠️  sops or age key ($SOPS_AGE_KEY_FILE) missing; keeping existing .env"
-        return 0
+    openbao_export platform || return 1
+    if [[ "${LOADGEN_ENABLED:-false}" == "true" ]]; then
+        openbao_export_if_present loadgen || return 1
     fi
-    local tmp
-    tmp=$(mktemp "$STACK_DIR/.env.render.XXXXXX")
-    chmod 600 "$tmp"
-    if ! sops --decrypt "$SOPS_ENV_SRC" > "$tmp"; then
-        rm -f "$tmp"
-        log "❌ Could not decrypt $SOPS_ENV_SRC"
-        return 1
-    fi
-    if [[ -f "$STACK_DIR/.env" ]] && cmp -s "$tmp" "$STACK_DIR/.env"; then
-        rm -f "$tmp"
-        return 0
-    fi
-    if [[ -f "$STACK_DIR/.env" ]]; then
-        cp -p "$STACK_DIR/.env" "$STACK_DIR/.env.bak.$(date -u +%Y%m%dT%H%M%SZ)"
-    fi
-    mv "$tmp" "$STACK_DIR/.env"
-    log "Rendered .env from $SOPS_ENV_SRC"
 }
 
 CRITICAL_SERVICES="gateway oms ems risk-engine journal market-sim user-service"
@@ -163,8 +146,8 @@ fi
 
 install_motd
 
-if ! render_env; then
-    log "❌ Secrets render failed; aborting deploy with the existing .env untouched."
+if ! load_secrets; then
+    log "❌ Could not load secrets from OpenBao; aborting before any container changes."
     exit 1
 fi
 
@@ -173,26 +156,28 @@ fi
 # - compose.prod.yml: homelab-specific overrides (image tags, Traefik labels)
 # - compose.observability.yml: OTEL env vars for trace/metric/log emission
 # - compose.loadgen.yml: included ONLY when loadgen is explicitly opted in.
-#   The loadgen profile also disables gateway rate limiting, so an
-#   accidentally-present .env.loadgen could let the generators storm the
-#   gateway unbounded. Requiring an explicit LOADGEN_ENABLED=true flag (in
-#   addition to the credentials file) makes that opt-in deliberate: an
-#   orphaned credentials file alone no longer re-enables a load storm on
-#   the next deploy. Compose interpolation needs the credentials file
-#   present (${LOADGEN_OAUTH_PASSWORD:?...}), so both conditions must hold.
+#   The loadgen profile also disables gateway rate limiting, so orphaned
+#   loadgen credentials must not re-enable a load storm on the next deploy.
+#   Both LOADGEN_ENABLED=true and LOADGEN_OAUTH_PASSWORD (from OpenBao's
+#   veta/loadgen, or the legacy .env.loadgen) are required.
 COMPOSE_FILES=(-f compose.yml -f compose.prod.yml -f compose.observability.yml)
+if [[ -n "${GITHUB_TICKETING_TOKEN_SECRET:-}" ]]; then
+    COMPOSE_FILES+=(-f deploy/openbao/compose.secrets.yml)
+fi
 PROFILES=(--profile trading)
 LOADGEN_ENV_FILE="$STACK_DIR/.env.loadgen"
-if [[ "${LOADGEN_ENABLED:-false}" == "true" && -f "$LOADGEN_ENV_FILE" ]]; then
-    log "Loadgen explicitly enabled — including compose.loadgen.yml"
-    COMPOSE_FILES+=(-f compose.loadgen.yml)
-    PROFILES+=(--profile loadgen)
+if [[ "${LOADGEN_ENABLED:-false}" == "true" && -z "${LOADGEN_OAUTH_PASSWORD:-}" && -f "$LOADGEN_ENV_FILE" ]]; then
     set -a
     # shellcheck disable=SC1090
     . "$LOADGEN_ENV_FILE"
     set +a
-elif [[ -f "$LOADGEN_ENV_FILE" ]]; then
-    log "Loadgen credentials present but LOADGEN_ENABLED is not 'true' — skipping loadgen profile"
+fi
+if [[ "${LOADGEN_ENABLED:-false}" == "true" && -n "${LOADGEN_OAUTH_PASSWORD:-}" ]]; then
+    log "Loadgen explicitly enabled, including compose.loadgen.yml"
+    COMPOSE_FILES+=(-f compose.loadgen.yml)
+    PROFILES+=(--profile loadgen)
+elif [[ "${LOADGEN_ENABLED:-false}" == "true" ]]; then
+    log "⚠️  LOADGEN_ENABLED=true but no loadgen credentials in OpenBao veta/loadgen or $LOADGEN_ENV_FILE; skipping loadgen profile"
 fi
 
 log "Pulling latest images..."

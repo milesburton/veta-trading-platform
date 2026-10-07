@@ -43,19 +43,18 @@ Two env vars on the gateway:
 | `GITHUB_TICKETING_TOKEN` | PAT or fine-grained token with `issues:write` on the target repo | empty (ticketing no-ops) |
 | `GITHUB_TICKETING_REPO` | `owner/name` of the repo to open issues in | `milesburton/veta-trading-platform` |
 
-The token is a bearer credential. Inject via the server's `.env`:
+The token is a bearer credential. In production it is stored in [OpenBao](/veta-trading-platform/development/deployment/#secrets) as `GITHUB_TICKETING_TOKEN_SECRET` at `secret/veta/platform`, and reaches the gateway and discord-bot as the Compose secret file `/run/secrets/github_ticketing_token` (`GITHUB_TICKETING_TOKEN_FILE`), never as an environment variable. The repo name is not a secret and can stay in the server's `.env`:
 
 ```bash
-# /opt/stacks/veta/.env
-GITHUB_TICKETING_TOKEN=github_pat_...
-GITHUB_TICKETING_REPO=milesburton/veta-trading-platform
+read -rs v && printf %s "$v" | bao kv patch secret/veta/platform GITHUB_TICKETING_TOKEN_SECRET=-
+echo "GITHUB_TICKETING_REPO=milesburton/veta-trading-platform" >> /opt/stacks/veta/.env
 ```
 
 Then restart the gateway:
 
 ```bash
 cd /opt/stacks/veta
-docker compose up -d gateway
+scripts/veta-compose.sh up -d gateway
 ```
 
 ## Token scopes
@@ -138,5 +137,5 @@ The labels are filterable in the GitHub Issues list, so the on-call view is `is:
 - **Comments instead of new issues forever.** Once an issue is open for >1h, dedupe stops matching and a fresh one opens. If on-call wants to keep dedupe alive, they can edit the issue title to refresh `created_at` — but it's usually better to close and let a fresh one open.
 
 <Aside type="tip" title="Rotating the token">
-Tokens have an expiry. Renew before they lapse: GitHub → Settings → Developer settings → Fine-grained tokens → regenerate → update `.env` on the server → `docker compose up -d gateway`. The old token becomes inert immediately.
+Tokens have an expiry. Renew before they lapse: GitHub → Settings → Developer settings → Fine-grained tokens → regenerate → update `GITHUB_TICKETING_TOKEN_SECRET` in OpenBao → `scripts/veta-compose.sh up -d gateway`. The old token becomes inert immediately.
 </Aside>

@@ -9,13 +9,14 @@ runner, a matrix runner, and a token-refresh sidecar.
 ## Quick start
 
 ```bash
-# On the homelab, set the credential (one-liner extracts admin's pw):
-ssh miles@192.168.1.245
-ADMIN_PW=$(sudo grep ^OAUTH2_USER_SECRETS /opt/stacks/veta/.env \
-  | head -1 | cut -d= -f2- | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
-echo "LOADGEN_OAUTH_PASSWORD=$ADMIN_PW" | sudo tee /opt/stacks/veta/.env.loadgen
-sudo chmod 600 /opt/stacks/veta/.env.loadgen
-sudo chown miles:miles /opt/stacks/veta/.env.loadgen
+# On the server, store the credential in OpenBao (extracts admin's pw):
+ssh <user>@<server-host>
+docker exec -it veta-openbao sh
+bao login -method=userpass username=admin
+admin_pw=$(bao kv get -field=OAUTH2_USER_SECRETS secret/veta/platform \
+  | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
+printf %s "$admin_pw" | bao kv put secret/veta/loadgen LOADGEN_OAUTH_PASSWORD=-
+exit
 
 # Turn on / off / status / logs
 /opt/stacks/veta/scripts/load.sh on
