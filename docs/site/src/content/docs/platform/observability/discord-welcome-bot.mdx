@@ -126,12 +126,12 @@ Join the server with a test account (or have a colleague join) and confirm the w
 
 ## Troubleshooting
 
-- **`configured: false` in `/health`.** `DISCORD_BOT_TOKEN` or `DISCORD_WELCOME_CHANNEL_ID` is unset. Check the server `.env`.
+- **`configured: false` in `/health`.** `DISCORD_BOT_TOKEN` or `DISCORD_WELCOME_CHANNEL_ID` is unset. Check OpenBao for the token and the server `.env` for the channel ID.
 - **`connected: false` but `configured: true`.** The Gateway connection failed or dropped. Check service logs for `gateway websocket error` or `gateway websocket closed`; the service retries every 5 seconds.
 - **Bot is connected but no message appears on join.** Confirm **Server Members Intent** is enabled in the Developer Portal, this is the most common cause. Also confirm the bot has **Send Messages** permission in the welcome channel specifically, not just server-wide.
 - **`failed to post MOTD to welcome channel` with `status: 403` while `/health` shows `connected: true`.** The bot is not a member of the server, or cannot see the welcome channel. Run the membership check under [Verifying](#verifying). If the guild list is empty, add the bot with the OAuth2 URL from step 6 of [Creating the bot application](#creating-the-bot-application). This happens whenever the token is replaced with one from a new Developer Portal application: the new application has never been added to the server, even though its token is valid.
 - **"Integration requires code grant" when opening the invite URL.** **Requires OAuth2 Code Grant** is on under **Bot > Authorization Flow**. Turn it off and open the URL again.
-- **401 on Gateway connect.** The token is invalid or was reset in the Developer Portal. Regenerate and update `.env`.
+- **401 on Gateway connect.** The token is invalid or was reset in the Developer Portal. Regenerate it and update `DISCORD_BOT_TOKEN` in OpenBao.
 - **`Raise.` or @mention messages get no reply at all.** Confirm **Message Content Intent** is enabled in the Developer Portal; without it the bot receives `MESSAGE_CREATE` events but `content` is always empty, so neither trigger ever matches. Check service logs for `message triage failed`.
 - **@mentioning the bot never triggers triage, but `Raise.` works fine.** The bot only knows its own user id after the Gateway sends `READY`; if the bot just (re)connected, wait for that to complete. If it persists, check service logs around connect time for a `READY` payload missing a `user.id` field.
 - **Reply says "triage is unavailable".** `LLM_PROVIDER` is unset, or the configured provider's `isAvailable()` check failed (Ollama unreachable, or `ANTHROPIC_API_KEY` empty). Check the `ollama` service's health if using `LLM_PROVIDER=ollama`.
