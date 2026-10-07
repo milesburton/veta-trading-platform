@@ -35,13 +35,13 @@ Loadgen tests throughput, not liveness.
 ## One-time setup
 
 ```bash
-# On the server, drop the credentials file (mode 600)
+# On the server, store the credential in OpenBao at secret/veta/loadgen
 ssh <user>@<server-host>
-ADMIN_PW=$(sudo grep ^OAUTH2_USER_SECRETS /opt/stacks/veta/.env \
-  | head -1 | cut -d= -f2- | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
-echo "LOADGEN_OAUTH_PASSWORD=$ADMIN_PW" | sudo tee /opt/stacks/veta/.env.loadgen
-sudo chmod 600 /opt/stacks/veta/.env.loadgen
-sudo chown "$USER":"$USER" /opt/stacks/veta/.env.loadgen
+docker exec -it veta-openbao sh
+bao login -method=userpass username=admin
+admin_pw=$(bao kv get -field=OAUTH2_USER_SECRETS secret/veta/platform \
+  | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
+printf %s "$admin_pw" | bao kv put secret/veta/loadgen LOADGEN_OAUTH_PASSWORD=-
 ```
 
 The password is read from `OAUTH2_USER_SECRETS` (per-user) for the `admin`
@@ -49,7 +49,7 @@ account, **not** from `OAUTH2_SHARED_SECRET`. The two diverged in 2026-05
 and loadgen broke for 5 days before this was diagnosed. See the history
 note below.
 
-Optional tuning vars in the same file:
+See [Secrets](/veta-trading-platform/development/deployment/#secrets) for OpenBao access. Optional tuning vars go in the same KV path, for example `bao kv patch secret/veta/loadgen LOADGEN_SOAK_VUS=20`:
 
 | Env                        | Default                                                            | Effect                                     |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ Optional tuning vars in the same file:
 ## Daily use
 
 ```bash
-# Switch on (requires .env.loadgen present)
+# Switch on (requires secret/veta/loadgen in OpenBao)
 ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh on'
 
 # Check it's running
@@ -80,17 +80,17 @@ ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh off'
 
 `scripts/homelab-deploy.sh` includes `compose.loadgen.yml` and the `loadgen`
 profile only when **both** `LOADGEN_ENABLED=true` is set in the deploy
-script's environment **and** `.env.loadgen` exists on the server. A
-credentials file on its own is not enough: the loadgen profile disables
-gateway rate limiting, so an orphaned `.env.loadgen` previously restarted a
-load storm on every auto-pull tick. With the flag unset, the deploy logs
-`Loadgen credentials present but LOADGEN_ENABLED is not 'true'` and skips it.
+script's environment **and** OpenBao holds `LOADGEN_OAUTH_PASSWORD` at
+`secret/veta/loadgen`. Credentials on their own are not enough: the loadgen
+profile disables gateway rate limiting, so an orphaned credentials file
+previously restarted a load storm on every auto-pull tick. With the flag
+unset, the deploy does not read `veta/loadgen` at all and skips the profile.
 
 `load.sh on` starts loadgen for the current session regardless of the flag.
 The next deploy recreates the stack without it unless the flag is set.
 
-Removing loadgen permanently: unset `LOADGEN_ENABLED` and delete
-`/opt/stacks/veta/.env.loadgen`.
+Removing loadgen permanently: unset `LOADGEN_ENABLED` and delete the
+credentials with `bao kv metadata delete secret/veta/loadgen`.
 
 ## History note
 
@@ -102,8 +102,8 @@ is in the map. Loadgen was sending the wrong password and getting 401, which
 the gateway logged as `auth_failure` ~1,100 lines/sec, contributing to the
 2026-05-14 disk-fill incident.
 
-Fix landed in PR #234's gateway log-throttle plus a one-off `.env.loadgen`
-rotation on the server. The post-fix install command above extracts the
+Fix landed in PR #234's gateway log-throttle plus a one-off rotation of the
+loadgen credential on the server. The post-fix install command above extracts the
 correct per-user password automatically.
 
 ## Discord start/stop announcements

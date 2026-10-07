@@ -68,18 +68,18 @@ The webhook URL is injected at runtime via the `DISCORD_WEBHOOK_URL` environment
 | `gateway` | `DISCORD_WEBHOOK_URL` | empty string (notifier no-ops) |
 | `grafana` | `DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/0/REPLACE_ME` (rejected by notifier) |
 
-On the server, set the real URL in `/opt/stacks/veta/.env`:
+On the server, store the real URL in [OpenBao](/veta-trading-platform/development/deployment/#secrets) at `secret/veta/platform`:
 
 ```bash
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token>
+read -rs v && printf %s "$v" | bao kv patch secret/veta/platform DISCORD_WEBHOOK_URL=-
 ```
 
 Then restart the consuming containers so they pick up the new value:
 
 ```bash
 cd /opt/stacks/veta
-docker compose up -d gateway
-docker compose -f observability/docker-compose.lgtm.yml up -d grafana
+scripts/veta-compose.sh up -d gateway
+scripts/veta-compose.sh -f observability/docker-compose.lgtm.yml up -d grafana
 ```
 
 ## Verifying delivery
@@ -107,8 +107,8 @@ Discord webhook URLs are bearer credentials. Rotate immediately if the URL appea
 
 1. Discord channel settings → Integrations → Webhooks → click the existing webhook
 2. Either delete and recreate (creates a fresh URL) or copy the URL and regenerate the token from the same panel
-3. SSH to the server and update `/opt/stacks/veta/.env`
-4. `docker compose up -d gateway grafana` to apply
+3. SSH to the server and update `DISCORD_WEBHOOK_URL` in OpenBao (`secret/veta/platform`)
+4. Recreate the consumers with `scripts/veta-compose.sh` as above
 5. Smoke-test with the curl one-liner above
 6. The old URL becomes inert immediately; no further cleanup needed
 

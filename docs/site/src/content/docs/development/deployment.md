@@ -47,23 +47,59 @@ cd frontend && npm run electron:dev
 
 ## Secrets
 
-Production configuration, including credentials, is committed as a [SOPS](https://github.com/getsops/sops)-encrypted dotenv file, `deploy/homelab.sops.env`, encrypted to an [age](https://github.com/FiloSottile/age) key. The private key exists only on the production server, at the deploy user's `~/.config/sops/age/keys.txt`. `.sops.yaml` at the repo root names the public recipient.
+Production credentials live in [OpenBao](https://openbao.org), a self-hosted secrets manager running on the production server as its own compose project (`deploy/openbao/compose.yml`, container `veta-openbao`). It listens on `127.0.0.1:8200` only. No container talks to it: the deploy reads secrets and passes them to Docker Compose. Running the vault itself (health, upgrades, backup and restore) is covered on the [OpenBao page](/veta-trading-platform/platform/supporting/openbao/).
 
-On each deploy, `scripts/homelab-deploy.sh` syncs the encrypted file and decrypts it to the stack's `.env` (mode 600). If the content changed, the previous `.env` is kept as `.env.bak.<timestamp>`. If decryption fails, the deploy aborts and leaves `.env` untouched. If the encrypted file, `sops` or the key is absent, the deploy keeps the existing `.env`.
+| KV path | Holds |
+| --- | --- |
+| `secret/veta/platform` | Every credential `compose.yml`, `compose.prod.yml` and the LGTM stack interpolate: database, MinIO and Grafana passwords, OAuth secrets, synthetic trader passwords, Discord tokens and webhooks, market data API keys. Also `GITHUB_TICKETING_TOKEN_SECRET`, which reaches the gateway and discord-bot as the Compose secret file `/run/secrets/github_ticketing_token` (via `deploy/openbao/compose.secrets.yml`) rather than an environment variable |
+| `secret/veta/loadgen` | `LOADGEN_OAUTH_PASSWORD` and any other loadgen settings |
 
-The rendered `.env` is overwritten whenever the encrypted file changes, so edit the encrypted file rather than `.env`.
+`.env` in the stack directory keeps non-secret settings only, such as `VETA_CGROUP_PARENT` or `COMPOSE_FILE`.
+
+### How a deploy reads secrets
+
+`scripts/homelab-deploy.sh` sources `scripts/lib/openbao-env.sh`, logs in with the `veta-deploy` AppRole, reads `veta/platform` (and `veta/loadgen` when `LOADGEN_ENABLED=true`), exports each value into its own environment and revokes the token. Compose gives the process environment precedence over `.env`, so every `docker compose` call in the deploy, including the LGTM stack, sees the vault values. Nothing is written to disk and no value appears in a command line.
+
+The AppRole credentials are in the deploy user's `~/.config/veta/openbao-approle.json` (mode 600). The `veta-deploy` policy can read `secret/veta/*` and nothing else, and its tokens expire after five minutes.
+
+If OpenBao is down, sealed, or rejects the login, the deploy stops before touching any container. Running containers are unaffected: Docker keeps each container's environment, so they restart after a reboot without the vault.
+
+Run any other `docker compose` command on the server through `scripts/veta-compose.sh`, which loads the secrets first, for example `scripts/veta-compose.sh up -d gateway`. It defaults `COMPOSE_FILE` to the production chain (`compose.yml`, `compose.prod.yml`, `compose.observability.yml`); pass `-f` to use other files. A bare `docker compose up` would recreate containers with the compose defaults instead of the real credentials. `scripts/load.sh` loads them itself.
+
+### Unsealing
+
+OpenBao uses a static auto-unseal key, 32 random bytes in the Docker volume `veta-openbao-unseal`, readable only by the container user, so it unseals itself after a restart. The volume is declared `external`, so `docker compose down -v` never deletes it. Anyone with Docker access on the server can therefore read the vault; what it adds over a plaintext file is a single read-only deploy credential that can be revoked, an audit log of every access (`/openbao/logs/audit.log` in the `veta-openbao_openbao-logs` volume, values HMAC-hashed), and one place to change a value.
+
+Keep two things offline, in a password manager: the unseal key (`docker run --rm -u 0 -v veta-openbao-unseal:/k:ro --entrypoint base64 openbao/openbao:2.7.1 /k/current.key`) and the recovery key printed at initialisation. Restoring the `openbao-data` volume on another host needs the unseal key. Regenerating a root token needs the recovery key.
 
 ### Changing a value
 
-Decryption needs the private key, so edits happen on the server:
+Log in as the `admin` user, whose `veta-admin` policy can edit `secret/veta/*`:
 
 ```sh
-cp deploy/homelab.sops.env /tmp/homelab.sops.env   # from the synced stack directory
-sops edit --input-type dotenv --output-type dotenv /tmp/homelab.sops.env
+docker exec -it veta-openbao sh
+bao login -method=userpass username=admin
+read -rs v && printf %s "$v" | bao kv patch secret/veta/platform POLYGON_KEY=-
+bao kv get secret/veta/platform
 ```
 
-Copy the edited file into `deploy/homelab.sops.env` in a repo checkout and open a PR. Do not add comments: SOPS leaves comment lines unencrypted, and the pre-commit hook rejects any line that is not an encrypted value or SOPS metadata.
+Piping the value through `read -rs` keeps it out of shell history and the process list, and drops the trailing newline. The web UI is also available through an SSH tunnel to port 8200 (`http://localhost:8200/ui`). Then redeploy so containers pick up the change, or recreate only the affected service with `scripts/veta-compose.sh`. KV v2 keeps previous versions, so `bao kv rollback -version=<n> secret/veta/platform` undoes a mistake.
+
+To rotate the deploy credential, issue a new secret ID as `admin` (`bao write -f auth/approle/role/veta-deploy/secret-id`), put it in `openbao-approle.json`, then destroy the old one: `bao list auth/approle/role/veta-deploy/secret-id` shows the accessors, and `bao write auth/approle/role/veta-deploy/secret-id-accessor/destroy secret_id_accessor=<accessor>` removes one.
 
 ### First-time setup
 
-Install `sops` and `age` on the server, then run `scripts/homelab-secrets-bootstrap.sh` there. It generates the age key if none exists, encrypts the current `.env` with comments removed, verifies the round trip, and writes `state/homelab.sops.env` and `state/.sops.yaml` for you to commit as `deploy/homelab.sops.env` and `.sops.yaml`. Back up the age key offline: without it, every secret has to be re-created.
+Run `scripts/openbao-bootstrap.py` on the server as the deploy user, from the synced stack directory, after a deploy has put `deploy/openbao/` there. It:
+
+1. Creates the `veta-openbao-unseal` volume and generates the key in it if missing, then starts `veta-openbao`. Root-owned work (the key, reading `secrets/github_ticketing_token`) runs in a short-lived container, so the script needs Docker access but not `sudo`.
+2. Initialises OpenBao, writing the recovery key and root token to `~/openbao-init-<timestamp>.json` (mode 600).
+3. Enables KV v2 at `secret/`, the `veta-deploy` and `veta-admin` policies, AppRole and userpass auth, prompts for the `admin` password, and writes the AppRole credentials.
+4. Imports secret-looking variables from `.env`, plus the ticketing token file as `GITHUB_TICKETING_TOKEN_SECRET`, into `veta/platform` (names containing `PASSWORD`, `PASSWD`, `SECRET`, `TOKEN`, `WEBHOOK`, ending `_KEY`, or URLs with embedded credentials) and all of `.env.loadgen` into `veta/loadgen`. Values are resolved through `docker compose config`, so `$$` escapes and references come out exactly as containers see them today.
+5. Reads everything back through the deploy loader, and only if every value matches, removes the imported lines from `.env` and deletes `.env.loadgen`.
+6. Revokes the root token and lists files that still hold old plaintext (`.env.bak*`, the ticketing token file), with the command to shred the root-owned one.
+
+Move the recovery key into your password manager and shred the init file, then deploy and check the log for `exported N secrets from veta/platform`.
+
+Rerunning the script is safe. It leaves an existing key, server, admin user and credentials alone and never overwrites a KV path that already exists. Configuring an already initialised OpenBao needs a root token (`bao operator generate-root` with the recovery key).
+
+Until the bootstrap has run, a deploy that finds no AppRole credentials logs a warning and uses `.env` as before.

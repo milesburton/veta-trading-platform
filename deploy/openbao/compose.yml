@@ -1,0 +1,36 @@
+name: veta-openbao
+
+services:
+  openbao:
+    image: openbao/openbao:2.7.1
+    container_name: veta-openbao
+    command: ["server"]
+    restart: unless-stopped
+    mem_limit: 256m
+    ports:
+      - "127.0.0.1:${OPENBAO_PORT:-8200}:8200"
+    volumes:
+      - ./config:/openbao/config:ro
+      - openbao-unseal:/openbao/unseal:ro
+      - openbao-data:/openbao/file
+      - openbao-logs:/openbao/logs
+    environment:
+      BAO_ADDR: http://127.0.0.1:8200
+    healthcheck:
+      test: ["CMD", "bao", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  openbao-data:
+  openbao-logs:
+  openbao-unseal:
+    name: veta-openbao-unseal
+    external: true

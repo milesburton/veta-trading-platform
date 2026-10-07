@@ -44,6 +44,11 @@ const SCENARIOS: Scenario[] = [
     files: ["observability/docker-compose.lgtm.yml"],
     env: PLACEHOLDERS,
   },
+  {
+    name: "openbao vault",
+    files: ["deploy/openbao/compose.yml"],
+    env: PLACEHOLDERS,
+  },
 ];
 
 interface ComposeServiceConfig {

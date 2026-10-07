@@ -41,7 +41,7 @@ Then restart the consumers so they pick up the new config:
 
 ```bash
 cd /opt/stacks/veta
-docker compose up -d llm-advisory llm-advisory-worker
+scripts/veta-compose.sh up -d llm-advisory llm-advisory-worker
 ```
 
 The dev-container compose file keeps `http://ollama:11434` as the default so a developer running the local stack still gets the small `qwen2.5:3b` model and does not depend on the Spark being reachable.

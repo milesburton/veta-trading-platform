@@ -49,14 +49,14 @@ sudo install -m 0644 /tmp/daemon.json /etc/docker/daemon.json
 sudo systemctl restart docker
 ```
 
-Then add `VETA_CGROUP_PARENT=veta.slice` to `deploy/homelab.sops.env` (see
-[Secrets](https://milesburton.github.io/veta-trading-platform/development/deployment/#secrets)).
+Then add `VETA_CGROUP_PARENT=veta.slice` to `/opt/stacks/veta/.env`. It is
+not a secret, so it stays in `.env` rather than OpenBao.
 
 `AllowedCPUs` in each slice must be CPU IDs visible to the host; check with
 `cat /sys/fs/cgroup/cpuset.cpus.effective`. Give production the faster cores.
 Containers created before the daemon change keep an empty cgroup parent and
 land in `ci.slice` on their next start, so recreate production with
-`docker compose up -d --force-recreate` after setting `VETA_CGROUP_PARENT`.
+`scripts/veta-compose.sh up -d --force-recreate` after setting `VETA_CGROUP_PARENT`.
 Verify with `cat /proc/<pid>/cgroup` for a container's main process.
 
 Per-unit operational commands (`systemctl status`, `journalctl`, etc.)
@@ -65,9 +65,10 @@ are documented on each Astro page linked above.
 ## Related env / secrets
 
 These homelab settings are required for production routes to work
-end-to-end. They live in the SOPS-encrypted `deploy/homelab.sops.env`,
-which each deploy renders to `/opt/stacks/veta/.env`. Edit the encrypted
-file, not the rendered `.env`, or the next deploy reverts the change:
+end-to-end. Secrets (`OAUTH_*`, the htpasswd and webhook values) live in
+OpenBao at `secret/veta/platform`; non-secret flags (`OAUTH_ALLOW_PUBLIC_REGISTER`,
+`VETA_CGROUP_PARENT`, `PUBLIC_GUEST_TRADING`) stay in `/opt/stacks/veta/.env`.
+See [Secrets](https://milesburton.github.io/veta-trading-platform/development/deployment/#secrets):
 
 - **`OAUTH_SHARED_SECRET`** and **`OAUTH_USER_SECRETS`** — see
   [Security posture](https://milesburton.github.io/veta-trading-platform/platform/security/)

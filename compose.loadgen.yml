@@ -29,7 +29,7 @@ services:
     environment:
       USER_SERVICE_URL: http://user-service:5008
       OAUTH_USERNAME: ${LOADGEN_OAUTH_USERNAME:-admin}
-      OAUTH_PASSWORD: ${LOADGEN_OAUTH_PASSWORD:?LOADGEN_OAUTH_PASSWORD must be set in .env.loadgen}
+      OAUTH_PASSWORD: ${LOADGEN_OAUTH_PASSWORD:?LOADGEN_OAUTH_PASSWORD must be set in OpenBao secret/veta/loadgen}
       OAUTH_CLIENT_ID: veta-automation
       REFRESH_INTERVAL: "3000"
       TOKEN_FILE: /loadgen/token

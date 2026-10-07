@@ -54,19 +54,18 @@ This is a one-time setup you do yourself in the Discord Developer Portal; it can
 | `VETA_DOCS_URL` | Docs link included in the message of the day | `https://milesburton.github.io/veta-trading-platform/` |
 | `VETA_PLATFORM_URL` | Live platform link included in the message of the day | `https://veta.mnetcs.com` |
 
-`DISCORD_BOT_TOKEN` and `DISCORD_WELCOME_CHANNEL_ID` are required for the bot to start at all; the service logs a warning and stays idle if either is missing. The LLM and ticketing vars only gate the triage feature: with `LLM_PROVIDER` unset the bot still greets new members, but replies to any triage-triggering message with a "triage is unavailable" note instead of filing a ticket. Inject via the server's `.env`:
+`DISCORD_BOT_TOKEN` and `DISCORD_WELCOME_CHANNEL_ID` are required for the bot to start at all; the service logs a warning and stays idle if either is missing. The LLM and ticketing vars only gate the triage feature: with `LLM_PROVIDER` unset the bot still greets new members, but replies to any triage-triggering message with a "triage is unavailable" note instead of filing a ticket. Store the token in [OpenBao](/veta-trading-platform/development/deployment/#secrets) at `secret/veta/platform`. The channel ID is not a secret and can stay in the server's `.env`:
 
 ```bash
-# /opt/stacks/veta/.env
-DISCORD_BOT_TOKEN=your_bot_token_here
-DISCORD_WELCOME_CHANNEL_ID=your_channel_id_here
+read -rs v && printf %s "$v" | bao kv patch secret/veta/platform DISCORD_BOT_TOKEN=-
+echo "DISCORD_WELCOME_CHANNEL_ID=your_channel_id_here" >> /opt/stacks/veta/.env
 ```
 
 Then restart the service:
 
 ```bash
 cd /opt/stacks/veta
-docker compose up -d discord-bot
+scripts/veta-compose.sh up -d discord-bot
 ```
 
 <Aside type="caution" title="Bot token vs webhook URL">
@@ -129,5 +128,5 @@ curl -sf http://localhost:5034/health
 - **Container shows `healthy` in `docker ps` but `Raise.`/@mention messages get no reply and no log lines appear at all.** The Docker healthcheck only proves the HTTP port is serving `/health`; it does not prove the Discord Gateway websocket is currently connected. The reconnect loop can occasionally leave the socket dead without the container's own health probe noticing. Don't trust `docker ps` alone here: check `curl -sf http://localhost:5034/health` for `connected: true`, and check log recency (`docker logs veta-discord-bot-1 --since 1h`) for a `gateway ready` line within the last hour or so, that gap is the real liveness signal. If the connection is stale, `docker restart` the service to force a fresh Gateway handshake.
 
 <Aside type="tip" title="Rotating the token">
-Discord Developer Portal → your application → Bot → Reset Token → update `DISCORD_BOT_TOKEN` on the server → `docker compose up -d discord-bot`. The old token becomes inert immediately.
+Discord Developer Portal → your application → Bot → Reset Token → update `DISCORD_BOT_TOKEN` in OpenBao → `scripts/veta-compose.sh up -d discord-bot`. The old token becomes inert immediately.
 </Aside>

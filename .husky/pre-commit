@@ -170,17 +170,16 @@ else
   echo "       fallow not installed in frontend/node_modules — skipping (run npm ci)."
 fi
 
-echo "  [14/14] Encrypted env files contain no plaintext..."
+echo "  [14/14] No secret files staged..."
 cd "$REPO_ROOT"
-STAGED_ENV=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^deploy/.*\.env$' || true)
-for f in $STAGED_ENV; do
-  PLAINTEXT=$(git show ":$f" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=(ENC\[.*)?$' | grep -vE '^sops_' || true)
-  if [ -n "$PLAINTEXT" ] || ! git show ":$f" | grep -q '^sops_mac=ENC\['; then
-    echo "❌ ERROR: $f is not a fully SOPS-encrypted dotenv file."
-    echo "Every line must be KEY=ENC[...] or sops metadata, with no comments."
-    echo "Re-create it with scripts/homelab-secrets-bootstrap.sh or 'sops edit $f'."
-    exit 1
-  fi
-done
+SECRET_FILES=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep -E '(^|/)(\.env(\.[^/]*)?|[^/]*\.env|openbao-approle\.json|openbao-init-[^/]*\.json|[^/]*\.key)$' \
+  | grep -vE '^(\.env\.template|frontend/\.env\.(example|electron|electron-test|playwright))$' || true)
+if [ -n "$SECRET_FILES" ]; then
+  echo "❌ ERROR: files that hold secrets are staged:"
+  echo "$SECRET_FILES" | sed 's/^/  /'
+  echo "Production secrets live in OpenBao, not in the repo. See docs: development/deployment#secrets."
+  exit 1
+fi
 
 echo "Pre-commit checks passed."

@@ -86,9 +86,9 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_AUTH_DISABLE_LOGIN_FORM: "false"
-      # Admin credentials. Override GF_SECURITY_ADMIN_PASSWORD in
-      # /opt/stacks/veta/.env (or per-environment .env) to a strong
-      # value before exposing publicly. The default is intentionally
+      # Admin credentials. In production GRAFANA_ADMIN_PASSWORD comes
+      # from OpenBao (secret/veta/platform) via the deploy; set it to a
+      # strong value before exposing publicly. The default is intentionally
       # not "admin/admin" so an unconfigured deploy fails to log in
       # rather than silently inheriting the well-known credential.
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"

@@ -147,6 +147,7 @@ export default defineConfig({
                 { label: "veta-auto-pull", slug: "platform/supporting/veta-auto-pull" },
                 { label: "veta-tunnel", slug: "platform/supporting/veta-tunnel" },
                 { label: "veta-host-prune", slug: "platform/supporting/veta-host-prune" },
+                { label: "OpenBao", slug: "platform/supporting/openbao" },
                 { label: "Disk monitor", slug: "platform/supporting/disk-monitor" },
                 { label: "db-migrate", slug: "platform/supporting/db-migrate" },
                 { label: "Redpanda console", slug: "platform/supporting/redpanda-console" },

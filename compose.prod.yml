@@ -5,9 +5,10 @@ x-prod-image: &prod-defaults
   restart: unless-stopped
 
 secrets:
-  # Provisioned on the host as root:1993 mode 0640 (1993 is the unprivileged
-  # deno group in the gateway image). It is deliberately outside .env so
-  # Compose never places the GitHub credential in a container environment.
+  # Mounted as a file, never as a container environment variable. Once
+  # OpenBao holds GITHUB_TICKETING_TOKEN_SECRET, the deploy adds
+  # deploy/openbao/compose.secrets.yml, which sources it from there instead
+  # of the legacy host file (root:1993 mode 0640, 1993 being the deno group).
   github_ticketing_token:
     file: ./secrets/github_ticketing_token
 
@@ -265,7 +266,7 @@ services:
     build: !reset null
     profiles: !reset []
     environment:
-      OAUTH2_SHARED_SECRET: "${OAUTH2_SHARED_SECRET:?OAUTH2_SHARED_SECRET must be set in /opt/stacks/veta/.env — see scripts/homelab-systemd/README.md}"
+      OAUTH2_SHARED_SECRET: "${OAUTH2_SHARED_SECRET:?OAUTH2_SHARED_SECRET must be set in OpenBao secret/veta/platform; run docker compose via scripts/veta-compose.sh}"
       # Per-user demo passwords. Format: alice:secret1,bob:secret2,...
       # Optional. When set, takes precedence over OAUTH2_SHARED_SECRET
       # for the named users. Used for friends-and-family demos.

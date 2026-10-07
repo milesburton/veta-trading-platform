@@ -38,7 +38,7 @@ they cannot trivially compromise GitHub itself or GHCR.
 | Trading limits and risk configuration | High (bypass equals unbounded loss)                | Postgres `risk_config_versions`                                         | `risk-engine`, admin role               |
 | Order history                         | High (regulatory artefact, must be tamper-evident) | Postgres `orders`, journal Kafka topic                                  | `journal`, trader, admin                |
 | User session tokens                   | High (direct authentication bypass)                | Browser cookie, validated by `user-service` per request                 | `user-service`                          |
-| Backend service credentials           | High (DB password, broker keys when wired)         | `.env` files, host environment                                          | The service that owns the credential    |
+| Backend service credentials           | High (DB password, broker keys when wired)         | OpenBao on the server; container environments at runtime                | The service that owns the credential    |
 | Trading-decision pipeline             | High (manipulation is market abuse)                | In-memory state across `feature-engine`, `signal-engine`, `risk-engine` | The pipeline services                   |
 | Audit log integrity                   | High (needed to reconstruct any incident)          | Postgres `audit_events`, journal Kafka topic                            | `journal`, admin (read), no one (write) |
 | Market data                           | Low (synthetic or delayed-public)                  | `market-data` service memory, Redpanda topics                           | All trading services                    |
@@ -177,8 +177,12 @@ is "Deferred" or "Partially".
   can rewrite history. Tamper-evident storage is planned.
 - **Plain HTTP between services.** A network-adjacent attacker on the
   docker bridge or the server LAN can sniff and inject.
-- **Secrets in env vars.** Host compromise yields every credential at
-  once; a vault is planned.
+- **Secrets in container env vars.** Credentials are stored in
+  [OpenBao](../supporting/openbao/), but reach containers as environment
+  variables, and the vault auto-unseals with a key on the same host.
+  Root or Docker access on the server still yields every credential at
+  once. What the vault adds is an audit log of every read, a single
+  revocable read-only deploy credential, and no plaintext secrets file.
 - **No rate limiting on public endpoints.** Anyone who finds the
   gateway can attempt a denial-of-service.
 - **CI/CD trust boundary.** GHCR plus `BOT_PAT` is a single failure
