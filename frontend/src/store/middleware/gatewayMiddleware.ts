@@ -93,6 +93,23 @@ const OrderRejectedSchema = z.object({
     .optional(),
 });
 
+const CandlesSchema = z.array(
+  z.object({
+    time: z.coerce.number(),
+    open: z.coerce.number(),
+    high: z.coerce.number(),
+    low: z.coerce.number(),
+    close: z.coerce.number(),
+    volume: z.coerce.number().optional(),
+  })
+);
+
+export async function parseCandles(res: Response): Promise<OhlcCandle[]> {
+  if (!res.ok) return [];
+  const parsed = CandlesSchema.safeParse(await res.json());
+  return parsed.success ? parsed.data : [];
+}
+
 const ServerErrorSchema = z.object({
   message: z
     .string()
@@ -727,8 +744,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           credentials: "include",
         }),
       ]);
-      const candles1m: OhlcCandle[] = res1m.ok ? await res1m.json() : [];
-      const candles5m: OhlcCandle[] = res5m.ok ? await res5m.json() : [];
+      const [candles1m, candles5m] = await Promise.all([parseCandles(res1m), parseCandles(res5m)]);
       storeAPI.dispatch(
         candlesSeeded({
           symbol,
