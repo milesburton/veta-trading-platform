@@ -61,6 +61,16 @@ export function computeImpactBps(
   return (filledQty / 1_000) * impactPer1000 * spreadMult;
 }
 
+export function computeBookImpactBps(
+  side: "BUY" | "SELL",
+  touchPrice: number | undefined,
+  avgFillPrice: number | undefined
+): number {
+  if (touchPrice === undefined || avgFillPrice === undefined || touchPrice <= 0) return 0;
+  const slippage = side === "BUY" ? avgFillPrice - touchPrice : touchPrice - avgFillPrice;
+  return parseFloat(Math.max(0, (slippage / touchPrice) * 10_000).toFixed(4));
+}
+
 export function computeImpact(
   filledQty: number,
   venue: VenueMIC,

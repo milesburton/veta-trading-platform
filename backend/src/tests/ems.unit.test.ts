@@ -1,5 +1,6 @@
 import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  computeBookImpactBps,
   computeFees,
   computeFill,
   computeImpact,
@@ -72,6 +73,25 @@ Deno.test("[ems/impact] impact is proportional to qty (2× qty ≈ 2× impact bp
   const bps1 = ((p1 - mid) / mid) * 10_000;
   const bps2 = ((p2 - mid) / mid) * 10_000;
   assertAlmostEquals(bps2 / bps1, 2, 0.01);
+});
+
+Deno.test("[ems/impact] book impact is the BUY fill price above the touch in bps", () => {
+  assertEquals(computeBookImpactBps("BUY", 100, 100.05), 5);
+});
+
+Deno.test("[ems/impact] book impact is the SELL fill price below the touch in bps", () => {
+  assertEquals(computeBookImpactBps("SELL", 100, 99.9), 10);
+});
+
+Deno.test("[ems/impact] book impact never goes negative on price improvement", () => {
+  assertEquals(computeBookImpactBps("BUY", 100, 99.95), 0);
+  assertEquals(computeBookImpactBps("SELL", 100, 100.05), 0);
+});
+
+Deno.test("[ems/impact] book impact is zero without a touch or a fill price", () => {
+  assertEquals(computeBookImpactBps("BUY", undefined, 100), 0);
+  assertEquals(computeBookImpactBps("BUY", 100, undefined), 0);
+  assertEquals(computeBookImpactBps("BUY", 0, 100), 0);
 });
 
 // ── Fee calculation ───────────────────────────────────────────────────────────

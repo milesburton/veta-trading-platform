@@ -139,3 +139,37 @@ Deno.test("[matching-engine] equal-price levels fill in snapshot order", () => {
     ["SYN-AAPL-SELL-1", 50],
   ]);
 });
+
+Deno.test("[matching-engine] a fill inside the touch level carries zero impact", () => {
+  const result = matchAgainstSnapshot("I1", "AAPL", "BUY", 50, 101, snapshot(), 0);
+  assertEquals(result.touchPrice, 100.1);
+  assertEquals(result.impactBps, 0);
+});
+
+Deno.test("[matching-engine] a buy that walks the asks reports impact from the depth consumed", () => {
+  const result = matchAgainstSnapshot("I2", "AAPL", "BUY", 300, 101, snapshot(), 0);
+  const expectedAvg = parseFloat(((100.1 * 100 + 100.2 * 200) / 300).toFixed(4));
+  const expectedBps = parseFloat((((expectedAvg - 100.1) / 100.1) * 10_000).toFixed(4));
+  assertEquals(result.impactBps, expectedBps);
+});
+
+Deno.test("[matching-engine] a sell that walks the bids reports positive impact below the touch", () => {
+  const result = matchAgainstSnapshot("I3", "AAPL", "SELL", 300, 99, snapshot(), 0);
+  assertEquals(result.touchPrice, 99.9);
+  const expectedAvg = parseFloat(((99.9 * 100 + 99.8 * 200) / 300).toFixed(4));
+  const expectedBps = parseFloat((((99.9 - expectedAvg) / 99.9) * 10_000).toFixed(4));
+  assertEquals(result.impactBps, expectedBps);
+});
+
+Deno.test("[matching-engine] larger orders on the same book carry more impact", () => {
+  const small = matchAgainstSnapshot("I4", "AAPL", "BUY", 120, 101, snapshot(), 0);
+  const large = matchAgainstSnapshot("I5", "AAPL", "BUY", 300, 101, snapshot(), 0);
+  assertEquals(small.impactBps < large.impactBps, true);
+});
+
+Deno.test("[matching-engine] an unfilled order or an empty opposite side carries zero impact", () => {
+  assertEquals(matchAgainstSnapshot("I6", "AAPL", "BUY", 50, 99, snapshot(), 0).impactBps, 0);
+  const noAsks = matchAgainstSnapshot("I7", "AAPL", "BUY", 50, 101, snapshot({ asks: [] }), 0);
+  assertEquals(noAsks.touchPrice, undefined);
+  assertEquals(noAsks.impactBps, 0);
+});
