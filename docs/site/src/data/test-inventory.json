@@ -159,10 +159,10 @@
   "frontend": {
     "unit": {
       "files": 189,
-      "cases": 2237
+      "cases": 2239
     },
     "playwright": {
-      "files": 19,
+      "files": 20,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
@@ -182,7 +182,8 @@
         "session-replay.spec.ts",
         "ui.spec.ts",
         "visual-anomalies.spec.ts",
-        "workflows.spec.ts"
+        "workflows.spec.ts",
+        "zz-candle-repro.spec.ts"
       ]
     },
     "electron": {

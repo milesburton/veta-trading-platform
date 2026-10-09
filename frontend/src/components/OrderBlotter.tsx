@@ -16,6 +16,7 @@ import { selectOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import type { ChildOrder, OrderRecord } from "@veta/frontend/types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
+import { fillPct } from "@veta/frontend/utils/fillPct.ts";
 import { formatTime } from "@veta/frontend/utils/format.ts";
 import { applyCfRules } from "@veta/frontend/utils/gridFilter.ts";
 import { ORDER_STATUS_STYLES } from "@veta/frontend/utils/orderStatusStyles.ts";
@@ -55,6 +56,13 @@ const BLOTTER_COLS: ColDef[] = [
     label: "Limit/Fill",
     type: "number",
     defaultWidth: 88,
+    align: "right",
+  },
+  {
+    key: "filled",
+    label: "Progress",
+    type: "number",
+    defaultWidth: 96,
     align: "right",
   },
   {
@@ -105,6 +113,7 @@ const BLOTTER_HEADER_TOOLTIPS: Partial<Record<ColDef["key"], string>> = {
   side: "Order direction: BUY or SELL",
   quantity: "Requested order quantity",
   limitPrice: "Limit and average fill price",
+  filled: "Filled quantity as a share of the order, from the journal",
   strategy: "Execution strategy and venue",
   status: "Current order lifecycle status",
   desk: "Desk responsible for the order",
@@ -661,6 +670,39 @@ export function OrderBlotter() {
                                   : formatPrice(order.asset, order.limitPrice)}
                               </td>
                             );
+                          case "filled": {
+                            const pct = Math.round(fillPct(order) * 100);
+                            return (
+                              <td
+                                key={col.key}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 ${cellCls} ${stickyClass}`}
+                                title={`${order.filled.toLocaleString()} of ${order.quantity.toLocaleString()} filled`}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <div
+                                    role="progressbar"
+                                    aria-valuenow={pct}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-label="Fill progress"
+                                    className="h-1.5 flex-1 rounded bg-panel overflow-hidden"
+                                  >
+                                    <div
+                                      className="h-full bg-emerald-500"
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    data-testid="order-fill-pct"
+                                    className="w-8 text-right tabular-nums text-secondary"
+                                  >
+                                    {pct}%
+                                  </span>
+                                </div>
+                              </td>
+                            );
+                          }
                           case "strategy":
                             return (
                               <td

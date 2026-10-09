@@ -133,6 +133,20 @@ describe("OrderBlotter – single order", () => {
     expect(screen.getByText("MSFT")).toBeInTheDocument();
   });
 
+  it("shows fill progress from filled over quantity", () => {
+    renderBlotter([makeOrder({ quantity: 200, filled: 50 })]);
+    expect(screen.getByTestId("order-fill-pct")).toHaveTextContent("25%");
+    expect(screen.getByRole("progressbar", { name: "Fill progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "25"
+    );
+  });
+
+  it("caps fill progress at 100%", () => {
+    renderBlotter([makeOrder({ quantity: 100, filled: 120 })]);
+    expect(screen.getByTestId("order-fill-pct")).toHaveTextContent("100%");
+  });
+
   it("renders the strategy", () => {
     renderBlotter([makeOrder({ strategy: "TWAP" })]);
     expect(screen.getByText("TWAP")).toBeInTheDocument();

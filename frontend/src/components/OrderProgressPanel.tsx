@@ -2,6 +2,7 @@ import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
 import type { OrderRecord } from "@veta/frontend/types.ts";
+import { fillPct } from "@veta/frontend/utils/fillPct.ts";
 import {
   Bar,
   BarChart,
@@ -27,11 +28,6 @@ function strategyColour(strategy: string): string {
     default:
       return COLOR.NEUTRAL;
   }
-}
-
-function fillPct(order: OrderRecord): number {
-  if (order.quantity === 0) return 0;
-  return Math.min(1, order.filled / order.quantity);
 }
 
 interface PieEntry {
