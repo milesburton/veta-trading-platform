@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertThrows } from "jsr:@std/assert@0.217";
-import { DecisionEngine } from "../synthetic-trader/decision-engine.ts";
+import { FX_ASSETS } from "../market-sim/fx-assets.ts";
+import { DecisionEngine, DESK_CONFIG } from "../synthetic-trader/decision-engine.ts";
 import { PositionTracker } from "../synthetic-trader/position-tracker.ts";
 
 function sequenceRandom(values: number[]): () => number {
@@ -132,4 +133,23 @@ Deno.test("[synthetic-trader-decision] side selection is weighted roughly 50/50 
   assert(buys > 0 && sells > 0);
   const ratio = buys / (buys + sells);
   assert(ratio > 0.3 && ratio < 0.7, `expected roughly balanced BUY/SELL, got ratio=${ratio}`);
+});
+
+Deno.test("[synthetic-trader-decision] trades a priced symbol when the least concentrated one has no price", () => {
+  const engine = new DecisionEngine({
+    archetypeId: "equity-high-touch",
+    userId: "u1",
+    symbols: ["AAPL", "UNPRICED"],
+    random: sequenceRandom([0.1, 0.1, 0.1, 0.5]),
+  });
+  const tracker = new PositionTracker();
+  tracker.recordAck({ clientOrderId: "c1", asset: "AAPL", side: "BUY", quantity: 100, limitPrice: 200 });
+  const decision = engine.decide(tracker, (symbol) => (symbol === "AAPL" ? 200 : undefined));
+  assertEquals(decision.kind, "order");
+  if (decision.kind === "order") assertEquals(decision.order.asset, "AAPL");
+});
+
+Deno.test("[synthetic-trader-decision] every FX desk symbol is in the market-sim FX universe", () => {
+  const simulated = new Set(FX_ASSETS.map((a) => a.symbol));
+  assertEquals(DESK_CONFIG.fx.symbols.filter((symbol) => !simulated.has(symbol)), []);
 });

@@ -14,12 +14,12 @@ const EQUITY_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META",
 // commodity-assets.ts, shared/curatedBonds.ts) so orders look like the
 // instruments the platform actually simulates prices for, without a
 // cross-service import of those service-specific files.
-const DESK_CONFIG: Record<string, DeskConfig> = {
+export const DESK_CONFIG: Record<string, DeskConfig> = {
   equity: { desk: "equity", instrumentType: "equity", symbols: EQUITY_SYMBOLS },
   fx: {
     desk: "fx",
     instrumentType: "fx",
-    symbols: ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "EUR/GBP", "EUR/JPY", "NZD/USD"],
+    symbols: ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "EUR/GBP", "NZD/USD"],
   },
   fi: {
     desk: "fi",
@@ -135,16 +135,16 @@ export class DecisionEngine {
     }
 
     const side = this.#pickSide();
-    const candidates = this.#symbols.filter((symbol) => !tracker.hasOpenOpposite(symbol, side));
-    if (candidates.length === 0) {
+    const unblocked = this.#symbols.filter((symbol) => !tracker.hasOpenOpposite(symbol, side));
+    if (unblocked.length === 0) {
       return { kind: "skip", skippedReason: "no symbol without an open opposite-side order" };
     }
-    const symbol = tracker.pickLeastConcentrated(candidates);
-
-    const mid = midPriceFor(symbol);
-    if (mid === undefined || mid <= 0) {
-      return { kind: "skip", skippedReason: `no live price for ${symbol}` };
+    const priced = unblocked.filter((symbol) => (midPriceFor(symbol) ?? 0) > 0);
+    if (priced.length === 0) {
+      return { kind: "skip", skippedReason: `no live price for ${unblocked.join(", ")}` };
     }
+    const symbol = tracker.pickLeastConcentrated(priced);
+    const mid = midPriceFor(symbol) as number;
 
     const strategy = this.#pickStrategy();
     const quantity = this.#pickQuantity();
