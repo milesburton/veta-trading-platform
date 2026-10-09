@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.82.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.81.0...veta-trading-platform-v1.82.0) (2026-10-09)
+
+
+### Features
+
+* **frontend:** show fill progress in the Order Blotter ([#761](https://github.com/milesburton/veta-trading-platform/issues/761)) ([78ed707](https://github.com/milesburton/veta-trading-platform/commit/78ed707d54d77f82f982d6b04185fae09515de7f))
+
+
+### Bug Fixes
+
+* **candles:** return numeric candle values so live volume adds up ([#763](https://github.com/milesburton/veta-trading-platform/issues/763)) ([6307a43](https://github.com/milesburton/veta-trading-platform/commit/6307a43bc2ad7471d3984c6cd809fa4b9e1be460))
+* **journal:** return numeric quantity and limit price in grid rows ([#759](https://github.com/milesburton/veta-trading-platform/issues/759)) ([0cac863](https://github.com/milesburton/veta-trading-platform/commit/0cac86390335436e1d433714a0fab684253e5dfc)), closes [#757](https://github.com/milesburton/veta-trading-platform/issues/757)
+* **synthetic-trader:** stop FX desks stalling on an unpriced pair ([#760](https://github.com/milesburton/veta-trading-platform/issues/760)) ([dd1e168](https://github.com/milesburton/veta-trading-platform/commit/dd1e168a64be0ad6c7ca9182ca8099a99bdd38b7)), closes [#758](https://github.com/milesburton/veta-trading-platform/issues/758)
+
 ## [1.81.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.80.0...veta-trading-platform-v1.81.0) (2026-10-09)
 
 
