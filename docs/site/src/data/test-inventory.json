@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 105,
-      "cases": 1250,
+      "cases": 1259,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -26,7 +26,7 @@
         "signal-engine.test.ts": 7,
         "weight-store.unit.test.ts": 3,
         "algo.unit.test.ts": 44,
-        "ems.unit.test.ts": 22,
+        "ems.unit.test.ts": 26,
         "zod-helpers.unit.test.ts": 9,
         "orders-schema.unit.test.ts": 21,
         "user-schema.unit.test.ts": 14,
@@ -92,7 +92,7 @@
         "order-book.unit.test.ts": 10,
         "algo-idle-exit.unit.test.ts": 5,
         "algo-fill-progress.unit.test.ts": 13,
-        "matching-engine.unit.test.ts": 9,
+        "matching-engine.unit.test.ts": 14,
         "venue-router.unit.test.ts": 8,
         "fix-counterparties.unit.test.ts": 7,
         "fix-dictionary.unit.test.ts": 5,

@@ -120,11 +120,13 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
   let filledQty: number;
   let remainingQty: number;
   let avgFillPrice: number;
+  let impactBps: number;
 
   if (route) {
     filledQty = route.match.filledQty;
     remainingQty = route.match.remainingQty;
     avgFillPrice = route.match.avgFillPrice ?? midPrice;
+    impactBps = route.match.impactBps;
   } else {
     const tickVolume = tick.volumes[child.asset] ?? 1_000;
     const fallback = computeFill(
@@ -135,14 +137,13 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     );
     filledQty = fallback.filledQty;
     remainingQty = fallback.remainingQty;
-    const impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
+    impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
     const impactFactor = child.side === "BUY"
       ? 1 + impactBps / 10_000
       : 1 - impactBps / 10_000;
     avgFillPrice = child.effectivePrice ?? midPrice * impactFactor;
   }
   avgFillPrice = parseFloat(avgFillPrice.toFixed(4));
-  const impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
 
   const counterparty = pickCounterparty();
   const liquidityFlag = pickLiquidityFlag(venue);
