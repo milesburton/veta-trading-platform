@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 106,
-      "cases": 1261,
+      "cases": 1263,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -77,7 +77,7 @@
         "small-gap-fills.unit.test.ts": 10,
         "demo-day-attribution.unit.test.ts": 3,
         "market-sim-client.unit.test.ts": 17,
-        "synthetic-trader-decision.unit.test.ts": 8,
+        "synthetic-trader-decision.unit.test.ts": 10,
         "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-position-tracker.unit.test.ts": 7,
