@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setUser } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
-import { gatewayMiddleware } from "@veta/frontend/store/middleware/gatewayMiddleware";
+import { gatewayMiddleware, parseCandles } from "@veta/frontend/store/middleware/gatewayMiddleware";
 import { newsApi } from "@veta/frontend/store/newsApi";
 import { setSelectedAsset } from "@veta/frontend/store/uiSlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -595,5 +595,32 @@ describe("gatewayMiddleware – browser recovery signals", () => {
     await vi.advanceTimersByTimeAsync(500);
 
     expect(FakeWebSocket.instances.length).toBe(countAfterOpen);
+  });
+});
+
+describe("parseCandles", () => {
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+  it("coerces numeric strings so tick volume adds rather than concatenates", async () => {
+    const [candle] = await parseCandles(
+      json([
+        { time: 1, open: "190.1", high: "190.2", low: "190.0", close: "190.1", volume: "23012.5" },
+      ])
+    );
+    expect(candle).toEqual({
+      time: 1,
+      open: 190.1,
+      high: 190.2,
+      low: 190.0,
+      close: 190.1,
+      volume: 23012.5,
+    });
+    expect((candle.volume ?? 0) + 10).toBe(23022.5);
+  });
+
+  it("returns no candles for an error response or a malformed body", async () => {
+    expect(await parseCandles(json([], 500))).toEqual([]);
+    expect(await parseCandles(json({ error: "nope" }))).toEqual([]);
   });
 });

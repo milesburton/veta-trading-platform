@@ -86,3 +86,14 @@ export async function ingestTick(msg: {
   }
   maybePruneCandles(ts).catch(() => {});
 }
+
+export function candleFromRow([time, open, high, low, close, volume]: readonly unknown[]) {
+  return {
+    time: time instanceof Date ? time.getTime() : Number(time),
+    open: Number(open),
+    high: Number(high),
+    low: Number(low),
+    close: Number(close),
+    volume: Number(volume ?? 0),
+  };
+}

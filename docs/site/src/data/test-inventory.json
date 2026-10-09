@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 105,
-      "cases": 1259,
+      "files": 106,
+      "cases": 1261,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -92,6 +92,7 @@
         "order-book.unit.test.ts": 10,
         "algo-idle-exit.unit.test.ts": 5,
         "algo-fill-progress.unit.test.ts": 13,
+        "journal-candles.unit.test.ts": 2,
         "matching-engine.unit.test.ts": 14,
         "venue-router.unit.test.ts": 8,
         "fix-counterparties.unit.test.ts": 7,
@@ -159,10 +160,10 @@
   "frontend": {
     "unit": {
       "files": 189,
-      "cases": 2237
+      "cases": 2239
     },
     "playwright": {
-      "files": 19,
+      "files": 20,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
@@ -182,7 +183,8 @@
         "session-replay.spec.ts",
         "ui.spec.ts",
         "visual-anomalies.spec.ts",
-        "workflows.spec.ts"
+        "workflows.spec.ts",
+        "zz-candle-repro.spec.ts"
       ]
     },
     "electron": {

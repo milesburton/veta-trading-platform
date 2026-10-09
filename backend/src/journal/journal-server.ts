@@ -6,7 +6,7 @@ import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { GridQueryRequest, GridQueryResponse } from "@veta/types/grid-query";
-import { ingestTick, MAX_CANDLES } from "./candles.ts";
+import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
 import { decodeOrderId, summariseFills } from "./order-progress.ts";
@@ -459,15 +459,7 @@ async function handle(req: Request): Promise<Response> {
          ORDER BY time DESC LIMIT $3`,
         [instrument, interval, limit]
       );
-      const candles = rows.reverse().map(([time, open, high, low, close, volume]) => ({
-        time: time instanceof Date ? time.getTime() : time,
-        open,
-        high,
-        low,
-        close,
-        volume,
-      }));
-      return json(candles);
+      return json(rows.reverse().map(candleFromRow));
     } finally {
       client.release();
     }
