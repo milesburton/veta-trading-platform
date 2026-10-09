@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 106,
-      "cases": 1263,
+      "files": 107,
+      "cases": 1266,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -93,6 +93,7 @@
         "algo-idle-exit.unit.test.ts": 5,
         "algo-fill-progress.unit.test.ts": 13,
         "journal-candles.unit.test.ts": 2,
+        "journal-order-reconstruction.unit.test.ts": 3,
         "matching-engine.unit.test.ts": 14,
         "venue-router.unit.test.ts": 8,
         "fix-counterparties.unit.test.ts": 7,
@@ -160,7 +161,7 @@
   "frontend": {
     "unit": {
       "files": 189,
-      "cases": 2239
+      "cases": 2241
     },
     "playwright": {
       "files": 19,

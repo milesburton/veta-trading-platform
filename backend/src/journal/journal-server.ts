@@ -10,6 +10,7 @@ import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
 import { decodeOrderId, summariseFills } from "./order-progress.ts";
+import { reconstructOrdersFromRows } from "./order-reconstruction.ts";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;
@@ -658,63 +659,6 @@ async function _reconstructOrders(lookbackMs: number): Promise<Record<string, un
       [since]
     );
 
-    const orderMap = new Map<string, Record<string, unknown>>();
-    for (const [
-      orderId,
-      eventType,
-      ts,
-      instrument,
-      side,
-      quantity,
-      limitPrice,
-      algo,
-      userId,
-      algoParams,
-      raw,
-    ] of structureRows as unknown[][]) {
-      const tsMs = ts instanceof Date ? ts.getTime() : Number(ts);
-      if (
-        eventType === "orders.submitted" ||
-        (eventType === "orders.rejected" && !orderMap.has(orderId as string))
-      ) {
-        const rawObj = (raw ?? {}) as Record<string, unknown>;
-        orderMap.set(orderId as string, {
-          id: (rawObj.clientOrderId as string | undefined) ?? orderId,
-          submittedAt: tsMs,
-          asset: instrument ?? rawObj.asset ?? "",
-          side: side ?? rawObj.side ?? "BUY",
-          quantity: quantity ?? rawObj.quantity ?? rawObj.requestedQty ?? 0,
-          limitPrice: limitPrice ?? rawObj.limitPrice ?? 0,
-          expiresAt:
-            eventType === "orders.submitted"
-              ? rawObj.expiresAt !== undefined
-                ? tsMs + Number(rawObj.expiresAt) * 1_000
-                : tsMs + 86_400_000
-              : tsMs + 86_400_000,
-          strategy: algo ?? rawObj.strategy ?? "LIMIT",
-          status: eventType === "orders.rejected" ? "rejected" : "pending",
-          rejectReason:
-            eventType === "orders.rejected" ? (rawObj.reason ?? rawObj.message ?? null) : undefined,
-          filled: 0,
-          algoParams: algoParams ?? { strategy: algo ?? rawObj.strategy ?? "LIMIT" },
-          userId: userId ?? rawObj.userId ?? null,
-          children: [],
-        });
-      } else if (orderMap.has(orderId as string)) {
-        const order = orderMap.get(orderId as string);
-        if (!order) continue;
-        if (eventType === "orders.routed") {
-          if (order.status === "pending") order.status = "working";
-        } else if (eventType === "orders.expired") {
-          order.status = "expired";
-        } else if (eventType === "orders.rejected") {
-          order.status = "rejected";
-          const rawObj = (raw ?? {}) as Record<string, unknown>;
-          if (rawObj.reason) order.rejectReason = rawObj.reason;
-        }
-      }
-    }
-
     const { rows: activityRows } = await client.queryArray(
       `SELECT order_id, event_type, ts, side, quantity, limit_price, filled_qty, child_id, fill_price
        FROM journal.events
@@ -724,53 +668,7 @@ async function _reconstructOrders(lookbackMs: number): Promise<Record<string, un
       [since]
     );
 
-    for (const [
-      orderId,
-      eventType,
-      ,
-      side,
-      quantity,
-      limitPrice,
-      filledQty,
-      childId,
-      fillPrice,
-    ] of activityRows as unknown[][]) {
-      const order = orderMap.get(orderId as string);
-      if (!order) continue;
-      if (eventType === "orders.filled") {
-        order.filled = Number(order.filled ?? 0) + Number(filledQty ?? 0);
-        const qty = Number(order.quantity ?? 0);
-        order.status = qty > 0 && Number(order.filled) >= qty ? "filled" : "working";
-        const childIdStr = childId as string | null;
-        if (childIdStr) {
-          const child = (order.children as Array<Record<string, unknown>>).find(
-            (c) => c.id === childIdStr
-          );
-          if (child) {
-            child.filledQty = Number(child.filledQty ?? 0) + Number(filledQty ?? 0);
-            child.filled = Number(child.filledQty);
-            child.status = "filled";
-            if (fillPrice !== null && fillPrice !== undefined) {
-              child.avgFillPrice = Number(fillPrice);
-            }
-          }
-        }
-      } else if (eventType === "orders.child") {
-        (order.children as unknown[]).push({
-          id: childId ?? "",
-          side: side ?? order.side,
-          quantity: quantity ?? 0,
-          limitPrice: limitPrice ?? 0,
-          filledQty: 0,
-          avgFillPrice: 0,
-          commissionUSD: 0,
-          status: "pending",
-        });
-        if (order.status === "pending") order.status = "working";
-      }
-    }
-
-    return [...orderMap.values()].sort((a, b) => Number(b.submittedAt) - Number(a.submittedAt));
+    return reconstructOrdersFromRows(structureRows, activityRows);
   } finally {
     client.release();
   }
