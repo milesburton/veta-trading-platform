@@ -162,7 +162,7 @@
       "cases": 2239
     },
     "playwright": {
-      "files": 20,
+      "files": 19,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
@@ -182,8 +182,7 @@
         "session-replay.spec.ts",
         "ui.spec.ts",
         "visual-anomalies.spec.ts",
-        "workflows.spec.ts",
-        "zz-candle-repro.spec.ts"
+        "workflows.spec.ts"
       ]
     },
     "electron": {
