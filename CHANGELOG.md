@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.81.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.80.0...veta-trading-platform-v1.81.0) (2026-10-09)
+
+
+### Features
+
+* **ems:** measure market impact from the book depth a child consumes ([#755](https://github.com/milesburton/veta-trading-platform/issues/755)) ([9ba4a55](https://github.com/milesburton/veta-trading-platform/commit/9ba4a55fbc2c351652d800c5258a6ad470831f3f))
+
 ## [1.80.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.79.0...veta-trading-platform-v1.80.0) (2026-10-07)
 
 
