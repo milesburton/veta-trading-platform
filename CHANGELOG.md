@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.83.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.2...veta-trading-platform-v1.83.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* **devcontainer:** harden local trading startup ([e2460c5](https://github.com/milesburton/veta-trading-platform/commit/e2460c5b62da12a9df34a85938e2455003d2845a))
+
 ## [1.83.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.1...veta-trading-platform-v1.83.2) (2026-10-10)
 
 
