@@ -70,6 +70,10 @@ Generating prices for closed markets costs CPU in the simulator and in every dow
 
 Trading volume is not flat across a session, it is higher at the open and close and lower around midday. `intradayVolumeFactor` models this with `cos²(π·x)`, where `x` is the fraction of the trading day elapsed: the curve peaks at 1.0 at the open and close and troughs at 0.3 at midday, giving a believable volume shape without a lookup table.
 
+### Overnight sessions
+
+CME Globex (commodities) and spot FX open in the evening for the next day's trading: Globex at 17:00 America/Chicago, FX at 22:00 UTC. Their calendars set `tradeDateRollsAtOpen`, so weekends and holidays are judged on the trade date rather than the wall-clock date. Globex is therefore closed from Friday's 16:00 CT break until Sunday's 17:00 CT open, and FX from Friday 22:00 UTC until Sunday 22:00 UTC.
+
 ## Instrument metadata conventions
 
 Each asset class module (`sp500-assets.ts`, `fx-assets.ts`, `commodity-assets.ts`, `bond-assets.ts`) defines the same `AssetDef` shape but with class-specific conventions for what the fields mean. For curated equities, `RawMeta.lotSize` is optional: most names auto-derive their round lot size from `initialPrice` (ETFs and high-price stocks trade in lots of 1, mid-price in lots of 10, everything else in lots of 100), and the curated entry only needs to set `lotSize` explicitly when a symbol should deviate from that derivation.

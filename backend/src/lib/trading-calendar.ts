@@ -127,6 +127,7 @@ export interface TradingCalendar {
    * where the session ends sooner) and holidays (the whole day is closed).
    */
   dailyBreaks?: { startMinute: number; endMinute: number }[];
+  tradeDateRollsAtOpen?: boolean;
 }
 
 export interface SessionScheduleEntry {
@@ -246,9 +247,16 @@ function isWeekendInTimezone(date: Date, timezone: string): boolean {
   return weekday === "Sat" || weekday === "Sun";
 }
 
+function tradeDateInstant(calendar: TradingCalendar, now: Date): Date {
+  if (!calendar.tradeDateRollsAtOpen) return now;
+  const minutesToMidnight = 24 * 60 - (calendar.openHour * 60 + calendar.openMinute);
+  return new Date(now.getTime() + minutesToMidnight * 60_000);
+}
+
 export function resolveCurrentSession(calendar: TradingCalendar, now: Date): SessionState {
-  const dateStr = dateStringInTimezone(now, calendar.timezone);
-  const weekend = isWeekendInTimezone(now, calendar.timezone);
+  const tradeDate = tradeDateInstant(calendar, now);
+  const dateStr = dateStringInTimezone(tradeDate, calendar.timezone);
+  const weekend = isWeekendInTimezone(tradeDate, calendar.timezone);
   const holiday = calendar.holidays.includes(dateStr);
   const marketMinute = minutesSinceOpenInTimezone(
     now,
