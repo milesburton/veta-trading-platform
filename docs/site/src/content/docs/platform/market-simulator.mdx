@@ -50,6 +50,16 @@ At startup, `warmUpPrices` keeps the same flag set until seeding from journal ca
 
 `fanOutTick` (in `tick-diff.ts`) sends each tick only to sockets whose `bufferedAmount` is within `MAX_CLIENT_BUFFERED_BYTES` (4 MiB). Unsent frames are buffered natively by the runtime, outside the V8 heap, so a consumer that stops reading would otherwise grow memory until the container is killed. A socket over the limit skips ticks and is marked lagging. Once its buffer drains, it receives a full `marketData` snapshot in place of the next diff, which replaces its state rather than merging into a stale one.
 
+## Real and simulated hours
+
+By default the simulator follows real market hours: it only generates prices for an asset class while that class's calendar allows order entry, so nothing ticks at weekends or overnight for a closed market. Simulated hours keep an asset class ticking outside its session, for demos and testing.
+
+- **Startup default**: `MARKET_SIM_ALLOW_OUT_OF_HOURS`, off unless set to `true`, `1`, `yes` or `on`.
+- **Runtime toggle**: an admin changes it per asset class from Mission Control (`PUT /admin/market-hours`). The choice is saved in Postgres and wins over the startup default on the next restart.
+- **Header badge**: shows whether each asset class is on real or simulated hours.
+
+Generating prices for closed markets costs CPU in the simulator and in every downstream consumer, so leave simulated hours off unless something needs them.
+
 ## Session timing
 
 <CodeBlock
