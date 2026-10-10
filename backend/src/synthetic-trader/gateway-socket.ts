@@ -39,6 +39,7 @@ export class GatewaySocket {
   #handlers: GatewaySocketHandlers;
   #socket: WebSocket | undefined;
   #ready = false;
+  #token: string | undefined;
   #reconnectDelayMs = 2000;
   #closedByUser = false;
 
@@ -56,6 +57,7 @@ export class GatewaySocket {
       logger.info("synthetic-trader: gateway socket connected");
       this.#ready = true;
       this.#reconnectDelayMs = 2000;
+      if (this.#token) this.#sendAuthenticate(this.#token);
     };
 
     socket.onmessage = (event) => {
@@ -86,6 +88,11 @@ export class GatewaySocket {
   }
 
   authenticate(token: string): void {
+    this.#token = token;
+    if (this.#ready) this.#sendAuthenticate(token);
+  }
+
+  #sendAuthenticate(token: string): void {
     this.#send({ type: "authenticate", payload: { token } });
   }
 
