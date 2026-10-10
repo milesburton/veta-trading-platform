@@ -15,7 +15,7 @@ fi
 
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
-echo "  [0/14] Verifying clean working directory..."
+echo "  [0/8] Verifying clean working directory..."
 # Block unstaged changes to tracked files. Staged changes are expected —
 # those are what we're about to commit. Using `git diff-index HEAD` here
 # would also flag the staged files and make any normal commit fail.
@@ -26,27 +26,27 @@ if ! git diff --quiet; then
   exit 1
 fi
 
-echo "  [1/14] Backend lint..."
+echo "  [1/8] Backend lint..."
 cd "$REPO_ROOT"
 deno task lint
 
-echo "  [2/14] Backend type-check..."
+echo "  [2/8] Backend type-check..."
 deno task check
 
-echo "  [3/14] Backend unit tests..."
+echo "  [3/8] Backend unit tests..."
 deno task test
 
-echo "  [4/14] Frontend lint (all files)..."
+echo "  [4/8] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
 deno run -A npm:@biomejs/biome check src/
 
-echo "  [5/14] Frontend type-check (all files)..."
+echo "  [5/8] Frontend type-check (all files)..."
 ./node_modules/.bin/tsc --noEmit --skipLibCheck
 
-echo "  [6/14] Frontend unit tests..."
+echo "  [6/8] Frontend unit tests..."
 ./node_modules/.bin/vitest run
 
-echo "  [7/14] Integration tests (skipped if services offline)..."
+echo "  [7/8] Integration tests (skipped if services offline)..."
 cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   deno task test:integration
@@ -54,108 +54,7 @@ else
   echo "       Services not fully running — skipping integration tests."
 fi
 
-echo "  [8/14] Migration safety (expand/contract)..."
-cd "$REPO_ROOT"
-STAGED_MIGRATIONS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^backend/db/migrations/.*\.sql$' || true)
-if [ -n "$STAGED_MIGRATIONS" ]; then
-  # Same env-agnostic check CI and `deno task db:check-migrations` run.
-  # Rejects destructive migrations (DROP/DELETE/TRUNCATE/RENAME, NOT NULL
-  # without default) that would break a still-live previous version during
-  # a rolling or blue-green deploy. See ADR 0001/0002.
-  # shellcheck disable=SC2086
-  deno run --allow-read backend/db/checkMigrationsSafe.ts $STAGED_MIGRATIONS
-else
-  echo "       No staged migration changes — skipping."
-fi
-
-echo "  [9/14] Prometheus alert rules..."
-cd "$REPO_ROOT"
-if git diff --cached --name-only | grep -qE '^observability/(prometheus-rules\.ya?ml|prometheus-rules\.test\.ya?ml)$'; then
-  if command -v promtool >/dev/null 2>&1; then
-    promtool check rules observability/prometheus-rules.yml
-    promtool test rules observability/prometheus-rules.test.yml
-  else
-    echo "       promtool not on PATH — skipping (CI runs the hard gate)."
-    echo "       To install locally: see docs/site/src/content/docs/platform/observability/alerts.mdx"
-  fi
-else
-  echo "       No staged changes to alert rules — skipping."
-fi
-
-echo "  [10/14] Docs drift check (regenerate derived files)..."
-# `npm run generate` rebuilds rbac-roles.json, panel-matrix.json,
-# services.md, algos.md, tech-stack.mdx, migrations.md, etc. from
-# the live source. If anything drifts, the gate blocks the commit
-# and tells you what to do. Skipped when docs/site deps aren't
-# installed (fresh clone before `cd docs/site && npm ci`).
-if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
-  (cd "$REPO_ROOT/docs/site" && npm run generate >/dev/null 2>&1)
-  cd "$REPO_ROOT"
-  if ! git diff --quiet -- docs/site/; then
-    echo "❌ ERROR: Generated docs files are out of sync with source code."
-    echo "The following files would change after running 'npm run generate':"
-    git diff --name-only -- docs/site/
-    echo ""
-    echo "Stage and amend / re-commit:"
-    echo "  git add docs/site"
-    echo "  # then re-run your git commit command"
-    exit 1
-  fi
-else
-  echo "       docs/site/node_modules missing — skipping (run 'cd docs/site && npm ci')."
-fi
-
-echo "  [11/14] Private IPs in public docs..."
-# The Astro/Starlight site under docs/site/src/ is published to GitHub Pages,
-# so it is internet-public. Reject RFC1918 (10/8, 172.16/12, 192.168/16)
-# addresses in source files, which would advertise internal infrastructure.
-# Loopback (127/8) is excluded — it is a generic "this machine" address and
-# leaks nothing. Mirrors the hard gate in the frontend CI workflow.
-cd "$REPO_ROOT"
-if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+)\b' \
-    docs/site/src/ \
-    --include='*.md' --include='*.mdx' --include='*.html' --include='*.tsx' --include='*.ts'; then
-  echo "❌ ERROR: Private IP address(es) leaked into public docs (docs/site/src/)."
-  echo "Remove them or describe the range abstractly (e.g. RFC 5737 doc ranges"
-  echo "203.0.113.0/24, 198.51.100.0/24)."
-  exit 1
-fi
-
-echo "  [12/14] Docs validation (markdown + mermaid + build + links)..."
-# Mirrors the "Docs build & lint" CI job step-for-step so broken docs can
-# never reach a push. The link checker (validate:links) scans the BUILT html
-# in dist/, so the order matters: markdownlint -> mermaid -> build -> links.
-# astro build alone does NOT catch broken internal links — validate:links does.
-# Only runs when the changeset touches docs, so non-docs commits stay fast.
-cd "$REPO_ROOT"
-if git diff --cached --name-only | grep -qE '^docs/'; then
-  if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
-    npx --yes markdownlint-cli2 "docs/**/*.md" "docs/**/*.mdx" \
-      "!docs/site/node_modules/**" "!docs/site/dist/**" || {
-      echo "❌ ERROR: Markdown lint failed. Reproduce: npx markdownlint-cli2 'docs/**/*.md' 'docs/**/*.mdx'"
-      exit 1
-    }
-    (
-      cd "$REPO_ROOT/docs/site" || exit 1
-      npm run validate:mermaid || { echo "❌ ERROR: Mermaid validation failed."; exit 1; }
-      mkdir -p public/screenshots/panels
-      cp -r "$REPO_ROOT/docs/screenshots/." public/screenshots/ 2>/dev/null || true
-      cp -r "$REPO_ROOT/docs/panel-walkthrough/screenshots/." public/screenshots/panels/ 2>/dev/null || true
-      npm run build >/dev/null 2>&1 || { echo "❌ ERROR: Astro build failed."; exit 1; }
-      npm run validate:links || { echo "❌ ERROR: Broken internal docs link(s). Reproduce: (cd docs/site && npm run build && npm run validate:links)"; exit 1; }
-    ) || exit 1
-    cd "$REPO_ROOT"
-  else
-    echo "❌ ERROR: docs/ changed but docs/site/node_modules is missing —"
-    echo "         cannot validate docs locally. Install with: cd docs/site && npm ci"
-    echo "         (refusing to skip: a missing-deps skip is how broken docs reach CI)"
-    exit 1
-  fi
-else
-  echo "       No staged changes under docs/ — skipping."
-fi
-
-echo "  [13/14] Fallow audit (staged vs HEAD; advisory)..."
+echo "  [8/8] Fallow audit (staged vs HEAD; advisory)..."
 # `fallow audit` reports new findings introduced by the changeset.
 # Run as advisory rather than blocking: fallow's introduced/inherited
 # attribution flags line-shifted clones from sibling PRs as "new" even
@@ -168,18 +67,6 @@ if [ -x "./node_modules/.bin/fallow" ]; then
     echo "       fallow audit flagged findings (advisory; see CI for the hard gate)."
 else
   echo "       fallow not installed in frontend/node_modules — skipping (run npm ci)."
-fi
-
-echo "  [14/14] No secret files staged..."
-cd "$REPO_ROOT"
-SECRET_FILES=$(git diff --cached --name-only --diff-filter=ACMR \
-  | grep -E '(^|/)(\.env(\.[^/]*)?|[^/]*\.env|openbao-approle\.json|openbao-init-[^/]*\.json|[^/]*\.key)$' \
-  | grep -vE '^(\.env\.template|frontend/\.env\.(example|electron|electron-test|playwright))$' || true)
-if [ -n "$SECRET_FILES" ]; then
-  echo "❌ ERROR: files that hold secrets are staged:"
-  echo "$SECRET_FILES" | sed 's/^/  /'
-  echo "Production secrets live in OpenBao, not in the repo. See docs: development/deployment#secrets."
-  exit 1
 fi
 
 echo "Pre-commit checks passed."

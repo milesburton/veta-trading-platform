@@ -66,13 +66,6 @@ export const FI_TRADER: AuthUser = {
   avatar_emoji: "CD",
 };
 
-export const DERIVATIVES_TRADER: AuthUser = {
-  id: "trader-1",
-  name: "Alice Chen",
-  role: "trader",
-  avatar_emoji: "AL",
-};
-
 export const RESEARCH_ANALYST: AuthUser = {
   id: "trader-4",
   name: "David Kim",
@@ -85,20 +78,6 @@ export const DEFAULT_ADMIN: AuthUser = {
   name: "Admin User",
   role: "admin",
   avatar_emoji: "AD",
-};
-
-export const SALES_USER: AuthUser = {
-  id: "sales-1",
-  name: "Sam Park",
-  role: "sales",
-  avatar_emoji: "SP",
-};
-
-export const EXTERNAL_CLIENT_USER: AuthUser = {
-  id: "client-1",
-  name: "Erin Lee",
-  role: "external-client",
-  avatar_emoji: "EL",
 };
 
 export const DEFAULT_LIMITS: TradingLimits = {
@@ -131,16 +110,6 @@ export const FI_TRADER_LIMITS: TradingLimits = {
   primary_desk: "fi-govies",
 };
 
-export const DERIVATIVES_TRADER_LIMITS: TradingLimits = {
-  max_order_qty: 10_000,
-  max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity", "derivatives"],
-  dark_pool_access: false,
-  trading_style: "derivatives_high_touch",
-  primary_desk: "equity-derivatives",
-};
-
 export const ANALYST_LIMITS: TradingLimits = {
   max_order_qty: 0,
   max_daily_notional: 0,
@@ -149,61 +118,10 @@ export const ANALYST_LIMITS: TradingLimits = {
   dark_pool_access: false,
 };
 
-export const SALES_LIMITS: TradingLimits = {
-  max_order_qty: 0,
-  max_daily_notional: 0,
-  allowed_strategies: [],
-  allowed_desks: ["equity", "fi"],
-  dark_pool_access: false,
-};
-
-export const EXTERNAL_CLIENT_LIMITS: TradingLimits = {
-  max_order_qty: 0,
-  max_daily_notional: 0,
-  allowed_strategies: [],
-  allowed_desks: [],
-  dark_pool_access: false,
-};
-
 export const DEFAULT_ASSETS: AssetDef[] = [
-  {
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    sector: "Technology",
-    exchange: "NASDAQ",
-    marketCapB: 3000,
-    beta: 1.2,
-  },
-  {
-    symbol: "MSFT",
-    name: "Microsoft Corp.",
-    sector: "Technology",
-    exchange: "NASDAQ",
-    marketCapB: 2800,
-    beta: 0.9,
-  },
-  {
-    symbol: "GOOGL",
-    name: "Alphabet Inc.",
-    sector: "Technology",
-    exchange: "NASDAQ",
-    marketCapB: 1800,
-    beta: 1.1,
-  },
-  {
-    symbol: "NVDA",
-    name: "NVIDIA Corp.",
-    sector: "Technology",
-    exchange: "NASDAQ",
-    marketCapB: 2200,
-    beta: 1.8,
-  },
-  {
-    symbol: "AMZN",
-    name: "Amazon.com Inc.",
-    sector: "Technology",
-    exchange: "NASDAQ",
-    marketCapB: 1900,
-    beta: 1.3,
-  },
+  { symbol: "AAPL", name: "Apple Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 3000, beta: 1.2 },
+  { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2800, beta: 0.9 },
+  { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
+  { symbol: "NVDA", name: "NVIDIA Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2200, beta: 1.8 },
+  { symbol: "AMZN", name: "Amazon.com Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1900, beta: 1.3 },
 ];
