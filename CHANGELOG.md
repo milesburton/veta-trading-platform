@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.83.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.0...veta-trading-platform-v1.83.1) (2026-10-10)
+
+
+### Performance Improvements
+
+* **market-sim:** send order books only to clients that use them ([#774](https://github.com/milesburton/veta-trading-platform/issues/774)) ([5a5404d](https://github.com/milesburton/veta-trading-platform/commit/5a5404d61b7c5fb6ec2a7317ca04b3850201d2ff))
+
 ## [1.83.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.82.2...veta-trading-platform-v1.83.0) (2026-10-10)
 
 
