@@ -81,6 +81,7 @@ export const COMMODITY_CALENDAR: TradingCalendar = {
   holidays: ["2026-01-01", "2026-04-03", "2026-07-03", "2026-11-26", "2026-12-25"],
   earlyCloses: {},
   dailyBreaks: [{ startMinute: 1380, endMinute: 1439 }], // 16:00-17:00 CT
+  tradeDateRollsAtOpen: true,
 };
 
 // FX trades ~24/5 with no single exchange calendar. Sun 22:00 UTC through
@@ -102,6 +103,7 @@ export const FX_CALENDAR: TradingCalendar = {
   },
   holidays: [],
   earlyCloses: {},
+  tradeDateRollsAtOpen: true,
 };
 
 // Dates where FX is nominally open (order entry still allowed — real FX

@@ -142,3 +142,22 @@ Deno.test("resolveCurrentSession follows the FX calendar's continuous week, not 
   assertEquals(resolveCurrentSession(US_EQUITY_CALENDAR, midweek).allowsOrderEntry, false);
   assertEquals(resolveCurrentSession(FX_CALENDAR, midweek).allowsOrderEntry, true);
 });
+
+Deno.test("resolveCurrentSession closes CME Globex from Friday's daily break until Sunday's open", () => {
+  const open = (iso: string) => resolveCurrentSession(COMMODITY_CALENDAR, new Date(iso)).allowsOrderEntry;
+  assertEquals(open("2026-10-09T20:00:00Z"), true);
+  assertEquals(open("2026-10-09T21:30:00Z"), false);
+  assertEquals(open("2026-10-10T04:30:00Z"), false);
+  assertEquals(open("2026-10-11T12:00:00Z"), false);
+  assertEquals(open("2026-10-11T23:30:00Z"), true);
+  assertEquals(open("2026-10-14T12:00:00Z"), true);
+});
+
+Deno.test("resolveCurrentSession runs FX from Sunday 22:00 UTC to Friday 22:00 UTC", () => {
+  const open = (iso: string) => resolveCurrentSession(FX_CALENDAR, new Date(iso)).allowsOrderEntry;
+  assertEquals(open("2026-10-09T21:30:00Z"), true);
+  assertEquals(open("2026-10-09T22:30:00Z"), false);
+  assertEquals(open("2026-10-10T12:00:00Z"), false);
+  assertEquals(open("2026-10-11T21:30:00Z"), false);
+  assertEquals(open("2026-10-11T22:30:00Z"), true);
+});
