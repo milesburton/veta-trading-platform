@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.83.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.82.2...veta-trading-platform-v1.83.0) (2026-10-10)
+
+
+### Features
+
+* **market-sim:** follow real market hours by default ([#772](https://github.com/milesburton/veta-trading-platform/issues/772)) ([8e75fb2](https://github.com/milesburton/veta-trading-platform/commit/8e75fb26d20079376edf3104a8bfdfc956eb2733))
+
+
+### Bug Fixes
+
+* **calendar:** judge overnight sessions on their trade date ([#773](https://github.com/milesburton/veta-trading-platform/issues/773)) ([8431168](https://github.com/milesburton/veta-trading-platform/commit/8431168851382393161df544fd1c9a4f9f3704e8))
+
 ## [1.82.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.82.1...veta-trading-platform-v1.82.2) (2026-10-10)
 
 
