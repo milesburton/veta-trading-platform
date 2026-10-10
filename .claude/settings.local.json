@@ -10,7 +10,8 @@
       "Skill(code-review)",
       "Skill(code-review:*)",
       "Skill(loop)",
-      "Skill(loop:*)"
+      "Skill(loop:*)",
+      "Bash(git switch *)"
     ],
     "additionalDirectories": [
       "/workspaces/virtual-equities-trading-application/.husky"
