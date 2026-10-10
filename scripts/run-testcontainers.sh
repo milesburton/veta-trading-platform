@@ -16,14 +16,19 @@ set -euo pipefail
 # - If ~/.docker/config.json declares a credsStore that exits 1 on
 #   public-registry pulls (Codespaces does this), points DOCKER_CONFIG at an
 #   empty config dir.
-# - Disables Ryuk: our helpers stop containers in finally blocks already, and
-#   reaching Ryuk's published port from inside a dev container is its own
-#   loopback puzzle.
+# - Disables Ryuk (reaching its published port from inside a dev container is
+#   its own loopback puzzle) and reaps containers itself instead: on exit it
+#   removes the containers this run created and the socat sidecar it started,
+#   and on start it removes Testcontainers left over from runs older than
+#   STALE_TESTCONTAINER_SECONDS that were killed before they could clean up.
 # - Sets RUN_TESTCONTAINERS=1 so the gated test files actually execute.
 
 SOCAT_NAME="veta-docker-socat"
 SOCAT_IMAGE="alpine/socat"
 DOCKER_CONFIG_DIR="/tmp/veta-docker-config"
+STALE_TESTCONTAINER_SECONDS="${STALE_TESTCONTAINER_SECONDS:-7200}"
+TC_LABEL="label=org.testcontainers=true"
+STARTED_SOCAT=false
 
 ensure_clean_docker_config_if_needed() {
   local cfg="${HOME}/.docker/config.json"
@@ -43,12 +48,16 @@ ensure_socat_sidecar() {
     fi
   fi
   if ! docker inspect "${SOCAT_NAME}" >/dev/null 2>&1; then
+    STARTED_SOCAT=true
     docker run -d --rm \
       --name "${SOCAT_NAME}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       "${SOCAT_IMAGE}" \
       TCP-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock >/dev/null
   fi
+}
+
+socat_ip() {
   docker inspect "${SOCAT_NAME}" --format '{{.NetworkSettings.Networks.bridge.IPAddress}}'
 }
 
@@ -56,9 +65,40 @@ bridge_gateway() {
   docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}'
 }
 
-ensure_clean_docker_config_if_needed
+reap_stale_testcontainers() {
+  local now id created
+  now="$(date +%s)"
+  for id in $(docker ps -aq --filter "${TC_LABEL}"); do
+    created="$(date -d "$(docker inspect -f '{{.Created}}' "${id}")" +%s)" || continue
+    if (( now - created > STALE_TESTCONTAINER_SECONDS )); then
+      docker rm -f -v "${id}" >/dev/null || true
+    fi
+  done
+}
 
-SOCAT_IP="$(ensure_socat_sidecar)"
+cleanup() {
+  local id
+  unset DOCKER_HOST
+  for id in $(docker ps -aq --filter "${TC_LABEL}"); do
+    if [[ " ${PRE_EXISTING} " != *" ${id} "* ]]; then
+      docker rm -f -v "${id}" >/dev/null || true
+    fi
+  done
+  if [[ "${STARTED_SOCAT}" == true ]]; then
+    docker rm -f "${SOCAT_NAME}" >/dev/null 2>&1 || true
+  fi
+}
+
+ensure_clean_docker_config_if_needed
+reap_stale_testcontainers
+PRE_EXISTING="$(docker ps -aq --filter "${TC_LABEL}" | tr '\n' ' ')"
+
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+ensure_socat_sidecar
+SOCAT_IP="$(socat_ip)"
 GATEWAY_IP="$(bridge_gateway)"
 
 export DOCKER_HOST="tcp://${SOCAT_IP}:2375"
@@ -66,4 +106,4 @@ export TESTCONTAINERS_HOST_OVERRIDE="${GATEWAY_IP}"
 export TESTCONTAINERS_RYUK_DISABLED=true
 export RUN_TESTCONTAINERS=1
 
-exec "$@"
+"$@"
