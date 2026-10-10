@@ -673,7 +673,6 @@ jobs:
           echo "All $attempts attempts failed — this is a real failure, not a flake."
           exit 1
         env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
           # The homelab box also runs the full production VETA stack around
           # the clock (load average ~14 on 8 cores), so cold-starting the
           # 15-30 Deno subprocesses smoke.full.tc.test.ts boots per group

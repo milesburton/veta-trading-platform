@@ -40,6 +40,7 @@ services:
       -c maintenance_work_mem=64MB
       -c max_connections=50
     mem_limit: 1g
+    ports: !reset []
     labels:
       - "traefik.enable=false"
 
