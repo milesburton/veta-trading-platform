@@ -20,21 +20,44 @@ SOCK=/tmp/supervisor.sock
 CTL="supervisorctl -c $WORKSPACE_ROOT/supervisord.conf"
 
 if [ ! -S "$SOCK" ]; then
-  echo "ERROR: supervisord is not running (no socket at $SOCK)" >&2
-  exit 1
+  echo "supervisord is not running, starting it with $WORKSPACE_ROOT/supervisord.conf..."
+  if ! pgrep -f "supervisord.*$WORKSPACE_ROOT/supervisord.conf" >/dev/null 2>&1; then
+    supervisord -c "$WORKSPACE_ROOT/supervisord.conf" >/tmp/supervisord.log 2>&1 &
+  fi
+  for _ in $(seq 1 30); do
+    if [ -S "$SOCK" ]; then
+      break
+    fi
+    sleep 1
+  done
+  if [ ! -S "$SOCK" ]; then
+    echo "ERROR: supervisord failed to start (no socket at $SOCK). See /tmp/supervisord.log." >&2
+    exit 1
+  fi
 fi
 
-echo "Starting algo strategies..."
-$CTL start algos:*
+failures=0
 
-echo "Starting microstructure services..."
-$CTL start microstructure:*
+start_group() {
+  local label="$1"
+  local pattern="$2"
+  echo "Starting $label..."
+  if ! $CTL start "$pattern"; then
+    echo "WARNING: one or more services in $label failed to start." >&2
+    failures=1
+  fi
+}
 
-echo "Starting analytics pipeline..."
-$CTL start analytics:*
+start_group "algo strategies" "algos:*"
+start_group "microstructure services" "microstructure:*"
+start_group "analytics pipeline" "analytics:*"
+start_group "aux/observability services" "aux:*"
 
-echo "Starting aux/observability services..."
-$CTL start aux:*
+if [ "$failures" -ne 0 ]; then
+  echo ""
+  echo "Some services failed to start. Run '$CTL status' for details." >&2
+  exit 1
+fi
 
 if [[ "${1:-}" == "--wait" ]]; then
   echo ""
