@@ -413,16 +413,24 @@ setInterval(() => {
       .map((feed) => ({ feed, data: forFeed(diff, feed) }))
       .filter(({ data }) => !isEmptyDiff(data))
       .map(({ feed, data }) =>
-        fanOutTick(
-          clientsOn(feed),
-          JSON.stringify({ event: "marketUpdate", data }),
-          laggingClients,
-          () => snapshotFor(feed),
-          lagThresholdBytes(snapshotBytes[feed])
-        )
+        ({
+          feed,
+          result: fanOutTick(
+            clientsOn(feed),
+            JSON.stringify({ event: "marketUpdate", data }),
+            laggingClients,
+            () => snapshotFor(feed),
+            lagThresholdBytes(snapshotBytes[feed])
+          ),
+        })
       );
-    laggingClients = new Set(results.flatMap((r) => [...r.lagging]));
-    results.flatMap((r) => r.failed).forEach((socket) => clients.delete(socket));
+    const processedFeeds = new Set(results.map((r) => r.feed));
+    const carriedLagging = [...laggingClients].filter((socket) => {
+      const feed = clients.get(socket);
+      return feed !== undefined && !processedFeeds.has(feed);
+    });
+    laggingClients = new Set([...carriedLagging, ...results.flatMap((r) => [...r.result.lagging])]);
+    results.flatMap((r) => r.result.failed).forEach((socket) => clients.delete(socket));
     // docs: /platform/market-simulator/
     // #region docs:venuebooks-sniper-only
     const { venueBooks: _venueBooks, ...kafkaDiff } = diff;
