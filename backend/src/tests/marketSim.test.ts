@@ -49,12 +49,14 @@ Deno.test("US regular session observes exchange holidays", () => {
   assertEquals(isUsEquityRegularSession(new Date("2026-01-01T15:00:00Z")), false);
 });
 
-Deno.test("out-of-hours startup setting defaults on and accepts false aliases", () => {
-  assertEquals(parseAllowOutOfHours(undefined), true);
+Deno.test("out-of-hours startup setting defaults off and accepts true aliases", () => {
+  assertEquals(parseAllowOutOfHours(undefined), false);
+  assertEquals(parseAllowOutOfHours(""), false);
   assertEquals(parseAllowOutOfHours("true"), true);
+  assertEquals(parseAllowOutOfHours(" ON "), true);
+  assertEquals(parseAllowOutOfHours("1"), true);
   assertEquals(parseAllowOutOfHours("false"), false);
-  assertEquals(parseAllowOutOfHours("OFF"), false);
-  assertEquals(parseAllowOutOfHours("0"), false);
+  assertEquals(parseAllowOutOfHours("maybe"), false);
 });
 
 Deno.test("seeded price sequence is deterministic", () => {

@@ -21,6 +21,6 @@ export function isUsEquityRegularSession(now = new Date()): boolean {
 }
 
 export function parseAllowOutOfHours(value: string | undefined): boolean {
-  if (value === undefined) return true;
-  return !["0", "false", "no", "off"].includes(value.trim().toLowerCase());
+  if (value === undefined) return false;
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }

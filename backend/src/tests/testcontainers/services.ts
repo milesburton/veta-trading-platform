@@ -280,6 +280,7 @@ function buildBaseEnv(pg: ManagedPostgres, rp: ManagedRedpanda): Record<string, 
     VETA_DEMO_MODE: "true",
     RISK_ENGINE_ENABLED: "false",
     MARKET_SIM_PREWARM_TICKS: "240",
+    MARKET_SIM_ALLOW_OUT_OF_HOURS: "true",
     LOG_LEVEL: Deno.env.get("STACK_LOG_LEVEL") ?? "info",
     OTEL_DENO: "false",
   };
