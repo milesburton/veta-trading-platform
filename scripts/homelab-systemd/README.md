@@ -52,8 +52,13 @@ sudo systemctl restart docker
 Then add `VETA_CGROUP_PARENT=veta.slice` to `/opt/stacks/veta/.env`. It is
 not a secret, so it stays in `.env` rather than OpenBao.
 
-`AllowedCPUs` in each slice must be CPU IDs visible to the host; check with
-`cat /sys/fs/cgroup/cpuset.cpus.effective`. Give production the faster cores.
+The slices share every CPU and are separated by weight, not by CPU ID:
+`veta.slice` has `CPUWeight=1000`, `ci.slice` has `CPUWeight=50` and a hard
+`CPUQuota=400%` (four CPUs' worth). Production can use the whole box, CI only
+gets spare time and never more than four CPUs. Do not pin `AllowedCPUs`: the
+host's online CPU IDs are not contiguous and can change when the container
+host restarts, which silently shrinks a pinned set. Check the live split with
+`cat /sys/fs/cgroup/{veta,ci}.slice/cpu.weight /sys/fs/cgroup/ci.slice/cpu.max`.
 Containers created before the daemon change keep an empty cgroup parent and
 land in `ci.slice` on their next start, so recreate production with
 `scripts/veta-compose.sh up -d --force-recreate` after setting `VETA_CGROUP_PARENT`.

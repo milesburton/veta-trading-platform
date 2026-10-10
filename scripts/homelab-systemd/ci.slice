@@ -2,4 +2,6 @@
 Description=CI runner and testcontainers (Docker default cgroup parent)
 
 [Slice]
-AllowedCPUs=17,19-23
+AllowedCPUs=
+CPUWeight=50
+CPUQuota=400%
