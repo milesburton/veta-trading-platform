@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.82.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.82.0...veta-trading-platform-v1.82.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **security:** keep Postgres off the host network in production and reap testcontainers ([#768](https://github.com/milesburton/veta-trading-platform/issues/768)) ([3b9bb31](https://github.com/milesburton/veta-trading-platform/commit/3b9bb317ea159c00089b9f384e9838d7ac5b8bed)), closes [#767](https://github.com/milesburton/veta-trading-platform/issues/767)
+* **synthetic-trader:** authenticate whenever the gateway socket opens ([#766](https://github.com/milesburton/veta-trading-platform/issues/766)) ([f14e668](https://github.com/milesburton/veta-trading-platform/commit/f14e6682a21b4b7d4e64bf8a6de16c8583c3f350)), closes [#765](https://github.com/milesburton/veta-trading-platform/issues/765)
+
 ## [1.82.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.81.0...veta-trading-platform-v1.82.0) (2026-10-09)
 
 
