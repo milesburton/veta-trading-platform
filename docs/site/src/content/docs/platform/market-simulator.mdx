@@ -48,7 +48,16 @@ At startup, `warmUpPrices` keeps the same flag set until seeding from journal ca
 
 ## Client backpressure
 
-`fanOutTick` (in `tick-diff.ts`) sends each tick only to sockets whose `bufferedAmount` is within `MAX_CLIENT_BUFFERED_BYTES` (4 MiB). Unsent frames are buffered natively by the runtime, outside the V8 heap, so a consumer that stops reading would otherwise grow memory until the container is killed. A socket over the limit skips ticks and is marked lagging. Once its buffer drains, it receives a full `marketData` snapshot in place of the next diff, which replaces its state rather than merging into a stale one.
+`fanOutTick` (in `tick-diff.ts`) sends each tick only to sockets whose `bufferedAmount` is within the feed's lag threshold: twice the size of that feed's latest snapshot, and never less than `MAX_CLIENT_BUFFERED_BYTES` (4 MiB). Sizing the threshold from the snapshot stops a large snapshot from pushing its own recipient straight back into lagging. Unsent frames are buffered natively by the runtime, outside the V8 heap, so a consumer that stops reading would otherwise grow memory until the container is killed. A socket over the limit skips ticks and is marked lagging. Once its buffer drains, it receives a full `marketData` snapshot in place of the next diff, which replaces its state rather than merging into a stale one.
+
+### Feeds
+
+Each WebSocket client chooses a feed with the `feed` query parameter:
+
+- **`full`** (the default, used by the gateway and EMS and the sniper algo): prices, volumes, market minute, session phase, the consolidated `orderBook` and the per-venue `venueBooks`. A full snapshot is about 11 MB, mostly venue books.
+- **`prices`** (requested by `createMarketSimClient` unless a caller asks for `full`): the same frames without `orderBook` and `venueBooks`. A snapshot is about 60 KB, and the simulator skips computing books for it. Book-only diffs are not sent on this feed.
+
+Services that never read books (most algos, the dark pool, the CCP, the FIX venues) stay on `prices`, so they do not parse megabytes of book data they discard.
 
 ## Real and simulated hours
 

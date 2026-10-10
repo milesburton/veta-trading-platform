@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 108,
-      "cases": 1272,
+      "cases": 1279,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -57,7 +57,7 @@
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
         "daily-summary.unit.test.ts": 23,
-        "tick-diff.unit.test.ts": 28,
+        "tick-diff.unit.test.ts": 33,
         "ticket-attachments-route.unit.test.ts": 12,
         "redpanda-init-topic-wait.unit.test.ts": 3,
         "compose-mem-limits.unit.test.ts": 1,
@@ -76,7 +76,7 @@
         "time-scale.unit.test.ts": 8,
         "small-gap-fills.unit.test.ts": 10,
         "demo-day-attribution.unit.test.ts": 3,
-        "market-sim-client.unit.test.ts": 17,
+        "market-sim-client.unit.test.ts": 19,
         "synthetic-trader-decision.unit.test.ts": 10,
         "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-pacing.unit.test.ts": 3,

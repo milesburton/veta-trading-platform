@@ -42,9 +42,13 @@ import {
   createSingleFlightPublisher,
   createTickDiffState,
   fanOutTick,
+  forFeed,
   isEmptyDiff,
+  lagThresholdBytes,
+  parseMarketFeed,
   symbolsNeedingFreshBook,
 } from "./tick-diff.ts";
+import type { MarketFeed } from "@veta/market-client";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -318,20 +322,37 @@ function deriveSessionPhase(minute: number): SessionPhase {
   return "CLOSED";
 }
 
-const clients = new Set<WebSocket>();
+const clients = new Map<WebSocket, MarketFeed>();
 let laggingClients: ReadonlySet<WebSocket> = new Set();
+let snapshotBytes: Readonly<Record<MarketFeed, number>> = { full: 0, prices: 0 };
 
-function buildSnapshotMessage(): string {
-  const allSymbols = Object.keys(marketData);
-  const snapshot = {
+function buildSnapshotMessage(feed: MarketFeed): string {
+  const base = {
     full: true as const,
     prices: { ...marketData },
     volumes: computeTickVolumes(marketMinute),
     marketMinute,
-    orderBook: computeOrderBook(marketData, allSymbols),
-    venueBooks: computeVenueBooks(marketData, allSymbols),
   };
+  const allSymbols = Object.keys(marketData);
+  const snapshot =
+    feed === "full"
+      ? {
+        ...base,
+        orderBook: computeOrderBook(marketData, allSymbols),
+        venueBooks: computeVenueBooks(marketData, allSymbols),
+      }
+      : base;
   return JSON.stringify({ event: "marketData", data: snapshot });
+}
+
+function snapshotFor(feed: MarketFeed): string {
+  const message = buildSnapshotMessage(feed);
+  snapshotBytes = { ...snapshotBytes, [feed]: message.length };
+  return message;
+}
+
+function clientsOn(feed: MarketFeed): WebSocket[] {
+  return [...clients].filter(([, f]) => f === feed).map(([socket]) => socket);
 }
 
 let tickDiffState = createTickDiffState();
@@ -387,10 +408,20 @@ setInterval(() => {
   tickDiffState = nextState;
 
   if (!isEmptyDiff(diff)) {
-    const msg = JSON.stringify({ event: "marketUpdate", data: diff });
-    const { lagging, failed } = fanOutTick(clients, msg, laggingClients, buildSnapshotMessage);
-    laggingClients = lagging;
-    for (const socket of failed) clients.delete(socket);
+    const results = [...new Set(clients.values())]
+      .map((feed) => ({ feed, data: forFeed(diff, feed) }))
+      .filter(({ data }) => !isEmptyDiff(data))
+      .map(({ feed, data }) =>
+        fanOutTick(
+          clientsOn(feed),
+          JSON.stringify({ event: "marketUpdate", data }),
+          laggingClients,
+          () => snapshotFor(feed),
+          lagThresholdBytes(snapshotBytes[feed])
+        )
+      );
+    laggingClients = new Set(results.flatMap((r) => [...r.lagging]));
+    results.flatMap((r) => r.failed).forEach((socket) => clients.delete(socket));
     // docs: /platform/market-simulator/
     // #region docs:venuebooks-sniper-only
     const { venueBooks: _venueBooks, ...kafkaDiff } = diff;
@@ -483,11 +514,12 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
+  const feed = parseMarketFeed(url);
 
   socket.onopen = () => {
-    logger.info(`New WebSocket connection`);
-    clients.add(socket);
-    socket.send(buildSnapshotMessage());
+    logger.info(`New WebSocket connection`, { feed });
+    clients.set(socket, feed);
+    socket.send(snapshotFor(feed));
   };
 
   socket.onmessage = (event) => {

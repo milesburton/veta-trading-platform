@@ -26,7 +26,7 @@ type SorVenueMIC = (typeof VENUES)[number];
 
 logger.info(`Starting on port ${PORT}`);
 
-const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT, { feed: "full" });
 marketClient.start();
 
 const producer = await createProducer("sniper-algo").catch((err) => {

@@ -42,7 +42,7 @@ const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) ||
 const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) ||
   IMPACT_PER_1000_DEFAULT;
 
-const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT, { feed: "full" });
 marketClient.start();
 
 const COUNTERPARTIES = [

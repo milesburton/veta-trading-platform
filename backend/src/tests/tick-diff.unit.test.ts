@@ -5,8 +5,12 @@ import {
   createSingleFlightPublisher,
   createTickDiffState,
   fanOutTick,
+  forFeed,
   FULL_SNAPSHOT_INTERVAL_MS,
   isEmptyDiff,
+  lagThresholdBytes,
+  MAX_CLIENT_BUFFERED_BYTES,
+  parseMarketFeed,
   symbolsNeedingFreshBook,
   type TickPayload,
 } from "../market-sim/tick-diff.ts";
@@ -603,4 +607,41 @@ Deno.test("fanOutTick reports sockets whose send throws", () => {
 
   assertEquals(result.failed, [broken]);
   assertEquals(ok.sent, ["tick"]);
+});
+
+Deno.test("parseMarketFeed defaults to the full feed and accepts prices", () => {
+  assertEquals(parseMarketFeed(new URL("ws://sim:5000/")), "full");
+  assertEquals(parseMarketFeed(new URL("ws://sim:5000/?feed=prices")), "prices");
+  assertEquals(parseMarketFeed(new URL("ws://sim:5000/?feed=books")), "full");
+});
+
+Deno.test("forFeed strips both book fields from the prices feed only", () => {
+  const diff = {
+    prices: { AAPL: 1 },
+    marketMinute: 3,
+    orderBook: { AAPL: { bids: [], asks: [], mid: 1, ts: 0 } },
+    venueBooks: { XNAS: {} },
+  };
+  assertEquals(forFeed(diff, "full"), diff);
+  assertEquals(forFeed(diff, "prices"), { prices: { AAPL: 1 }, marketMinute: 3 });
+});
+
+Deno.test("forFeed leaves a books-only diff empty on the prices feed", () => {
+  const diff = { orderBook: { AAPL: { bids: [], asks: [], mid: 1, ts: 0 } } };
+  assertEquals(isEmptyDiff(forFeed(diff, "prices")), true);
+  assertEquals(isEmptyDiff(forFeed(diff, "full")), false);
+});
+
+Deno.test("lagThresholdBytes leaves room for a snapshot larger than the floor", () => {
+  assertEquals(lagThresholdBytes(0), MAX_CLIENT_BUFFERED_BYTES);
+  assertEquals(lagThresholdBytes(60_000), MAX_CLIENT_BUFFERED_BYTES);
+  assertEquals(lagThresholdBytes(11_000_000), 22_000_000);
+});
+
+Deno.test("fanOutTick does not mark a socket lagging while a snapshot under the threshold drains", () => {
+  const snapshotBytes = 11_000_000;
+  const draining = { bufferedAmount: snapshotBytes, sent: [] as string[], send(d: string) { this.sent.push(d); } };
+  const result = fanOutTick([draining], "tick", new Set(), () => "snapshot", lagThresholdBytes(snapshotBytes));
+  assertEquals(result.lagging.size, 0);
+  assertEquals(draining.sent, ["tick"]);
 });
