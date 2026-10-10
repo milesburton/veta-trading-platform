@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.82.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.82.1...veta-trading-platform-v1.82.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* **ops:** separate production and CI CPU by weight instead of CPU IDs ([#770](https://github.com/milesburton/veta-trading-platform/issues/770)) ([0981816](https://github.com/milesburton/veta-trading-platform/commit/0981816e862d44113122b54da9b7c807b1d94b40))
+
 ## [1.82.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.82.0...veta-trading-platform-v1.82.1) (2026-10-10)
 
 
