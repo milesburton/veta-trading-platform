@@ -1,4 +1,10 @@
-import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import {
+  Oid,
+  Pool,
+  type ClientOptions,
+  type Decoders,
+} from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import { createParams } from "https://deno.land/x/postgres@v0.19.3/connection/connection_params.ts";
 
 function resolveUrl(serviceKey: string): string {
   const url = Deno.env.get(`${serviceKey}_DATABASE_URL`) ?? Deno.env.get("DATABASE_URL");
@@ -28,8 +34,30 @@ const SPECS: PoolSpec[] = [
 
 const cache: Record<string, Pool> = {};
 
+const floatDecoders: Decoders = {
+  [Oid.float8]: (value: string) => Number.parseFloat(value),
+  [Oid.float8_array]: (value: string, _oid: number, parseArray) =>
+    parseArray(value, (entry) => Number.parseFloat(entry)),
+};
+
+function poolOptionsFromUrl(url: string): ClientOptions {
+  const params = createParams(url);
+  return {
+    ...params,
+    controls: {
+      ...params.controls,
+      decoders: {
+        ...params.controls?.decoders,
+        ...floatDecoders,
+      },
+    },
+  };
+}
+
 function getPool(key: string, size: number, lazy: boolean): Pool {
-  if (!cache[key]) cache[key] = new Pool(resolveUrl(key), size, lazy);
+  if (!cache[key]) {
+    cache[key] = new Pool(poolOptionsFromUrl(resolveUrl(key)), size, lazy);
+  }
   return cache[key];
 }
 
