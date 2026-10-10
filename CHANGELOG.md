@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.83.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.1...veta-trading-platform-v1.83.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* **backend:** decode float8 values in shared db pool and restore algo helpers ([#777](https://github.com/milesburton/veta-trading-platform/issues/777)) ([d3a98b2](https://github.com/milesburton/veta-trading-platform/commit/d3a98b29c226553624a90140771fb8b6e6935701))
+
 ## [1.83.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.0...veta-trading-platform-v1.83.1) (2026-10-10)
 
 
