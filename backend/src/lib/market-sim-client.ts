@@ -29,6 +29,8 @@ export interface MarketTick {
   sessionPhase?: SessionPhase;
 }
 
+export type MarketFeed = "full" | "prices";
+
 type TickCallback = (tick: MarketTick) => void;
 
 export interface MarketSimClient {
@@ -110,7 +112,16 @@ export function mergeTick(latest: MarketTick, data: RawTickMessage): MarketTick 
   };
 }
 
-export function createMarketSimClient(host: string, port: number): MarketSimClient {
+export function marketSimFeedUrl(host: string, port: number, feed: MarketFeed): string {
+  return `ws://${host}:${port}/?feed=${feed}`;
+}
+
+export function createMarketSimClient(
+  host: string,
+  port: number,
+  options: { feed?: MarketFeed } = {}
+): MarketSimClient {
+  const url = marketSimFeedUrl(host, port, options.feed ?? "prices");
   let ws: WebSocket | null = null;
   let latest: MarketTick = { prices: {}, volumes: {}, marketMinute: 0 };
   const callbacks: TickCallback[] = [];
@@ -119,7 +130,6 @@ export function createMarketSimClient(host: string, port: number): MarketSimClie
 
   function connect(): void {
     if (stopped) return;
-    const url = `ws://${host}:${port}`;
     logger.info("connecting to market-sim", { ...LIB, url });
     const socket = new WebSocket(url);
     ws = socket;

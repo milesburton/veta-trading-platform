@@ -1,4 +1,4 @@
-import type { OrderBookSnapshot } from "@veta/market-client";
+import type { MarketFeed, OrderBookSnapshot } from "@veta/market-client";
 
 export type SessionPhase =
   | "PRE_OPEN"
@@ -69,6 +69,23 @@ export interface FanOutSocket {
 export interface FanOutResult<S> {
   readonly lagging: ReadonlySet<S>;
   readonly failed: readonly S[];
+}
+
+export function parseMarketFeed(url: URL): MarketFeed {
+  return url.searchParams.get("feed") === "prices" ? "prices" : "full";
+}
+
+export function forFeed<T extends { orderBook?: unknown; venueBooks?: unknown }>(
+  payload: T,
+  feed: MarketFeed
+): Omit<T, "orderBook" | "venueBooks"> {
+  if (feed === "full") return payload;
+  const { orderBook: _orderBook, venueBooks: _venueBooks, ...rest } = payload;
+  return rest;
+}
+
+export function lagThresholdBytes(snapshotBytes: number, floor = MAX_CLIENT_BUFFERED_BYTES): number {
+  return Math.max(floor, snapshotBytes * 2);
 }
 
 export function fanOutTick<S extends FanOutSocket>(

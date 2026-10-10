@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   createMarketSimClient,
+  marketSimFeedUrl,
   mergeTick,
   parseTickFrame,
   type MarketTick,
@@ -253,4 +254,39 @@ Deno.test("createMarketSimClient.start() is a no-op while already connected", as
 Deno.test("createMarketSimClient.getLatest() starts empty before any tick arrives", () => {
   const client = createMarketSimClient("127.0.0.1", 1);
   assertEquals(client.getLatest(), { prices: {}, volumes: {}, marketMinute: 0 });
+});
+
+Deno.test("marketSimFeedUrl asks market-sim for the requested feed", () => {
+  assertEquals(marketSimFeedUrl("market-sim", 5000, "prices"), "ws://market-sim:5000/?feed=prices");
+  assertEquals(marketSimFeedUrl("market-sim", 5000, "full"), "ws://market-sim:5000/?feed=full");
+});
+
+Deno.test("createMarketSimClient requests the prices feed unless told otherwise", async () => {
+  const controller = new AbortController();
+  const feeds: (string | null)[] = [];
+  const server = Deno.serve(
+    { port: 0, signal: controller.signal, onListen: () => {} },
+    (req) => {
+      feeds.push(new URL(req.url).searchParams.get("feed"));
+      const { response } = Deno.upgradeWebSocket(req);
+      return response;
+    }
+  );
+  const addr = server.addr as Deno.NetAddr;
+  const light = createMarketSimClient("127.0.0.1", addr.port);
+  const full = createMarketSimClient("127.0.0.1", addr.port, { feed: "full" });
+  try {
+    light.start();
+    full.start();
+    const deadline = Date.now() + 5_000;
+    while (feeds.length < 2 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assertEquals([...feeds].sort(), ["full", "prices"]);
+  } finally {
+    light.stop();
+    full.stop();
+    controller.abort();
+    await server.finished;
+  }
 });
