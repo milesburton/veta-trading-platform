@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.85.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.84.0...veta-trading-platform-v1.85.0) (2026-10-12)
+
+
+### Features
+
+* **algo:** cap Iceberg, Momentum, Arrival Price and IS children to book depth ([#788](https://github.com/milesburton/veta-trading-platform/issues/788)) ([3aca10d](https://github.com/milesburton/veta-trading-platform/commit/3aca10d4bd6e95f61665a0a2754d84fb114d2f99))
+
 ## [1.84.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.4...veta-trading-platform-v1.84.0) (2026-10-12)
 
 
