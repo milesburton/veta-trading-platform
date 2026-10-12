@@ -33,6 +33,7 @@ import {
   RoutedOrderSchema,
 } from "@veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { capToDepth } from "./depth-cap.ts";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5025;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -278,7 +279,7 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    const qty = Math.min(order.trancheSize, order.remainingQty);
+    const qty = capToDepth(Math.min(order.trancheSize, order.remainingQty), tick, order.asset);
     if (qty <= 0) continue;
 
     order.tranchesRouted += 1;
