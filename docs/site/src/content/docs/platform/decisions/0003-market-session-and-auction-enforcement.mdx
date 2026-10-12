@@ -47,6 +47,10 @@ surface found the session concept stops there:
   calendar model (`frontend/src/domain/market/tradingCalendar.ts`) already exists and is
   wired to nothing.
 
+  *Update, October 2026:* `MARKET_SIM_ALLOW_OUT_OF_HOURS` now defaults to off, and the
+  setting is switchable at runtime and persisted. Out of hours the simulator no longer ticks
+  unless simulated hours are enabled. See [Real and simulated hours](/platform/market-simulator/#real-and-simulated-hours).
+
 None of this was previously documented as scoped work — no ADR, backlog item, or roadmap
 entry mentioned it before this one.
 
@@ -163,8 +167,8 @@ Two things ship with it, not after:
 - A log line on rejection (matching the existing `MARKET_SIM_ALLOW_OUT_OF_HOURS`
   precedent at `market-sim.ts`), so a rejection is diagnosable, not silent.
 - Explicit documentation of the interaction with `market-sim`'s own
-  `MARKET_SIM_ALLOW_OUT_OF_HOURS` flag: if that stays at its default (`true`, ticking
-  24/7) while `enforceMarketHours` is `true`, price discovery continues out of hours but
+  `MARKET_SIM_ALLOW_OUT_OF_HOURS` flag: if that is enabled (ticking
+  24/7, no longer the default) while `enforceMarketHours` is `true`, price discovery continues out of hours but
   order entry does not. That is a legitimate combination, not a bug, but it needs to be a
   documented interaction rather than a surprise.
 
