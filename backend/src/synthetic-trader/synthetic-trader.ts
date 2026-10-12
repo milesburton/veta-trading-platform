@@ -33,151 +33,161 @@ if (ENABLED && !PASSWORD) {
   Deno.exit(1);
 }
 
-const tracker = new PositionTracker();
-const engine = new DecisionEngine({ archetypeId: ARCHETYPE_ID, userId: USER_ID, symbols: SYMBOLS });
+function startTrading(): void {
+  const tracker = new PositionTracker();
+  const engine = new DecisionEngine({ archetypeId: ARCHETYPE_ID, userId: USER_ID, symbols: SYMBOLS });
 
-let latestPrices: Record<string, number> = {};
-let dailyNotional = 0;
-let dailyNotionalDate = new Date().toISOString().slice(0, 10);
+  let latestPrices: Record<string, number> = {};
+  let dailyNotional = 0;
+  let dailyNotionalDate = new Date().toISOString().slice(0, 10);
 
-let submitted = 0;
-let filled = 0;
-let rejected = 0;
+  let submitted = 0;
+  let filled = 0;
+  let rejected = 0;
 
-async function refreshPrices(): Promise<void> {
-  try {
-    const res = await fetch(`${MARKET_SIM_URL}/prices`);
-    if (res.ok) {
-      latestPrices = (await res.json()) as Record<string, number>;
+  async function refreshPrices(): Promise<void> {
+    try {
+      const res = await fetch(`${MARKET_SIM_URL}/prices`);
+      if (res.ok) {
+        latestPrices = (await res.json()) as Record<string, number>;
+      }
+    } catch (err) {
+      logger.warn("synthetic-trader: failed to refresh prices", { err });
     }
-  } catch (err) {
-    logger.warn("synthetic-trader: failed to refresh prices", { err });
   }
-}
-setInterval(refreshPrices, 15_000);
-refreshPrices();
+  setInterval(refreshPrices, 15_000);
+  refreshPrices();
 
-const socket = new GatewaySocket(GATEWAY_WS_URL, {
-  onAuthIdentity: (identity) => {
-    logger.info(`synthetic-trader: authenticated as ${identity.user.id} (${identity.user.role})`);
-  },
-  onAuthError: (reason) => {
-    logger.error(`synthetic-trader: auth error: ${reason}`);
-  },
-  onOrderAck: (ack) => {
-    submitted += 1;
-    tracker.recordAck({
-      clientOrderId: ack.clientOrderId,
-      asset: ack.asset,
-      side: ack.side,
-      quantity: ack.quantity,
-      limitPrice: ack.limitPrice,
-    });
-    logger.info(`synthetic-trader: order acked ${ack.side} ${ack.quantity} ${ack.asset}`, {
-      clientOrderId: ack.clientOrderId,
-      strategy: ack.strategy,
-    });
-  },
-  onOrderRejected: (rejection) => {
-    rejected += 1;
-    tracker.recordTerminal(rejection.clientOrderId);
-    logger.warn(`synthetic-trader: order rejected: ${rejection.reason}`, {
-      clientOrderId: rejection.clientOrderId,
-    });
-  },
-  onOrderEvent: (event) => {
-    const data = event.data;
-    const clientOrderId = data.clientOrderId as string | undefined;
-    if (event.topic === "orders.filled") {
-      filled += 1;
-      const remainingQty = data.remainingQty as number | undefined;
-      if (remainingQty === undefined || remainingQty <= 0) {
+  const socket = new GatewaySocket(GATEWAY_WS_URL, {
+    onAuthIdentity: (identity) => {
+      logger.info(`synthetic-trader: authenticated as ${identity.user.id} (${identity.user.role})`);
+    },
+    onAuthError: (reason) => {
+      logger.error(`synthetic-trader: auth error: ${reason}`);
+    },
+    onOrderAck: (ack) => {
+      submitted += 1;
+      tracker.recordAck({
+        clientOrderId: ack.clientOrderId,
+        asset: ack.asset,
+        side: ack.side,
+        quantity: ack.quantity,
+        limitPrice: ack.limitPrice,
+      });
+      logger.info(`synthetic-trader: order acked ${ack.side} ${ack.quantity} ${ack.asset}`, {
+        clientOrderId: ack.clientOrderId,
+        strategy: ack.strategy,
+      });
+    },
+    onOrderRejected: (rejection) => {
+      rejected += 1;
+      tracker.recordTerminal(rejection.clientOrderId);
+      logger.warn(`synthetic-trader: order rejected: ${rejection.reason}`, {
+        clientOrderId: rejection.clientOrderId,
+      });
+    },
+    onOrderEvent: (event) => {
+      const data = event.data;
+      const clientOrderId = data.clientOrderId as string | undefined;
+      if (event.topic === "orders.filled") {
+        filled += 1;
+        const remainingQty = data.remainingQty as number | undefined;
+        if (remainingQty === undefined || remainingQty <= 0) {
+          tracker.recordTerminal(clientOrderId);
+        }
+      } else if (event.topic === "orders.cancelled" || event.topic === "orders.expired") {
         tracker.recordTerminal(clientOrderId);
       }
-    } else if (event.topic === "orders.cancelled" || event.topic === "orders.expired") {
-      tracker.recordTerminal(clientOrderId);
-    }
-  },
-});
-
-const tokenClient = new TokenClient({
-  userServiceUrl: USER_SERVICE_URL,
-  clientId: OAUTH_CLIENT_ID,
-  username: USER_ID,
-  password: PASSWORD,
-});
-
-function scheduleNextTick(): void {
-  setTimeout(tick, nextDelayMs(MIN_PACE_MS, MAX_PACE_MS));
-}
-
-function resetDailyNotionalIfNewDay(): void {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today !== dailyNotionalDate) {
-    dailyNotionalDate = today;
-    dailyNotional = 0;
-  }
-}
-
-function tick(): void {
-  scheduleNextTick();
-  if (!ENABLED) return;
-  if (!socket.isReady) {
-    logger.info("synthetic-trader: tick skipped, socket not ready");
-    return;
-  }
-  resetDailyNotionalIfNewDay();
-
-  const decision = engine.decide(tracker, (symbol) => latestPrices[symbol]);
-  if (decision.kind === "skip") {
-    logger.info(`synthetic-trader: tick skipped, ${decision.skippedReason}`);
-    return;
-  }
-
-  const order = decision.order;
-  if (!isDeskOpen(order.desk, new Date())) {
-    logger.info("synthetic-trader: tick skipped, outside market hours", { desk: order.desk });
-    return;
-  }
-  const notional = order.quantity * (order.limitPrice ?? 0);
-  const dailyCap = 1_000_000 * MAX_DAILY_NOTIONAL_FRACTION;
-  if (dailyNotional + notional > dailyCap) {
-    logger.info("synthetic-trader: tick skipped, self-imposed daily notional cap reached");
-    return;
-  }
-
-  if (DRY_RUN) {
-    logger.info("synthetic-trader: dry-run, would submit order", { order });
-    return;
-  }
-
-  dailyNotional += notional;
-  socket.submitOrder(order);
-}
-
-logger.info("synthetic-trader: booting", {
-  archetype: ARCHETYPE_ID,
-  userId: USER_ID,
-  enabled: ENABLED,
-  dryRun: DRY_RUN,
-  minPaceMs: MIN_PACE_MS,
-  maxPaceMs: MAX_PACE_MS,
-  symbols: SYMBOLS,
-});
-
-socket.connect();
-tokenClient.start((token) => socket.authenticate(token));
-scheduleNextTick();
-
-setInterval(() => {
-  logger.info("synthetic-trader: hourly summary", {
-    submitted,
-    filled,
-    rejected,
-    openOrders: tracker.openOrderCount(),
-    dailyNotional,
+    },
   });
-}, 60 * 60_000);
+
+  const tokenClient = new TokenClient({
+    userServiceUrl: USER_SERVICE_URL,
+    clientId: OAUTH_CLIENT_ID,
+    username: USER_ID,
+    password: PASSWORD,
+  });
+
+  function scheduleNextTick(): void {
+    setTimeout(tick, nextDelayMs(MIN_PACE_MS, MAX_PACE_MS));
+  }
+
+  function resetDailyNotionalIfNewDay(): void {
+    const today = new Date().toISOString().slice(0, 10);
+    if (today !== dailyNotionalDate) {
+      dailyNotionalDate = today;
+      dailyNotional = 0;
+    }
+  }
+
+  function tick(): void {
+    scheduleNextTick();
+    if (!socket.isReady) {
+      logger.info("synthetic-trader: tick skipped, socket not ready");
+      return;
+    }
+    resetDailyNotionalIfNewDay();
+
+    const decision = engine.decide(tracker, (symbol) => latestPrices[symbol]);
+    if (decision.kind === "skip") {
+      logger.info(`synthetic-trader: tick skipped, ${decision.skippedReason}`);
+      return;
+    }
+
+    const order = decision.order;
+    if (!isDeskOpen(order.desk, new Date())) {
+      logger.info("synthetic-trader: tick skipped, outside market hours", { desk: order.desk });
+      return;
+    }
+    const notional = order.quantity * (order.limitPrice ?? 0);
+    const dailyCap = 1_000_000 * MAX_DAILY_NOTIONAL_FRACTION;
+    if (dailyNotional + notional > dailyCap) {
+      logger.info("synthetic-trader: tick skipped, self-imposed daily notional cap reached");
+      return;
+    }
+
+    if (DRY_RUN) {
+      logger.info("synthetic-trader: dry-run, would submit order", { order });
+      return;
+    }
+
+    dailyNotional += notional;
+    socket.submitOrder(order);
+  }
+
+  logger.info("synthetic-trader: booting", {
+    archetype: ARCHETYPE_ID,
+    userId: USER_ID,
+    enabled: ENABLED,
+    dryRun: DRY_RUN,
+    minPaceMs: MIN_PACE_MS,
+    maxPaceMs: MAX_PACE_MS,
+    symbols: SYMBOLS,
+  });
+
+  socket.connect();
+  tokenClient.start((token) => socket.authenticate(token));
+  scheduleNextTick();
+
+  setInterval(() => {
+    logger.info("synthetic-trader: hourly summary", {
+      submitted,
+      filled,
+      rejected,
+      openOrders: tracker.openOrderCount(),
+      dailyNotional,
+    });
+  }, 60 * 60_000);
+}
+
+if (ENABLED) {
+  startTrading();
+} else {
+  logger.info("synthetic-trader: disabled, serving health endpoint only", {
+    archetype: ARCHETYPE_ID,
+    userId: USER_ID,
+  });
+}
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
