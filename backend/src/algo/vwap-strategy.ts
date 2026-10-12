@@ -20,6 +20,7 @@ import {
   startJournalProgressSweep,
   subscribeNewsSignals,
 } from "./common-http.ts";
+import { capToDepth } from "./depth-cap.ts";
 import {
   createProgressReader,
   type InFlightChild,
@@ -106,7 +107,7 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
   setInFlight(order.id, budget.inFlight);
   if (budget.inFlight || budget.remaining <= 0) return;
 
-  const sliceQty = Math.min(order.maxSlice, budget.remaining);
+  const sliceQty = capToDepth(Math.min(order.maxSlice, budget.remaining), tick, order.asset);
   const childId = `${order.orderId}-vwap-${now}`;
 
   await producer

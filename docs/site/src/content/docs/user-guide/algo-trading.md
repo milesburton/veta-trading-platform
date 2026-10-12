@@ -21,6 +21,20 @@ VETA supports 9 algo strategies, each running as an independent microservice. Th
 | IS            | Implementation Shortfall, balances market impact against timing risk  | Optimal execution                     |
 | MOMENTUM      | EMA crossover, routes tranches on favourable price signals            | Trend-following                       |
 
+## Child order sizing
+
+Each algo releases its parent order as a series of child orders. Every child is matched against the venue's order book, so a child larger than the visible depth fills only in part and walks through the price levels.
+
+TWAP and VWAP limit the size of each child to a share of the estimated book depth:
+
+- Depth is estimated as half the current tick volume for the instrument, because the algos receive the prices-only feed and not the venue books.
+- A child is capped at `ALGO_DEPTH_PARTICIPATION` times that estimate. The default is `0.5`, so a child never exceeds a quarter of tick volume.
+- When no volume is available for the instrument, the cap is not applied.
+
+The cap means a large parent order on a thinly traded instrument may not complete within its window. TWAP then reports the order as expired with the quantity filled so far, instead of sending oversized children. The shared logic is in [`depth-cap.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/algo/depth-cap.ts).
+
+POV already sizes children from tick volume and SNIPER from the available quantity. The remaining strategies still use fixed or evenly divided sizes, tracked in issue 785.
+
 ## Algo Monitor
 
 The **Algo Monitor** panel shows all active algo strategies with real-time heartbeat status. Each strategy reports:

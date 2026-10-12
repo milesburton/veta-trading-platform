@@ -14,6 +14,7 @@ import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
+import { capToDepth } from "./depth-cap.ts";
 import {
   CHILD_SETTLE_MS,
   completeHeartbeat,
@@ -93,8 +94,8 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     if (budget.progress.filledQty >= order.quantity) break;
     if (inFlight || budget.remaining <= 0) continue;
 
-    const sliceQty = twapSliceQty(budget.remaining, numSlices - i);
     const tick = marketClient.getLatest();
+    const sliceQty = capToDepth(twapSliceQty(budget.remaining, numSlices - i), tick, order.asset);
     const marketPrice = tick.prices[order.asset] ?? 0;
     const childId = `${order.orderId}-twap-${i + 1}`;
 
