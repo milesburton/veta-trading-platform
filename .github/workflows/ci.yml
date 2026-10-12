@@ -682,7 +682,7 @@ jobs:
           TC_TIMEOUT_SCALE: "3"
 
       - name: Generate TC coverage lcov
-        run: deno coverage coverage --lcov > coverage-tc.lcov || echo "(no TC coverage produced)"
+        run: deno coverage coverage --lcov --exclude='backend/src/tests/' > coverage-tc.lcov || echo "(no TC coverage produced)"
 
       - name: Upload TC coverage
         if: github.ref == 'refs/heads/main'

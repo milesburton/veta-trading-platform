@@ -94,6 +94,8 @@ The default demo passcode is `veta-dev-passcode` (configurable via `OAUTH2_SHARE
 
 ## Synthetic trader accounts
 
-Nine `synthetic-trader-*` accounts, one per desk, generate realistic order flow during market hours so the platform has something to trade against without a human at the keyboard. They are seeded with `role='trader'` like the personas above, but their `id` is excluded from the `/personas` endpoint by prefix, so they never appear in the sign-in picker. They exist purely to validate the platform, not as a login option.
+Nine `synthetic-trader-*` accounts with `role='trader'` generate realistic order flow during market hours so the platform has something to trade against without a human at the keyboard. Eight of them are the desk accounts, one per desk, each run by its own `synthetic-trader` container. The ninth, `synthetic-trader-1`, is the default account used when no desk is configured. These accounts are excluded from the `/personas` endpoint by prefix, so they never appear in the sign-in picker.
+
+One synthetic account is deliberately visible. `synthetic-trader-1-viewer` has `role='viewer'` and appears in the picker as "Synthetic Trader", so a person can watch the bot at work without being able to submit orders as it. The gateway and OMS already reject orders from the `viewer` role.
 
 Each desk runs in its own container and is switched on with `SYNTHETIC_TRADER_<DESK>_ENABLED`. A desk that is not enabled does not connect to the gateway, request tokens or poll prices. It serves only its `/health` endpoint, so it costs almost no CPU while remaining visible in the service status view.
