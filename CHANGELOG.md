@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.85.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.85.0...veta-trading-platform-v1.85.1) (2026-10-12)
+
+
+### Performance Improvements
+
+* **synthetic-trader:** skip gateway, token and price polling when a desk is disabled ([#791](https://github.com/milesburton/veta-trading-platform/issues/791)) ([d8ef3a1](https://github.com/milesburton/veta-trading-platform/commit/d8ef3a1f1f3faf91fd88e88bfe05c2aaa3c117fb))
+
 ## [1.85.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.84.0...veta-trading-platform-v1.85.0) (2026-10-12)
 
 
