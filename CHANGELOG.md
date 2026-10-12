@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.84.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.4...veta-trading-platform-v1.84.0) (2026-10-12)
+
+
+### Features
+
+* **algo:** cap VWAP and TWAP child slices to estimated book depth ([#786](https://github.com/milesburton/veta-trading-platform/issues/786)) ([9efcd7b](https://github.com/milesburton/veta-trading-platform/commit/9efcd7bd2783812ec3d8ad3512b81166c644323a))
+
 ## [1.83.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.3...veta-trading-platform-v1.83.4) (2026-10-12)
 
 
