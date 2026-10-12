@@ -19,6 +19,7 @@ import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
 import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { capToDepth } from "./depth-cap.ts";
 
 const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5021;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -195,12 +196,13 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
+    const sliceQty = capToDepth(order.currentSliceQty, tick, order.asset);
     order.sliceCount += 1;
     const childId = `${order.orderId}-ice-${order.sliceCount}`;
     order.sliceInFlight = true;
 
     logger.info(
-      `Slice ${order.sliceCount} for ${order.orderId}: ${order.currentSliceQty} ${order.asset} @ mkt ${marketPrice}`
+      `Slice ${order.sliceCount} for ${order.orderId}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`
     );
 
     await producer
@@ -211,7 +213,7 @@ marketClient.onTick(async (tick) => {
         algo: "ICEBERG",
         asset: order.asset,
         side: order.side,
-        quantity: order.currentSliceQty,
+        quantity: sliceQty,
         limitPrice: order.limitPrice,
         marketPrice,
         sliceIndex: order.sliceCount,
@@ -227,7 +229,7 @@ marketClient.onTick(async (tick) => {
         orderId: order.orderId,
         asset: order.asset,
         sliceIndex: order.sliceCount,
-        sliceQty: order.currentSliceQty,
+        sliceQty,
         totalRemaining: order.totalRemaining,
         filledQty: order.filledQty,
         ts: now,

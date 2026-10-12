@@ -25,6 +25,7 @@ import {
   type RoutedOrder,
 } from "@veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { capToDepth } from "./depth-cap.ts";
 
 const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5023;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
@@ -244,7 +245,11 @@ marketClient.onTick(async (tick) => {
 
     if (now - order.lastSliceAt < sliceIntervalMs) continue;
 
-    const sliceQty = Math.min(Math.ceil(order.totalQty / targetSlices), order.totalRemaining);
+    const sliceQty = capToDepth(
+      Math.min(Math.ceil(order.totalQty / targetSlices), order.totalRemaining),
+      tick,
+      order.asset
+    );
     if (sliceQty <= 0) continue;
 
     order.sliceCount += 1;
