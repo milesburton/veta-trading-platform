@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.83.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.3...veta-trading-platform-v1.83.4) (2026-10-12)
+
+
+### Bug Fixes
+
+* **ci:** restore fixtures, pre-commit gate and workflow overwritten by e0692a83 ([#782](https://github.com/milesburton/veta-trading-platform/issues/782)) ([8647acf](https://github.com/milesburton/veta-trading-platform/commit/8647acf448a159cd47182e2964b8f3ace234d711)), closes [#781](https://github.com/milesburton/veta-trading-platform/issues/781)
+
 ## [1.83.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.83.2...veta-trading-platform-v1.83.3) (2026-10-10)
 
 
