@@ -13,8 +13,8 @@ consumer and would have hit 100% on its own within a couple more weeks.
 
 1. **Always**: dangling images, exited containers, and build cache older
    than 24h. Preventive.
-2. **If disk ≥ `THRESHOLD_PCT` (default 90%)**: also prune *all*
-   untagged images and the full builder cache. Emergency mode.
+2. **If disk ≥ `THRESHOLD_PCT` (default 90%)**: also prune every
+   image not used by a container, regardless of age, and the full builder cache. Emergency mode.
 
 ## Install (one-time, on the server)
 

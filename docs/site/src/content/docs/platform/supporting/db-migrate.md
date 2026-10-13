@@ -11,7 +11,7 @@ Every migration uses `CREATE TABLE IF NOT EXISTS` and `ON CONFLICT DO NOTHING` p
 
 ## Ordering
 
-Services that depend on Postgres (`oms`, `journal`, `user-service`, `replay-service`) declare:
+Services that depend on Postgres (for example `oms`, `journal`, `user-service`, `replay-service` and `gateway`) declare:
 
 ```yaml
 depends_on:
