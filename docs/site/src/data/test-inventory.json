@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 128,
-      "cases": 1427,
+      "files": 129,
+      "cases": 1440,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -113,6 +113,7 @@
         "synthetic-trader-disabled.unit.test.ts": 1,
         "synthetic-trader-gateway-socket.unit.test.ts": 4,
         "synthetic-trader-pacing.unit.test.ts": 3,
+        "synthetic-trader-payloads.unit.test.ts": 13,
         "synthetic-trader-position-tracker.unit.test.ts": 7,
         "synthetic-trader-token-client.unit.test.ts": 3,
         "telemetry-route.unit.test.ts": 6,
