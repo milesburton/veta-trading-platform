@@ -36,11 +36,12 @@ The gateway runs `notifyDiscord` and `createTicketForAlert` in parallel via `Pro
 
 ## Configuration
 
-Two env vars on the gateway:
+Three env vars on the gateway:
 
 | Var | Purpose | Default |
 | --- | --- | --- |
-| `GITHUB_TICKETING_TOKEN` | PAT or fine-grained token with `issues:write` on the target repo | empty (ticketing no-ops) |
+| `GITHUB_TICKETING_TOKEN_FILE` | Path to a file holding the token. Read first, and used in production | `/run/secrets/github_ticketing_token` |
+| `GITHUB_TICKETING_TOKEN` | Environment variable holding a PAT or fine-grained token with `issues:write` on the target repo | empty (ticketing no-ops). Development fallback when no token file exists |
 | `GITHUB_TICKETING_REPO` | `owner/name` of the repo to open issues in | `milesburton/veta-trading-platform` |
 
 The token is a bearer credential. In production it is stored in [OpenBao](/veta-trading-platform/development/deployment/#secrets) as `GITHUB_TICKETING_TOKEN_SECRET` at `secret/veta/platform`, and reaches the gateway and discord-bot as the Compose secret file `/run/secrets/github_ticketing_token` (`GITHUB_TICKETING_TOKEN_FILE`), never as an environment variable. The repo name is not a secret and can stay in the server's `.env`:

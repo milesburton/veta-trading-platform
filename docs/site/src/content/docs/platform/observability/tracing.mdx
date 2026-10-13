@@ -11,7 +11,7 @@ Every Deno service emits OpenTelemetry traces and metrics when started with `OTE
 docker compose -f compose.yml -f compose.prod.yml -f compose.observability.yml up -d
 ```
 
-The overlay is opt-in. Local development without the overlay does not ship traces by default, which keeps bandwidth cost zero. Service names are auto-derived from the container hostname inside [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so each service appears in Tempo without having to plumb `OTEL_SERVICE_NAME` into 37 compose blocks individually.
+The overlay is opt-in. Local development without the overlay does not ship traces by default, which keeps bandwidth cost zero. The overlay sets `OTEL_SERVICE_NAME` for each service. When it is unset, the name is derived from the container hostname in [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so a service added without an overlay entry still appears in Tempo.
 
 ## Context propagation
 
