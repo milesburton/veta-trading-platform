@@ -21,7 +21,7 @@ Every PR description must answer: "How do we roll this back if it breaks prod?" 
 - **Schema migration**: must include a working `down` migration AND be deployed in two phases: expand (schema accepts old + new code), then contract (after rollout settles), then drop (after a soak). Single-phase migrations are forbidden.
 - **Config / env change**: captured in version control; rollback is reverting the config commit, never editing on the box.
 
-The PR template enforces this with a required `## Rollback plan` section.
+There is no PR template yet; the required `## Rollback plan` section is planned (see [migration path](../migration-path/)), so for now reviewers enforce this by hand.
 
 ## Incident log
 
@@ -42,7 +42,7 @@ Blameless template, lives in the same directory. Required for any incident with 
 
 ## Change-freeze windows
 
-`scripts/deploy.sh` checks for an active freeze window (file or env var) and refuses to deploy without an explicit `--hotfix` flag, which is logged. Typical freezes:
+Planned, not yet implemented: the deploy script will check for an active freeze window and refuse to deploy without an explicit `--hotfix` flag, which is logged. Typical freezes would be:
 
 - Demo windows (announced in advance)
 - The first 30 min after another deploy (let the platform settle)
