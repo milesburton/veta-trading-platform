@@ -39,13 +39,15 @@ For ICEBERG the visible quantity set on the order is the requested size, so a vi
 
 ## Algo Monitor
 
-The **Algo Monitor** panel shows all active algo strategies with real-time heartbeat status. Each strategy reports:
+The **Algo Monitor** panel lists algo parent orders with their execution progress. Its tabs are:
 
-- Last heartbeat timestamp
-- Number of active orders
-- Current execution progress
+- **Active**: orders that are pending or working
+- **Needs Action**: orders that expired with quantity unfilled, or that have been working for more than 30 seconds with no fill
+- **History**: orders that have filled or expired. Selecting a row shows its execution performance.
 
-A heartbeat gap above 10 seconds triggers an alert in the alert centre.
+Each row shows the asset, side, strategy, filled, unfilled and total quantity, a progress bar, the limit and last prices, market impact in basis points and commission. A strategy filter narrows the list to one execution strategy.
+
+Algo heartbeats do not appear in this panel. They feed the algo feed indicator in the status bar.
 
 ![Algo Monitor panel](/veta-trading-platform/screenshots/panels/algo-monitor.png)
 
