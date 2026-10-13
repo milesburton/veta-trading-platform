@@ -43,7 +43,7 @@ Click **Compute Spreads** to calculate all three metrics for the selected bond.
 The duration ladder shows **DV01 key-rate attribution** across tenor buckets:
 
 - Portfolio DV01 summary at the top
-- Stacked bar chart showing exposure by maturity bucket (1y, 2y, 3y, 5y, 7y, 10y, 20y, 30y)
+- Stacked bar chart showing exposure by maturity bucket (3m, 1y, 2y, 5y, 10y, 30y)
 - Useful for identifying interest rate risk concentrations
 
 ![Duration Ladder panel](/veta-trading-platform/screenshots/panels/duration-ladder.png)

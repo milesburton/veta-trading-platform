@@ -33,13 +33,13 @@ The line updates incrementally as new candles arrive rather than recomputing the
 
 ## Market Heatmap
 
-The heatmap shows all instruments as a treemap, sized by market capitalisation and coloured by percentage change from session open.
+The heatmap shows all instruments as a treemap, coloured by percentage change from session open. A toggle sizes the tiles either by market capitalisation (the default) or by the size of the move.
 
 ![Market Heatmap](/veta-trading-platform/screenshots/07-market-heatmap.png)
 
 - **Green**: price up from open
 - **Red**: price down from open
-- **Larger tiles**: higher market cap
+- **Larger tiles**: higher market cap, or a larger move when sized by change
 
 ## News Feed
 
@@ -60,10 +60,10 @@ The header bar shows live system status:
 | Feed status (green dot + "live") | All data feeds are current                                    |
 | Feed status (amber + "slow")     | Some feeds are delayed                                        |
 | Feed status (red + "stale")      | Data feeds are offline                                        |
-| Data depth (e.g. "5 sym, 3d")    | Number of tracked symbols and minimum data history depth      |
+| Market Data depth (e.g. "3d")   | Average history depth across tracked symbols; the tooltip shows the symbol count and minimum depth |
 | Service health dots              | Green/red indicators for each backend service                 |
 
-When data depth is below 7 days, analytics accuracy is limited. Below 1 day, scenario analysis is unreliable.
+When the minimum data depth is below 7 days, analytics accuracy is limited. Below 6 hours, scenario analysis and volatility estimates are unreliable.
 
 ### Upgrade banner
 
