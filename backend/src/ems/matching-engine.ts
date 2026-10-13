@@ -1,5 +1,5 @@
 import type { OrderBookSnapshot } from "@veta/market-client";
-import { computeBookImpactBps } from "./fill-math.ts";
+import { computeBookImpactBps, computeUnfilledImpactBps } from "./fill-math.ts";
 import {
   addOrder,
   bestAsk,
@@ -52,7 +52,13 @@ export interface MatchAgainstSnapshotResult {
   avgFillPrice: number | undefined;
   touchPrice: number | undefined;
   impactBps: number;
+  unfilledImpactBps: number;
   fills: MatchResult["fills"];
+}
+
+function displayedDepth(side: "BUY" | "SELL", snapshot: OrderBookSnapshot): number {
+  const levels = side === "BUY" ? snapshot.asks : snapshot.bids;
+  return levels.reduce((total, level) => total + Math.max(0, level.size), 0);
 }
 
 export function matchAgainstSnapshot(
@@ -85,6 +91,7 @@ export function matchAgainstSnapshot(
     ? parseFloat((notional / result.filledQty).toFixed(4))
     : undefined;
 
+  const bookExhausted = result.filledQty >= displayedDepth(side, snapshot);
   const touchPrice = side === "BUY" ? bestAsk(book) : bestBid(book);
 
   return {
@@ -93,6 +100,9 @@ export function matchAgainstSnapshot(
     avgFillPrice,
     touchPrice,
     impactBps: computeBookImpactBps(side, touchPrice, avgFillPrice),
+    unfilledImpactBps: bookExhausted
+      ? computeUnfilledImpactBps(result.filledQty, result.remainingQty)
+      : 0,
     fills: result.fills,
   };
 }
