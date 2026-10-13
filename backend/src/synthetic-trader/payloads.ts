@@ -7,7 +7,7 @@ export const OrderEventDataSchema = z.object({
   remainingQty: z.number().optional(),
 });
 
-export type OrderEventInterpretation =
+type OrderEventInterpretation =
   | { kind: "filled"; clientOrderId: string | null | undefined; terminal: boolean }
   | { kind: "terminated"; clientOrderId: string | null | undefined }
   | { kind: "ignored" }
