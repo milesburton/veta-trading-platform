@@ -115,9 +115,10 @@ hurdles in order.
      planned.
 4. The miner attempts to phone home.
    - **Control**: `trading-net` is a Docker `internal: true` network, so
-     the ~18 services that never legitimately call out (OMS, EMS,
-     risk-engine, journal, every algo container, market-sim, and more)
-     have no route to the internet at all, verified directly against
+     every service that never legitimately calls out (OMS, EMS,
+     risk-engine, journal, every algo container, market-sim, and all
+     the rest apart from the five below) has no route to the internet
+     at all, verified directly against
      production dockerd. A compromise landing in any of them has
      nowhere to exfiltrate to. The gap is not fully closed: `gateway`
      (Discord webhook), `market-data` (external quote providers),
