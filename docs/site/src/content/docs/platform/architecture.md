@@ -71,7 +71,7 @@ reachable service. Everything else communicates via Kafka topics.
 graph LR
     KAFKA["Redpanda :9092"]:::bus
     OMS["OMS :5002<br/><i>Validation + routing</i>"]:::trading
-    RISK["Risk Engine :5032<br/><i>6 pre-trade checks</i>"]:::risk
+    RISK["Risk Engine :5032<br/><i>11 pre-trade checks</i>"]:::risk
     EMS["EMS :5001<br/><i>Execution + FIX bridge</i>"]:::trading
     FIXEX["FIX Exchange :9880<br/><i>Matching engine</i>"]:::fix
     JOURNAL["Journal :5009<br/><i>PostgreSQL store</i>"]:::storage

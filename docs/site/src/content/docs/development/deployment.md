@@ -41,7 +41,7 @@ cd frontend && npm run electron:dev
 | `DATABASE_URL` | (required) | PostgreSQL connection string |
 | `OAUTH2_SHARED_SECRET` | `veta-dev-passcode` | Demo login passcode |
 | `RISK_ENGINE_ENABLED` | `true` | Enable/disable pre-trade risk checks |
-| `VETA_DEMO_MODE` | `true` | Show demo personas on login page |
+| `VETA_DEMO_MODE` | `false` (`true` in `compose.prod.yml`) | Show demo personas on login page |
 | `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
 

@@ -7,7 +7,7 @@ VETA enforces real-time risk controls at every stage of the order lifecycle.
 
 ## Pre-trade risk engine
 
-Every order passes through the risk engine before reaching the market. Six checks run in parallel:
+Every order passes through the risk engine before reaching the market. Eleven checks run on every order:
 
 | Check                  | Description                                                                            |
 | --- | --- |
@@ -17,6 +17,11 @@ Every order passes through the risk engine before reaching the market. Six check
 | Rate limiting          | Caps order submission rate per trader (default: 10/sec)                                |
 | ADV check              | Rejects single orders exceeding 10% of average daily volume                            |
 | Max open orders        | Limits the number of concurrent active orders per trader                               |
+| Market hours           | Rejects orders placed outside the trading session                                      |
+| Gross notional limit   | Rejects orders that would take a trader above the gross notional limit                 |
+| Daily loss stop        | Blocks new orders once a trader reaches the daily loss limit                           |
+| Concentration limit    | Rejects orders that would put too large a share of the book in one instrument          |
+| Max position size      | Rejects orders that would take a single position above the per-symbol notional limit   |
 
 If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fail on outage).
 
