@@ -184,7 +184,7 @@ Deno.test("[docs-drift] every service named in supervisord.conf comment of platf
   );
 });
 
-Deno.test("[docs-drift] test-inventory.json exists and matches the deno.json test task file count", async () => {
+Deno.test("[docs-drift] test-inventory.json exists and matches the files discovered by the deno.json test:unit task", async () => {
   const inventoryPath = `${REPO_ROOT}docs/site/src/data/test-inventory.json`;
   let inventory: {
     backend: { unit: { files: number } };
@@ -199,15 +199,41 @@ Deno.test("[docs-drift] test-inventory.json exists and matches the deno.json tes
   }
 
   const denoJson = JSON.parse(await Deno.readTextFile(`${REPO_ROOT}deno.json`));
-  const testTaskCmd = denoJson.tasks?.test ?? "";
-  const filesFromTask = new Set(
-    (testTaskCmd as string).match(/backend\/src\/tests\/[^\s&]+\.ts/g) ?? []
-  );
+  const unitTaskCmd: string = denoJson.tasks?.["test:unit"] ?? "";
+  const ignored = (unitTaskCmd.match(/--ignore='([^']*)'/)?.[1] ?? "")
+    .split(",")
+    .filter(Boolean)
+    .map((glob) => {
+      const body = glob
+        .replace(/^\*\*\//, "")
+        .split("*")
+        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+        .join("[^/]*");
+      return new RegExp(`^${body}$`);
+    });
+
+  const walk = async (dir: string): Promise<string[]> => {
+    const entries = await Array.fromAsync(Deno.readDir(dir));
+    const nested = await Promise.all(
+      entries.map(async (entry): Promise<string[]> => {
+        if (entry.isDirectory) {
+          return entry.name === "node_modules" ? [] : walk(`${dir}/${entry.name}`);
+        }
+        return entry.isFile &&
+          entry.name.endsWith(".test.ts") &&
+          !ignored.some((re) => re.test(entry.name))
+          ? [`${dir}/${entry.name}`]
+          : [];
+      })
+    );
+    return nested.flat();
+  };
+  const unitFiles = await walk(`${REPO_ROOT}backend`);
 
   assertEquals(
     inventory.backend.unit.files,
-    filesFromTask.size,
-    `Inventory says ${inventory.backend.unit.files} backend unit files but the deno.json 'test' task lists ${filesFromTask.size}. Regenerate via 'cd docs/site && npm run generate'.`
+    unitFiles.length,
+    `Inventory says ${inventory.backend.unit.files} backend unit files but the 'test:unit' task discovers ${unitFiles.length}. Regenerate via 'cd docs/site && npm run generate'.`
   );
 });
 
