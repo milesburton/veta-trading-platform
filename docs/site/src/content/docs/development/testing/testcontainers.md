@@ -76,6 +76,7 @@ Every file listed in the `test:testcontainers` task in `deno.json` runs as part 
 | `typed-consumer.integration.tc.test.ts` | redpanda | Per-topic Zod schema validation on consume |
 | `registration.integration.tc.test.ts` | user-service | Registration persists the trader archetype to `trading_limits` |
 | `preferences.integration.tc.test.ts` | user-service + gateway | User preferences and saved workspaces |
+| `trading-limits-lookup.integration.tc.test.ts` | user-service | Service-token access to the per-user trading limits route |
 | `venues.integration.tc.test.ts` | RFQ, dark pool, CCP stack | RFQ sell-side, dark-pool crossing, CCP novation |
 | `product-service.integration.tc.test.ts` | product-service | Structured-product lifecycle |
 | `analytics-services.integration.tc.test.ts` | analytics, news, recommendation stack | Analytics, news and recommendation HTTP behaviour |

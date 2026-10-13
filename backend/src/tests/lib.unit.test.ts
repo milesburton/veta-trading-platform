@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { getCookieToken } from "../lib/auth.ts";
+import { getCookieToken, hasValidServiceToken, SERVICE_TOKEN_HEADER } from "../lib/auth.ts";
 import { settlementDate } from "../lib/settlement.ts";
 
 Deno.test("[lib/auth] getCookieToken returns token from veta_user cookie", () => {
@@ -68,4 +68,26 @@ Deno.test("[lib/settlement] commodities (T+2)", () => {
 
 Deno.test("[lib/settlement] default desk is equity", () => {
   assertEquals(settlementDate(undefined, monday), "2026-05-13");
+});
+
+const withServiceToken = (value: string): Request =>
+  new Request("https://veta.test", { headers: { [SERVICE_TOKEN_HEADER]: value } });
+
+Deno.test("[lib/auth] hasValidServiceToken accepts a matching token", () => {
+  assertEquals(hasValidServiceToken(withServiceToken("s3cret"), "s3cret"), true);
+});
+
+Deno.test("[lib/auth] hasValidServiceToken rejects a wrong, prefix or longer token", () => {
+  assertEquals(hasValidServiceToken(withServiceToken("wrong!"), "s3cret"), false);
+  assertEquals(hasValidServiceToken(withServiceToken("s3cre"), "s3cret"), false);
+  assertEquals(hasValidServiceToken(withServiceToken("s3cret-extra"), "s3cret"), false);
+});
+
+Deno.test("[lib/auth] hasValidServiceToken rejects a missing header", () => {
+  assertEquals(hasValidServiceToken(new Request("https://veta.test"), "s3cret"), false);
+});
+
+Deno.test("[lib/auth] hasValidServiceToken fails closed when no token is configured", () => {
+  assertEquals(hasValidServiceToken(withServiceToken(""), undefined), false);
+  assertEquals(hasValidServiceToken(withServiceToken(""), ""), false);
 });

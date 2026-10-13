@@ -15,6 +15,7 @@ interface Scenario {
 
 const PLACEHOLDERS: Record<string, string> = {
   OAUTH2_SHARED_SECRET: "test-placeholder",
+  INTERNAL_SERVICE_TOKEN: "test-placeholder",
   LOADGEN_OAUTH_PASSWORD: "test-placeholder",
   GRAFANA_ADMIN_PASSWORD: "test-placeholder",
   DISCORD_WEBHOOK_URL: "https://example.invalid/test",
