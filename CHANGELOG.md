@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.85.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.85.1...veta-trading-platform-v1.85.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **synthetic-trader:** validate market-sim prices and gateway order events with Zod ([#799](https://github.com/milesburton/veta-trading-platform/issues/799)) ([0c8b0e2](https://github.com/milesburton/veta-trading-platform/commit/0c8b0e256947f5c6746f16c7c91dfc9b651ce669))
+
 ## [1.85.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.85.0...veta-trading-platform-v1.85.1) (2026-10-12)
 
 
