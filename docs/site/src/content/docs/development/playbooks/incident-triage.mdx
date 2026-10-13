@@ -44,9 +44,9 @@ docker compose exec -T postgres pg_isready
 These have each caused outages on this stack:
 
 - **Unbounded Kafka topics.** `market.ticks`, `market.features`, `market.signals` and
-  `algo.heartbeat` carry topic-level retention; order and intelligence topics rely on the
-  cluster default and have grown unbounded before, wedging the broker. Check sizes and
-  consumer lag:
+  `algo.heartbeat` carry topic-level retention. All other topics rely on the cluster
+  defaults set by the topic-creation job in `compose.yml` (6 hours and 1 GiB), which were
+  added after unbounded topics wedged the broker. Check sizes and consumer lag:
 
   ```bash
   docker compose exec -T redpanda rpk topic list
