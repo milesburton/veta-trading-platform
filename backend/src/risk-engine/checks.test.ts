@@ -35,6 +35,7 @@ function createTestState(config?: Partial<RiskConfig>): RiskState {
     breakerCooldownMs: 60_000,
     breakersEnabled: true,
     selfCrossEnabled: true,
+    marketHoursEnforced: false,
   };
 
   const mergedConfig = { ...defaultConfig, ...config };
@@ -48,6 +49,7 @@ function createTestState(config?: Partial<RiskConfig>): RiskState {
     workingOrders: [],
     rateBuckets: new Map(),
     positions: new Map(),
+    assetMeta: new Map(),
   };
 }
 

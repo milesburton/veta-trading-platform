@@ -77,8 +77,9 @@ Areas with the densest coverage:
 ### Adding a test
 
 1. Create `backend/src/tests/my-feature.unit.test.ts`.
-2. Add the path to the `test` task in `deno.json`. The runner does not glob; tests are listed explicitly. Forgetting to add a file means it does not run.
-3. Write `Deno.test("[my-feature] description of the case", () => { ... })`.
+2. Write `Deno.test("[my-feature] description of the case", () => { ... })`.
+3. Run `deno task test`. The `test:unit` task discovers every `*.test.ts` under `backend/` except the patterns in its `--ignore` list (testcontainers, `*.integration.test.ts`, `*.http.test.ts` and `load.test.ts`), so no registration is needed.
+4. Regenerate the inventory with `cd docs/site && npm run generate` and commit `src/data/test-inventory.json`.
 
 ## Frontend
 

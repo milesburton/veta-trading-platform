@@ -18,6 +18,34 @@ function extractFilesFromTask(taskCmd) {
   return [...new Set(matches)];
 }
 
+function ignoredBasenameMatchers(taskCmd) {
+  const raw = taskCmd?.match(/--ignore='([^']*)'/)?.[1] ?? "";
+  return raw
+    .split(",")
+    .filter(Boolean)
+    .map((glob) => {
+      const base = glob.replace(/^\*\*\//, "");
+      if (base.includes("/")) {
+        throw new Error(`Unsupported --ignore pattern in deno.json: ${glob}`);
+      }
+      const body = base
+        .split("*")
+        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+        .join("[^/]*");
+      return new RegExp(`^${body}$`);
+    });
+}
+
+function walkBackendTests(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === "node_modules" ? [] : walkBackendTests(full);
+    }
+    return entry.isFile() && entry.name.endsWith(".test.ts") ? [full] : [];
+  });
+}
+
 function countDenoTests(absPath) {
   if (!fs.existsSync(absPath)) return 0;
   const content = fs.readFileSync(absPath, "utf8");
@@ -71,7 +99,20 @@ function backendSuite(taskCmd) {
   return { files: files.length, cases, perFile };
 }
 
-const backendUnit = backendSuite(denoJson.tasks?.test);
+function backendUnitSuite(taskCmd) {
+  const ignored = ignoredBasenameMatchers(taskCmd);
+  const counted = walkBackendTests(path.join(repoRoot, "backend"))
+    .filter((full) => !ignored.some((re) => re.test(path.basename(full))))
+    .sort()
+    .map((full) => [path.basename(full), countDenoTests(full)]);
+  return {
+    files: counted.length,
+    cases: counted.reduce((sum, [, c]) => sum + c, 0),
+    perFile: Object.fromEntries(counted),
+  };
+}
+
+const backendUnit = backendUnitSuite(denoJson.tasks?.["test:unit"]);
 const backendIntegration = backendSuite(denoJson.tasks?.["test:integration"]);
 const backendSmoke = backendSuite(denoJson.tasks?.["test:smoke"]);
 const backendTestcontainers = backendSuite(
