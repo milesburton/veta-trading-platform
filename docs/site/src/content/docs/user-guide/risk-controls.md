@@ -22,13 +22,13 @@ If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fa
 
 ## Trading limits
 
-Each trader has personal limits enforced by the order ticket:
+Each trader has personal limits enforced by the OMS when an order is submitted:
 
 - **Max order quantity**: the largest single order allowed (e.g. 10,000 shares)
 - **Max daily notional**: the total notional value allowed per day (e.g. $1,000,000)
 - **Allowed strategies**: which algo strategies the trader can use
 
-Limit violations show amber warnings in the order ticket and prevent submission.
+An order that breaches a limit is rejected with the reason. The order ticket greys out strategies that are not allowed.
 
 ## Kill Switch
 
