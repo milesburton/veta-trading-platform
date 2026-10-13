@@ -5,6 +5,7 @@ import { isDeskOpen } from "./desk-calendar.ts";
 import { DecisionEngine } from "./decision-engine.ts";
 import { GatewaySocket } from "./gateway-socket.ts";
 import { nextDelayMs } from "./pacing.ts";
+import { interpretOrderEvent, PricesSchema } from "./payloads.ts";
 import { PositionTracker } from "./position-tracker.ts";
 import { TokenClient } from "./token-client.ts";
 
@@ -49,7 +50,14 @@ function startTrading(): void {
     try {
       const res = await fetch(`${MARKET_SIM_URL}/prices`);
       if (res.ok) {
-        latestPrices = (await res.json()) as Record<string, number>;
+        const parsed = PricesSchema.safeParse(await res.json());
+        if (parsed.success) {
+          latestPrices = parsed.data;
+        } else {
+          logger.warn("synthetic-trader: ignoring malformed /prices payload", {
+            issues: parsed.error.issues,
+          });
+        }
       }
     } catch (err) {
       logger.warn("synthetic-trader: failed to refresh prices", { err });
@@ -87,16 +95,23 @@ function startTrading(): void {
       });
     },
     onOrderEvent: (event) => {
-      const data = event.data;
-      const clientOrderId = data.clientOrderId as string | undefined;
-      if (event.topic === "orders.filled") {
-        filled += 1;
-        const remainingQty = data.remainingQty as number | undefined;
-        if (remainingQty === undefined || remainingQty <= 0) {
-          tracker.recordTerminal(clientOrderId);
-        }
-      } else if (event.topic === "orders.cancelled" || event.topic === "orders.expired") {
-        tracker.recordTerminal(clientOrderId);
+      const interpreted = interpretOrderEvent(event.topic, event.data);
+      switch (interpreted.kind) {
+        case "filled":
+          filled += 1;
+          if (interpreted.terminal) tracker.recordTerminal(interpreted.clientOrderId);
+          break;
+        case "terminated":
+          tracker.recordTerminal(interpreted.clientOrderId);
+          break;
+        case "malformed":
+          logger.warn("synthetic-trader: ignoring malformed order event", {
+            topic: event.topic,
+            issues: interpreted.issues,
+          });
+          break;
+        case "ignored":
+          break;
       }
     },
   });
