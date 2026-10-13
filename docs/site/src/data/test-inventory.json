@@ -143,7 +143,7 @@
         "scenarios.integration.test.ts": 2,
         "journal.http.test.ts": 13,
         "market-data.http.test.ts": 11,
-        "risk-engine.unit.test.ts": 29
+        "risk-engine.integration.test.ts": 29
       }
     },
     "smoke": {
