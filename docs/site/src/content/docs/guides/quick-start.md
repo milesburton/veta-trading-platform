@@ -12,7 +12,8 @@ description: Run VETA locally in under five minutes.
 1. Clone the repository.
 2. Open in VS Code and select "Reopen in Container".
 3. The MOTD lists the available commands.
-4. Run `cd frontend && npm run dev` for the browser UI.
+4. Run `start-trading` to start the core backend services. They are not started automatically on attach.
+5. Run `cd frontend && npm run dev` for the browser UI.
 
 ### Offline-ready setup
 
@@ -27,12 +28,14 @@ Pre-warm the cache while online:
 
 The pre-warm script caches the server tarball, installs the VS Code Server into `~/.vscode-server/bin/<commit>`, and when running from WSL also seeds `%LOCALAPPDATA%\\Temp\\vsch\\serverCache\\<commit>` on Windows. It also pulls the devcontainer base image and primes Docker build cache for `.devcontainer/Dockerfile`.
 
-The dev container starts the full backend stack via `docker compose up -d` on attach. To restart it inside the container: `docker compose --profile trading up -d`. The frontend dev server proxies API calls to the gateway at port 5011 (dev container only; production traffic enters via Traefik).
+`start-trading` runs `scripts/start-trading.sh`. To bring the stack up by hand inside the container, use `docker compose --profile trading up -d`. The frontend dev server proxies API calls to the gateway at port 5011 (dev container only; production traffic enters via Traefik).
 
 ## Default credentials
 
 - **Username**: `alice` (or any persona from the Demo Personas page)
 - **Passcode**: `veta-dev-passcode`
+
+The user service refuses to start with this default passcode unless `VETA_ALLOW_DEFAULT_PASSCODE=true` is set in the environment (for example in `.env`), or `OAUTH2_SHARED_SECRET` is set to another value. Only use the default in a local development environment.
 
 The login page has a "Demo personas" panel. Click any card to sign in with one click.
 
