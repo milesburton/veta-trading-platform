@@ -4,6 +4,7 @@ import {
   computeFees,
   computeFill,
   computeImpact,
+  computeUnfilledImpactBps,
   execId,
   FINRA_TAF_PER_SHARE,
   PARTICIPATION_CAP_DEFAULT as PARTICIPATION_CAP,
@@ -92,6 +93,16 @@ Deno.test("[ems/impact] book impact is zero without a touch or a fill price", ()
   assertEquals(computeBookImpactBps("BUY", undefined, 100), 0);
   assertEquals(computeBookImpactBps("BUY", 100, undefined), 0);
   assertEquals(computeBookImpactBps("BUY", 0, 100), 0);
+});
+
+Deno.test("[ems/impact] unfilled impact follows a square root of remaining over filled", () => {
+  assertEquals(computeUnfilledImpactBps(100, 100, 10), 10);
+  assertEquals(computeUnfilledImpactBps(100, 400, 10), 20);
+});
+
+Deno.test("[ems/impact] unfilled impact is zero without a fill to anchor on or a remainder", () => {
+  assertEquals(computeUnfilledImpactBps(0, 100), 0);
+  assertEquals(computeUnfilledImpactBps(100, 0), 0);
 });
 
 // ── Fee calculation ───────────────────────────────────────────────────────────
