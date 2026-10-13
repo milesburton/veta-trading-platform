@@ -17,8 +17,8 @@ The platform's CCP is a simplified educational simulation, but it implements the
 
 The CCP consumes two streams from the message bus:
 
-- `orders.filled` — lit-market and dark-pool fills produced by the EMS and the dark-pool ATS
-- `rfq.executed` — bond executions produced by the [RFQ service](../post-trade-rfq/)
+- `orders.filled`: lit-market and dark-pool fills produced by the EMS and the dark-pool ATS
+- `rfq.executed`: bond executions produced by the [RFQ service](../post-trade-rfq/)
 
 Both streams carry the same fill shape (instrument, side, quantity, price, counterparty), so the CCP can clear lit, dark, and RFQ trades through a single pipeline.
 
@@ -30,9 +30,9 @@ For each fill the CCP performs the following work:
 2. **Initial margin.** Margin is posted to both buyer and seller accounts at an asset-class-specific rate:
 
    | Asset class | Initial margin |
-| --- | ---: |
-   | Equity      | 10% notional |
-   | Fixed income| 2% notional |
+   | --- | ---: |
+   | Equity | 10% notional |
+   | Fixed income | 2% notional |
    | Derivatives | 15% notional |
    | OTC default | 5% notional |
 
@@ -41,11 +41,11 @@ For each fill the CCP performs the following work:
 
 ## Mark-to-market and variation margin
 
-Every `CCP_MARGIN_MTM_MS` (10 s by default) the CCP revalues outstanding positions against the latest prices from <Svc name="market-sim" />. Where current exposure exceeds the maintenance margin threshold (which is below the initial margin rate by asset class), a variation margin call is published on `ccp.margin`.
+Every `CCP_MARGIN_MTM_MS` (10 s by default) the CCP revalues outstanding positions against the latest prices from <Svc name="market-sim" />. Where initial margin plus unrealised P&L falls below the maintenance requirement (70% of the net margin requirement while the account holds positions), a variation margin call is published on `ccp.margin`.
 
 ## Settlement sweep
 
-Every `CCP_SETTLEMENT_SWEEP_MS` (30 s by default) a sweep walks the queue, picks obligations whose settlement date has arrived, and publishes `ccp.settlement.complete` for each one. The compressed time base means T+2 equity settlement, T+1 FI, and same-day derivatives can all be exercised in a short demo session.
+Every `CCP_SETTLEMENT_SWEEP_MS` (30 s by default) a sweep walks the queue, picks obligations whose settlement date has arrived, and publishes `ccp.settlement.complete` for each one. Settlement dates are real business days on the relevant market calendar: T+2 for equity, T+1 for fixed income and derivatives. The sweep only completes an obligation once its date has arrived, so a short demo session sees obligations settle only if the session spans the settlement date.
 
 ## HTTP surface
 
