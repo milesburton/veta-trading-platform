@@ -75,11 +75,13 @@ The **Algo Leaderboard** ranks strategies by performance metrics:
 
 ## Trade Recommendations
 
-The **Trade Recommendation** panel shows rule-based signals scored by the intelligence pipeline. Each recommendation includes:
+The **Trade Recommendation** panel ranks option contracts for a chosen underlying. Select a symbol and click **Analyse**. When a live signal exists for the symbol, a banner shows its score, direction (long, short or neutral), confidence and the three largest contributing factors.
 
-- Symbol and action (BUY/SELL/HOLD)
-- Confidence score (0 to 1)
-- Reason text with factor analysis
-- Target price
+Each recommendation row shows:
+
+- A signal strength badge: strong buy, buy, neutral, sell or strong sell
+- Option type, strike and expiry
+- Theoretical price and a score bar
+- On expansion: Greeks (delta, gamma, theta, vega), implied volatility, the scoring mode and the reasons behind the score
 
 ![Trade Recommendation panel](/veta-trading-platform/screenshots/panels/trade-recommendation.png)
