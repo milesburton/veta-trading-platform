@@ -1,14 +1,15 @@
 {
   "backend": {
     "unit": {
-      "files": 127,
-      "cases": 1415,
+      "files": 128,
+      "cases": 1427,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
         "checks.test.ts": 27,
         "abuse-tracker.unit.test.ts": 10,
         "access-log-throttle.test.ts": 5,
+        "admin-route-load-and-demo.unit.test.ts": 12,
         "admin-route.unit.test.ts": 16,
         "alerts-route.unit.test.ts": 15,
         "algo-common-http.unit.test.ts": 9,
