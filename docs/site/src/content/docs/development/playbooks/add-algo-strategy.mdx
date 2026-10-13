@@ -22,11 +22,20 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
    - Subscribe to `orders.routed` for parents that name your strategy
    - Read fill progress from the journal with `readSliceBudget()` from `fill-progress.ts`, not from local counters (see [Fill progress from the journal](#fill-progress-from-the-journal))
    - Publish to `orders.child` for each child slice you generate
-   - Emit `algo.heartbeat` every 5s so the frontend's AlgoHeartbeat panel stays green
-2. **Add a port + env var** to `compose.yml`. Use the next free port in the 5000-range. Add `<UPPER>_ALGO_PORT` and `<UPPER>_ALGO_HOST` to the `gateway` service env block so SVC_PROXY can route to it.
+   - Emit `algo.heartbeat` when an order starts, slices and completes. These are order-lifecycle events, not a periodic keepalive (see [Algo heartbeats are not a liveness signal](/veta-trading-platform/platform/observability/alerts/#algo-heartbeats-are-not-a-liveness-signal))
+   - Cap each child with the shared depth cap in `depth-cap.ts` unless the algo sizes children from tick volume or available quantity (see [Child order sizing](/veta-trading-platform/user-guide/algo-trading/#child-order-sizing))
+2. **Register the service.** Use the next free port in the 5000-range and add the service to each place that lists services:
+   - `compose.yml` and `compose.prod.yml`, with an `image:` override in the latter
+   - `supervisord.conf`, `shared/serviceRegistry.ts` and the `docker/<name>/Dockerfile`
+   - the `docker-services` matrix in `.github/workflows/ci.yml` (see [CI/CD](/veta-trading-platform/development/ci-cd/#docker-services-3-to-5-minutes-per-image-parallel))
+   - `compose.observability.yml`, for its `OTEL_SERVICE_NAME`
+   - `<UPPER>_ALGO_PORT` and `<UPPER>_ALGO_HOST` in the `gateway` service env block so `SVC_PROXY` can route to it
+   - the `check` task entry points in `deno.json`
+   - the service descriptions in `docs/site/scripts/generate-service-map.mjs`
 3. **Update the params type** in `frontend/src/types.ts`. Add a `<Name>Params` interface and union member in `AlgoParams`.
-4. **Wire the order-ticket UI** by adding a strategy option in [`StrategyParams.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/StrategyParams.tsx). Add a builder branch in [`OrderTicket/buildAlgoParams.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/OrderTicket/buildAlgoParams.ts).
-5. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](/veta-trading-platform/platform/algos/) — picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
+4. **Add the strategy name** to the shared strategy list in `shared/primitives.ts` and to the frontend lists in `domain/market/venueCapabilities.ts`, `domain/market/marketSession.ts` and `domain/ticket/fieldDefinitions.ts`. Add a colour for it in `frontend/src/tokens.ts` (see the [style guide](/veta-trading-platform/development/style-guide/)), an entry in `StartupOverlay/serviceCatalog.ts`, and a `/api/<name>` proxy rewrite in `frontend/vite.config.ts`.
+5. **Wire the order-ticket UI** by adding a strategy option in [`StrategyParams.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/StrategyParams.tsx). Add a builder branch in [`OrderTicket/buildAlgoParams.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/OrderTicket/buildAlgoParams.ts).
+6. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](/veta-trading-platform/platform/algos/) — picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
 
 ## Verification
 
@@ -34,8 +43,8 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
 # Unit tests for the new strategy
 deno test --allow-all backend/src/tests/algo.unit.test.ts
 
-# Integration smoke (start the algo + submit a parent order)
-deno task test:smoke -- --grep "<your-algo>"
+# Testcontainers integration (starts the algo and submits a parent order)
+deno task test:testcontainers
 
 # Frontend tests covering the new strategy in OrderTicket
 cd frontend && ./node_modules/.bin/vitest run src/components/OrderTicket/
@@ -46,9 +55,9 @@ cd docs/site && npm run generate
 
 ## Common pitfalls
 
-- **Forgetting the heartbeat** — frontend's algo health turns amber after 30s. The base `commonHttp.ts` helper provides `subscribeNewsSignals()` and a heartbeat publisher; use them.
+- **Forgetting the heartbeat**: the algo feed indicator in the status bar only turns live when `algo.heartbeat` events arrive. The helpers in `common-http.ts` and `fill-progress.ts` build the heartbeat payloads; use them.
 - **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](/veta-trading-platform/platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
-- **Missing tests in `deno.json`** — new test files are not auto-picked-up. Add the path to all three `test*` task definitions in `deno.json`.
+- **Missing entry points in the `deno.json` `check` task**: `deno task check` type-checks an explicit list of files, so a new strategy file is not type-checked until it is added. Test files need no registration, because `test:unit` discovers them by glob.
 - **Docs auto-gen swallows your description** — the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.
 
 ## Execution mechanics reference
