@@ -19,6 +19,7 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { SERVICE_TOKEN_HEADER } from "@veta/auth";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
@@ -38,6 +39,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
 const RISK_ENGINE_ENABLED =
   (Deno.env.get("RISK_ENGINE_ENABLED") ?? "true").toLowerCase() !== "false";
+const INTERNAL_SERVICE_TOKEN = Deno.env.get("INTERNAL_SERVICE_TOKEN");
 const USER_SERVICE_URL = `http://${
   Deno.env.get("USER_SERVICE_HOST") ?? "localhost"
 }:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
@@ -94,7 +96,7 @@ const MARKET_SIM_URL = `http://${
 
 const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }>();
 
-async function getUserLimits(userId: string): Promise<TradingLimits> {
+async function getUserLimits(userId: string): Promise<TradingLimits | null> {
   const now = Date.now();
   const cached = limitsCache.get(userId);
   if (cached && cached.expiresAt > now) return cached.limits;
@@ -102,9 +104,13 @@ async function getUserLimits(userId: string): Promise<TradingLimits> {
 
   try {
     const res = await fetch(`${USER_SERVICE_URL}/users/${encodeURIComponent(userId)}/limits`, {
+      headers: INTERNAL_SERVICE_TOKEN ? { [SERVICE_TOKEN_HEADER]: INTERNAL_SERVICE_TOKEN } : {},
       signal: AbortSignal.timeout(3_000),
     });
-    if (!res.ok) return DEFAULT_LIMITS;
+    if (!res.ok) {
+      logger.error(`Trading limits lookup for ${userId} failed with status ${res.status}`);
+      return null;
+    }
     const data = (await res.json()) as {
       max_order_qty: number;
       max_daily_notional: number;
@@ -121,8 +127,9 @@ async function getUserLimits(userId: string): Promise<TradingLimits> {
     };
     limitsCache.set(userId, { limits, expiresAt: now + 30_000 });
     return limits;
-  } catch {
-    return DEFAULT_LIMITS;
+  } catch (err) {
+    logger.error(`Trading limits lookup for ${userId} failed: ${String(err)}`);
+    return null;
   }
 }
 
@@ -276,6 +283,18 @@ consumer?.onMessage(async (_topic, raw) => {
   const desk = deriveDesk(order.instrumentType);
 
   const limits = order.userId ? await getUserLimits(order.userId) : DEFAULT_LIMITS;
+
+  if (!limits) {
+    await producer
+      ?.send("orders.rejected", {
+        clientOrderId: order.clientOrderId,
+        userId: order.userId,
+        reason: "Trading limits are temporarily unavailable, please retry",
+        ts: Date.now(),
+      })
+      .catch(() => {});
+    return;
+  }
 
   if (!limits.allowed_desks.includes(desk)) {
     logger.warn(`Order rejected — user ${order.userId} does not have access to ${desk} desk`);

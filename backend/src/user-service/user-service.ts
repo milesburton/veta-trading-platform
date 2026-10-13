@@ -1,6 +1,6 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { getCookieToken } from "@veta/auth";
+import { getCookieToken, hasValidServiceToken } from "@veta/auth";
 import { usersPool } from "@veta/db";
 import { parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
@@ -131,6 +131,7 @@ const OAUTH_CLIENTS = new Map<
 const OAUTH_USER_SECRETS = parseUserSecrets(Deno.env.get("OAUTH2_USER_SECRETS") ?? "");
 const DEFAULT_DEV_PASSCODE = "veta-dev-passcode";
 const OAUTH_SHARED_SECRET = Deno.env.get("OAUTH2_SHARED_SECRET") ?? DEFAULT_DEV_PASSCODE;
+const INTERNAL_SERVICE_TOKEN = Deno.env.get("INTERNAL_SERVICE_TOKEN");
 
 if (
   OAUTH_SHARED_SECRET === DEFAULT_DEV_PASSCODE &&
@@ -503,12 +504,14 @@ async function handle(req: Request): Promise<Response> {
   if (limitsMatch) {
     const userId = limitsMatch[1];
     if (req.method === "GET") {
-      const caller = await getUserFromToken(getCookieToken(req));
-      if (!caller) return json({ error: "unauthenticated" }, 401);
-      const canReadAny =
-        caller.role === "admin" || caller.role === "compliance" || caller.role === "risk-manager";
-      if (!canReadAny && caller.id !== userId) {
-        return json({ error: "forbidden" }, 403);
+      if (!hasValidServiceToken(req, INTERNAL_SERVICE_TOKEN)) {
+        const caller = await getUserFromToken(getCookieToken(req));
+        if (!caller) return json({ error: "unauthenticated" }, 401);
+        const canReadAny =
+          caller.role === "admin" || caller.role === "compliance" || caller.role === "risk-manager";
+        if (!canReadAny && caller.id !== userId) {
+          return json({ error: "forbidden" }, 403);
+        }
       }
       const client = await usersPool.connect();
       try {
