@@ -20,7 +20,7 @@ fails the typecheck at best and silently drops the panel at worst. The generator
 all of them:
 
 ```bash
-cd frontend && deno task new:panel <panel-id> "<Title>" --desc "<description>"
+cd frontend && npm run new:panel -- <panel-id> "<Title>" --desc "<description>"
 ```
 
 `<panel-id>` is kebab-case. The generator is idempotent, so re-running with the same id is a
@@ -31,7 +31,7 @@ no-op and safe to retry. It creates the component and its test, and patches ever
 After scaffolding:
 
 1. **Add to a workspace** in [`layoutModels.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/layoutModels.ts). Either add a `tab` to an existing model or include it in a new layout.
-2. **Flesh out the component** at `frontend/src/components/<PanelName>Panel.tsx`. Use `useAppSelector` for store reads, `useChannelIn` if it should listen to a workspace channel, `useChannelOut` if it should broadcast to one. Adjust the channel cap, trading-style restriction, and permissions in `panelRegistry.ts` if the defaults (cap 1, all read roles) are wrong.
+2. **Flesh out the component** at `frontend/src/components/<PanelName>Panel.tsx`. Use `useAppSelector` for store reads, `useChannelIn` if it should listen to a workspace channel, `useChannelOut` if it should broadcast to one. Adjust the channel capabilities (`PANEL_CHANNEL_CAPS`), trading-style restriction and permissions in `panelRegistry.ts` if the generated defaults are wrong.
 3. **Flesh out the test** at `frontend/src/components/__tests__/<PanelName>Panel.test.tsx`. Beyond the generated header/placeholder assertions, cover: it renders with a populated store, it handles empty data gracefully, it dispatches the right actions on user interaction.
 
 ## Doing it by hand
@@ -44,7 +44,7 @@ surface is:
    - Add the id to `PANEL_IDS`
    - Add the title to `PANEL_TITLES`
    - Add the description to `PANEL_DESCRIPTIONS`
-   - Add the channel cap to `PANEL_CHANNEL_CAPS` (default 1)
+   - Add whether it can send (`out`) and receive (`in`) workspace channel selections to `PANEL_CHANNEL_CAPS`
    - Add the permissions to `PANEL_PERMISSIONS`
    - Optionally restrict by trading style via `PANEL_TRADING_STYLES`
 3. **Wire the renderer** in [`panelComponents.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/panelComponents.ts) via `registerPanel`, and add the description to the duplicate map in `ComponentPicker.tsx`.
@@ -70,6 +70,6 @@ The Panel Reference page in the Astro docs picks up the new panel automatically 
 ## Common pitfalls
 
 - **Forgetting the panel-id type union** — `PanelId` is a string-literal union derived from `PANEL_IDS`. If you add a panel but forget to update the registry, every consumer using `PanelId` will silently miss it.
-- **Channel-cap default** — panels default to channel cap 1 (one instance per workspace). If users should be able to add multiple instances, set the cap explicitly.
+- **Channel capabilities**: `PANEL_CHANNEL_CAPS` only says whether a panel can broadcast (`out`) or listen (`in`) on a workspace channel. A panel with both set to `false` ignores channels entirely.
 - **Test-state shape** — many tests preload Redux state; if your panel reads a slice that test fixtures haven't populated, you'll see `Cannot read properties of undefined`. Either add the field to the fixture or default it in the panel.
 - **Stale screenshots** — if you edit the panel, re-run `panel-walkthrough.spec.ts` before merging or the docs site will show the old screenshot. CI does this automatically on main.
