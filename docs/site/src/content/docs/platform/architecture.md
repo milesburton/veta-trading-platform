@@ -50,7 +50,7 @@ graph TD
     FE["React Frontend<br/><i>Vite / Electron</i>"]:::client
     GW["API Gateway :5011<br/><i>BFF, WebSocket hub + HTTP proxy</i>"]:::gateway
     KAFKA["Redpanda Message Bus :9092<br/><i>Kafka-compatible pub/sub</i>"]:::bus
-    SVCS["~30 backend services<br/><i>see diagrams below</i>"]:::support
+    SVCS["40+ backend services<br/><i>see diagrams below</i>"]:::support
 
     FE <-->|"WebSocket + HTTP"| GW
     GW <-->|"pub/sub"| KAFKA

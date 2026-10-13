@@ -203,7 +203,7 @@ For install instructions see
 ## Server Traefik
 
 Once the request crosses the tunnel and arrives at the server's :443
-port, the **server Traefik** routes it to one of ~30 backend services
+port, the **server Traefik** routes it to one of the 40+ backend services
 based on PathPrefix labels on each Docker container.
 
 Notably the server Traefik does not match on Host headers. Anything

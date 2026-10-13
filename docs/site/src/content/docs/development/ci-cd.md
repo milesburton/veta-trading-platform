@@ -23,7 +23,7 @@ flowchart LR
   Frontend --> Electron["electron<br/><i>~6 min</i>"]:::parallel
   Frontend --> DockerBase["docker-base"]:::parallel
 
-  DockerBase --> DockerMatrix["37 service images<br/><i>matrix</i>"]:::parallel
+  DockerBase --> DockerMatrix["Service images<br/><i>matrix</i>"]:::parallel
 
   Integration --> MainCheck{"branch = main?"}:::decision
   Playwright --> MainCheck
@@ -41,39 +41,39 @@ flowchart LR
   classDef deploy fill:#f472b6,stroke:#ec4899,color:#000
 ```
 
-Integration covers service contracts, algo strategies (retry), the intelligence pipeline, journal HTTP, market-data HTTP, and smoke tests (87+). Playwright, screenshots, Electron, and Docker builds run in parallel with integration. They only wait on the frontend job, not the 15-minute integration suite.
+Integration covers service contracts, algo strategies (retry), the intelligence pipeline, journal HTTP, market-data HTTP, and smoke tests. Playwright, screenshots, Electron, and Docker builds run in parallel with integration. They only wait on the frontend job, not the 15-minute integration suite.
 
 ## Parallelisation
 
 Playwright, screenshots, Electron, and Docker builds run **in parallel with** integration tests. They only depend on the frontend job (~70 seconds), not the 15-minute integration suite. This saves around 10 to 12 minutes off the critical path.
 
-GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker builds run in a matrix) but they queue efficiently. The `integration` job doesn't compete for this hosted-runner concurrency pool at all: it runs on the self-hosted homelab runner described under [integration](#integration-15-minutes) above.
+GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (one Docker build per service image) but they queue efficiently. The `integration` job doesn't compete for this hosted-runner concurrency pool at all: it runs on the self-hosted homelab runner described under [integration](#integration-15-minutes) above.
 
 ## What each job does
 
 ### lint-and-test (~30 seconds)
 
-- `deno lint`: 113 backend files
-- `deno task check`: type-check 56 entry points
-- `deno task test:coverage`: 230+ unit tests with lcov output
+- `deno lint`: backend lint
+- `deno task check`: type-check the service entry points
+- `deno task test:coverage`: backend unit tests with lcov output
 - Generates `docs/badges/backend-tests.json` with test count
 
 ### frontend (~70 seconds)
 
-- `npx @biomejs/biome check src/`: lint 221 files
+- `npx @biomejs/biome check src/`: lint the frontend sources
 - `tsc --noEmit`: type-check
-- `npm run test:coverage`: 797+ unit tests with v8 coverage
+- `npm run test:coverage`: frontend unit tests with v8 coverage
 - Generates `docs/badges/frontend-tests.json` and `docs/badges/coverage.json`
 
 ### integration (~15 minutes)
 
-- Starts PostgreSQL, Redpanda, and all 30+ services
-- Runs database migrations (0001 to 0013)
+- Starts PostgreSQL, Redpanda, and the platform services
+- Runs every database migration
 - Waits for all services to be healthy (port polling)
 - Waits for market-sim to produce prices
 - Waits for risk-engine to have prices tracked
 - Configures risk-engine limits for test throughput
-- Runs 5 integration test suites + smoke tests
+- Runs the testcontainers integration suites and smoke tests
 - Generates `docs/badges/integration-tests.json`
 - Generates `docs/badges/smoke-tests.json`
 
@@ -87,15 +87,15 @@ The runner and production are kept apart at the CPU level with systemd slices. T
 
 - Runs the full Playwright E2E suite in 2 parallel shards
 - Installs Chromium once per shard
-- Runs 89+ E2E tests headless against Vite dev server
+- Runs the E2E tests headless against Vite dev server
 - GatewayMock provides deterministic backend responses
 - Generates `docs/badges/e2e-tests.json`
 
 ### docker-services (~3 to 5 minutes per image, parallel)
 
-- Builds 38 individual service Docker images
+- Builds one Docker image per service
 - Pushes to GHCR (`ghcr.io/milesburton/veta-trading-platform/<service>:latest`)
-- Matrix build: all 38 run simultaneously, driven by a hardcoded `service`/`file` list in
+- Matrix build: every image builds simultaneously, driven by a hardcoded `service`/`file` list in
   `ci.yml`, one entry per service, each pointing at that service's own `docker/<name>/Dockerfile`
 
 Adding a new service means adding it to **this matrix**, not just `compose.yml`. A new
