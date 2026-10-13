@@ -53,7 +53,7 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (one Docker
 
 ### lint-and-test (~30 seconds)
 
-- `deno lint`: backend lint
+- `deno task lint`: Biome lint of `frontend/src/`
 - `deno task check`: type-check the service entry points
 - `deno task test:coverage`: backend unit tests with lcov output
 - Generates `docs/badges/backend-tests.json` with test count
@@ -197,7 +197,7 @@ To update which checks are required, the same endpoint accepts a `PUT` with the 
 GitHub Actions is the source of truth for merge gates, but the same checks can be run from the workstation before pushing. The workflow is split across backend and frontend roots, so the local commands mirror that split:
 
 ```bash
-# Backend checks
+# Backend checks (lint is Biome over frontend/src, as in CI)
 deno task lint
 deno task check
 deno task test
