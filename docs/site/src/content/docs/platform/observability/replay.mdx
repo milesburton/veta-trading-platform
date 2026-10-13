@@ -56,30 +56,32 @@ PostgreSQL schemas under the `replay` schema:
 ```sql
 -- replay.config (singleton, id = 1)
 CREATE TABLE replay.config (
-  id          integer PRIMARY KEY DEFAULT 1,
-  recording_enabled boolean NOT NULL DEFAULT false,
-  updated_by  text,
-  updated_at  timestamptz DEFAULT now()
+  id                INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  recording_enabled BOOLEAN DEFAULT false,
+  updated_by        TEXT,
+  updated_at        TIMESTAMPTZ DEFAULT now()
 );
 
 -- replay.sessions (one row per recording)
 CREATE TABLE replay.sessions (
-  id          text PRIMARY KEY,
-  user_id     text NOT NULL,
-  user_name   text,
-  user_role   text,
-  started_at  timestamptz DEFAULT now(),
-  ended_at    timestamptz,
-  duration_ms numeric,
-  metadata    jsonb DEFAULT '{}'::jsonb
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  user_name   TEXT,
+  user_role   TEXT,
+  started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at    TIMESTAMPTZ,
+  duration_ms INTEGER,
+  metadata    JSONB DEFAULT '{}'
 );
 
 -- replay.chunks (event batches per session)
 CREATE TABLE replay.chunks (
-  session_id  text REFERENCES replay.sessions(id),
-  seq         integer,
-  events      jsonb NOT NULL,
-  PRIMARY KEY (session_id, seq)
+  id          BIGSERIAL PRIMARY KEY,
+  session_id  TEXT NOT NULL REFERENCES replay.sessions(id) ON DELETE RESTRICT,
+  seq         INTEGER NOT NULL,
+  events      JSONB NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (session_id, seq)
 );
 ```
 
