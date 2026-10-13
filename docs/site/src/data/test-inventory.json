@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 129,
-      "cases": 1446,
+      "cases": 1447,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -35,7 +35,7 @@
         "devcontainer.unit.test.ts": 7,
         "discord-bot.unit.test.ts": 46,
         "discord-notifier.unit.test.ts": 18,
-        "docs-drift.unit.test.ts": 8,
+        "docs-drift.unit.test.ts": 9,
         "duration-ladder.unit.test.ts": 9,
         "ems.unit.test.ts": 28,
         "feature-engine.test.ts": 26,
