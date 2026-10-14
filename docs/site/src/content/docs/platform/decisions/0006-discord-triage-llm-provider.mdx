@@ -38,13 +38,17 @@ happened.
   "Raise a ticket" button.
 - Retry Discord REST posts a small, bounded number of times on transient network errors.
 
-**2. Host the model on the dedicated GPU machine.** Run Ollama on the GPU host instead of on
-CPU in the main stack, and point `LLM_OLLAMA_BASE_URL` at it. Inference then no longer
-competes with the trading services for CPU.
+**2. Give the in-stack Ollama a CPU allocation now, move to the GPU host later.** The
+`ollama` container gets a higher CPU weight (`cpu_shares: 4096`, four times the default) so
+it wins CPU time under contention, a four CPU cap, a 4 GB memory limit, and a 30 minute
+keep-alive so the model is not reloaded between requests. Inference stays on CPU for now.
+The GPU host remains the intended destination: moving there is a change to
+`LLM_OLLAMA_BASE_URL` and `LLM_MODEL_ID` only. Running a small model in the browser is a
+possible further option, since interpreting a bug report is not a demanding task, but it is
+not evaluated here.
 
-The GPU host option was confirmed on 2026-10-14. The host URL and model are deployment
-configuration (`LLM_OLLAMA_BASE_URL`, `LLM_MODEL_ID`) and are not committed. The `discord-bot`
-service no longer waits for the in-stack Ollama container to be healthy.
+The weight applies within `veta.slice`, which already outranks CI. Pinning CPU IDs is
+avoided for the reasons given in the homelab systemd README.
 
 ## Alternatives considered
 
@@ -52,17 +56,18 @@ service no longer waits for the in-stack Ollama container to be healthy.
 | --- | --- | --- |
 | Keep CPU Ollama in the stack, add a CPU reservation | No new dependency | Takes cores from trading services on an already oversubscribed host; a 3B model on CPU stays slow |
 | Ollama on the GPU host | Fast inference, no contention with the stack, no per-request cost, ticket text stays on the private network | A second machine to keep available; a network hop; model lifecycle managed separately |
+| Model in the browser | No server inference cost, task is simple | Heavy download per client, inconsistent results across devices, bot messages originate from Discord not the app; not evaluated |
 | Anthropic provider | No local inference to operate, fast, already implemented | Ticket text leaves the private network; per-request cost; a new secret to hold in the vault; a hosted service dependency |
 
 ## Consequences
 
-- Triage depends on the GPU host being reachable. The failure handling above is what makes
-  that acceptable: when the host is down, reporters get the fallback reply within seconds
-  instead of silence.
+- Triage still competes with the trading services for CPU, only with a larger weight. The
+  failure handling above is what makes a slow model acceptable: reporters get the fallback
+  reply within seconds instead of silence.
 - The bot's health endpoint should report triage provider reachability separately from the
   Discord gateway connection, because a connected gateway says nothing about whether
   tickets can be filed.
-- The platform's compose files no longer need to run an Ollama container for triage. Any
-  other consumer of the in-stack Ollama service must be checked before removing it.
-- If the GPU host proves unreliable, switching to the Anthropic provider is a configuration
+- The `ollama` container is shared with llm-advisory, so the allocation also applies to
+  that service. The `discord-bot` service no longer waits for it to be healthy.
+- Moving to the GPU host later, or switching to the Anthropic provider is a configuration
   change, not a code change.
