@@ -124,7 +124,7 @@ export function backoffDelayMs(failures: number, baseMs: number, maxMs: number):
 
 export function flushedSymbols(
   pending: ReadonlyMap<string, FeatureVector>,
-  batch: readonly FeatureVector[]
+  batch: readonly FeatureVector[],
 ): string[] {
   return batch.filter((fv) => pending.get(fv.symbol) === fv).map((fv) => fv.symbol);
 }

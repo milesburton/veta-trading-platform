@@ -92,12 +92,10 @@ serveJsonService({
   // fallow-ignore-next-line complexity
   handler: (req, url, path) => {
     if (path === "/recommendations" && req.method === "GET") {
-      const symbol = url.searchParams.get("symbol");
-      const limit = Math.min(Number(url.searchParams.get("limit") ?? 20), 200);
-      const filtered = symbol
-        ? recommendations.filter((r) => r.symbol === symbol)
-        : recommendations;
-      return json(filtered.slice(0, limit));
+    const symbol = url.searchParams.get("symbol");
+    const limit = Math.min(Number(url.searchParams.get("limit") ?? 20), 200);
+    const filtered = symbol ? recommendations.filter((r) => r.symbol === symbol) : recommendations;
+    return json(filtered.slice(0, limit));
     }
 
     return json({ error: "Not Found" }, 404);

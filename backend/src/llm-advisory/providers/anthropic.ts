@@ -1,5 +1,8 @@
 import Anthropic from "npm:@anthropic-ai/sdk@0.69.0";
-import type { ILlmProvider, LlmProviderResponse } from "@veta/types/llm-advisory";
+import type {
+  ILlmProvider,
+  LlmProviderResponse,
+} from "@veta/types/llm-advisory";
 
 const DEFAULT_MODEL = "claude-opus-4-8";
 const DEFAULT_MAX_TOKENS = 4_096;
@@ -13,7 +16,7 @@ const DEFAULT_MAX_TOKENS = 4_096;
  */
 export function createAnthropicProvider(
   modelId: string,
-  apiKey: string = Deno.env.get("ANTHROPIC_API_KEY") ?? ""
+  apiKey: string = Deno.env.get("ANTHROPIC_API_KEY") ?? "",
 ): ILlmProvider {
   const model = modelId && modelId !== "mock-v1" ? modelId : DEFAULT_MODEL;
   const client = apiKey ? new Anthropic({ apiKey }) : null;
@@ -22,7 +25,10 @@ export function createAnthropicProvider(
     providerId: "anthropic",
     modelId: model,
 
-    async generate(prompt: string, systemPrompt: string): Promise<LlmProviderResponse> {
+    async generate(
+      prompt: string,
+      systemPrompt: string,
+    ): Promise<LlmProviderResponse> {
       if (!client) {
         throw new Error("ANTHROPIC_API_KEY is not set");
       }

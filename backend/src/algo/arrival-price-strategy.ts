@@ -19,17 +19,12 @@ import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import {
-  type FillEvent,
   FillEventSchema,
-  type RoutedOrder,
+  FillEvent,
   RoutedOrderSchema,
+  type RoutedOrder,
 } from "@veta/schemas/orders";
-import {
-  armAlgoIdleExit,
-  serveAlgoHealth,
-  startExpirySweep,
-  subscribeNewsSignals,
-} from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
 const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5023;
@@ -73,13 +68,8 @@ interface ActiveAP {
 /** Active AP orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveAP>();
 
-const IDLE_TIMEOUT_MS =
-  Number(Deno.env.get("ARRIVAL_PRICE_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
-const idleExit = armAlgoIdleExit(
-  IDLE_TIMEOUT_MS,
-  () => activeOrders.size === 0,
-  "arrival-price-algo"
-);
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "arrival-price-algo");
 
 await createTypedConsumer("ap-algo-routed", [
   {

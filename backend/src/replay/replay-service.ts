@@ -167,9 +167,10 @@ async function deleteSessionChunks(sessionId: string): Promise<Response> {
 async function deleteSession(sessionId: string): Promise<Response> {
   const client = await replayPool.connect();
   try {
-    const result = await client.queryArray("DELETE FROM replay.sessions WHERE id = $1", [
-      sessionId,
-    ]);
+    const result = await client.queryArray(
+      "DELETE FROM replay.sessions WHERE id = $1",
+      [sessionId],
+    );
     if (result.rowCount === 0) {
       return json({ error: "session not found" }, 404);
     }
@@ -180,7 +181,7 @@ async function deleteSession(sessionId: string): Promise<Response> {
     if (isForeignKeyViolation(err)) {
       return json(
         { error: "session has retained chunks; delete chunks first or contact compliance" },
-        409
+        409,
       );
     }
     throw err;

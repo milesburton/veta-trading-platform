@@ -1,6 +1,6 @@
+import { createConsumer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
-import { createConsumer } from "@veta/messaging";
 import {
   classifyOrder,
   completeHeartbeat,
@@ -35,7 +35,7 @@ export function armAlgoIdleExit(
   timeoutMs: number,
   isQuiescent: () => boolean,
   label: string,
-  options: { checkIntervalMs?: number; exit?: (code: number) => void } = {}
+  options: { checkIntervalMs?: number; exit?: (code: number) => void } = {},
 ): { touch: () => void; checkNow: () => void; stop: () => void } {
   const checkIntervalMs = options.checkIntervalMs ?? 5_000;
   const exit = options.exit ?? exitWithWatchdog;
@@ -61,7 +61,7 @@ export function serveAlgoHealth(
   port: number,
   service: string,
   version: string,
-  getActiveOrders: () => number
+  getActiveOrders: () => number,
 ): void {
   Deno.serve({ port }, (req) => {
     if (req.method === "OPTIONS") return corsOptions();
@@ -87,25 +87,25 @@ export function startExpirySweep<T extends ExpirableOrder>(
   activeOrders: Map<string, T>,
   producer: { send: (topic: string, msg: unknown) => Promise<void> } | null,
   algo: string,
-  label: string
+  label: string,
 ): void {
   setInterval(async () => {
     const now = Date.now();
     for (const order of [...activeOrders.values()]) {
       if (now >= order.expiresAt) {
-        const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+        const avgFill = order.filledQty > 0
+          ? order.costBasis / order.filledQty
+          : 0;
         logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
         activeOrders.delete(order.orderId);
-        await producer
-          ?.send("orders.expired", {
-            orderId: order.orderId,
-            clientOrderId: order.clientOrderId,
-            algo,
-            filledQty: order.filledQty,
-            avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-            ts: now,
-          })
-          .catch(() => {});
+        await producer?.send("orders.expired", {
+          orderId: order.orderId,
+          clientOrderId: order.clientOrderId,
+          algo,
+          filledQty: order.filledQty,
+          avgFillPrice: order.filledQty > 0 ? avgFill : 0,
+          ts: now,
+        }).catch(() => {});
       }
     }
   }, 5_000);
@@ -115,25 +115,25 @@ export function startExpirySweepIndexed<T extends Omit<ExpirableOrder, never>>(
   activeOrders: Map<number, T>,
   producer: { send: (topic: string, msg: unknown) => Promise<void> } | null,
   algo: string,
-  label: string
+  label: string,
 ): void {
   setInterval(async () => {
     const now = Date.now();
     for (const [id, order] of [...activeOrders.entries()]) {
       if (now >= order.expiresAt) {
-        const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+        const avgFill = order.filledQty > 0
+          ? order.costBasis / order.filledQty
+          : 0;
         logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
         activeOrders.delete(id);
-        await producer
-          ?.send("orders.expired", {
-            orderId: order.orderId,
-            clientOrderId: order.clientOrderId,
-            algo,
-            filledQty: order.filledQty,
-            avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-            ts: now,
-          })
-          .catch(() => {});
+        await producer?.send("orders.expired", {
+          orderId: order.orderId,
+          clientOrderId: order.clientOrderId,
+          algo,
+          filledQty: order.filledQty,
+          avgFillPrice: order.filledQty > 0 ? avgFill : 0,
+          ts: now,
+        }).catch(() => {});
       }
     }
   }, 5_000);
@@ -145,7 +145,7 @@ export function startJournalProgressSweep<K, T extends TrackedOrder>(
   producer: { send: (topic: string, msg: unknown) => Promise<void> } | null,
   algo: string,
   label: string,
-  intervalMs = 5_000
+  intervalMs = 5_000,
 ): void {
   const sweep = async () => {
     for (const [key, order] of [...activeOrders.entries()]) {
@@ -157,18 +157,12 @@ export function startJournalProgressSweep<K, T extends TrackedOrder>(
       activeOrders.delete(key);
       if (outcome === "complete" && progress) {
         logger.info(`[${label}] Complete ${order.orderId}: filled=${progress.filledQty}`);
-        await producer
-          ?.send("algo.heartbeat", completeHeartbeat(order, algo, progress, now))
-          .catch(() => {});
+        await producer?.send("algo.heartbeat", completeHeartbeat(order, algo, progress, now)).catch(() => {});
         continue;
       }
 
-      logger.info(
-        `[${label}] Expired ${order.orderId}: filled=${progress?.filledQty ?? "unknown"}`
-      );
-      await producer
-        ?.send("orders.expired", expiredEvent(order, algo, progress, now))
-        .catch(() => {});
+      logger.info(`[${label}] Expired ${order.orderId}: filled=${progress?.filledQty ?? "unknown"}`);
+      await producer?.send("orders.expired", expiredEvent(order, algo, progress, now)).catch(() => {});
     }
   };
 
@@ -183,13 +177,14 @@ export function startJournalProgressSweep<K, T extends TrackedOrder>(
   schedule();
 }
 
-export function subscribeNewsSignals(groupId: string, label: string): void {
-  createConsumer(groupId, ["news.signal"])
-    .then((consumer) => {
-      consumer.onMessage((_topic, raw) => {
-        const sig = raw as { symbol: string; sentiment: string; score: number };
-        logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
-      });
-    })
-    .catch(() => {}); // non-fatal
+export function subscribeNewsSignals(
+  groupId: string,
+  label: string,
+): void {
+  createConsumer(groupId, ["news.signal"]).then((consumer) => {
+    consumer.onMessage((_topic, raw) => {
+      const sig = raw as { symbol: string; sentiment: string; score: number };
+      logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
+    });
+  }).catch(() => {}); // non-fatal
 }

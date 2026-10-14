@@ -1,8 +1,8 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
-import { DecisionEngine } from "./decision-engine.ts";
 import { isDeskOpen } from "./desk-calendar.ts";
+import { DecisionEngine } from "./decision-engine.ts";
 import { GatewaySocket } from "./gateway-socket.ts";
 import { nextDelayMs } from "./pacing.ts";
 import { interpretOrderEvent, PricesSchema } from "./payloads.ts";
@@ -26,10 +26,7 @@ const ENABLED = Deno.env.get("SYNTHETIC_TRADER_ENABLED") === "true";
 const DRY_RUN = Deno.env.get("SYNTHETIC_TRADER_DRY_RUN") !== "false";
 const MIN_PACE_MS = Number(Deno.env.get("SYNTHETIC_TRADER_MIN_PACE_MS")) || 30_000;
 const MAX_PACE_MS = Number(Deno.env.get("SYNTHETIC_TRADER_MAX_PACE_MS")) || 480_000;
-const SYMBOLS = Deno.env
-  .get("SYNTHETIC_TRADER_SYMBOLS")
-  ?.split(",")
-  .map((s) => s.trim());
+const SYMBOLS = Deno.env.get("SYNTHETIC_TRADER_SYMBOLS")?.split(",").map((s) => s.trim());
 const MAX_DAILY_NOTIONAL_FRACTION = 0.5;
 
 if (ENABLED && !PASSWORD) {
@@ -39,11 +36,7 @@ if (ENABLED && !PASSWORD) {
 
 function startTrading(): void {
   const tracker = new PositionTracker();
-  const engine = new DecisionEngine({
-    archetypeId: ARCHETYPE_ID,
-    userId: USER_ID,
-    symbols: SYMBOLS,
-  });
+  const engine = new DecisionEngine({ archetypeId: ARCHETYPE_ID, userId: USER_ID, symbols: SYMBOLS });
 
   let latestPrices: Record<string, number> = {};
   let dailyNotional = 0;

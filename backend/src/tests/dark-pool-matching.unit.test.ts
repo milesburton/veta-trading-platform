@@ -2,8 +2,8 @@ import { assertEquals } from "jsr:@std/assert@0.217";
 import {
   buildFixExecution,
   buildOrdersFilled,
-  type DarkFill,
   type DarkOrder,
+  type DarkFill,
   matchSymbol,
   type SymbolPool,
 } from "../dark-pool/dark-pool-matching.ts";
@@ -38,20 +38,8 @@ function pool(buys: DarkOrder[], sells: DarkOrder[]): SymbolPool {
 
 Deno.test("[dark-pool-matching] a buy and sell that both cross the midpoint match fully", () => {
   execIdSeq = 1;
-  const buy = order({
-    orderId: "B1",
-    side: "BUY",
-    quantity: 10_000,
-    remainingQty: 10_000,
-    limitPrice: 191,
-  });
-  const sell = order({
-    orderId: "S1",
-    side: "SELL",
-    quantity: 10_000,
-    remainingQty: 10_000,
-    limitPrice: 189,
-  });
+  const buy = order({ orderId: "B1", side: "BUY", quantity: 10_000, remainingQty: 10_000, limitPrice: 191 });
+  const sell = order({ orderId: "S1", side: "SELL", quantity: 10_000, remainingQty: 10_000, limitPrice: 189 });
   const p = pool([buy], [sell]);
 
   const fills = matchSymbol(p, "AAPL", 190, NOW, execIdFactory, settlementDateFactory);
@@ -83,13 +71,7 @@ Deno.test("[dark-pool-matching] a sell whose limit is above the midpoint is not 
 
 Deno.test("[dark-pool-matching] a partial fill leaves the larger order resting with reduced remainingQty", () => {
   const buy = order({ orderId: "B1", quantity: 15_000, remainingQty: 15_000, limitPrice: 191 });
-  const sell = order({
-    orderId: "S1",
-    side: "SELL",
-    quantity: 10_000,
-    remainingQty: 10_000,
-    limitPrice: 189,
-  });
+  const sell = order({ orderId: "S1", side: "SELL", quantity: 10_000, remainingQty: 10_000, limitPrice: 189 });
   const p = pool([buy], [sell]);
 
   const fills = matchSymbol(p, "AAPL", 190, NOW, execIdFactory, settlementDateFactory);
@@ -111,57 +93,21 @@ Deno.test("[dark-pool-matching] orders past their deadline are skipped, not matc
 });
 
 Deno.test("[dark-pool-matching] matching is FIFO by admission time, not by price", () => {
-  const earlyBuy = order({
-    orderId: "B-early",
-    admittedAt: NOW - 5_000,
-    limitPrice: 190,
-    quantity: 5_000,
-    remainingQty: 5_000,
-  });
-  const lateBuy = order({
-    orderId: "B-late",
-    admittedAt: NOW,
-    limitPrice: 200,
-    quantity: 5_000,
-    remainingQty: 5_000,
-  });
-  const sell = order({
-    orderId: "S1",
-    side: "SELL",
-    limitPrice: 189,
-    quantity: 5_000,
-    remainingQty: 5_000,
-  });
+  const earlyBuy = order({ orderId: "B-early", admittedAt: NOW - 5_000, limitPrice: 190, quantity: 5_000, remainingQty: 5_000 });
+  const lateBuy = order({ orderId: "B-late", admittedAt: NOW, limitPrice: 200, quantity: 5_000, remainingQty: 5_000 });
+  const sell = order({ orderId: "S1", side: "SELL", limitPrice: 189, quantity: 5_000, remainingQty: 5_000 });
   const p = pool([lateBuy, earlyBuy], [sell]);
 
   const fills = matchSymbol(p, "AAPL", 190, NOW, execIdFactory, settlementDateFactory);
 
   assertEquals(fills.length, 1);
-  assertEquals(
-    fills[0].buyOrderId,
-    "B-early",
-    "the earlier-admitted buy should match first despite the later buy's better limit price"
-  );
+  assertEquals(fills[0].buyOrderId, "B-early", "the earlier-admitted buy should match first despite the later buy's better limit price");
 });
 
 Deno.test("[dark-pool-matching] multiple sequential matches drain both sides of the book", () => {
   const buy = order({ orderId: "B1", quantity: 20_000, remainingQty: 20_000, limitPrice: 191 });
-  const sell1 = order({
-    orderId: "S1",
-    side: "SELL",
-    admittedAt: NOW - 1_000,
-    quantity: 8_000,
-    remainingQty: 8_000,
-    limitPrice: 189,
-  });
-  const sell2 = order({
-    orderId: "S2",
-    side: "SELL",
-    admittedAt: NOW,
-    quantity: 12_000,
-    remainingQty: 12_000,
-    limitPrice: 189,
-  });
+  const sell1 = order({ orderId: "S1", side: "SELL", admittedAt: NOW - 1_000, quantity: 8_000, remainingQty: 8_000, limitPrice: 189 });
+  const sell2 = order({ orderId: "S2", side: "SELL", admittedAt: NOW, quantity: 12_000, remainingQty: 12_000, limitPrice: 189 });
   const p = pool([buy], [sell1, sell2]);
 
   const fills = matchSymbol(p, "AAPL", 190, NOW, execIdFactory, settlementDateFactory);
@@ -175,15 +121,9 @@ Deno.test("[dark-pool-matching] multiple sequential matches drain both sides of 
 
 Deno.test("[dark-pool-matching] an empty pool on either side produces no fills", () => {
   const buy = order({ orderId: "B1" });
-  assertEquals(
-    matchSymbol(pool([buy], []), "AAPL", 190, NOW, execIdFactory, settlementDateFactory).length,
-    0
-  );
+  assertEquals(matchSymbol(pool([buy], []), "AAPL", 190, NOW, execIdFactory, settlementDateFactory).length, 0);
   const sell = order({ orderId: "S1", side: "SELL" });
-  assertEquals(
-    matchSymbol(pool([], [sell]), "AAPL", 190, NOW, execIdFactory, settlementDateFactory).length,
-    0
-  );
+  assertEquals(matchSymbol(pool([], [sell]), "AAPL", 190, NOW, execIdFactory, settlementDateFactory).length, 0);
 });
 
 // ── buildOrdersFilled / buildFixExecution ───────────────────────────────────

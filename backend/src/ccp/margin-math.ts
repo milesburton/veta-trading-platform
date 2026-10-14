@@ -100,10 +100,7 @@ export interface MarginCallResult {
  * negative shortfall does not count as a call.
  */
 export function computeMarginCall(
-  acct: Pick<
-    MarginAccount,
-    "positions" | "costBasis" | "initialMarginPosted" | "netMarginRequired"
-  >,
+  acct: Pick<MarginAccount, "positions" | "costBasis" | "initialMarginPosted" | "netMarginRequired">,
   prices: Record<string, number>
 ): MarginCallResult {
   let unrealisedPnl = 0;

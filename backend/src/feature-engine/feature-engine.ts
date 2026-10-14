@@ -215,8 +215,7 @@ const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks
   return null;
 });
 
-const IDLE_TIMEOUT_MS =
-  Number(Deno.env.get("FEATURE_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(Deno.env.get("FEATURE_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
 const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "feature-engine");
 
 if (tickConsumer) {

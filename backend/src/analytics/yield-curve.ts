@@ -63,7 +63,9 @@ function nelsonSiegel(tau: number, p: NelsonSiegelParams): number {
  * Compute the full spot yield curve using Nelson-Siegel.
  * Accepts optional parameter overrides — any missing params use the defaults.
  */
-export function computeYieldCurve(params?: Partial<NelsonSiegelParams>): YieldCurvePoint[] {
+export function computeYieldCurve(
+  params?: Partial<NelsonSiegelParams>,
+): YieldCurvePoint[] {
   const p: NelsonSiegelParams = { ...DEFAULT_PARAMS, ...params };
   return TENORS.map(({ years, label }) => ({
     tenorYears: years,
@@ -102,7 +104,9 @@ export function forwardRates(curve: YieldCurvePoint[]): ForwardRate[] {
 }
 
 /** Build a full YieldCurveResponse from optional parameter overrides. */
-export function buildYieldCurveResponse(params?: Partial<NelsonSiegelParams>): YieldCurveResponse {
+export function buildYieldCurveResponse(
+  params?: Partial<NelsonSiegelParams>,
+): YieldCurveResponse {
   const curve = computeYieldCurve(params);
   return {
     curve,

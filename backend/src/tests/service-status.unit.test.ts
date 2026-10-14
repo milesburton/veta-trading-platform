@@ -142,11 +142,8 @@ Deno.test("[withoutMeta] keeps every service but drops its meta", async () => {
     () => 1
   );
   const payload = withoutMeta(buildServicesStatus("sha", entries, 1));
-  assertEquals(
-    payload.services.map((s) => [s.id, s.meta]),
-    [
-      ["gateway", {}],
-      ["a", {}],
-    ]
-  );
+  assertEquals(payload.services.map((s) => [s.id, s.meta]), [
+    ["gateway", {}],
+    ["a", {}],
+  ]);
 });

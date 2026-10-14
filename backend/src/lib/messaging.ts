@@ -16,10 +16,19 @@
  *   REDPANDA_BROKERS  comma-separated broker list  (default: localhost:9092)
  */
 
-import { type Consumer, Kafka, type KafkaMessage, type Producer } from "npm:kafkajs@2.2.4";
+import {
+  type Consumer,
+  Kafka,
+  type KafkaMessage,
+  type Producer,
+} from "npm:kafkajs@2.2.4";
 import { logger } from "@veta/logger";
 import type { z } from "@veta/zod";
-import { injectTraceContext, recordGauge, withExtractedContext } from "./telemetry.ts";
+import {
+  injectTraceContext,
+  recordGauge,
+  withExtractedContext,
+} from "./telemetry.ts";
 
 const LIB = { component: "messaging" };
 
@@ -51,7 +60,10 @@ export function createDedupeWindow(capacity: number): (id: string) => boolean {
   };
 }
 
-export function headerString(headers: KafkaMessage["headers"], name: string): string | undefined {
+export function headerString(
+  headers: KafkaMessage["headers"],
+  name: string,
+): string | undefined {
   const raw = headers?.[name];
   const first = Array.isArray(raw) ? raw[0] : raw;
   return first === undefined ? undefined : first.toString();
@@ -59,7 +71,9 @@ export function headerString(headers: KafkaMessage["headers"], name: string): st
 
 function maxInFlightFromEnv(): number {
   const parsed = Number(Deno.env.get("PRODUCER_MAX_IN_FLIGHT"));
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_MAX_IN_FLIGHT;
+  return Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_MAX_IN_FLIGHT;
 }
 
 // fallow-ignore-next-line unused-type
@@ -107,7 +121,7 @@ export interface MsgProducer {
  */
 export function createProducer(
   clientId = "veta-producer",
-  options: { maxInFlight?: number } = {}
+  options: { maxInFlight?: number } = {},
 ): Promise<MsgProducer> {
   let activeProducer: Producer | null = null;
   let stopped = false;
@@ -121,7 +135,9 @@ export function createProducer(
 
   function waitForConnection(): Promise<Producer | null> {
     if (activeProducer || stopped) return Promise.resolve(activeProducer);
-    return new Promise((resolve) => connectionWaiters.push(() => resolve(activeProducer)));
+    return new Promise((resolve) =>
+      connectionWaiters.push(() => resolve(activeProducer))
+    );
   }
 
   function wakeConnectionWaiters() {
@@ -147,7 +163,8 @@ export function createProducer(
   function recordDrop(topic: string, reason: "saturated" | "disconnected") {
     droppedTotal += 1;
     recordGauge("messaging_producer_dropped_total", droppedTotal, {
-      description: "Droppable sends discarded because the producer was saturated or disconnected",
+      description:
+        "Droppable sends discarded because the producer was saturated or disconnected",
       attributes: { client_id: clientId },
     }).catch(() => {});
     logger.debug("producer dropped send", { ...LIB, clientId, topic, reason });
@@ -165,7 +182,7 @@ export function createProducer(
     }
     if (slotWaiters.length >= maxInFlight) {
       throw new Error(
-        `producer ${clientId} backlog full (${maxInFlight} in flight, ${slotWaiters.length} waiting), rejecting send to ${topic}`
+        `producer ${clientId} backlog full (${maxInFlight} in flight, ${slotWaiters.length} waiting), rejecting send to ${topic}`,
       );
     }
     await new Promise<void>((resolve) => slotWaiters.push(resolve));
@@ -272,11 +289,11 @@ export async function sendInChunks(
   producer: Pick<MsgProducer, "send">,
   topic: string,
   values: readonly unknown[],
-  chunkSize: number
+  chunkSize: number,
 ): Promise<void> {
   for (let start = 0; start < values.length; start += chunkSize) {
     await Promise.allSettled(
-      values.slice(start, start + chunkSize).map((value) => producer.send(topic, value))
+      values.slice(start, start + chunkSize).map((value) => producer.send(topic, value)),
     );
   }
 }
@@ -292,7 +309,7 @@ export function createConsumer(
   groupId: string,
   topics: string[],
   clientId = `veta-${groupId}`,
-  options: { handlerTimeoutMs?: number } = {}
+  options: { handlerTimeoutMs?: number } = {},
 ): Promise<MsgConsumer> {
   const handlerTimeoutMs = options.handlerTimeoutMs ?? 5_000;
   const handlers: MessageHandler[] = [];
@@ -340,7 +357,9 @@ export function createConsumer(
         });
 
         await consumer.run({
-          eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
+          eachMessage: async (
+            { topic, message }: { topic: string; message: KafkaMessage },
+          ) => {
             if (!message.value) return;
             const messageId = headerString(message.headers, MESSAGE_ID_HEADER);
             if (messageId && isDuplicate(messageId)) {
@@ -369,8 +388,13 @@ export function createConsumer(
                     handler(topic, parsed),
                     new Promise((_, reject) => {
                       timeoutHandle = setTimeout(
-                        () => reject(new Error(`handler timeout (${handlerTimeoutMs}ms)`)),
-                        handlerTimeoutMs
+                        () =>
+                          reject(
+                            new Error(
+                              `handler timeout (${handlerTimeoutMs}ms)`,
+                            ),
+                          ),
+                        handlerTimeoutMs,
                       );
                     }),
                   ]);
@@ -436,18 +460,19 @@ export interface TypedConsumerOptions {
 export function createTypedConsumer(
   groupId: string,
   bindings: AnyTopicBinding[],
-  options: TypedConsumerOptions = {}
+  options: TypedConsumerOptions = {},
 ): Promise<MsgConsumer> {
   const byTopic = new Map<string, AnyTopicBinding>();
   for (const b of bindings) {
     if (byTopic.has(b.topic)) {
-      throw new Error(`createTypedConsumer: duplicate binding for topic '${b.topic}'`);
+      throw new Error(
+        `createTypedConsumer: duplicate binding for topic '${b.topic}'`,
+      );
     }
     byTopic.set(b.topic, b);
   }
 
-  const onInvalid =
-    options.onInvalid ??
+  const onInvalid = options.onInvalid ??
     ((topic, _raw, err) => {
       logger.warn("typed consumer dropped invalid message", {
         ...LIB,
@@ -487,12 +512,11 @@ export function __setMessagingTestHooks(
     kafkaFactory?: KafkaFactory;
     sleepFn?: SleepFn;
     scheduleFn?: ScheduleFn;
-  } | null
+  } | null,
 ): void {
   kafkaFactory = hooks?.kafkaFactory ?? makeKafka;
   sleepFn = hooks?.sleepFn ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
-  scheduleFn =
-    hooks?.scheduleFn ??
+  scheduleFn = hooks?.scheduleFn ??
     ((fn, ms) => {
       setTimeout(fn, ms);
     });

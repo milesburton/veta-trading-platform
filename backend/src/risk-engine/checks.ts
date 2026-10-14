@@ -1,10 +1,6 @@
-import { calendarForOrder } from "@veta/market-calendars";
 import type { CheckRequest, CheckResult, RiskConfig } from "@veta/schemas/risk";
-import {
-  buildSessionSchedule,
-  resolvePhaseFromMinute,
-  resolveSession,
-} from "@veta/trading-calendar";
+import { calendarForOrder } from "@veta/market-calendars";
+import { buildSessionSchedule, resolvePhaseFromMinute, resolveSession } from "@veta/trading-calendar";
 
 export interface Position {
   symbol: string;
@@ -188,10 +184,9 @@ export function checkMarketHours(state: RiskState, req: CheckRequest): CheckHit 
     calendar.openMinute
   );
   const schedule = buildSessionSchedule(calendar, dateStr);
-  const phase =
-    weekend || holiday
-      ? "CLOSED"
-      : resolvePhaseFromMinute(schedule, marketMinute, calendar.dailyBreaks);
+  const phase = weekend || holiday
+    ? "CLOSED"
+    : resolvePhaseFromMinute(schedule, marketMinute, calendar.dailyBreaks);
   const session = resolveSession(phase);
 
   if (!session.allowsOrderEntry) {

@@ -64,10 +64,7 @@ export function isUstBond(spec: Pick<BondSpec, "creditRating" | "isin">): boolea
  * Zero for "all"-specialisation dealers or a mismatch between dealer
  * specialisation and bond type.
  */
-export function specialisationBonus(
-  dealer: Pick<DealerProfile, "specialisation">,
-  isUst: boolean
-): number {
+export function specialisationBonus(dealer: Pick<DealerProfile, "specialisation">, isUst: boolean): number {
   if (dealer.specialisation === "UST" && isUst) return 0.5;
   if (dealer.specialisation === "Corp" && !isUst) return 0.5;
   return 0;

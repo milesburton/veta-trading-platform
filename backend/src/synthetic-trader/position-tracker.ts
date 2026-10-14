@@ -11,13 +11,7 @@ interface OpenOrder {
 export class PositionTracker {
   #openByClientOrderId = new Map<string, OpenOrder>();
 
-  recordAck(order: {
-    clientOrderId?: string;
-    asset: string;
-    side: Side;
-    quantity: number;
-    limitPrice?: number;
-  }): void {
+  recordAck(order: { clientOrderId?: string; asset: string; side: Side; quantity: number; limitPrice?: number }): void {
     if (!order.clientOrderId) return;
     this.#openByClientOrderId.set(order.clientOrderId, {
       clientOrderId: order.clientOrderId,

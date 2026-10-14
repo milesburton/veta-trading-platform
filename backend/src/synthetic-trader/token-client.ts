@@ -69,9 +69,7 @@ export class TokenClient {
       }),
     });
     if (!authorizeRes.ok) {
-      throw new Error(
-        `oauth/authorize failed: ${authorizeRes.status} ${await authorizeRes.text()}`
-      );
+      throw new Error(`oauth/authorize failed: ${authorizeRes.status} ${await authorizeRes.text()}`);
     }
     const { code } = (await authorizeRes.json()) as AuthorizeResponse;
 

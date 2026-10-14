@@ -96,13 +96,7 @@ await createTypedConsumer("limit-algo-routed", [
 
 async function sendTriggeredChild(order: PendingLimit, marketPrice: number): Promise<void> {
   const now = Date.now();
-  const budget = await readSliceBudget(
-    readProgress,
-    order.orderId,
-    order.quantity,
-    order.inFlight,
-    now
-  );
+  const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, order.inFlight, now);
   if (!budget) return;
   setInFlight(order.orderId, budget.inFlight);
   if (budget.inFlight || budget.remaining <= 0) return;

@@ -700,9 +700,7 @@ Deno.serve({ port: PORT }, async (req) => {
 
     if (action === "confirm") {
       const clientUserId = actionBody.clientUserId as string | undefined;
-      const actorCheck = checkSellSideActor(action, clientUserId, {
-        clientUserId: rfq.clientUserId,
-      });
+      const actorCheck = checkSellSideActor(action, clientUserId, { clientUserId: rfq.clientUserId });
       if (!actorCheck.ok) return jsonError(actorCheck.error, actorCheck.status);
       rfq.state = "CONFIRMED";
       rfq.clientConfirmedAt = Date.now();

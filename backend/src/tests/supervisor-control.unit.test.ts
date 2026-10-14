@@ -1,9 +1,9 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
 import {
   isProgramRunning,
-  type SupervisorctlRunner,
   startProgram,
   stopProgram,
+  type SupervisorctlRunner,
 } from "../shared/supervisor-control.ts";
 
 function fakeRunner(response: { ok: boolean; output: string }): {

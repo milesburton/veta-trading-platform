@@ -1,9 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import {
-  getFixVenueCapabilities,
-  isRegisteredVenue,
-  validateVenueRouting,
-} from "../fix/venue-registry.ts";
+import { getFixVenueCapabilities, isRegisteredVenue, validateVenueRouting } from "../fix/venue-registry.ts";
 
 Deno.test("[fix-venue-registry] no ExDestination is always valid (venue routing optional)", () => {
   assertEquals(validateVenueRouting(undefined, true, 100).ok, true);

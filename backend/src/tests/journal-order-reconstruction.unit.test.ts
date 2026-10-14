@@ -51,28 +51,13 @@ Deno.test("[journal-reconstruct] keeps a reject reason and sorts newest first", 
   const orders = reconstructOrdersFromRows(
     [
       submitted,
-      [
-        "o2",
-        "orders.rejected",
-        at(5),
-        "MSFT",
-        "SELL",
-        "10",
-        "421",
-        null,
-        "u",
-        null,
-        {
-          reason: "limit breach",
-        },
-      ],
+      ["o2", "orders.rejected", at(5), "MSFT", "SELL", "10", "421", null, "u", null, {
+        reason: "limit breach",
+      }],
     ],
     []
   );
-  assertEquals(
-    orders.map((o) => o.id),
-    ["o2", "c1"]
-  );
+  assertEquals(orders.map((o) => o.id), ["o2", "c1"]);
   assertEquals(orders[0].status, "rejected");
   assertEquals(orders[0].rejectReason, "limit breach");
 });

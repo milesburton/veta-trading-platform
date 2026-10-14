@@ -19,19 +19,8 @@ function rawOf(raw: unknown): Record<string, unknown> {
 }
 
 function newOrder(row: Row): Order {
-  const [
-    orderId,
-    eventType,
-    ts,
-    instrument,
-    side,
-    quantity,
-    limitPrice,
-    algo,
-    userId,
-    algoParams,
-    raw,
-  ] = row;
+  const [orderId, eventType, ts, instrument, side, quantity, limitPrice, algo, userId, algoParams, raw] =
+    row;
   const tsMs = toMs(ts);
   const rawObj = rawOf(raw);
   const submitted = eventType === "orders.submitted";
@@ -43,10 +32,9 @@ function newOrder(row: Row): Order {
     side: side ?? rawObj.side ?? "BUY",
     quantity: toNumber(quantity ?? rawObj.quantity ?? rawObj.requestedQty),
     limitPrice: toNumber(limitPrice ?? rawObj.limitPrice),
-    expiresAt:
-      submitted && rawObj.expiresAt !== undefined
-        ? tsMs + Number(rawObj.expiresAt) * 1_000
-        : tsMs + DAY_MS,
+    expiresAt: submitted && rawObj.expiresAt !== undefined
+      ? tsMs + Number(rawObj.expiresAt) * 1_000
+      : tsMs + DAY_MS,
     strategy,
     status: submitted ? "pending" : "rejected",
     rejectReason: submitted ? undefined : (rawObj.reason ?? rawObj.message ?? null),
@@ -102,9 +90,7 @@ function applyFill(order: Order, row: Row): Order {
       filledQty: childFilled,
       filled: childFilled,
       status: "filled",
-      ...(fillPrice !== null && fillPrice !== undefined
-        ? { avgFillPrice: toNumber(fillPrice) }
-        : {}),
+      ...(fillPrice !== null && fillPrice !== undefined ? { avgFillPrice: toNumber(fillPrice) } : {}),
     };
   });
   return {
@@ -138,5 +124,7 @@ export function reconstructOrdersFromRows(
     return orders;
   }, afterStructure);
 
-  return [...afterActivity.values()].sort((a, b) => Number(b.submittedAt) - Number(a.submittedAt));
+  return [...afterActivity.values()].sort(
+    (a, b) => Number(b.submittedAt) - Number(a.submittedAt)
+  );
 }

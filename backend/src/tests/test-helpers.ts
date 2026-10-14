@@ -32,14 +32,12 @@ export function makeAsyncConnect<TClient>(factory: () => TClient): () => Promise
 }
 
 // fallow-ignore-next-line unused-export, complexity
-export function makeGatewayAuthContext(
-  options: {
-    role?: string;
-    name?: string;
-    includeLimits?: boolean;
-    includeUserServiceUrl?: boolean;
-  } = {}
-): GatewayContext {
+export function makeGatewayAuthContext(options: {
+  role?: string;
+  name?: string;
+  includeLimits?: boolean;
+  includeUserServiceUrl?: boolean;
+} = {}): GatewayContext {
   const role = options.role ?? "trader";
   const name = options.name ?? "Test User";
 
@@ -71,9 +69,9 @@ export function makeGatewayAuthContext(
 }
 
 // fallow-ignore-next-line unused-export
-export function makeGatewayUnauthContext(
-  options: { includeUserServiceUrl?: boolean } = {}
-): GatewayContext {
+export function makeGatewayUnauthContext(options: {
+  includeUserServiceUrl?: boolean;
+} = {}): GatewayContext {
   const ctx: Record<string, unknown> = {
     requireAuth: (_req: Request) =>
       Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),

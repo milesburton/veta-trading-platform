@@ -71,11 +71,7 @@ Deno.test("[armAlgoIdleExit] becoming non-quiescent again blocks a previously-du
     now += 1_100;
     quiescent = false;
     checkNow();
-    assertEquals(
-      exitCodes,
-      [],
-      "a new order arrived — must not exit even though the timer expired"
-    );
+    assertEquals(exitCodes, [], "a new order arrived — must not exit even though the timer expired");
   } finally {
     stop();
     Date.now = realDateNow;

@@ -11,12 +11,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
 import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
-import {
-  armAlgoIdleExit,
-  serveAlgoHealth,
-  startExpirySweep,
-  subscribeNewsSignals,
-} from "./common-http.ts";
+import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { availableSniperQty } from "./sniper-math.ts";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5022;
