@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.87.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.3...veta-trading-platform-v1.87.0) (2026-10-14)
+
+
+### Features
+
+* **ollama:** CPU allocation for triage, health reporting, ADR 0006 ([#845](https://github.com/milesburton/veta-trading-platform/issues/845)) ([6fd9d0f](https://github.com/milesburton/veta-trading-platform/commit/6fd9d0f2073614bb79c11a0bd936589f3dcc21b2))
+
 ## [1.86.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.2...veta-trading-platform-v1.86.3) (2026-10-14)
 
 
