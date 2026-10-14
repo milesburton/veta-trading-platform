@@ -93,12 +93,12 @@ persists, and no on-disk artefacts survive a restart.
 The gateway's `AbuseTracker` produces escalating decisions against a WebSocket connection and the user behind it:
 
 - **Level 1** (handled by the per-socket frame rate limiter, not `AbuseTracker`): reject a single over-rate frame and send `rateLimited` back to the client. Soft, no state kept.
-- **Level 2** (`AbuseTracker.recordRateLimited`): a single socket hits the per-socket frame limit `ABUSE_PER_SOCKET_THRESHOLD` times within `ABUSE_PER_SOCKET_WINDOW_MS`. Decision: `forceClose`. The socket is closed and a `ws_disconnected_abuse` access event is published.
-- **Level 3** (`AbuseTracker.recordRateLimited` escalating further): a single userId accumulates `ABUSE_USER_FORCE_CLOSE_THRESHOLD` force-closes within `ABUSE_USER_WINDOW_MS`. Decision: `blockUser`. New WebSocket upgrade attempts for that userId are refused for `ABUSE_USER_BACKOFF_MS`, checked by `AbuseTracker.upgradeDecision` before `Deno.upgradeWebSocket` runs.
+- **Level 2** (`AbuseTracker.recordRateLimited`): a single socket hits the per-socket frame limit `ABUSE_PER_SOCKET_THRESHOLD` times (10) within `ABUSE_PER_SOCKET_WINDOW_MS` (60 s). Decision: `forceClose`. The socket is closed and a `ws_disconnected_abuse` access event is published.
+- **Level 3** (`AbuseTracker.recordRateLimited` escalating further): a single userId accumulates `ABUSE_USER_FORCE_CLOSE_THRESHOLD` force-closes (3) within `ABUSE_USER_WINDOW_MS` (5 min). Decision: `blockUser`. New WebSocket upgrade attempts for that userId are refused for `ABUSE_USER_BACKOFF_MS` (5 min), checked by `AbuseTracker.upgradeDecision` before `Deno.upgradeWebSocket` runs.
 
 There is no IP-banning. UserIds are the control surface: unauthenticated sockets share a single anonymous key, so level-3 effects on anonymous traffic apply globally. That matches the threat model above: a real attacker authenticating anonymously is just one of many anonymous callers, so anonymous traffic as a whole is the unit of defence.
 
-All state is in-memory and resets on a gateway restart. That is an accepted trade-off: the structural protection (level 2's force-close ending a chatty client's connection) re-establishes naturally on the client's next request, so a restart does not reopen a window for sustained abuse.
+These thresholds are constants in `abuse-tracker.ts`, not environment variables. All state is in-memory and resets on a gateway restart. That is an accepted trade-off: the structural protection (level 2's force-close ending a chatty client's connection) re-establishes naturally on the client's next request, so a restart does not reopen a window for sustained abuse.
 
 <Source path="backend/src/gateway/routes/websocket.ts" region="docs:ws-upgrade-auth-order" />
 
@@ -158,5 +158,5 @@ docker inspect veta-gateway-1 --format '{{ .HostConfig.CapDrop }}'
 docker inspect veta-gateway-1 --format '{{ .HostConfig.SecurityOpt }}'
 # Expect to include: no-new-privileges:true
 docker exec veta-gateway-1 id -u
-# Expect: 1000 (deno)
+# Expect: 1993 (deno)
 ```

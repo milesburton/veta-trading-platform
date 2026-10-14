@@ -34,6 +34,7 @@ export const VALID_VENUES = new Set(Object.keys(VENUE_SPREAD_MULT));
 
 export const PARTICIPATION_CAP_DEFAULT = 0.2;
 export const IMPACT_PER_1000_DEFAULT = 1.0;
+export const UNFILLED_IMPACT_COEFF_BPS_DEFAULT = 10;
 export const COMMISSION_PER_SHARE = 0.005;
 export const SEC_FEE_RATE = 0.000_008;
 export const FINRA_TAF_PER_SHARE = 0.000_119;
@@ -69,6 +70,15 @@ export function computeBookImpactBps(
   if (touchPrice === undefined || avgFillPrice === undefined || touchPrice <= 0) return 0;
   const slippage = side === "BUY" ? avgFillPrice - touchPrice : touchPrice - avgFillPrice;
   return parseFloat(Math.max(0, (slippage / touchPrice) * 10_000).toFixed(4));
+}
+
+export function computeUnfilledImpactBps(
+  filledQty: number,
+  remainingQty: number,
+  coefficientBps: number = UNFILLED_IMPACT_COEFF_BPS_DEFAULT
+): number {
+  if (filledQty <= 0 || remainingQty <= 0) return 0;
+  return parseFloat((coefficientBps * Math.sqrt(remainingQty / filledQty)).toFixed(4));
 }
 
 export function computeImpact(

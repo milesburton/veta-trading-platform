@@ -39,13 +39,15 @@ For ICEBERG the visible quantity set on the order is the requested size, so a vi
 
 ## Algo Monitor
 
-The **Algo Monitor** panel shows all active algo strategies with real-time heartbeat status. Each strategy reports:
+The **Algo Monitor** panel lists algo parent orders with their execution progress. Its tabs are:
 
-- Last heartbeat timestamp
-- Number of active orders
-- Current execution progress
+- **Active**: orders that are pending or working
+- **Needs Action**: orders that expired with quantity unfilled, or that have been working for more than 30 seconds with no fill
+- **History**: orders that have filled or expired. Selecting a row shows its execution performance.
 
-A heartbeat gap above 10 seconds triggers an alert in the alert centre.
+Each row shows the asset, side, strategy, filled, unfilled and total quantity, a progress bar, the limit and last prices, market impact in basis points and commission. A strategy filter narrows the list to one execution strategy.
+
+Algo heartbeats do not appear in this panel. They feed the algo feed indicator in the status bar.
 
 ![Algo Monitor panel](/veta-trading-platform/screenshots/panels/algo-monitor.png)
 
@@ -73,11 +75,13 @@ The **Algo Leaderboard** ranks strategies by performance metrics:
 
 ## Trade Recommendations
 
-The **Trade Recommendation** panel shows rule-based signals scored by the intelligence pipeline. Each recommendation includes:
+The **Trade Recommendation** panel ranks option contracts for a chosen underlying. Select a symbol and click **Analyse**. When a live signal exists for the symbol, a banner shows its score, direction (long, short or neutral), confidence and the three largest contributing factors.
 
-- Symbol and action (BUY/SELL/HOLD)
-- Confidence score (0 to 1)
-- Reason text with factor analysis
-- Target price
+Each recommendation row shows:
+
+- A signal strength badge: strong buy, buy, neutral, sell or strong sell
+- Option type, strike and expiry
+- Theoretical price and a score bar
+- On expansion: Greeks (delta, gamma, theta, vega), implied volatility, the scoring mode and the reasons behind the score
 
 ![Trade Recommendation panel](/veta-trading-platform/screenshots/panels/trade-recommendation.png)

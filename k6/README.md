@@ -27,7 +27,7 @@ docker compose --profile loadtest run --rm k6
 ```
 
 Output writes to `docs/site/src/data/loadtest/` and is rendered by the
-[Performance](https://milesburton.github.io/veta-trading-platform/reference/performance/)
+[Performance](https://milesburton.github.io/veta-trading-platform/analytics/performance/)
 page on next site build.
 
 ## Targeting other environments

@@ -123,6 +123,8 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/oms:latest
     build: !reset null
     profiles: !reset []
+    environment:
+      INTERNAL_SERVICE_TOKEN: "${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN must be set in OpenBao secret/veta/platform; run docker compose via scripts/veta-compose.sh}"
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
@@ -271,6 +273,7 @@ services:
       # Per-user demo passwords. Format: alice:secret1,bob:secret2,...
       # Optional. When set, takes precedence over OAUTH2_SHARED_SECRET
       # for the named users. Used for friends-and-family demos.
+      INTERNAL_SERVICE_TOKEN: "${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN must be set in OpenBao secret/veta/platform; run docker compose via scripts/veta-compose.sh}"
       OAUTH2_USER_SECRETS: "${OAUTH2_USER_SECRETS:-}"
       # Enables the unauthenticated /personas endpoint that powers the
       # demo-persona picker on the Sign-in panel. Safe to leave on for

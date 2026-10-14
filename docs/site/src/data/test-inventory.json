@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 129,
-      "cases": 1440,
+      "cases": 1451,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -13,7 +13,7 @@
         "admin-route.unit.test.ts": 16,
         "alerts-route.unit.test.ts": 15,
         "algo-common-http.unit.test.ts": 9,
-        "algo-depth-cap-book.unit.test.ts": 2,
+        "algo-depth-cap-book.unit.test.ts": 6,
         "algo-depth-cap.unit.test.ts": 9,
         "algo-fill-progress.unit.test.ts": 13,
         "algo-idle-exit.unit.test.ts": 5,
@@ -35,9 +35,9 @@
         "devcontainer.unit.test.ts": 7,
         "discord-bot.unit.test.ts": 46,
         "discord-notifier.unit.test.ts": 18,
-        "docs-drift.unit.test.ts": 8,
+        "docs-drift.unit.test.ts": 9,
         "duration-ladder.unit.test.ts": 9,
-        "ems.unit.test.ts": 26,
+        "ems.unit.test.ts": 28,
         "feature-engine.test.ts": 26,
         "feature-store.unit.test.ts": 5,
         "fill-math.unit.test.ts": 6,
@@ -58,7 +58,7 @@
         "journal-candles.unit.test.ts": 2,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
-        "lib.unit.test.ts": 13,
+        "lib.unit.test.ts": 17,
         "llm-dedupe.test.ts": 13,
         "llm-pg-retry.unit.test.ts": 6,
         "llm-policy.test.ts": 20,
@@ -154,8 +154,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 20,
-      "cases": 222,
+      "files": 21,
+      "cases": 227,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -174,6 +174,7 @@
         "typed-consumer.integration.tc.test.ts": 5,
         "registration.integration.tc.test.ts": 5,
         "preferences.integration.tc.test.ts": 6,
+        "trading-limits-lookup.integration.tc.test.ts": 5,
         "venues.integration.tc.test.ts": 9,
         "product-service.integration.tc.test.ts": 8,
         "analytics-services.integration.tc.test.ts": 9

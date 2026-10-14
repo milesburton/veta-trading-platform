@@ -15,8 +15,10 @@ Useful for confirming event flow during integration debugging or when investigat
 
 ## Access
 
+In the development stack, Traefik routes it at:
+
 ```
-http://<host>:8080/
+http://<host>/admin/redpanda/
 ```
 
-On the server it is reverse-proxied via Traefik but typically not exposed on the public URL. Operators reach it over LAN.
+The console listens on port 8081 inside `trading-net` and publishes no host port. In production its Traefik routing is disabled, so it is not reachable from outside the Docker network.

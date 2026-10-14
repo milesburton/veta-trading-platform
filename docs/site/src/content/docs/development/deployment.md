@@ -51,7 +51,7 @@ Production credentials live in [OpenBao](https://openbao.org), a self-hosted sec
 
 | KV path | Holds |
 | --- | --- |
-| `secret/veta/platform` | Every credential `compose.yml`, `compose.prod.yml` and the LGTM stack interpolate: database, MinIO and Grafana passwords, OAuth secrets, synthetic trader passwords, Discord tokens and webhooks, market data API keys. Also `GITHUB_TICKETING_TOKEN_SECRET`, which reaches the gateway and discord-bot as the Compose secret file `/run/secrets/github_ticketing_token` (via `deploy/openbao/compose.secrets.yml`) rather than an environment variable |
+| `secret/veta/platform` | Every credential `compose.yml`, `compose.prod.yml` and the LGTM stack interpolate: database, MinIO and Grafana passwords, OAuth secrets, `INTERNAL_SERVICE_TOKEN` (the OMS credential for reading per-user trading limits from the user service), synthetic trader passwords, Discord tokens and webhooks, market data API keys. Also `GITHUB_TICKETING_TOKEN_SECRET`, which reaches the gateway and discord-bot as the Compose secret file `/run/secrets/github_ticketing_token` (via `deploy/openbao/compose.secrets.yml`) rather than an environment variable |
 | `secret/veta/loadgen` | `LOADGEN_OAUTH_PASSWORD` and any other loadgen settings |
 
 `.env` in the stack directory keeps non-secret settings only, such as `VETA_CGROUP_PARENT` or `COMPOSE_FILE`.

@@ -442,3 +442,27 @@ Deno.test("[docs-drift] every cross-page heading anchor link resolves to a real 
       broken.map((b) => `  ${b.docPath} -> ${b.link}\n      (${b.reason})`).join("\n")
   );
 });
+
+Deno.test("[docs-drift] every <Source line={n} label='symbol'> points at a line containing the symbol", async () => {
+  const docs = await readAllDocsMarkdown();
+  const tagPattern = /<Source\s+([^>]*?)\/>/g;
+  const stale: string[] = [];
+
+  for (const [docPath, content] of docs) {
+    for (const tag of content.matchAll(tagPattern)) {
+      const attrs = tag[1];
+      const path = attrs.match(/path="([^"]+)"/)?.[1];
+      const line = attrs.match(/line=\{(\d+)\}/)?.[1];
+      const label = attrs.match(/label="([^"]+)"/)?.[1];
+      if (!path || !line || !label || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) continue;
+
+      const lines = (await Deno.readTextFile(`${REPO_ROOT}${path}`)).split("\n");
+      const target = lines[Number(line) - 1] ?? "";
+      if (!target.includes(label)) {
+        stale.push(`${docPath.replace(REPO_ROOT, "")}: ${path}:${line} does not contain "${label}"`);
+      }
+    }
+  }
+
+  assertEquals(stale, [], `Stale <Source line> references:\n${stale.join("\n")}`);
+});

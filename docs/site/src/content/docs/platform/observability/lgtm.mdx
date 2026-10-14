@@ -15,7 +15,8 @@ A separate Compose stack at [`observability/docker-compose.lgtm.yml`](https://gi
 | `lgtm-prometheus` | `prom/prometheus:v3.1.0` | 9090 | Time-series metrics; remote-write enabled |
 | `lgtm-loki` | `grafana/loki:3.3.2` | 3100 | Log aggregation |
 | `lgtm-tempo` | `grafana/tempo:2.7.1` | 3200 / 4319 | Distributed traces |
-| `lgtm-alloy` | `grafana/alloy:v1.7.0` | 12345 | Log + metric collector; tails service stdout |
+| `lgtm-alloy` | `grafana/alloy:v1.7.0` | 4317 / 4318 / 12345 | Log + metric collector; tails service stdout and receives OTLP (gRPC on 4317, HTTP on 4318) |
+| `lgtm-renderer` | `grafana/grafana-image-renderer:3.12.5` | none | Renders Grafana panels to images for the docs screenshots and alert attachments |
 
 Grafana is provisioned with the three datasources and a `Trading` folder containing both the project-specific dashboards and the official k6 Prometheus dashboard.
 

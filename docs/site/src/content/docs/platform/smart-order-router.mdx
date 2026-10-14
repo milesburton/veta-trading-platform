@@ -72,6 +72,8 @@ The 2-second cooldown is a hard-coded constant (`COOLDOWN_MS` in `sniper-strateg
 
 When the chosen venue has a book, the fill comes from matching the child against it with price-time priority ([`matching-engine.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/matching-engine.ts)). The fill's `marketImpactBps` then measures the depth the child consumed: how far its average fill price sits beyond the venue's touch (best ask for a buy, best bid for a sell) before matching, in basis points of the touch. A child filled entirely at the touch carries zero impact, and price improvement is never reported as negative impact.
 
+When a child consumes every displayed level and part of it is left unfilled, the book cannot show what the rest would have cost. The reported `marketImpactBps` then adds an estimate of `10 × √(unfilledQty / filledQty)` basis points (`computeUnfilledImpactBps`). Only the reported impact changes: the fills, quantities and average price stay bounded by the displayed book, and a remainder left by a limit price rather than an exhausted book gets no estimate.
+
 Only when no book exists does [`computeFill`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/fill-math.ts) apply its formula:
 
 - `filledQty = min(orderQty, tickVolume * participationCap * venueDepthMult)`

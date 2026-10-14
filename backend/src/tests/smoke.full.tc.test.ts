@@ -912,9 +912,9 @@ Deno.test({
         });
 
         await t.step("SNIPER order reaches filled or expired within 60s", async () => {
-          const token = await login(stack, "alice");
+          const token = await login(stack, "test-full-trader");
           const price = await livePrice(token, "AAPL");
-          const { clientOrderId } = await submitOrder("alice", {
+          const { clientOrderId } = await submitOrder("test-full-trader", {
             asset: "AAPL",
             side: "BUY",
             quantity: 30,
@@ -956,9 +956,9 @@ Deno.test({
         });
 
         await t.step("MOMENTUM order reaches filled or expired within 90s", async () => {
-          const token = await login(stack, "alice");
+          const token = await login(stack, "test-full-trader");
           const price = await livePrice(token, "AAPL");
-          const { clientOrderId } = await submitOrder("alice", {
+          const { clientOrderId } = await submitOrder("test-full-trader", {
             asset: "AAPL",
             side: "BUY",
             quantity: 30,
@@ -979,9 +979,9 @@ Deno.test({
         });
 
         await t.step("IS order reaches filled or expired within 90s", async () => {
-          const token = await login(stack, "alice");
+          const token = await login(stack, "test-full-trader");
           const price = await livePrice(token, "MSFT");
-          const { clientOrderId } = await submitOrder("alice", {
+          const { clientOrderId } = await submitOrder("test-full-trader", {
             asset: "MSFT",
             side: "BUY",
             quantity: 40,

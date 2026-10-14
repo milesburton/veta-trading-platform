@@ -27,13 +27,13 @@ If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fa
 
 ## Trading limits
 
-Each trader has personal limits enforced by the order ticket:
+Each trader has personal limits enforced by the OMS when an order is submitted:
 
 - **Max order quantity**: the largest single order allowed (e.g. 10,000 shares)
 - **Max daily notional**: the total notional value allowed per day (e.g. $1,000,000)
 - **Allowed strategies**: which algo strategies the trader can use
 
-Limit violations show amber warnings in the order ticket and prevent submission.
+An order that breaches a limit is rejected with the reason. The order ticket greys out strategies that are not allowed.
 
 ## Kill Switch
 
@@ -43,13 +43,13 @@ The kill switch allows traders and administrators to halt trading activity immed
 
 - **Traders** can kill their own orders.
 - **Admins** can kill all orders firm-wide.
-- **Scope options**: all orders, specific symbol, specific strategy, or specific user.
+- **Scope options**: all orders, a specific symbol, a specific strategy, a specific user, or a market or exchange.
 
 The kill switch broadcasts to all connected clients and cancels active orders on the bus.
 
 ## Risk Dashboard
 
-The **Risk Dashboard** panel (available to desk-heads, risk-managers, and admins) shows a firm-wide view of all positions:
+The **Risk Dashboard** panel (available to desk-heads, risk-managers, admins and compliance) shows a firm-wide view of all positions:
 
 - Every trader's book with gross and net exposure
 - Unrealised and realised P&L per position

@@ -126,7 +126,7 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     filledQty = route.match.filledQty;
     remainingQty = route.match.remainingQty;
     avgFillPrice = route.match.avgFillPrice ?? midPrice;
-    impactBps = route.match.impactBps;
+    impactBps = route.match.impactBps + route.match.unfilledImpactBps;
   } else {
     const tickVolume = tick.volumes[child.asset] ?? 1_000;
     const fallback = computeFill(

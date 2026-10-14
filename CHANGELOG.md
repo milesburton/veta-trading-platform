@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.86.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.0...veta-trading-platform-v1.86.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **oms:** authenticate the trading limits lookup with a shared service token and fail closed ([#826](https://github.com/milesburton/veta-trading-platform/issues/826)) ([12cc5ef](https://github.com/milesburton/veta-trading-platform/commit/12cc5efe1cd05df602568264c10e929d5b0d592d))
+
+## [1.86.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.85.2...veta-trading-platform-v1.86.0) (2026-10-13)
+
+
+### Features
+
+* **ems:** estimate impact of the unfilled remainder when a child exhausts the book ([#802](https://github.com/milesburton/veta-trading-platform/issues/802)) ([2940cd4](https://github.com/milesburton/veta-trading-platform/commit/2940cd4bb6b832d67d78ee539d7f4df15fbf8708))
+
 ## [1.85.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.85.1...veta-trading-platform-v1.85.2) (2026-10-13)
 
 

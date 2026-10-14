@@ -102,7 +102,7 @@ All values in milliseconds. The full machine-readable dataset, including the zer
 
 3. **An earlier architectural hypothesis was tested and falsified.** Discussion in prior sessions proposed a price-level index ("predicate-index") to replace the algos' per-tick `for` loop, on the assumption that iteration cost would dominate at high order counts. The 100 → 500 scaling test disproves that assumption at the scales we care about. We have explicitly _not_ shipped this optimisation.
 
-4. **Storage layer is well-sized.** Journal ingestion (Kafka consume → Postgres write) holds p99 ≤ 22 ms even at the 500-order peak. The batched-write pattern (50 ms flush, 20 rows/transaction) leaves substantial headroom.
+4. **Storage layer is well-sized.** Journal ingestion (Kafka consume → Postgres write) holds p99 ≤ 11 ms even at the 500-order peak. The batched-write pattern (50 ms flush, 20 rows/transaction) leaves substantial headroom.
 
 5. **EMS execution improves with warmup.** `childToFilled` p99 dropped from 34 ms to 23 ms across the three runs, consistent with V8 JIT and connection-pool warmup. Production fill latency should match the warmer numbers, not the cold ones.
 

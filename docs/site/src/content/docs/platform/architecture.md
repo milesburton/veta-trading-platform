@@ -50,7 +50,7 @@ graph TD
     FE["React Frontend<br/><i>Vite / Electron</i>"]:::client
     GW["API Gateway :5011<br/><i>BFF, WebSocket hub + HTTP proxy</i>"]:::gateway
     KAFKA["Redpanda Message Bus :9092<br/><i>Kafka-compatible pub/sub</i>"]:::bus
-    SVCS["~30 backend services<br/><i>see diagrams below</i>"]:::support
+    SVCS["40+ backend services<br/><i>see diagrams below</i>"]:::support
 
     FE <-->|"WebSocket + HTTP"| GW
     GW <-->|"pub/sub"| KAFKA
@@ -251,14 +251,16 @@ sequenceDiagram
 | Category     | Topics                                                                                                                                      |
 | --- | --- |
 | Trading      | `orders.new`, `orders.submitted`, `orders.routed`, `orders.child`, `orders.filled`, `orders.expired`, `orders.rejected`, `orders.cancelled` |
+| Order control | `orders.kill`, `orders.resume`, `orders.resumed`, `orders.held`, `orders.unhold`, `orders.kill.audit`, `orders.resume.audit`, `orders.fi.rfq` |
 | Algo         | `algo.heartbeat`                                                                                                                            |
 | FIX          | `fix.execution`                                                                                                                             |
-| News         | `news.feed`, `news.signal`                                                                                                                  |
+| Market data  | `market.ticks`, `market.external.events`                                                                                                    |
+| News         | `news.feed`, `news.signal`, `news.events.normalised`                                                                                                                  |
 | Intelligence | `market.features`, `market.signals`, `market.recommendations`                                                                               |
 
 ## Authentication
 
-Sessions are stored as `veta_user` HTTP-only cookies set by the User Service via OAuth2 authorization-code flow with PKCE. The Gateway validates this cookie on every request (cached 10 seconds). The OMS independently fetches limits from the User Service (cached 30 seconds).
+Sessions are stored as `veta_user` HTTP-only cookies set by the User Service via OAuth2 authorization-code flow with PKCE. The Gateway validates this cookie on every request (valid results are cached for 60 seconds, failures for 10). The OMS independently fetches limits from the User Service (cached 30 seconds).
 
 Roles: `trader`, `desk-head`, `risk-manager`, `admin`, `compliance`, `sales`, `external-client`, `viewer`. Only `trader` can submit orders.
 
