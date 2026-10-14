@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import type { UnknownAction } from "@reduxjs/toolkit";
+import { STRATEGIES } from "@shared/primitives";
 import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
@@ -27,7 +28,7 @@ const ALGO_COLS: ColDef[] = [
     key: "strategy",
     label: "Strategy",
     type: "enum",
-    options: ["LIMIT", "TWAP", "POV", "VWAP"],
+    options: [...STRATEGIES],
     defaultWidth: 72,
   },
   {
@@ -430,10 +431,11 @@ export function AlgoMonitor() {
             className="bg-panel text-xs text-default rounded px-2 py-0.5 border border-divider"
           >
             <option value="ALL">All</option>
-            <option value="LIMIT">Limit</option>
-            <option value="TWAP">TWAP</option>
-            <option value="POV">POV</option>
-            <option value="VWAP">VWAP</option>
+            {STRATEGIES.map((strategy) => (
+              <option key={strategy} value={strategy}>
+                {strategy}
+              </option>
+            ))}
           </select>
         </div>
         <PopOutButton panelId="algo-monitor" />
