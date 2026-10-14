@@ -28,3 +28,5 @@ docs/visual-anomalies/
 docs/panel-walkthrough/report.json
 compose.gate.yml
 frontend/playwright-gate-report/
+.claude/settings.local.json
+.private-network-denylist

@@ -5,7 +5,7 @@
 # advisory flock so overlapping invocations bail.
 #
 # Why this exists: GitHub Actions runners can't reach the homelab's
-# private LAN (192.168.0.0/24). Inverting the direction — the homelab
+# private LAN. Inverting the direction, the homelab
 # polls GitHub — sidesteps the network problem entirely without a
 # tunnel.
 #
