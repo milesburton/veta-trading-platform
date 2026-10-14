@@ -25,17 +25,24 @@ The project uses a **Dev Container**. Open the repository in VS Code or JetBrain
 
 ## Pre-commit hooks
 
-The pre-commit hook runs 9 checks automatically:
+The pre-commit hook (`.husky/pre-commit`) runs these checks in order:
 
 1. Verify clean working directory.
 2. Backend lint (`deno lint`).
 3. Backend type-check (`deno task check`).
 4. Backend unit tests (`deno task test`).
-5. Frontend lint (Biome).
-6. Frontend type-check (tsc).
+5. Frontend lint (Biome, all files).
+6. Frontend type-check (tsc, all files).
 7. Frontend unit tests (Vitest).
-8. Smoke tests (auto-skipped if local services are not running).
-9. Integration tests (auto-skipped if local services are not running).
+8. Integration tests (auto-skipped if local services are not running).
+9. Migration safety (expand/contract rules for staged migrations).
+10. Prometheus alert rules (when staged).
+11. Docs drift check (regenerates derived files and fails if they changed).
+12. Private IPs in public docs.
+13. Docs validation (markdown, mermaid, build, links).
+14. Fallow audit (staged changes against HEAD, advisory).
+15. No secret files staged.
+16. No internal network details staged.
 
 You cannot push until all checks pass.
 

@@ -20,11 +20,9 @@ Both are served by Traefik on the server and exposed to the public internet thro
 
 ## Local development
 
-The dev container's `post-start.sh` runs `docker compose up -d` automatically
-on container start. Services are managed by Docker Compose.
+The dev container does not start services automatically. Run `start-trading` in a shell to bring the core services up, or start them with Docker Compose directly:
 
 ```sh
-# Restart the stack (services managed by Compose)
 docker compose --profile trading up -d
 
 # Frontend dev server
