@@ -24,6 +24,8 @@ flowchart LR
   Frontend --> DockerBase["docker-base"]:::parallel
 
   DockerBase --> DockerMatrix["Service images<br/><i>matrix</i>"]:::parallel
+  DockerMatrix --> DeployGate["deploy-gate<br/><i>compose + smoke</i>"]:::heavy
+  DeployGate --> Publish["publish-latest<br/><i>main only</i>"]:::deploy
 
   Integration --> MainCheck{"branch = main?"}:::decision
   Playwright --> MainCheck
@@ -41,7 +43,7 @@ flowchart LR
   classDef deploy fill:#f472b6,stroke:#ec4899,color:#000
 ```
 
-Integration covers service contracts, algo strategies (retry), the intelligence pipeline, journal HTTP, market-data HTTP, and smoke tests. Playwright, screenshots, Electron, and Docker builds run in parallel with integration. They only wait on the frontend job, not the 15-minute integration suite.
+Integration runs the testcontainers suites: service contracts, algo strategies, the intelligence pipeline, journal and market-data HTTP, and backend smoke. Playwright, screenshots, Electron, and Docker builds run in parallel with integration. They only wait on the frontend job, not the 15-minute integration suite.
 
 ## Parallelisation
 
@@ -67,15 +69,11 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (one Docker
 
 ### integration (~15 minutes)
 
-- Starts PostgreSQL, Redpanda, and the platform services
-- Runs every database migration
-- Waits for all services to be healthy (port polling)
-- Waits for market-sim to produce prices
-- Waits for risk-engine to have prices tracked
-- Configures risk-engine limits for test throughput
-- Runs the testcontainers integration suites and smoke tests
-- Generates `docs/badges/integration-tests.json`
-- Generates `docs/badges/smoke-tests.json`
+- Installs backend dependencies
+- Runs `deno task test:testcontainers:coverage`, which gives every `.tc.test.ts` suite its own ephemeral Postgres, Redpanda and service set (see [Testcontainers](/veta-trading-platform/development/testing/testcontainers/))
+- Retries the suite up to three times, because the ephemeral broker occasionally misses its start-up health window; a genuine failure fails every attempt and fails the job
+- Generates an lcov report for the testcontainers run (uploaded on `main`)
+- On `main`, generates `docs/badges/integration-tests.json` and `docs/badges/smoke-tests.json`
 
 This job runs on a self-hosted runner (`runs-on: [self-hosted, homelab]`) rather than a GitHub-hosted one. This repository is public on a personal (non-org) account, so GitHub-hosted larger runners aren't purchasable, and the testcontainers stack needs more than the standard 2-core hosted runner comfortably provides. The runner is an ephemeral Docker container on a homelab box (fresh container per job, `network_mode: host` so it can reach the Docker daemon the same way the wrapper script expects), scoped so it only ever runs for same-repo PRs and pushes to `main`, never a pull request from a fork.
 
