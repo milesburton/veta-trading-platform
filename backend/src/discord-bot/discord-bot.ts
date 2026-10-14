@@ -24,7 +24,8 @@ const MOTD_INTERVAL_MS = (() => {
   const parsed = Number(Deno.env.get("DISCORD_MOTD_INTERVAL_MS"));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 60 * 60 * 1000;
 })();
-const DOCS_URL = Deno.env.get("VETA_DOCS_URL") ?? "https://milesburton.github.io/veta-trading-platform/";
+const DOCS_URL =
+  Deno.env.get("VETA_DOCS_URL") ?? "https://milesburton.github.io/veta-trading-platform/";
 const PLATFORM_URL = Deno.env.get("VETA_PLATFORM_URL") ?? "https://veta.mnetcs.com";
 
 const DISCORD_API = "https://discord.com/api/v10";
@@ -285,6 +286,45 @@ function buildTriageProvider(): ILlmProvider {
 
 const triageProvider = buildTriageProvider();
 
+const TRIAGE_GENERATE_TIMEOUT_MS = 30_000;
+const POST_MAX_ATTEMPTS = 3;
+const POST_RETRY_BASE_DELAY_MS = 500;
+const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+export class TimeoutError extends Error {
+  constructor(ms: number) {
+    super(`timed out after ${ms}ms`);
+    this.name = "TimeoutError";
+  }
+}
+
+export function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new TimeoutError(ms)), ms);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+}
+
+export async function retryTransient<T>(
+  attempt: () => Promise<T>,
+  isTransient: (outcome: T) => boolean,
+  opts: { maxAttempts?: number; baseDelayMs?: number; sleep?: (ms: number) => Promise<void> } = {}
+): Promise<T> {
+  const maxAttempts = opts.maxAttempts ?? POST_MAX_ATTEMPTS;
+  const baseDelayMs = opts.baseDelayMs ?? POST_RETRY_BASE_DELAY_MS;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  for (let n = 1; ; n++) {
+    try {
+      const outcome = await attempt();
+      if (n >= maxAttempts || !isTransient(outcome)) return outcome;
+    } catch (err) {
+      if (n >= maxAttempts) throw err;
+    }
+    await sleep(baseDelayMs * 2 ** (n - 1));
+  }
+}
+
 function buildDiscordMessageLink(
   guildId: string | null,
   channelId: string,
@@ -319,16 +359,16 @@ async function handleMessageCreate(data: unknown): Promise<void> {
 
   let responseText: string;
   try {
-    const response = await triageProvider.generate(
-      buildTriagePrompt(req.freeText),
-      TRIAGE_SYSTEM_PROMPT
+    const response = await withTimeout(
+      triageProvider.generate(buildTriagePrompt(req.freeText), TRIAGE_SYSTEM_PROMPT),
+      TRIAGE_GENERATE_TIMEOUT_MS
     );
     responseText = response.text;
   } catch (err) {
     logger.error("triage generate failed", { err });
     await postChannelMessage(
       req.channelId,
-      `⚠️ <@${req.authorId}> couldn't process that ticket, try again shortly.`
+      `⚠️ <@${req.authorId}> couldn't process that ticket in time, try the in-app "Raise a ticket" button instead.`
     );
     return;
   }
@@ -381,15 +421,19 @@ async function postChannelMessage(channelId: string, content: string): Promise<b
     return false;
   }
   try {
-    const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${BOT_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ content }),
-      signal: AbortSignal.timeout(10_000),
-    });
+    const res = await retryTransient(
+      () =>
+        fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content }),
+          signal: AbortSignal.timeout(10_000),
+        }),
+      (response) => TRANSIENT_STATUSES.has(response.status)
+    );
     if (!res.ok) {
       logger.warn("failed to post channel message", { status: res.status });
     }
