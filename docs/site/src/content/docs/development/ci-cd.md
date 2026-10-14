@@ -270,11 +270,11 @@ gh api "repos/:owner/:repo/commits/$(gh pr view <N> --json headRefOid --jq .head
   --jq '.check_suites[] | {app: .app.name, status, conclusion}'
 ```
 
-Anything `status: queued, conclusion: null` from an app you don't actively use is the blocker. Either uninstall the app at `Settings, Integrations`, or `gh pr merge --admin` to bypass the stuck check while waiting for the cleanup.
+Anything `status: queued, conclusion: null` from an app you don't actively use is the blocker. Uninstall the app at `Settings, Integrations`, or remove it from the repository's installed apps, so the check suite stops blocking. Do not bypass branch protection with an admin merge; ask the repository owner first.
 
 ## Bot PAT for auto-merge
 
-[`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. The `gh pr merge` step authenticates with a fine-grained personal access token stored as the `BOT_PAT` repo secret.
+[`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) waits for the required checks, auto-approves, and enables squash auto-merge on every non-draft pull request from this repository that targets `main`, including Dependabot and release-please PRs. The `gh pr merge` step authenticates with a fine-grained personal access token stored as the `BOT_PAT` repo secret.
 
 This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` do not fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently: no `ci.yml` run, no docker image build, and no auto-pull picks it up because the SHA-comparison still works but the new image never gets built. The PAT bypasses the limitation because it is a user credential, so the merge commit looks like a normal push.
 
@@ -321,5 +321,5 @@ gh workflow run ci.yml --ref main
 ## Release management
 
 - **Release Please** auto-generates version bump PRs from conventional commits
-- **Dependabot** auto-merges patch-level npm dependency updates
+- **Dependabot** opens daily npm update PRs for all dependency types. They are auto-merged by `trusted-automerge.yml` once the required checks pass, like any other PR from this repository
 - **Changelog** auto-generated from commit messages
