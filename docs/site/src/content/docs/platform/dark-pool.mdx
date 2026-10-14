@@ -13,7 +13,7 @@ The platform's dark pool is a single-venue ATS labelled `DARK1`. The [Smart Orde
 
 ## Inputs and matching
 
-The service subscribes to `orders.routed` and admits any order with `destinationVenue === "DARK1"`. It then runs a periodic matching cycle:
+The service subscribes to `orders.routed` and admits any order with `destinationVenue === "DARK1"` and a quantity of at least `DARK_POOL_MIN_BLOCK` (10,000 by default); smaller orders are rejected. It then runs a matching cycle every `MATCH_CYCLE_MS` (500 ms by default):
 
 1. Take a midpoint price from the latest lit-market quote for the instrument.
 2. Walk the resting book on both sides looking for compatible buy/sell pairs.
@@ -33,10 +33,10 @@ The `/pool/stats` endpoint deliberately returns only aggregate quantities, not p
 
 ## Residual handling
 
-Orders that sit unmatched longer than `ORDER_TIMEOUT_MS` are dealt with according to `RESIDUAL_ACTION`:
+Every `EXPIRY_SWEEP_MS` (2 s by default) the pool looks for orders unmatched for longer than `ORDER_TIMEOUT_MS` (30 s by default) and handles them according to `RESIDUAL_ACTION`:
 
-- `reroute` (default) — the residual quantity is sent back to the lit market via the EMS.
-- `expire` — the residual is cancelled outright.
+- `reroute` (default): the residual quantity is sent back to the lit market via the EMS.
+- `expire`: the residual is cancelled outright.
 
 `reroute` is the realistic default for a serious participant: don't leave shares unfilled, but don't print the whole order on the lit book the second the dark cross expires either.
 

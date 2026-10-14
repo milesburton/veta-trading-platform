@@ -23,9 +23,9 @@ sequenceDiagram
 
     OMS->>RFQ: bond order on orders.fi.rfq
     RFQ->>RFQ: create record (state PENDING)
-    RFQ->>Dealers: send RFQ to 3-5 dealers in parallel
+    RFQ->>Dealers: send RFQ to 4 dealers in parallel
     Dealers-->>RFQ: quotes (50-800 ms each)
-    RFQ->>RFQ: auto-pick tightest spread after QUOTE_WINDOW_MS
+    RFQ->>RFQ: auto-pick tightest spread after RFQ_QUOTE_WINDOW_MS
     RFQ->>Journal: orders.filled (mirrors EMS shape)
     RFQ->>FIX: fix.execution
     RFQ->>RFQ: publish rfq.executed + rfq.quote.update
@@ -33,16 +33,16 @@ sequenceDiagram
 
 ## Auto-execution policy
 
-After `QUOTE_WINDOW_MS` the service picks the tightest spread among the responses and executes against that dealer. Anything still unanswered is timed out. Operators can override the auto-pick by calling `POST /rfq/:id/execute` with the dealer id of their choice; this is used by sales workflows that prefer a specific relationship over the cheapest tick.
+After `RFQ_QUOTE_WINDOW_MS` (3 s by default) the service picks the tightest spread among the responses and executes against that dealer. Anything still unanswered is timed out. Operators can override the auto-pick by calling `POST /rfq/:id/execute` with the dealer id of their choice; this is used by sales workflows that prefer a specific relationship over the cheapest tick.
 
 ## Outputs
 
 Each successful execution fans out across four streams so downstream consumers don't need an RFQ-specific path:
 
-- `rfq.executed` — full trade record with dealer panel and chosen quote
-- `orders.filled` — mirrors the EMS fill shape so the journal and gateway treat it like any other fill
-- `fix.execution` — picked up by [fix-archive](../supporting/db-migrate/) for execution-report persistence
-- `rfq.quote.update` — real-time stream for the frontend RFQ panel
+- `rfq.executed`: full trade record with dealer panel and chosen quote
+- `orders.filled`: mirrors the EMS fill shape so the journal and gateway treat it like any other fill
+- `fix.execution`: picked up by [fix-archive](../supporting/db-migrate/) for execution-report persistence
+- `rfq.quote.update`: real-time stream for the frontend RFQ panel
 
 The fan-out is the reason the [CCP](../post-trade-ccp/) can clear RFQ trades through the same pipeline as lit and dark fills.
 
@@ -52,8 +52,12 @@ The fan-out is the reason the [CCP](../post-trade-ccp/) can clear RFQ trades thr
 | --- | --- |
 | `GET /health` | liveness |
 | `GET /rfq/:id` | fetch a single RFQ including all dealer quotes |
-| `GET /rfq` | recent RFQs (last 100) |
+| `GET /rfq` | recent RFQs (last 100), optionally filtered by `userId` |
+| `GET /rfq/stats` | aggregate RFQ statistics |
 | `POST /rfq/:id/execute` | manually select a specific dealer quote |
+| `POST /rfq/sellside` | submit a sell-side client RFQ |
+| `GET /rfq/sellside`, `GET /rfq/sellside/stats`, `GET /rfq/sellside/:id` | list, summarise and fetch sell-side RFQs |
+| `POST /rfq/sellside/:id/(route\|markup\|confirm\|reject)` | advance a sell-side RFQ |
 
 ## Source
 
