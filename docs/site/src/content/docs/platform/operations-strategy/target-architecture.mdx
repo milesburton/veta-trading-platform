@@ -94,19 +94,19 @@ What v1 does **not** catch (queued for v2):
 - OMS pipeline regressions (no order submit + cancel yet)
 - Market data feed stalled (no candle / tick check)
 
-## Test gate on the deploy
+## Test gate on the deploy (shipped)
 
-CI today proves code is correct in isolation. It does not prove that the **built containers** wired together actually work. Today's deploy regressions (the `/sessions/me` route mismatch in PR #192; the Watchtower name-conflict) would have been caught by a build-and-run gate.
+CI on its own proves code is correct in isolation. It does not prove that the **built containers** wired together work. The 2026-05-12 deploy regressions (the `/sessions/me` route mismatch in PR #192; the Watchtower name-conflict) would have been caught by a build-and-run gate.
 
-Addition to CI: a **deploy-gate** job that:
+The `deploy-gate` job in `.github/workflows/ci.yml` does this:
 
-1. Builds every container image.
-2. Brings them up via `docker compose up -d` inside the GitHub Actions runner.
-3. Runs the Playwright suite against the running stack (not the Vite dev server).
-4. Runs the synthetic probe against the stack.
-5. Only on green does CI publish the image tags.
+1. Rebuilds every service image from the build cache and loads it locally.
+2. Generates a compose override (`scripts/emit-gate-compose-override.sh`) and brings the stack up inside the runner.
+3. Waits for readiness (`scripts/wait-for-stack.sh`).
+4. Runs the Playwright gate suite (`frontend/playwright.gate.config.ts`) against the running stack.
+5. Gates `publish-latest`, so `:latest` image tags are only published when it is green.
 
-This is slower (5-10 minutes) but it shifts left every kind of failure we hit on 2026-05-12.
+The synthetic probe is not part of the gate; it runs after the merge (see above).
 
 ## Multi-host prod, eventually
 
