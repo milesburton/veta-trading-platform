@@ -1,173 +1,64 @@
 ---
 title: Positions and P&L
-description: View, filter, and export your positions with live mark-to-market P&L calculations.
+description: View your open positions with live mark-to-market P&L, and the firm-wide Risk Dashboard.
 ---
 
-The **Positions** system in VETA tracks every open position derived from fills in real time. It provides both individual trader views (**My Positions**) and firm-wide oversight (**Risk Dashboard**) with live mark-to-market P&L, average fill price, and detailed fill history.
+Positions are built by the risk engine from `orders.filled` events and marked to the latest prices from the market simulator. There are two views: **My Positions** for an individual trader and the **Risk Dashboard** for firm-wide oversight.
 
 ## My Positions panel
 
-Every trader has access to the **My Positions** panel, which shows their own open positions with live updates.
+The panel shows the signed-in user's own open positions and refreshes every 2 seconds. The gateway only serves a user's own positions to that user, unless the caller holds a role that may read the risk engine directly.
 
 ![My Positions panel](/veta-trading-platform/screenshots/panels/my-positions.png)
 
-### Viewing your positions
-
-The panel displays the following columns:
-
 | Column | Description |
 | --- | --- |
-| Symbol | Trading symbol (e.g. AAPL, US10Y) |
-| Side | BUY or SELL |
-| Quantity | Open quantity remaining |
-| Avg Fill Price | Volume-weighted average of all fills |
-| Current Price | Latest market price from the simulator |
-| Unrealised P&L | Mark-to-market profit/loss on open positions |
-| Realised P&L | Closed P&L from fully filled/cancelled legs |
-| Total P&L | Unrealised + realised combined |
-| # Fills | Number of individual fills against this position |
-| Duration | How long the position has been open |
+| Symbol | Trading symbol (for example AAPL, US10Y) |
+| Position | Signed net quantity: positive and green for long, negative and red for short |
+| Avg Price | Average cost of the open quantity |
+| Mark | Latest market price |
+| Unreal | Unrealised P&L on the open quantity |
+| Real | Realised P&L from quantity closed so far |
+| Total P&L | Unrealised plus realised |
+| Fills | Number of fills against the symbol |
 
-### Filtering and sorting
-
-- **Click any column header** to sort ascending or descending.
-- **Use the Filter Bar** to build expressions (AND/OR logic with 13 operators).
-- **Filter by symbol**: type a partial symbol name to narrow the list.
-- **Filter by side**: show only BUY or SELL positions.
-- **Filter by P&L range**: find positions within a profit/loss band.
-- **Filter by status**: show only positions with unrealised P&L above/below a threshold.
-
-### Colour coding
-
-| Condition | Colour |
-| --- | --- |
-| Positive unrealised P&L | Green |
-| Negative unrealised P&L | Red |
-| Zero or no unrealised P&L | Grey |
-| Position open > 1 day | Amber border |
-| Position open > 1 week | Red border |
+The header shows gross notional and total P&L across all positions, and a Total row sums the P&L and fill columns. P&L figures are coloured green for a gain and red for a loss. The panel has no sorting, filtering or export.
 
 ## P&L calculations
 
-### Unrealised P&L
-
-Unrealised P&L is calculated in real time using the formula:
+For each symbol the risk engine keeps a net quantity, an average price and a realised P&L.
 
 ```
-unrealisedPnL = (currentPrice - avgFillPrice) * quantity * multiplier
+unrealisedPnl = netQty * (markPrice - avgPrice)
+totalPnl      = unrealisedPnl + realisedPnl
 ```
 
-For short positions, the formula is inverted:
+`netQty` is negative for a short position, so the same formula covers both directions. If no price is available for a symbol, the average price is used as the mark and unrealised P&L is zero.
 
-```
-unrealisedPnL = (avgFillPrice - currentPrice) * quantity * multiplier
-```
-
-The **multiplier** varies by asset class:
-
-- Equities: 1
-- Fixed Income: 1,000 (per bond notional)
-- FX: contract size based on currency pair
-- Commodities: contract size based on commodity type
-
-### Realised P&L
-
-Realised P&L is the sum of P&L from all fully closed positions. Each fill contributes to realised P&L based on the difference between the fill price and the average cost basis.
-
-### Total P&L
-
-```
-totalPnL = unrealisedPnL + realisedPnL
-```
+A fill in the direction of the position increases the quantity and moves the average price. A fill against the position realises P&L on the closed quantity, `closedQty * (fillPrice - avgPrice)`, with the sign inverted for shorts. A fill that closes the position exactly resets the average price to zero, and a fill that flips the position sets the average price to the fill price. There are no asset-class multipliers: quantity is treated as units of the instrument.
 
 ## Risk Dashboard (firm-wide)
 
-Desk-heads, risk-managers, and admins can view the **Risk Dashboard** panel for a firm-wide perspective.
+The **Risk Dashboard** panel groups positions by trader and shows firm P&L in the header. See [RBAC and permissions](/veta-trading-platform/reference/rbac/) for the roles that can open it.
 
 ![Risk Dashboard panel](/veta-trading-platform/screenshots/panels/risk-dashboard.png)
 
-The Risk Dashboard aggregates positions across all traders:
-
-| Metric | Description |
-| --- | --- |
-| Gross Exposure | Total long + short notional (absolute) |
-| Net Exposure | Long notional minus short notional |
-| Unrealised P&L | Firm-wide unrealised profit/loss |
-| Realised P&L | Firm-wide realised profit/loss |
-| Total P&L | Combined firm-wide P&L |
-| Per-Trader Breakdown | Individual trader P&L and exposure |
-| Per-Symbol Breakdown | Position concentration by instrument |
-
-## Exporting position data
-
-Positions and P&L data can be exported for external analysis:
-
-1. Click the **Export** button in the panel toolbar.
-2. Choose the export format:
-   - **CSV** — flat file compatible with Excel and spreadsheet applications
-   - **JSON** — structured data for programmatic processing
-3. Choose the scope:
-   - **My Positions** — only your own positions
-   - **All Positions** — firm-wide (requires desk-head, risk-manager, or admin role)
-
-### CSV export format
-
-A CSV export includes the following columns:
-
-```
-symbol,side,quantity,avgFillPrice,currentPrice,unrealisedPnl,realisedPnl,totalPnl,fills,openTime,trader,desk
-```
-
-### JSON export format
-
-A JSON export includes nested structure with position details, fill history, and metadata:
-
-```json
-{
-  "exportedAt": "2026-06-15T10:30:00Z",
-  "scope": "my-positions",
-  "positions": [
-    {
-      "symbol": "AAPL",
-      "side": "BUY",
-      "quantity": 500,
-      "avgFillPrice": 178.50,
-      "currentPrice": 182.30,
-      "unrealisedPnl": 1900.00,
-      "realisedPnl": 0.00,
-      "totalPnl": 1900.00,
-      "fills": 3,
-      "openTime": "2026-06-14T09:15:00Z",
-      "trader": "alice",
-      "desk": "equities"
-    }
-  ]
-}
-```
+- A header strip with the active risk configuration: price collar, maximum open orders, orders per second, ADV percentage and halt threshold.
+- A circuit breaker strip.
+- One row per trader with symbol count, fill count, gross and net notional, unrealised, realised and total P&L followed by that trader's per-symbol rows.
+- Headroom bars per trader showing notional and loss against the configured limits.
 
 ## Position limits
 
-Each trader has position limits enforced by the risk engine:
+Limits are enforced by the risk engine at order entry, not by the position panels. Defaults:
 
-| Limit | Description | Default |
-| --- | --- | --- |
-| Max position size | Largest single position allowed (shares or notional) | 50,000 shares |
-| Max net exposure | Maximum net long or short exposure | $5,000,000 |
-| Max gross exposure | Maximum total long + short exposure | $10,000,000 |
-| Max symbol concentration | Maximum % of portfolio in a single symbol | 25% |
+| Limit | Default |
+| --- | --- |
+| Maximum gross notional (also applied per symbol as `MAX_POSITION_SIZE`) | $5,000,000 |
+| Maximum daily loss | -$50,000 |
+| Maximum concentration in one symbol | 25% of gross notional |
 
-Limit violations appear as amber warnings in the order ticket and prevent new orders that would breach the limit.
-
-## Position reconciliation
-
-The **Journal** service persists every fill to PostgreSQL. Positions are derived from the journal and reconciled on each page load:
-
-1. The frontend requests the latest positions from the **OMS** service.
-2. The OMS queries the journal for all fills attributed to the trader.
-3. The OMS computes current position state from the fill history.
-4. The OMS returns the position data to the frontend.
-
-If the journal is unavailable, positions are served from the last known state with a warning indicator.
+See [Risk controls](/veta-trading-platform/user-guide/risk-controls/) for the full list of checks and how rejections appear in the order ticket. The limits can be changed at runtime through the risk engine configuration.
 
 ## Related panels
 
@@ -177,11 +68,4 @@ If the journal is unavailable, positions are served from the last known state wi
 | [Risk Dashboard](/veta-trading-platform/reference/panels/) | Firm-wide position and P&L overview |
 | [Order Blotter](/veta-trading-platform/user-guide/managing-orders/) | Active orders linked to positions |
 | [Child Orders](/veta-trading-platform/user-guide/managing-orders/#child-orders) | Execution slices for algo orders |
-| [Decision Log](/veta-trading-platform/reference/panels/) | Audit trail for position-related decisions |
-
-## Related documentation
-
-- [Risk Controls](/veta-trading-platform/user-guide/risk-controls/) — pre-trade risk checks and position limits
-- [Managing Orders](/veta-trading-platform/user-guide/managing-orders/) — order lifecycle and blotter management
-- [RBAC & Permissions](/veta-trading-platform/reference/rbac/) — who can view and export position data
-- [Journal Service](/veta-trading-platform/platform/services/) — fill persistence and reconciliation
+| [Decision Log](/veta-trading-platform/reference/panels/) | Audit trail for algo decisions |
