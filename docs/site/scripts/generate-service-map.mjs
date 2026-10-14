@@ -55,7 +55,7 @@ const DESCRIPTIONS = {
   "rfq-service": "Request for quote workflow",
   "product-service": "Structured product builder (CDO-like multi-leg baskets)",
   "replay-service": "rrweb session recording and playback",
-  "risk-engine": "Pre-trade risk checks (6 checks)",
+  "risk-engine": "Pre-trade risk checks (11 checks)",
   "discord-bot": "Discord Gateway client, welcome message on member join",
   "synthetic-trader-equity-high-touch": "Continuous synthetic trader, equity high-touch desk, over the real WS order path",
   "synthetic-trader-equity-low-touch": "Continuous synthetic trader, equity low-touch/algo desk, over the real WS order path",

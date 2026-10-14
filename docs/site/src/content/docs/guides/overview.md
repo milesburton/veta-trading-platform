@@ -11,7 +11,7 @@ VETA is a near real-world equities and fixed income trading platform. It support
 
 - **React frontend** with Tailwind, FlexLayout drag-and-drop panels, and multiple workspaces
 - **Nine execution strategies** (LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, MOMENTUM)
-- **Pre-trade risk engine** with six real-time checks
+- **Pre-trade risk engine** with eleven real-time checks
 - **Market simulator** generating GBM price paths seeded with real market data
 - **FIX 4.2 exchange** simulation with execution reports
 - **Analytics engine** (Black–Scholes, Monte Carlo, yield curves, volatility surfaces)

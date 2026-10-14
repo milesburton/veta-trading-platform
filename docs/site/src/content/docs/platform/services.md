@@ -40,7 +40,7 @@ Ports listed below are the internal listening ports used inside the dev containe
 | 5029 | RFQ | `rfq-service` | Request for quote workflow |
 | 5030 | Product Service | `product-service` | Structured product builder (CDO-like multi-leg baskets) |
 | 5031 | Session Replay | `replay-service` | rrweb session recording and playback |
-| 5032 | Risk Engine | `risk-engine` | Pre-trade risk checks (6 checks) |
+| 5032 | Risk Engine | `risk-engine` | Pre-trade risk checks (11 checks) |
 | 5033 | LLM Worker | `llm-worker` | LLM inference worker (job queue consumer) |
 | 5034 | Discord Bot | `discord-bot` | Discord Gateway client, welcome message on member join |
 | 5036 | Synthetic Trader (Equity LT) | `synthetic-trader-equity-low-touch` | Continuous synthetic trader, equity low-touch/algo desk, over the real WS order path |

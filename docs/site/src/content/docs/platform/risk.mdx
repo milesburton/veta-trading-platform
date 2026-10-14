@@ -1,6 +1,6 @@
 ---
 title: Risk Controls
-description: Pre-trade risk engine with 6 real-time checks and live position tracking.
+description: Pre-trade risk engine with 11 real-time checks and live position tracking.
 ---
 
 import Svc from "@docs/components/Svc.astro";
@@ -21,6 +21,11 @@ The <Svc name="oms" /> calls `POST /check` on the <Svc name="risk-engine" /> syn
 | 4 | Self-cross prevention | `SELF_CROSS` | (none) | Own BUY crossing own SELL |
 | 5 | Order size vs ADV | `ORDER_SIZE_VS_ADV` | 10% of ADV | Market impact |
 | 6 | Rate limiting | `RATE_LIMIT` | 10 orders/sec | Algo floods |
+| 7 | Market hours | `MARKET_CLOSED` | Enforced | Orders outside the trading session |
+| 8 | Gross notional limit | `POSITION_NOTIONAL_LIMIT` | $5,000,000 post-trade | Oversized books |
+| 9 | Daily loss stop | `DAILY_LOSS_STOP` | -$50,000 | Runaway losses |
+| 10 | Concentration limit | `CONCENTRATION_LIMIT` | 25% of gross | Single-name concentration |
+| 11 | Max position size | `MAX_POSITION_SIZE` | $5,000,000 per symbol | Oversized single positions |
 
 ### Configuration
 
@@ -32,7 +37,15 @@ All thresholds are runtime-editable via `PUT /config` with no restart:
   "maxOpenOrders": 50,
   "duplicateWindowMs": 500,
   "maxOrdersPerSecond": 10,
-  "maxAdvPct": 10.0
+  "maxAdvPct": 10.0,
+  "maxGrossNotional": 5000000,
+  "maxDailyLoss": -50000,
+  "maxConcentrationPct": 25,
+  "haltMovePercent": 10,
+  "breakerCooldownMs": 60000,
+  "breakersEnabled": true,
+  "selfCrossEnabled": true,
+  "marketHoursEnforced": true
 }
 ```
 
