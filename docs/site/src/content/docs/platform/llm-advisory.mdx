@@ -31,7 +31,7 @@ flowchart LR
   GW --> UI
 ```
 
-The orchestrator subscribes to `market.signals`, `market.recommendations`, and `llm.worker.status`, and exposes a small admin HTTP surface (`/admin/state`, `/admin/watchlist-brief`, `/admin/trigger-worker`). Jobs live in `llm_advisory.jobs` in postgres. The worker idles cheaply when the queue is empty, polling every 2s.
+The orchestrator subscribes to `market.signals`, `market.recommendations`, `market.features` and `llm.worker.status`. Its HTTP surface is `/health`, `/admin/state`, `/admin/watchlist-brief`, `/admin/trigger-worker`, `/advisory/request`, `/advisory/scenario-context` and `/jobs`. Jobs live in `llm_advisory.jobs` in postgres. The worker idles cheaply when the queue is empty, polling every 2s.
 
 ## Restart policy
 

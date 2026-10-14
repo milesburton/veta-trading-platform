@@ -105,13 +105,29 @@ includes whatever tags were present).
 | 2 | SequenceReset | Both | `FixSession` (gap-fill) |
 | 3 | ResendRequest | Both | `FixSession` |
 | D | NewOrderSingle | Inbound only | `fix-exchange.ts`'s `handleApplicationMessage` |
+| F | OrderCancelRequest | Inbound only | `fix-exchange.ts` |
+| G | OrderCancelReplaceRequest | Inbound only | `fix-exchange.ts` |
 | 8 | ExecutionReport | Outbound only | `fix-exchange.ts` |
+| 9 | OrderCancelReject | Outbound only | `fix-exchange.ts` |
 
 Every other `MsgType` value is accepted at the parser level but produces no application
-response — `handleApplicationMessage` returns immediately if `msgType !== NewOrderSingle`
-(`fix-exchange.ts`). There is no `OrderCancelRequest`, `OrderCancelReplaceRequest`, or
-`OrderCancelReject` handling despite tags/constants existing for some of these in earlier
-drafts of the dictionary; a cancel sent today is silently ignored.
+response: `handleApplicationMessage` returns immediately for anything that is not one of
+`NewOrderSingle`, `OrderCancelRequest` or `OrderCancelReplaceRequest`.
+
+### Cancel and replace
+
+`fix-exchange.ts` keeps an in-memory map of open orders keyed by `ClOrdID`, populated when
+a `NewOrderSingle` is accepted and cleared when its final fill is sent.
+
+- **Cancel.** A known open order is marked cancelled, so any fill slice still pending is
+  skipped, and the exchange replies with an `ExecutionReport` (`ExecType=Canceled`,
+  `LeavesQty=0`). An unknown or already-final `OrigClOrdID` gets an `OrderCancelReject`
+  with `CxlRejReason=UnknownOrder`.
+- **Replace.** Only `OrderQty` can change. The order is re-keyed under the new `ClOrdID`
+  and the exchange replies with an `ExecutionReport` (`ExecType=New`) carrying the new
+  `LeavesQty`. A new quantity below the already-filled quantity, or an unknown order, gets
+  an `OrderCancelReject`. Price, side and symbol changes are ignored, and the replacement
+  does not re-run the venue, market-hours or risk gates.
 
 ## Session management
 

@@ -41,7 +41,7 @@ Then restart the consumers so they pick up the new config:
 
 ```bash
 cd /opt/stacks/veta
-scripts/veta-compose.sh up -d llm-advisory llm-advisory-worker
+scripts/veta-compose.sh up -d llm-advisory llm-worker
 ```
 
 The compose file defaults to the in-stack CPU Ollama with a raised CPU weight (see [ADR 0006](../../decisions/0006-discord-triage-llm-provider/)); the GPU host is opt-in through the variables above. This also means a developer running the local stack gets the small `qwen2.5:3b` model and does not depend on the Spark being reachable.
@@ -57,7 +57,7 @@ curl -sS http://<gpu-host>:11434/api/tags | jq '.models[].name'
 End-to-end check of LLM-advisory:
 
 ```bash
-curl -sS -X POST "$VETA_PLATFORM_URL/api/llm-advisory/advisories" \
+curl -sS -X POST "$VETA_PLATFORM_URL/api/llm-advisory/advisory/request" \
   -H 'Content-Type: application/json' \
   --cookie "$YOUR_SESSION_COOKIE" \
   -d '{"symbol":"AAPL"}'
