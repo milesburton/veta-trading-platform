@@ -17,7 +17,7 @@ The repository ships a `.devcontainer/devcontainer.json` that configures VS Code
 - **Node 24** for the React frontend
 - **PostgreSQL 16** for journal, user, and replay data
 - **Redpanda** (Kafka-compatible) for the message bus
-- **Supervisord** managing 30+ microservices
+- **Supervisord** managing the trading microservices (more than 40 programs), with Postgres and Redpanda run through Docker Compose
 
 When you open the repository in VS Code and accept "Reopen in Container", you get a functional trading platform with zero local setup. The MOTD shows available commands.
 
@@ -59,21 +59,26 @@ See [Testing](/veta-trading-platform/development/testing/) for the full breakdow
 - Health checks for all backend services.
 - Full OAuth login flow with browser-style headers.
 - Order lifecycle: submit, then fill or expire within timeout.
-- Risk-engine CRUD: create session, upload chunks, query events, delete.
-- Disk usage assertion: fail if >95% full (prevents the disk-fill incident from recurring).
+- Auth edge cases: unknown user, wrong or missing password, disabled public registration, invalid token, and role checks on admin-only endpoints.
+- Each of the nine algo strategies reaches a terminal or acknowledged state.
+- Downstream services (news, recommendation, feature, signal, scenario, RFQ, dark pool, CCP) report valid health and stats shapes.
+- Disk usage assertion: the gateway `/system` endpoint reports disk usage and it is not exhausted.
 
 ## Pre-commit hooks
 
-The pre-commit hook runs 8 checks. You cannot push until all pass:
+The pre-commit hook runs 16 steps. You cannot commit until all pass:
 
-1. `deno lint`: backend linting
-2. `deno task check`: backend type-checking (56 files)
-3. `deno task test`: backend unit tests
-4. `npx @biomejs/biome check src/`: frontend linting
-5. `tsc --noEmit`: frontend type-checking
-6. `vitest run`: frontend unit tests
-7. Smoke tests (if services are running locally)
+1. Clean working directory check
+2. `deno lint`: backend linting
+3. `deno task check`: backend type-checking
+4. `deno task test`: backend unit tests
+5. Frontend linting (Biome)
+6. Frontend type-checking (`tsc --noEmit`)
+7. Frontend unit tests (Vitest)
 8. Integration tests (if services are running locally)
+9. Migration safety, Prometheus alert rules, docs drift, private IP and network detail scans, docs validation, Fallow audit, and secret file checks
+
+See [Contributing](/veta-trading-platform/development/contributing/#pre-commit-hooks) for the full ordered list.
 
 ## Code conventions
 

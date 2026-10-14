@@ -459,10 +459,23 @@ Deno.test("[docs-drift] every <Source line={n} label='symbol'> points at a line 
       const lines = (await Deno.readTextFile(`${REPO_ROOT}${path}`)).split("\n");
       const target = lines[Number(line) - 1] ?? "";
       if (!target.includes(label)) {
-        stale.push(`${docPath.replace(REPO_ROOT, "")}: ${path}:${line} does not contain "${label}"`);
+        stale.push(
+          `${docPath.replace(REPO_ROOT, "")}: ${path}:${line} does not contain "${label}"`
+        );
       }
     }
   }
 
   assertEquals(stale, [], `Stale <Source line> references:\n${stale.join("\n")}`);
+});
+
+Deno.test("[docs-drift] every @veta/ alias in deno.json appears in shared-modules.md", async () => {
+  const config = JSON.parse(await Deno.readTextFile(`${REPO_ROOT}deno.json`)) as {
+    imports: Record<string, string>;
+  };
+  const page = await Deno.readTextFile(`${DOCS_ROOT}/development/shared-modules.md`);
+  const missing = Object.keys(config.imports)
+    .filter((alias) => alias.startsWith("@veta/"))
+    .filter((alias) => !page.includes(`\`${alias}\``));
+  assertEquals(missing, [], `aliases missing from shared-modules.md: ${missing.join(", ")}`);
 });

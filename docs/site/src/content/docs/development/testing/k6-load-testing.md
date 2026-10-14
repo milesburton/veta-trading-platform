@@ -1,6 +1,6 @@
 ---
 title: k6 load testing
-description: Synthetic load harness that drives orders through the full pipeline under four scenarios chosen to mimic real trading-day pressure.
+description: Synthetic load harness that drives orders through the full pipeline under five scenarios chosen to mimic real trading-day pressure.
 ---
 
 Load scenarios live in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6). The harness runs as a one-shot Compose service. Pick a scenario via `K6_SCRIPT`, with `baseline-limit.js` the default:
@@ -29,12 +29,12 @@ K6_SCRIPT=risk-stress.js \
   docker compose --profile loadtest run --rm k6
 ```
 
-## Why four scenarios
+## Why five scenarios
 
-A single ramp tests one thing. Real trading platforms experience four
+A single ramp tests one thing. Real trading platforms experience several
 qualitatively different pressure profiles, and a system that handles
 the average gracefully can still fall over on any of these. The
-scenarios are arranged so that running all four exercises every
+scenarios are arranged so that running all five exercises every
 known failure mode the platform should withstand.
 
 ## Scenario reference
@@ -106,7 +106,7 @@ just over, and way over. Exercises the OMS pre-trade limit check
 | Strategies    | LIMIT only                                                                                                  |
 | Quantity mix  | 50% well-under (100), 30% just-under (9_500), 10% at-limit (10_000), 8% over (10_001), 2% way-over (50_000) |
 | Pattern       | Ramp 1→10→30, hold 2min                                                                                     |
-| Threshold     | submit_ok rate > 95% (counting both 202 accept and 422 risk-reject as "responsive")                         |
+| Threshold     | submit_ok rate > 95% (counting both 202 accept and 422 risk-reject as "responsive"), load-test endpoint p99 < 1.5s |
 | What it tests | Risk-engine latency under pressure, OMS limit-check correctness, fail-closed semantics                      |
 
 ## What the harness measures

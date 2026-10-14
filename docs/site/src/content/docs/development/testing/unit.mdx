@@ -70,7 +70,7 @@ Areas with the densest coverage:
 
 `backend/src/tests/test-helpers.ts` provides:
 
-- `timeout(ms?)`: AbortSignal for `fetch()` calls, default 5s. Use this for every HTTP call in tests.
+- `timeout(ms?)`: AbortSignal for `fetch()` calls, default 10s. Use this for every HTTP call in tests.
 - OAuth and PKCE helpers for login flows in HTTP tests (used by `.http.test.ts`, not by pure unit tests).
 - Service URL mapping for HTTP tests.
 
@@ -78,7 +78,7 @@ Areas with the densest coverage:
 
 1. Create `backend/src/tests/my-feature.unit.test.ts`.
 2. Write `Deno.test("[my-feature] description of the case", () => { ... })`.
-3. Run `deno task test`. The `test:unit` task discovers every `*.test.ts` under `backend/` except the patterns in its `--ignore` list (testcontainers, `*.integration.test.ts`, `*.http.test.ts` and `load.test.ts`), so no registration is needed.
+3. Run `deno task test`. The `test:unit` task discovers every `*.test.ts` under `backend/` except the patterns in its `--ignore` list (`*.tc.test.ts`, `integration.test.ts`, `*.integration.test.ts`, `*.http.test.ts`, `load.test.ts` and `testcontainers.*.test.ts`), so no registration is needed.
 4. Regenerate the inventory with `cd docs/site && npm run generate` and commit `src/data/test-inventory.json`.
 
 ## Frontend
@@ -163,6 +163,6 @@ These are larger than Vitest defaults (5s) because some component tests render c
 ### Adding a test
 
 1. Create `__tests__/MyComponent.test.tsx` next to the component.
-2. Vitest globs `__tests__/**/*.test.{ts,tsx}`; no manifest update is required (unlike the backend).
+2. Vitest includes every `src/**/*.{test,spec}.{js,ts,tsx}` file, so no manifest update is required.
 3. If the component reads from Redux, build a per-test store as above.
 4. If it makes API calls, mock the relevant hook from `servicesApi` or `userApi`.

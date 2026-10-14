@@ -10,7 +10,7 @@ Trading flows are not re-tested here. The web [Playwright E2E suite](../playwrig
 **Location:** `frontend/tests-electron/`
 **Config:** [`frontend/playwright.electron.config.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/playwright.electron.config.ts)
 **Run:** `cd frontend && npm run test:electron`
-**Prerequisite:** `npm run electron:build` (produces `dist/` and `dist-electron/`)
+**Prerequisite:** `npm run electron:build` (produces `dist/` and `dist-electron/`). The screenshot spec in the same folder runs against `npm run electron:build-test`, which bakes in mocks.
 
 ## What it verifies
 
@@ -19,8 +19,8 @@ Trading flows are not re-tested here. The web [Playwright E2E suite](../playwrig
 3. **Dashboard mounts** after startup completes.
 4. **contextBridge API**: `window.electronAPI` is exposed to the renderer with exactly the methods the main process intends to share.
 5. **contextIsolation is enforced**: no Node.js globals (`require`, `process`, `__dirname`) leak into the renderer. A renderer-side XSS therefore cannot `require("fs")` and read the user's disk.
-6. **IPC handlers**: minimize, maximize, and close calls reach the main process and act on the BrowserWindow.
-7. **Pop-out windows** open for `localhost` URLs (used by the detached order-ticket window).
+6. **IPC surface**: the bridge exposes `minimize`, `maximize`, `close`, `isMaximized`, `quit`, `openExternal`, `showSaveDialog` and `writeFile`. The `isMaximized` round trip reaches the main process and returns a boolean, and the window is not maximised by default. `quit()` is checked for existence only, not invoked.
+7. **Deep links**: a URL sent from the main process reaches the `onDeepLink` callback in the renderer.
 
 ## How it launches
 
@@ -38,7 +38,7 @@ const window = await app.firstWindow();
 await expect(window).toHaveTitle(/VETA/);
 ```
 
-`NODE_ENV=test` disables the dev-tools toggle and the auto-update check. `ELECTRON_RUN_AS_NODE` is explicitly unset; if it leaks through from the parent process, Electron starts as a Node shell rather than a desktop app and tests fail in confusing ways.
+`NODE_ENV=test` makes the main process show the window immediately, so Playwright can attach under xvfb. `ELECTRON_RUN_AS_NODE` is explicitly unset; if it leaks through from the parent process, Electron starts as a Node shell rather than a desktop app and tests fail in confusing ways.
 
 ## Test execution flow
 
@@ -69,13 +69,14 @@ Workers are set to 1 because only one packaged app instance can run at a time wi
 - **Test timeout:** 60s per test (cold-start can be slow).
 - **Global timeout:** 10 minutes overall (xvfb startup plus cold start dominates CI time).
 - **Retries:** 1 in CI, 0 locally.
+- **CI gating:** the Electron step in the `electron` job is `continue-on-error`, so a failure is reported but does not block the merge pipeline.
 - **Trace:** `on-first-retry`. **Screenshot:** `only-on-failure`.
 
 ## What is not here
 
 Trading flows are not duplicated from the web Playwright suite. Electron is the same Chromium renderer with extra plumbing; doubling up trade-flow tests would double maintenance for no extra signal.
 
-Features that depend on `electronAPI` (pop-out windows, native menus, native notifications) are tested here because they do not exist in the browser.
+Features that depend on `electronAPI` are tested here because they do not exist in the browser. Pop-out window handling (`setWindowOpenHandler` in `electron/main.ts`, which allows `localhost` and `file://` URLs) has no test in this suite.
 
 ## Adding a test
 
