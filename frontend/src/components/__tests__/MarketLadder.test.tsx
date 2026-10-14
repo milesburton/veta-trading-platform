@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MarketLadder } from "@veta/frontend/components/MarketLadder";
 import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
 import type { ExchangeStatus } from "@veta/frontend/domain/market/exchangeStatus";
-import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { channelsSlice, channelUpdated } from "@veta/frontend/store/channelsSlice";
 import { gridPrefsSlice } from "@veta/frontend/store/gridPrefsSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
@@ -524,5 +524,35 @@ describe("MarketLadder – context menu select actions", () => {
     fireEvent.contextMenu(screen.getByTestId("asset-row-AAPL"));
     fireEvent.click(screen.getByText(/View chart & depth/));
     expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – incoming channel selection", () => {
+  it("reveals an asset hidden by the search filter when selected from another panel", () => {
+    const store = makeStore();
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "market-ladder",
+            panelType: "market-ladder",
+            outgoing: null,
+            incoming: 1,
+          }}
+        >
+          <MarketLadder />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Search symbol or sector/i), {
+      target: { value: "AAPL" },
+    });
+    expect(screen.getByText("1/4")).toBeInTheDocument();
+
+    act(() => {
+      store.dispatch(channelUpdated({ channel: 1, patch: { selectedAsset: "XOM" } }));
+    });
+
+    expect(screen.getByText("4/4")).toBeInTheDocument();
   });
 });
