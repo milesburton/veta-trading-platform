@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.86.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.2...veta-trading-platform-v1.86.3) (2026-10-14)
+
+
+### Bug Fixes
+
+* **algo-monitor:** offer every strategy in the filter and column enum ([#840](https://github.com/milesburton/veta-trading-platform/issues/840)) ([c112626](https://github.com/milesburton/veta-trading-platform/commit/c1126262ba95e8673d1223652c8a8d3f5b5b3f5e)), closes [#808](https://github.com/milesburton/veta-trading-platform/issues/808)
+* **devcontainer:** pin Deno to 2.7.14 to match CI ([#841](https://github.com/milesburton/veta-trading-platform/issues/841)) ([09ba389](https://github.com/milesburton/veta-trading-platform/commit/09ba389ac8c1a983253636de038555678b7f92cf)), closes [#836](https://github.com/milesburton/veta-trading-platform/issues/836)
+* **discord-bot:** bound triage generation and retry transient post failures ([#843](https://github.com/milesburton/veta-trading-platform/issues/843)) ([7777abd](https://github.com/milesburton/veta-trading-platform/commit/7777abd652540e835575b1f5ece35c6f7b8e36b3)), closes [#833](https://github.com/milesburton/veta-trading-platform/issues/833) [#834](https://github.com/milesburton/veta-trading-platform/issues/834)
+
 ## [1.86.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.1...veta-trading-platform-v1.86.2) (2026-10-14)
 
 
