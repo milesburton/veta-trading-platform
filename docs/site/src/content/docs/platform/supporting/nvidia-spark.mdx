@@ -44,7 +44,7 @@ cd /opt/stacks/veta
 scripts/veta-compose.sh up -d llm-advisory llm-advisory-worker
 ```
 
-The dev-container compose file keeps `http://ollama:11434` as the default so a developer running the local stack still gets the small `qwen2.5:3b` model and does not depend on the Spark being reachable.
+The compose file defaults to the in-stack CPU Ollama with a raised CPU weight (see [ADR 0006](../../decisions/0006-discord-triage-llm-provider/)); the GPU host is opt-in through the variables above. This also means a developer running the local stack gets the small `qwen2.5:3b` model and does not depend on the Spark being reachable.
 
 ## Smoke-testing
 

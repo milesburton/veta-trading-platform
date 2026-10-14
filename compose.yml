@@ -334,8 +334,11 @@ services:
     volumes:
       - llm-advisory-data:/root/.ollama
     environment:
-      OLLAMA_KEEP_ALIVE: 5m
-    mem_limit: 3g
+      OLLAMA_KEEP_ALIVE: 30m
+      OLLAMA_NUM_PARALLEL: "1"
+    cpu_shares: 4096
+    cpus: 4
+    mem_limit: 4g
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -1695,9 +1698,6 @@ services:
       "--allow-all",
       "/app/backend/src/discord-bot/discord-bot.ts",
     ]
-    depends_on:
-      ollama:
-        condition: service_healthy
     environment:
       DISCORD_BOT_PORT: "5034"
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}

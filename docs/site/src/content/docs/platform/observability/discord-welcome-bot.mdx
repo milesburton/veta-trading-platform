@@ -39,6 +39,20 @@ This is a one-time setup you do yourself in the Discord Developer Portal; it can
 6. Under **OAuth2 > URL Generator**, select the `bot` scope and the **View Channels** + **Send Messages** + **Read Message History** permissions, then open the generated URL while signed in as a member with **Manage Server** to add the bot to your server. The equivalent hand-built URL is `https://discord.com/oauth2/authorize?client_id=<application id>&scope=bot&permissions=68608`. A bot cannot be added from the server's **Invite People** dialog: that only searches friends and existing members, so a bot's id returns no results there.
 7. In Discord, right-click the welcome channel and **Copy Channel ID** (enable Developer Mode under User Settings > Advanced if the option isn't visible). This is `DISCORD_WELCOME_CHANNEL_ID`.
 
+## Triage model and CPU allocation
+
+Triage uses the shared `ollama` compose service by default (`qwen2.5:3b` on CPU). The service has a raised CPU weight so it keeps running when the host is busy:
+
+| Setting | Value | Effect |
+| --- | --- | --- |
+| `cpu_shares` | `4096` | Four times the default weight within `veta.slice`, so Ollama wins CPU time under contention |
+| `cpus` | `4` | Hard cap, so a runaway generation cannot take the whole host |
+| `mem_limit` | `4g` | Room for the model plus its context |
+| `OLLAMA_KEEP_ALIVE` | `30m` | The model stays loaded between tickets, avoiding a cold load on each request |
+| `OLLAMA_NUM_PARALLEL` | `1` | One generation at a time, so concurrent tickets queue instead of splitting the CPU |
+
+The same container serves [LLM advisory](../../llm-advisory/), so the allocation applies to both. Triage generation is abandoned after 30 seconds and the reporter is pointed to the in-app "Raise a ticket" button. To move inference to the [GPU host](../../supporting/nvidia-spark/), set `LLM_OLLAMA_BASE_URL` and `LLM_MODEL_ID` in OpenBao; no code change is needed. See [ADR 0006](../../decisions/0006-discord-triage-llm-provider/).
+
 ## Configuration
 
 | Var | Purpose | Default |
@@ -126,6 +140,7 @@ Join the server with a test account (or have a colleague join) and confirm the w
 
 ## Troubleshooting
 
+- **`triage.reachable: false` in `/health`.** The triage provider failed its availability check, so `Raise.` requests get the fallback reply. For Ollama, confirm `LLM_OLLAMA_BASE_URL` points at the GPU host and that the host serves `/api/tags`.
 - **`configured: false` in `/health`.** `DISCORD_BOT_TOKEN` or `DISCORD_WELCOME_CHANNEL_ID` is unset. Check OpenBao for the token and the server `.env` for the channel ID.
 - **`connected: false` but `configured: true`.** The Gateway connection failed or dropped. Check service logs for `gateway websocket error` or `gateway websocket closed`; the service retries every 5 seconds.
 - **Bot is connected but no message appears on join.** Confirm **Server Members Intent** is enabled in the Developer Portal, this is the most common cause. Also confirm the bot has **Send Messages** permission in the welcome channel specifically, not just server-wide.
@@ -134,7 +149,7 @@ Join the server with a test account (or have a colleague join) and confirm the w
 - **401 on Gateway connect.** The token is invalid or was reset in the Developer Portal. Regenerate it and update `DISCORD_BOT_TOKEN` in OpenBao.
 - **`Raise.` or @mention messages get no reply at all.** Confirm **Message Content Intent** is enabled in the Developer Portal; without it the bot receives `MESSAGE_CREATE` events but `content` is always empty, so neither trigger ever matches. Check service logs for `message triage failed`.
 - **@mentioning the bot never triggers triage, but `Raise.` works fine.** The bot only knows its own user id after the Gateway sends `READY`; if the bot just (re)connected, wait for that to complete. If it persists, check service logs around connect time for a `READY` payload missing a `user.id` field.
-- **Reply says "triage is unavailable".** `LLM_PROVIDER` is unset, or the configured provider's `isAvailable()` check failed (Ollama unreachable, or `ANTHROPIC_API_KEY` empty). Check the `ollama` service's health if using `LLM_PROVIDER=ollama`.
+- **Reply says "triage is unavailable".** `LLM_PROVIDER` is unset, or the configured provider's `isAvailable()` check failed (Ollama unreachable, or `ANTHROPIC_API_KEY` empty). `/health` reports this as `triage.reachable`. Check the Ollama host configured in `LLM_OLLAMA_BASE_URL` if using `LLM_PROVIDER=ollama`.
 - **Ticket triages successfully but no GitHub issue appears.** `GITHUB_TICKETING_TOKEN_FILE` / `GITHUB_TICKETING_TOKEN` is unset or invalid; see [ticketing](../ticketing/) for the same credential used by the in-app form.
 - **Container shows `healthy` in `docker ps` but `Raise.`/@mention messages get no reply and no log lines appear at all.** The Docker healthcheck only proves the HTTP port is serving `/health`; it does not prove the Discord Gateway websocket is currently connected. The reconnect loop can occasionally leave the socket dead without the container's own health probe noticing. Don't trust `docker ps` alone here: check `curl -sf http://localhost:5034/health` for `connected: true`, and check log recency (`docker logs veta-discord-bot-1 --since 1h`) for a `gateway ready` line within the last hour or so, that gap is the real liveness signal. If the connection is stale, `docker restart` the service to force a fresh Gateway handshake.
 

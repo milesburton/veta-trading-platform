@@ -62,7 +62,7 @@ The cap is a compile-time constant. Tune in [`backend/src/llm-advisory/orchestra
 | `LLM_ENABLED` | orchestrator + worker | `false` | Master kill switch |
 | `LLM_WORKER_ENABLED` | worker | `false` | Worker-only switch — orchestrator stays up to expose state |
 | `LLM_PROVIDER` | both | `mock` (compose sets `ollama`) | `ollama`, `anthropic` or `mock` |
-| `LLM_OLLAMA_BASE_URL` | both | `http://ollama:11434` (local) / `http://<gpu-host>:11434` (the server) | Ollama inference endpoint |
+| `LLM_OLLAMA_BASE_URL` | both | `http://ollama:11434` (in-stack, CPU) | Ollama inference endpoint. Set to `http://<gpu-host>:11434` to use the GPU host. The in-stack container has a raised CPU weight; see [Discord bot](../observability/discord-welcome-bot/#triage-model-and-cpu-allocation) |
 | `LLM_MODEL_ID` | both | `qwen2.5:3b` (local) / `qwen3-coder:30b` (Spark) | Model tag |
 | `LLM_TRIGGER_MODE` | orchestrator | `manual` (compose sets `on-demand-ui`) | `manual` / `on-demand-ui` / `event-driven` |
 | `LLM_WORKER_IDLE_TIMEOUT_SECONDS` | worker | `120` (supervisord) / `0` (compose) | Seconds the worker waits on an empty queue before ending its session. `0` keeps it running, which compose uses because nothing restarts the worker on demand there |

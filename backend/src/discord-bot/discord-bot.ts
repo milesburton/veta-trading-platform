@@ -287,9 +287,37 @@ function buildTriageProvider(): ILlmProvider {
 const triageProvider = buildTriageProvider();
 
 const TRIAGE_GENERATE_TIMEOUT_MS = 30_000;
+const TRIAGE_HEALTH_REFRESH_MS = 15_000;
 const POST_MAX_ATTEMPTS = 3;
 const POST_RETRY_BASE_DELAY_MS = 500;
 const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+export interface TriageHealth {
+  provider: string;
+  enabled: boolean;
+  reachable: boolean | null;
+}
+
+export interface TriageHealthProbe {
+  refresh: () => Promise<void>;
+  current: () => TriageHealth;
+}
+
+export function createTriageHealthProbe(
+  provider: Pick<ILlmProvider, "providerId" | "isAvailable">,
+  enabled: boolean
+): TriageHealthProbe {
+  let reachable: boolean | null = enabled ? null : false;
+  return {
+    refresh: async () => {
+      if (!enabled) return;
+      reachable = await provider.isAvailable().catch(() => false);
+    },
+    current: () => ({ provider: provider.providerId, enabled, reachable }),
+  };
+}
+
+const triageHealthProbe = createTriageHealthProbe(triageProvider, TRIAGE_ENABLED);
 
 export class TimeoutError extends Error {
   constructor(ms: number) {
@@ -598,6 +626,8 @@ async function start(): Promise<void> {
 
 if (import.meta.main) {
   start();
+  triageHealthProbe.refresh();
+  setInterval(() => triageHealthProbe.refresh(), TRIAGE_HEALTH_REFRESH_MS);
 
   Deno.serve({ port: PORT }, (req: Request): Response => {
     const url = new URL(req.url);
@@ -610,6 +640,7 @@ if (import.meta.main) {
           configured: Boolean(BOT_TOKEN && WELCOME_CHANNEL_ID),
           connected: connectedNow,
           lastEventAt,
+          triage: triageHealthProbe.current(),
         }),
         { headers: { "Content-Type": "application/json" } }
       );
