@@ -8,7 +8,10 @@ interface Captured {
   body?: Record<string, unknown>;
 }
 
-function stubFetch(handler: (captured: Captured) => Response): { captured: Captured[]; restore: () => void } {
+function stubFetch(handler: (captured: Captured) => Response): {
+  captured: Captured[];
+  restore: () => void;
+} {
   const realFetch = globalThis.fetch;
   const captured: Captured[] = [];
   globalThis.fetch = ((input: Request | URL | string, init?: RequestInit) => {
@@ -29,8 +32,11 @@ function stubFetch(handler: (captured: Captured) => Response): { captured: Captu
 }
 
 Deno.test("[ollama] generate posts the prompt to /api/generate and maps token counts", async () => {
-  const stub = stubFetch(() =>
-    new Response(JSON.stringify({ response: "advice", prompt_eval_count: 21, eval_count: 8 }), { status: 200 })
+  const stub = stubFetch(
+    () =>
+      new Response(JSON.stringify({ response: "advice", prompt_eval_count: 21, eval_count: 8 }), {
+        status: 200,
+      })
   );
   try {
     const provider = createOllamaProvider("llama3", "http://ollama:11434/");
@@ -45,7 +51,12 @@ Deno.test("[ollama] generate posts the prompt to /api/generate and maps token co
     assertEquals(JSON.parse(result.rawResponse).response, "advice");
     assertEquals(stub.captured[0].url, "http://ollama:11434/api/generate");
     assertEquals(stub.captured[0].method, "POST");
-    assertEquals(stub.captured[0].body, { model: "llama3", prompt: "prompt", system: "system", stream: false });
+    assertEquals(stub.captured[0].body, {
+      model: "llama3",
+      prompt: "prompt",
+      system: "system",
+      stream: false,
+    });
   } finally {
     stub.restore();
   }
@@ -68,7 +79,7 @@ Deno.test("[ollama] generate throws with the status and body on a non-ok respons
     await assertRejects(
       () => createOllamaProvider("missing", "http://o").generate("p", "s"),
       Error,
-      "Ollama error 404: model not found",
+      "Ollama error 404: model not found"
     );
   } finally {
     stub.restore();
@@ -113,7 +124,11 @@ Deno.test("[mock provider] is always available and returns a deterministic canne
   assert(first.text.includes("Not financial advice"));
 
   const texts = new Set(
-    await Promise.all(Array.from({ length: 12 }, (_, i) => provider.generate(`prompt ${i}`, "s").then((r) => r.text))),
+    await Promise.all(
+      Array.from({ length: 12 }, (_, i) =>
+        provider.generate(`prompt ${i}`, "s").then((r) => r.text)
+      )
+    )
   );
   assert(texts.size > 1, "different prompts should reach different canned responses");
 });

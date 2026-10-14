@@ -87,6 +87,9 @@ export function computeMarkupPrice(
   side: "BUY" | "SELL",
   markupBps: number
 ): number {
-  const price = side === "BUY" ? dealerPrice * (1 + markupBps / 10_000) : dealerPrice * (1 - markupBps / 10_000);
+  const price =
+    side === "BUY"
+      ? dealerPrice * (1 + markupBps / 10_000)
+      : dealerPrice * (1 - markupBps / 10_000);
   return parseFloat(price.toFixed(4));
 }

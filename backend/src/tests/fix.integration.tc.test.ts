@@ -104,45 +104,48 @@ Deno.test({
         assertEquals(gwRes.status, 200);
       });
 
-      await t.step("/sessions reflects a Logon'd counterparty and clears on disconnect", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
-        const reader = new FixMessageReader(conn);
-        try {
-          const before = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
-            signal: AbortSignal.timeout(5_000),
-          });
-          assertEquals((await before.json()).sessions, []);
+      await t.step(
+        "/sessions reflects a Logon'd counterparty and clears on disconnect",
+        async () => {
+          const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+          const reader = new FixMessageReader(conn);
+          try {
+            const before = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+              signal: AbortSignal.timeout(5_000),
+            });
+            assertEquals((await before.json()).sessions, []);
 
-          await conn.write(new TextEncoder().encode(logonMsg()));
-          await reader.next();
+            await conn.write(new TextEncoder().encode(logonMsg()));
+            await reader.next();
 
-          const after = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
-            signal: AbortSignal.timeout(5_000),
-          });
-          const { sessions } = (await after.json()) as {
-            sessions: { counterparty: string | null; state: string; openOrders: number }[];
-          };
-          assertEquals(sessions.length, 1);
-          assertEquals(sessions[0].counterparty, "GATEWAY");
-          assertEquals(sessions[0].state, "ACTIVE");
-          assertEquals(sessions[0].openOrders, 0);
-        } finally {
-          conn.close();
+            const after = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+              signal: AbortSignal.timeout(5_000),
+            });
+            const { sessions } = (await after.json()) as {
+              sessions: { counterparty: string | null; state: string; openOrders: number }[];
+            };
+            assertEquals(sessions.length, 1);
+            assertEquals(sessions[0].counterparty, "GATEWAY");
+            assertEquals(sessions[0].state, "ACTIVE");
+            assertEquals(sessions[0].openOrders, 0);
+          } finally {
+            conn.close();
+          }
+
+          // Deregistration happens once fix-exchange observes the closed
+          // socket, which is asynchronous relative to this side's conn.close().
+          const deadline = Date.now() + 5_000;
+          while (Date.now() < deadline) {
+            const res = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+              signal: AbortSignal.timeout(5_000),
+            });
+            const { sessions } = (await res.json()) as { sessions: unknown[] };
+            if (sessions.length === 0) return;
+            await new Promise((r) => setTimeout(r, 200));
+          }
+          throw new Error("session was not deregistered after disconnect");
         }
-
-        // Deregistration happens once fix-exchange observes the closed
-        // socket, which is asynchronous relative to this side's conn.close().
-        const deadline = Date.now() + 5_000;
-        while (Date.now() < deadline) {
-          const res = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
-            signal: AbortSignal.timeout(5_000),
-          });
-          const { sessions } = (await res.json()) as { sessions: unknown[] };
-          if (sessions.length === 0) return;
-          await new Promise((r) => setTimeout(r, 200));
-        }
-        throw new Error("session was not deregistered after disconnect");
-      });
+      );
 
       await t.step("NewOrderSingle over a direct TCP session gets acked and filled", async () => {
         const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
@@ -220,7 +223,11 @@ Deno.test({
           const res = await fetch(`${ARCHIVE}/executions?symbol=AAPL&limit=50`, {
             signal: AbortSignal.timeout(5_000),
           });
-          const rows = (await res.json()) as { clOrdId: string; execType: string; ordStatus: string }[];
+          const rows = (await res.json()) as {
+            clOrdId: string;
+            execType: string;
+            ordStatus: string;
+          }[];
           found = rows.find((r) => r.clOrdId === clOrdId) ?? null;
           if (!found) await new Promise((r) => setTimeout(r, 300));
         }
@@ -542,7 +549,10 @@ Deno.test({
         }
         assert(mid > 0, "no live AAPL price within 20s");
 
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT_RISK });
+        const conn = await Deno.connect({
+          hostname: "localhost",
+          port: FIX_EXCHANGE_TCP_PORT_RISK,
+        });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -587,7 +597,10 @@ Deno.test({
         }
         assert(mid > 0, "no live AAPL price within 20s");
 
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT_RISK });
+        const conn = await Deno.connect({
+          hostname: "localhost",
+          port: FIX_EXCHANGE_TCP_PORT_RISK,
+        });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));

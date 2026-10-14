@@ -127,7 +127,6 @@ consumer?.onMessage((_topic, raw) => {
   );
 });
 
-
 async function runMatchCycle(): Promise<void> {
   const tick = marketClient.getLatest();
 

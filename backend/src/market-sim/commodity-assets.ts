@@ -1,5 +1,5 @@
-import type { AssetDef } from "./sp500-assets.ts";
 import { GENERATED_COMMODITIES, GENERATED_COMMODITY_NAMES } from "./generated-commodities.ts";
+import type { AssetDef } from "./sp500-assets.ts";
 
 /** Simulated ISIN: CM + padded symbol + check digit 0. */
 function commodityIsin(symbol: string): string {
@@ -174,24 +174,22 @@ const _GENERATED_RAW_COMMODITY: Omit<
 export const COMMODITY_ASSETS: AssetDef[] = [
   ...CURATED_COMMODITY_SEEDS,
   ..._GENERATED_RAW_COMMODITY,
-].map(
-  (raw) => {
-    const base = raw.symbol.replace(/\d*!$/, "");
-    return {
-      ...raw,
-      assetClass: "commodity" as const,
-      marketCapB: 0,
-      beta: 0.0,
-      dividendYield: 0.0,
-      peRatio: 0.0,
-      float: 1.0,
-      isin: commodityIsin(raw.symbol),
-      ric: `${base}c1`,
-      bbgTicker: `${base}1 Comdty`,
-      name: COMMODITY_NAMES[raw.symbol] ?? GENERATED_COMMODITY_NAMES[raw.symbol] ?? raw.symbol,
-    };
-  }
-);
+].map((raw) => {
+  const base = raw.symbol.replace(/\d*!$/, "");
+  return {
+    ...raw,
+    assetClass: "commodity" as const,
+    marketCapB: 0,
+    beta: 0.0,
+    dividendYield: 0.0,
+    peRatio: 0.0,
+    float: 1.0,
+    isin: commodityIsin(raw.symbol),
+    ric: `${base}c1`,
+    bbgTicker: `${base}1 Comdty`,
+    name: COMMODITY_NAMES[raw.symbol] ?? GENERATED_COMMODITY_NAMES[raw.symbol] ?? raw.symbol,
+  };
+});
 
 export const COMMODITY_ASSET_MAP = new Map<string, AssetDef>(
   COMMODITY_ASSETS.map((a) => [a.symbol, a])

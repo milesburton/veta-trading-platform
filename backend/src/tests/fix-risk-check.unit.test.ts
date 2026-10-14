@@ -13,9 +13,7 @@ const REQ: RiskCheckRequest = {
 
 function fakeFetch(response: unknown, status = 200): typeof fetch {
   return (() =>
-    Promise.resolve(
-      new Response(JSON.stringify(response), { status })
-    )) as unknown as typeof fetch;
+    Promise.resolve(new Response(JSON.stringify(response), { status }))) as unknown as typeof fetch;
 }
 
 Deno.test("[fix-risk-check] allowed response passes through reasons/warnings", async () => {
@@ -50,7 +48,8 @@ Deno.test("[fix-risk-check] fails closed on a malformed response body", async ()
 });
 
 Deno.test("[fix-risk-check] fails closed when the fetch throws (network/timeout)", async () => {
-  const throwingFetch = (() => Promise.reject(new Error("connection refused"))) as unknown as typeof fetch;
+  const throwingFetch = (() =>
+    Promise.reject(new Error("connection refused"))) as unknown as typeof fetch;
   const result = await checkRisk("http://risk", REQ, throwingFetch);
   assertEquals(result.allowed, false);
   assertEquals(

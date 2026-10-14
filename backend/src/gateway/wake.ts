@@ -34,7 +34,8 @@ interface WakeOptions {
 function resolveWakeOptions(options: WakeOptions) {
   return {
     retryDelaysMs: options.retryDelaysMs ?? WAKE_RETRY_DELAYS_MS,
-    sleep: options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))),
+    sleep:
+      options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))),
     isRunning: options.isProgramRunningFn ?? isProgramRunning,
     start: options.startProgramFn ?? startProgram,
   };

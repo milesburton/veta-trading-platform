@@ -1,10 +1,10 @@
+import { createParams } from "https://deno.land/x/postgres@v0.19.3/connection/connection_params.ts";
 import {
-  Oid,
-  Pool,
   type ClientOptions,
   type Decoders,
+  Oid,
+  Pool,
 } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { createParams } from "https://deno.land/x/postgres@v0.19.3/connection/connection_params.ts";
 
 function resolveUrl(serviceKey: string): string {
   const url = Deno.env.get(`${serviceKey}_DATABASE_URL`) ?? Deno.env.get("DATABASE_URL");

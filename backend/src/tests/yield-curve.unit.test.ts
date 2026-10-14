@@ -1,13 +1,5 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-  assertGreater,
-} from "jsr:@std/assert@0.217";
-import type {
-  NelsonSiegelParams,
-  YieldCurvePoint,
-} from "../analytics/types.ts";
+import { assert, assertAlmostEquals, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
+import type { NelsonSiegelParams, YieldCurvePoint } from "../analytics/types.ts";
 import {
   _internalForTests,
   buildYieldCurveResponse,
@@ -77,12 +69,6 @@ Deno.test("[yield-curve] response uses defaults and caller overrides", () => {
 
 Deno.test("[yield-curve] nelsonSiegel handles non-positive tau", () => {
   const { nelsonSiegel } = _internalForTests;
-  assertEquals(
-    nelsonSiegel(0, DEFAULT_PARAMS),
-    DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1,
-  );
-  assertEquals(
-    nelsonSiegel(-1, DEFAULT_PARAMS),
-    DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1,
-  );
+  assertEquals(nelsonSiegel(0, DEFAULT_PARAMS), DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1);
+  assertEquals(nelsonSiegel(-1, DEFAULT_PARAMS), DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1);
 });

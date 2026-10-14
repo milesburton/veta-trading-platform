@@ -43,7 +43,10 @@ Deno.test("summariseFills returns zero progress when there are no fills", () => 
 });
 
 Deno.test("summariseFills ignores null child ids and non-numeric values", () => {
-  const summary = summariseFills("ord-1", [[null, null, null], ["c1", 50, 2]]);
+  const summary = summariseFills("ord-1", [
+    [null, null, null],
+    ["c1", 50, 2],
+  ]);
   assertEquals(summary.filledQty, 50);
   assertEquals(summary.filledChildIds, ["c1"]);
 });
@@ -102,8 +105,10 @@ Deno.test("expiredEvent reports journal fills, or zero when unknown", () => {
 });
 
 Deno.test("createProgressReader validates the journal response", async () => {
-  const respond = (body: unknown, status = 200) => () =>
-    Promise.resolve(new Response(JSON.stringify(body), { status }));
+  const respond =
+    (body: unknown, status = 200) =>
+    () =>
+      Promise.resolve(new Response(JSON.stringify(body), { status }));
   const valid = progress({ filledQty: 10, avgFillPrice: 1, filledChildIds: ["c1"] });
   assertEquals(await createProgressReader("http://j", respond(valid))("ord-1"), valid);
   assertEquals(await createProgressReader("http://j", respond({ filledQty: "x" }))("ord-1"), null);

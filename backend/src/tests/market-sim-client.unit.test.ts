@@ -1,10 +1,10 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   createMarketSimClient,
+  type MarketTick,
   marketSimFeedUrl,
   mergeTick,
   parseTickFrame,
-  type MarketTick,
   type RawTickMessage,
 } from "../lib/market-sim-client.ts";
 
@@ -32,7 +32,10 @@ Deno.test("full message replaces the running tick wholesale", () => {
   assertEquals(next.prices, { MSFT: 400 });
   assertEquals(next.volumes, { MSFT: 2_000 });
   assertEquals(next.marketMinute, 60);
-  assert(next.venueBooks?.XNAS === undefined, "stale venue from before the full snapshot must not survive");
+  assert(
+    next.venueBooks?.XNAS === undefined,
+    "stale venue from before the full snapshot must not survive"
+  );
   assert(next.venueBooks?.XNYS?.MSFT !== undefined);
 });
 
@@ -87,7 +90,11 @@ Deno.test("venueBooks merge per-venue and per-symbol without clobbering other ve
   const next = mergeTick(latest, diff);
 
   assertEquals(next.venueBooks?.XNAS?.AAPL?.mid, 191);
-  assertEquals(next.venueBooks?.XNAS?.MSFT?.mid, 400, "untouched symbol in the same venue must survive");
+  assertEquals(
+    next.venueBooks?.XNAS?.MSFT?.mid,
+    400,
+    "untouched symbol in the same venue must survive"
+  );
   assertEquals(next.venueBooks?.XNYS?.AAPL?.mid, 190.5, "untouched venue must survive");
 });
 
@@ -157,16 +164,13 @@ Deno.test("parseTickFrame rejects a JSON value that isn't an object", () => {
 
 Deno.test("createMarketSimClient connects, merges an incoming tick, and notifies onTick callbacks", async () => {
   const controller = new AbortController();
-  const server = Deno.serve(
-    { port: 0, signal: controller.signal, onListen: () => {} },
-    (req) => {
-      const { socket, response } = Deno.upgradeWebSocket(req);
-      socket.onopen = () => {
-        socket.send(JSON.stringify({ event: "marketData", data: { prices: { AAPL: 199 } } }));
-      };
-      return response;
-    }
-  );
+  const server = Deno.serve({ port: 0, signal: controller.signal, onListen: () => {} }, (req) => {
+    const { socket, response } = Deno.upgradeWebSocket(req);
+    socket.onopen = () => {
+      socket.send(JSON.stringify({ event: "marketData", data: { prices: { AAPL: 199 } } }));
+    };
+    return response;
+  });
   const addr = server.addr as Deno.NetAddr;
   const client = createMarketSimClient("127.0.0.1", addr.port);
 
@@ -190,17 +194,14 @@ Deno.test("createMarketSimClient connects, merges an incoming tick, and notifies
 
 Deno.test("createMarketSimClient ignores malformed frames without crashing the connection", async () => {
   const controller = new AbortController();
-  const server = Deno.serve(
-    { port: 0, signal: controller.signal, onListen: () => {} },
-    (req) => {
-      const { socket, response } = Deno.upgradeWebSocket(req);
-      socket.onopen = () => {
-        socket.send("not json{{{");
-        socket.send(JSON.stringify({ event: "marketData", data: { prices: { MSFT: 400 } } }));
-      };
-      return response;
-    }
-  );
+  const server = Deno.serve({ port: 0, signal: controller.signal, onListen: () => {} }, (req) => {
+    const { socket, response } = Deno.upgradeWebSocket(req);
+    socket.onopen = () => {
+      socket.send("not json{{{");
+      socket.send(JSON.stringify({ event: "marketData", data: { prices: { MSFT: 400 } } }));
+    };
+    return response;
+  });
   const addr = server.addr as Deno.NetAddr;
   const client = createMarketSimClient("127.0.0.1", addr.port);
 
@@ -221,16 +222,13 @@ Deno.test("createMarketSimClient ignores malformed frames without crashing the c
 Deno.test("createMarketSimClient.start() is a no-op while already connected", async () => {
   const controller = new AbortController();
   let openCount = 0;
-  const server = Deno.serve(
-    { port: 0, signal: controller.signal, onListen: () => {} },
-    (req) => {
-      const { socket, response } = Deno.upgradeWebSocket(req);
-      socket.onopen = () => {
-        openCount++;
-      };
-      return response;
-    }
-  );
+  const server = Deno.serve({ port: 0, signal: controller.signal, onListen: () => {} }, (req) => {
+    const { socket, response } = Deno.upgradeWebSocket(req);
+    socket.onopen = () => {
+      openCount++;
+    };
+    return response;
+  });
   const addr = server.addr as Deno.NetAddr;
   const client = createMarketSimClient("127.0.0.1", addr.port);
 
@@ -264,14 +262,11 @@ Deno.test("marketSimFeedUrl asks market-sim for the requested feed", () => {
 Deno.test("createMarketSimClient requests the prices feed unless told otherwise", async () => {
   const controller = new AbortController();
   const feeds: (string | null)[] = [];
-  const server = Deno.serve(
-    { port: 0, signal: controller.signal, onListen: () => {} },
-    (req) => {
-      feeds.push(new URL(req.url).searchParams.get("feed"));
-      const { response } = Deno.upgradeWebSocket(req);
-      return response;
-    }
-  );
+  const server = Deno.serve({ port: 0, signal: controller.signal, onListen: () => {} }, (req) => {
+    feeds.push(new URL(req.url).searchParams.get("feed"));
+    const { response } = Deno.upgradeWebSocket(req);
+    return response;
+  });
   const addr = server.addr as Deno.NetAddr;
   const light = createMarketSimClient("127.0.0.1", addr.port);
   const full = createMarketSimClient("127.0.0.1", addr.port, { feed: "full" });

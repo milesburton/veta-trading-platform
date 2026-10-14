@@ -35,7 +35,11 @@ export function createBook(asset: string): OrderBook {
   return { asset, bids: [], asks: [] };
 }
 
-function insertSorted(side: RestingOrder[], order: RestingOrder, better: (a: RestingOrder, b: RestingOrder) => boolean): RestingOrder[] {
+function insertSorted(
+  side: RestingOrder[],
+  order: RestingOrder,
+  better: (a: RestingOrder, b: RestingOrder) => boolean
+): RestingOrder[] {
   const next = [...side, order];
   return next.sort((a, b) => (better(a, b) ? -1 : better(b, a) ? 1 : a.seq - b.seq));
 }

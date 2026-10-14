@@ -116,7 +116,10 @@ Deno.test("[margin-math] initial margin rounds to two decimal places", () => {
 });
 
 Deno.test("[margin-math] margin release matches initial margin for the same desk/notional", () => {
-  assertEquals(computeMarginRelease("derivatives", 50_000), computeInitialMargin("derivatives", 50_000));
+  assertEquals(
+    computeMarginRelease("derivatives", 50_000),
+    computeInitialMargin("derivatives", 50_000)
+  );
 });
 
 // ── computeMarginCall ────────────────────────────────────────────────────────

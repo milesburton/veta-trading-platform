@@ -287,9 +287,33 @@ function buildTriageProvider(): ILlmProvider {
 const triageProvider = buildTriageProvider();
 
 const TRIAGE_GENERATE_TIMEOUT_MS = 30_000;
+const TRIAGE_HEALTH_CACHE_MS = 15_000;
 const POST_MAX_ATTEMPTS = 3;
 const POST_RETRY_BASE_DELAY_MS = 500;
 const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+export interface TriageHealth {
+  provider: string;
+  enabled: boolean;
+  reachable: boolean;
+}
+
+export function createTriageHealthProbe(
+  provider: Pick<ILlmProvider, "providerId" | "isAvailable">,
+  enabled: boolean,
+  now: () => number = Date.now
+): () => Promise<TriageHealth> {
+  let cached: { at: number; value: TriageHealth } | undefined;
+  return async () => {
+    if (cached && now() - cached.at < TRIAGE_HEALTH_CACHE_MS) return cached.value;
+    const reachable = enabled && (await provider.isAvailable().catch(() => false));
+    const value = { provider: provider.providerId, enabled, reachable };
+    cached = { at: now(), value };
+    return value;
+  };
+}
+
+const probeTriageHealth = createTriageHealthProbe(triageProvider, TRIAGE_ENABLED);
 
 export class TimeoutError extends Error {
   constructor(ms: number) {
@@ -599,7 +623,7 @@ async function start(): Promise<void> {
 if (import.meta.main) {
   start();
 
-  Deno.serve({ port: PORT }, (req: Request): Response => {
+  Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     if (url.pathname === "/health") {
       return new Response(
@@ -610,6 +634,7 @@ if (import.meta.main) {
           configured: Boolean(BOT_TOKEN && WELCOME_CHANNEL_ID),
           connected: connectedNow,
           lastEventAt,
+          triage: await probeTriageHealth(),
         }),
         { headers: { "Content-Type": "application/json" } }
       );

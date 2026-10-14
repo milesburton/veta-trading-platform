@@ -1,6 +1,15 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { z } from "@veta/zod";
-import { CORS_HEADERS, corsOptions, decodePathSegment, json, jsonError, parseBody, parseQuery, serveJsonService } from "../lib/http.ts";
+import {
+  CORS_HEADERS,
+  corsOptions,
+  decodePathSegment,
+  json,
+  jsonError,
+  parseBody,
+  parseQuery,
+  serveJsonService,
+} from "../lib/http.ts";
 
 Deno.test("json wraps data as a 200 JSON response with CORS headers by default", async () => {
   const res = json({ ok: true });
@@ -31,7 +40,10 @@ Deno.test("corsOptions returns a 204 with no body and CORS headers", async () =>
   const res = corsOptions();
   assertEquals(res.status, 204);
   assertEquals(await res.text(), "");
-  assertEquals(res.headers.get("Access-Control-Allow-Methods"), CORS_HEADERS["Access-Control-Allow-Methods"]);
+  assertEquals(
+    res.headers.get("Access-Control-Allow-Methods"),
+    CORS_HEADERS["Access-Control-Allow-Methods"]
+  );
 });
 
 const Schema = z.object({ name: z.string(), age: z.number() });
@@ -156,7 +168,6 @@ Deno.test("serveJsonService delegates non-/health requests to the provided handl
     await server.finished;
   }
 });
-
 
 Deno.test("decodePathSegment decodes a percent-encoded segment", () => {
   assertEquals(decodePathSegment("BRK%2EB"), "BRK.B");

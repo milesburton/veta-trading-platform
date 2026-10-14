@@ -45,9 +45,8 @@ const config: RiskConfig = {
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
   selfCrossEnabled: true,
-  marketHoursEnforced: MARKET_HOURS_ENFORCED_ENV === undefined
-    ? true
-    : MARKET_HOURS_ENFORCED_ENV === "true",
+  marketHoursEnforced:
+    MARKET_HOURS_ENFORCED_ENV === undefined ? true : MARKET_HOURS_ENFORCED_ENV === "true",
 };
 
 const configStore = createConfigStore(config);

@@ -459,7 +459,9 @@ Deno.test("[docs-drift] every <Source line={n} label='symbol'> points at a line 
       const lines = (await Deno.readTextFile(`${REPO_ROOT}${path}`)).split("\n");
       const target = lines[Number(line) - 1] ?? "";
       if (!target.includes(label)) {
-        stale.push(`${docPath.replace(REPO_ROOT, "")}: ${path}:${line} does not contain "${label}"`);
+        stale.push(
+          `${docPath.replace(REPO_ROOT, "")}: ${path}:${line} does not contain "${label}"`
+        );
       }
     }
   }

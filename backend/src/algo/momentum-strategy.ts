@@ -32,7 +32,12 @@ import {
   type RoutedOrder,
   RoutedOrderSchema,
 } from "@veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startExpirySweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5025;

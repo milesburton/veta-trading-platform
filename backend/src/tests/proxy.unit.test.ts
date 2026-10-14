@@ -37,7 +37,11 @@ Deno.test("[proxyPost] uses presetBody instead of re-reading req.body when given
     });
     await req.text();
 
-    const res = await proxyPost("http://analytics:5014/quote", req, JSON.stringify({ symbol: "AAPL" }));
+    const res = await proxyPost(
+      "http://analytics:5014/quote",
+      req,
+      JSON.stringify({ symbol: "AAPL" })
+    );
     assertEquals(res.status, 200);
     assertEquals(seenBodies, [JSON.stringify({ symbol: "AAPL" })]);
   } finally {
@@ -124,7 +128,9 @@ Deno.test("[proxyPost] returns 502 with a JSON error body when fetch fails (conn
 
 Deno.test("[proxyGet] a genuine connection-refused failure sets connectionRefused:true", async () => {
   globalThis.fetch = (() =>
-    Promise.reject(new TypeError("error sending request: Connection refused (os error 111)"))) as typeof fetch;
+    Promise.reject(
+      new TypeError("error sending request: Connection refused (os error 111)")
+    )) as typeof fetch;
   try {
     const req = new Request("http://localhost/api/analytics/quote");
     const res = await proxyGet("http://analytics:5014/quote", req);
@@ -153,7 +159,9 @@ Deno.test("[proxyGet] a timeout failure does NOT set connectionRefused — the s
 
 Deno.test("[isConnectionRefusedError] true only for a TypeError mentioning connection refused", () => {
   assertEquals(
-    isConnectionRefusedError(new TypeError("error sending request: Connection refused (os error 111)")),
+    isConnectionRefusedError(
+      new TypeError("error sending request: Connection refused (os error 111)")
+    ),
     true
   );
   assertEquals(isConnectionRefusedError(new TypeError("connection REFUSED")), true);
@@ -162,5 +170,9 @@ Deno.test("[isConnectionRefusedError] true only for a TypeError mentioning conne
     false
   );
   assertEquals(isConnectionRefusedError(new TypeError("DNS lookup failed")), false);
-  assertEquals(isConnectionRefusedError(new Error("connection refused")), false, "must be a TypeError");
+  assertEquals(
+    isConnectionRefusedError(new Error("connection refused")),
+    false,
+    "must be a TypeError"
+  );
 });

@@ -85,7 +85,13 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     if (i > 0) await new Promise<void>((r) => setTimeout(r, INTERVAL_MS));
 
     const now = Date.now();
-    const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, inFlight, now);
+    const budget = await readSliceBudget(
+      readProgress,
+      order.orderId,
+      order.quantity,
+      inFlight,
+      now
+    );
     if (!budget) {
       logger.warn(`Slice ${i + 1}/${numSlices} skipped for ${order.orderId}: journal unavailable`);
       continue;

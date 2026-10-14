@@ -71,7 +71,13 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
   if (tickVolume === 0) return;
 
   const now = Date.now();
-  const budget = await readSliceBudget(readProgress, state.orderId, state.quantity, state.inFlight, now);
+  const budget = await readSliceBudget(
+    readProgress,
+    state.orderId,
+    state.quantity,
+    state.inFlight,
+    now
+  );
   if (!budget) return;
   setInFlight(state.id, budget.inFlight);
   if (budget.inFlight || budget.remaining <= 0) return;

@@ -68,22 +68,15 @@ Deno.test("[proxyWithWake] wakes the program and retries until it succeeds", asy
   const startCalls: string[] = [];
   const req = new Request("http://localhost/api/analytics/quote");
 
-  const res = await proxyWithWake(
-    "analytics",
-    proxyFn,
-    req,
-    specMap(),
-    noopCors,
-    {
-      retryDelaysMs: [0, 0, 0, 0, 0],
-      sleep: () => Promise.resolve(),
-      isProgramRunningFn: () => Promise.resolve(false),
-      startProgramFn: (program) => {
-        startCalls.push(program);
-        return Promise.resolve({ ok: true, output: "" });
-      },
-    }
-  );
+  const res = await proxyWithWake("analytics", proxyFn, req, specMap(), noopCors, {
+    retryDelaysMs: [0, 0, 0, 0, 0],
+    sleep: () => Promise.resolve(),
+    isProgramRunningFn: () => Promise.resolve(false),
+    startProgramFn: (program) => {
+      startCalls.push(program);
+      return Promise.resolve({ ok: true, output: "" });
+    },
+  });
 
   assertEquals(res.status, 200);
   assertEquals(calls, 3, "1 initial failed attempt + 2 retries before success");
@@ -147,8 +140,16 @@ Deno.test("[proxyWithWake] does NOT wake or retry on a 502 that isn't a confirme
     },
   });
 
-  assertEquals(calls, 1, "a non-refused 502 (e.g. a real timeout) must not trigger the wake/retry loop");
-  assertEquals(startCalls, [], "must not attempt to start a program that may already be running fine");
+  assertEquals(
+    calls,
+    1,
+    "a non-refused 502 (e.g. a real timeout) must not trigger the wake/retry loop"
+  );
+  assertEquals(
+    startCalls,
+    [],
+    "must not attempt to start a program that may already be running fine"
+  );
   assertEquals(res.status, 502, "the original failure must be surfaced, not masked as starting");
 });
 

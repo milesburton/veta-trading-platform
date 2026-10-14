@@ -1,5 +1,5 @@
-import { getTraderArchetype, STARTER_MAX_ORDER_QTY } from "@veta/trader-archetypes";
 import type { OrderNew } from "@veta/schemas/orders";
+import { getTraderArchetype, STARTER_MAX_ORDER_QTY } from "@veta/trader-archetypes";
 import type { PositionTracker, Side } from "./position-tracker.ts";
 
 interface DeskConfig {
@@ -19,7 +19,16 @@ export const DESK_CONFIG: Record<string, DeskConfig> = {
   fx: {
     desk: "fx",
     instrumentType: "fx",
-    symbols: ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "EUR/GBP", "NZD/USD"],
+    symbols: [
+      "EUR/USD",
+      "GBP/USD",
+      "USD/JPY",
+      "AUD/USD",
+      "USD/CAD",
+      "USD/CHF",
+      "EUR/GBP",
+      "NZD/USD",
+    ],
   },
   fi: {
     desk: "fi",
@@ -129,7 +138,10 @@ export class DecisionEngine {
     return `synthetic-${this.#archetypeId}-${Date.now()}-${this.#counter}`;
   }
 
-  decide(tracker: PositionTracker, midPriceFor: (symbol: string) => number | undefined): Decision | Skip {
+  decide(
+    tracker: PositionTracker,
+    midPriceFor: (symbol: string) => number | undefined
+  ): Decision | Skip {
     if (tracker.openOrderCount() >= 30) {
       return { kind: "skip", skippedReason: "open-order cap reached" };
     }

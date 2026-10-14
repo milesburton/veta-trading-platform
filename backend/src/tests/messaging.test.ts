@@ -10,9 +10,9 @@ import {
   createTypedConsumer,
   headerString,
   isDroppableTopic,
+  type KafkaFactoryLike,
   MESSAGE_ID_HEADER,
   sendInChunks,
-  type KafkaFactoryLike,
 } from "../lib/messaging.ts";
 
 type FakeMessage = {
@@ -52,13 +52,9 @@ class FakeConsumer {
   disconnectCalls = 0;
   subscriptions: { topic: string; fromBeginning: boolean }[] = [];
   runConfig: {
-    eachMessage: (
-      payload: { topic: string; message: FakeMessage },
-    ) => Promise<void>;
+    eachMessage: (payload: { topic: string; message: FakeMessage }) => Promise<void>;
   } | null = null;
-  crashHandler:
-    | ((event: { payload: { error?: Error } }) => Promise<void>)
-    | null = null;
+  crashHandler: ((event: { payload: { error?: Error } }) => Promise<void>) | null = null;
   connectError: Error | null = null;
 
   connect(): Promise<void> {
@@ -72,27 +68,18 @@ class FakeConsumer {
     return Promise.resolve();
   }
 
-  on(
-    event: string,
-    handler: (event: { payload: { error?: Error } }) => Promise<void>,
-  ): void {
+  on(event: string, handler: (event: { payload: { error?: Error } }) => Promise<void>): void {
     if (event === "consumer.crash") this.crashHandler = handler;
   }
 
   run(config: {
-    eachMessage: (
-      payload: { topic: string; message: FakeMessage },
-    ) => Promise<void>;
+    eachMessage: (payload: { topic: string; message: FakeMessage }) => Promise<void>;
   }): Promise<void> {
     this.runConfig = config;
     return Promise.resolve();
   }
 
-  async emitMessage(
-    topic: string,
-    value: unknown,
-    headers?: Record<string, unknown>,
-  ) {
+  async emitMessage(topic: string, value: unknown, headers?: Record<string, unknown>) {
     await this.runConfig?.eachMessage({
       topic,
       message: {
@@ -119,7 +106,7 @@ function withoutMessageIds(sends: unknown[]): unknown[] {
     messages: messages.map(({ value, headers }) => ({
       value,
       headers: Object.fromEntries(
-        Object.entries(headers).filter(([key]) => key !== MESSAGE_ID_HEADER),
+        Object.entries(headers).filter(([key]) => key !== MESSAGE_ID_HEADER)
       ),
     })),
   }));
@@ -146,7 +133,7 @@ async function waitFor(predicate: () => boolean, attempts = 10): Promise<void> {
 
 function installHooks(
   factory: (clientId: string) => KafkaFactoryLike,
-  delays: number[] = [],
+  delays: number[] = []
 ): void {
   __setMessagingTestHooks({
     kafkaFactory: factory,
@@ -161,8 +148,7 @@ function installHooks(
 }
 
 Deno.test({
-  name:
-    "[messaging] producer holds order sends until the initial connection and drops droppable sends",
+  name: "[messaging] producer holds order sends until the initial connection and drops droppable sends",
   async fn() {
     const producerClient = new FakeProducer();
     const gate = deferred();
@@ -229,11 +215,7 @@ Deno.test({
 
     const producer = await createProducer("reconnecting-producer");
     await waitFor(() => producer.isReady());
-    await assertRejects(
-      () => producer.send("orders.new", { id: 1 }),
-      Error,
-      "broker gone",
-    );
+    await assertRejects(() => producer.send("orders.new", { id: 1 }), Error, "broker gone");
     assert(!producer.isReady());
 
     await producer.send("market.ticks", { px: 101 });
@@ -275,8 +257,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] producer retries failed connect and reconnects after send failure",
+  name: "[messaging] producer retries failed connect and reconnects after send failure",
   async fn() {
     const first = new FakeProducer();
     first.connectError = new Error("connect down");
@@ -293,7 +274,7 @@ Deno.test({
           throw new Error("unused");
         },
       }),
-      delays,
+      delays
     );
 
     const producer = await createProducer("retrying-producer");
@@ -302,11 +283,7 @@ Deno.test({
     assertEquals(delays, [2000]);
     assert(producer.isReady());
 
-    await assertRejects(
-      () => producer.send("market.ticks", { px: 101 }),
-      Error,
-      "send blew up",
-    );
+    await assertRejects(() => producer.send("market.ticks", { px: 101 }), Error, "send blew up");
     assertEquals(second.sends.length, 1);
 
     await waitFor(() => producer.isReady());
@@ -322,8 +299,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] isDroppableTopic sheds tick-derived topics and keeps order topics",
+  name: "[messaging] isDroppableTopic sheds tick-derived topics and keeps order topics",
   fn() {
     assert(isDroppableTopic("market.ticks"));
     assert(isDroppableTopic("market.signals"));
@@ -335,8 +311,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] saturated producer drops droppable sends and queues order sends",
+  name: "[messaging] saturated producer drops droppable sends and queues order sends",
   async fn() {
     const producerClient = new FakeProducer();
     const gate = deferred();
@@ -364,7 +339,7 @@ Deno.test({
     await Promise.all([first, second, queued]);
 
     const sentValues = producerClient.sends.map(
-      (s) => (s as { messages: { value: string }[] }).messages[0].value,
+      (s) => (s as { messages: { value: string }[] }).messages[0].value
     );
     assertEquals(sentValues, ['{"n":1}', '{"n":2}', '{"n":4}']);
 
@@ -377,8 +352,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] disconnect releases sends waiting for a slot without sending them",
+  name: "[messaging] disconnect releases sends waiting for a slot without sending them",
   async fn() {
     const producerClient = new FakeProducer();
     const gate = deferred();
@@ -408,8 +382,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] consumer subscribes topics, parses valid messages, and ignores empty or invalid payloads",
+  name: "[messaging] consumer subscribes topics, parses valid messages, and ignores empty or invalid payloads",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -447,8 +420,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] consumer swallows handler failures and timeouts and reconnects after crash",
+  name: "[messaging] consumer swallows handler failures and timeouts and reconnects after crash",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -463,14 +435,9 @@ Deno.test({
       consumer: () => consumers.shift() as never,
     }));
 
-    const consumer = await createConsumer(
-      "risk-group",
-      ["risk.alerts"],
-      "risk-client",
-      {
-        handlerTimeoutMs: 1,
-      },
-    );
+    const consumer = await createConsumer("risk-group", ["risk.alerts"], "risk-client", {
+      handlerTimeoutMs: 1,
+    });
 
     const calls: string[] = [];
     consumer.onMessage((_topic, value) => {
@@ -481,9 +448,7 @@ Deno.test({
     });
     consumer.onMessage(() => new Promise<void>(() => {}));
 
-    await waitFor(() =>
-      first.runConfig !== null && first.crashHandler !== null
-    );
+    await waitFor(() => first.runConfig !== null && first.crashHandler !== null);
     assert(first.crashHandler);
 
     await first.emitMessage("risk.alerts", JSON.stringify({ x: 1 }), {
@@ -520,7 +485,7 @@ Deno.test({
         },
         consumer: () => consumers.shift() as never,
       }),
-      delays,
+      delays
     );
 
     const consumer = await createConsumer("boot-group", ["boot.topic"]);
@@ -541,8 +506,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] typed consumer validates payloads, reports invalid, and ignores unbound topics",
+  name: "[messaging] typed consumer validates payloads, reports invalid, and ignores unbound topics",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -571,15 +535,12 @@ Deno.test({
         onInvalid: (topic, raw, error) => {
           invalid.push({ topic, raw, message: error.message });
         },
-      },
+      }
     );
 
     await waitFor(() => fakeConsumer.runConfig !== null);
     await fakeConsumer.emitMessage("typed.topic", JSON.stringify({ qty: 5 }));
-    await fakeConsumer.emitMessage(
-      "typed.topic",
-      JSON.stringify({ qty: "bad" }),
-    );
+    await fakeConsumer.emitMessage("typed.topic", JSON.stringify({ qty: "bad" }));
     await fakeConsumer.emitMessage("other.topic", JSON.stringify({ qty: 7 }));
     await drainMicrotasks();
 
@@ -594,8 +555,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "[messaging] createTypedConsumer throws synchronously on duplicate topic binding",
+  name: "[messaging] createTypedConsumer throws synchronously on duplicate topic binding",
   fn() {
     let err: unknown;
     try {
@@ -632,16 +592,9 @@ Deno.test({
     }));
 
     const producer = await createProducer("backlogged", { maxInFlight: 1 });
-    const held = [
-      producer.send("orders.new", { id: 1 }),
-      producer.send("orders.new", { id: 2 }),
-    ];
+    const held = [producer.send("orders.new", { id: 1 }), producer.send("orders.new", { id: 2 })];
     await drainMicrotasks();
-    await assertRejects(
-      () => producer.send("orders.new", { id: 3 }),
-      Error,
-      "backlog full",
-    );
+    await assertRejects(() => producer.send("orders.new", { id: 3 }), Error, "backlog full");
 
     await producer.disconnect();
     await Promise.all(held);
@@ -663,7 +616,12 @@ Deno.test("[messaging] sendInChunks keeps concurrent sends within the chunk size
     },
   };
 
-  await sendInChunks(producer, "market.features", Array.from({ length: 250 }, (_, i) => i), 100);
+  await sendInChunks(
+    producer,
+    "market.features",
+    Array.from({ length: 250 }, (_, i) => i),
+    100
+  );
 
   assertEquals(sent.length, 250);
   assertEquals(peak, 100);
@@ -722,9 +680,11 @@ Deno.test({
     await waitFor(() => producer.isReady());
     await producer.send("orders.new", { id: 1 });
     await producer.send("orders.new", { id: 2 });
-    const ids = producerClient.sends.map((payload) =>
-      (payload as { messages: { headers: Record<string, string> }[] })
-        .messages[0].headers[MESSAGE_ID_HEADER]
+    const ids = producerClient.sends.map(
+      (payload) =>
+        (payload as { messages: { headers: Record<string, string> }[] }).messages[0].headers[
+          MESSAGE_ID_HEADER
+        ]
     );
     assertEquals(ids.length, 2);
     assert(ids.every((id) => typeof id === "string" && id.length > 0));

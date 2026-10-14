@@ -2,25 +2,25 @@ import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { marketSimPool } from "@veta/db";
 import { logger } from "@veta/logger";
-import type { OrderBookLevel, OrderBookSnapshot } from "@veta/market-client";
+import type { MarketFeed, OrderBookLevel, OrderBookSnapshot } from "@veta/market-client";
 import { createProducer } from "@veta/messaging";
-import { intradayVolumeFactor } from "@veta/time-scale";
 import { recordGauge } from "@veta/telemetry";
+import { intradayVolumeFactor } from "@veta/time-scale";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bond-assets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodity-assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fx-assets.ts";
 import { parseAllowOutOfHours } from "./market-hours.ts";
-import {
-  applyMarketHoursUpdate,
-  createMarketHoursSettingsStore,
-  marketHoursUpdateSchema,
-} from "./market-hours-settings.ts";
 import {
   ASSET_CLASSES,
   type AssetClass,
   buildMarketHoursPayload,
   isAssetClassOpen,
 } from "./market-hours-by-asset-class.ts";
+import {
+  applyMarketHoursUpdate,
+  createMarketHoursSettingsStore,
+  marketHoursUpdateSchema,
+} from "./market-hours-settings.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -48,7 +48,6 @@ import {
   parseMarketFeed,
   symbolsNeedingFreshBook,
 } from "./tick-diff.ts";
-import type { MarketFeed } from "@veta/market-client";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -112,8 +111,8 @@ createProducer("market-sim")
 // tick loop to enqueue indefinitely can create an oversized batch and starve
 // this service's HTTP event loop. Market ticks are ephemeral and periodic full
 // snapshots let consumers recover from a skipped diff.
-const publishMarketTick = createSingleFlightPublisher<unknown>((value) =>
-  producer?.send("market.ticks", value) ?? Promise.resolve()
+const publishMarketTick = createSingleFlightPublisher<unknown>(
+  (value) => producer?.send("market.ticks", value) ?? Promise.resolve()
 );
 
 const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
@@ -337,10 +336,10 @@ function buildSnapshotMessage(feed: MarketFeed): string {
   const snapshot =
     feed === "full"
       ? {
-        ...base,
-        orderBook: computeOrderBook(marketData, allSymbols),
-        venueBooks: computeVenueBooks(marketData, allSymbols),
-      }
+          ...base,
+          orderBook: computeOrderBook(marketData, allSymbols),
+          venueBooks: computeVenueBooks(marketData, allSymbols),
+        }
       : base;
   return JSON.stringify({ event: "marketData", data: snapshot });
 }
@@ -411,18 +410,16 @@ setInterval(() => {
     const results = [...new Set(clients.values())]
       .map((feed) => ({ feed, data: forFeed(diff, feed) }))
       .filter(({ data }) => !isEmptyDiff(data))
-      .map(({ feed, data }) =>
-        ({
-          feed,
-          result: fanOutTick(
-            clientsOn(feed),
-            JSON.stringify({ event: "marketUpdate", data }),
-            laggingClients,
-            () => snapshotFor(feed),
-            lagThresholdBytes(snapshotBytes[feed])
-          ),
-        })
-      );
+      .map(({ feed, data }) => ({
+        feed,
+        result: fanOutTick(
+          clientsOn(feed),
+          JSON.stringify({ event: "marketUpdate", data }),
+          laggingClients,
+          () => snapshotFor(feed),
+          lagThresholdBytes(snapshotBytes[feed])
+        ),
+      }));
     const processedFeeds = new Set(results.map((r) => r.feed));
     const carriedLagging = [...laggingClients].filter((socket) => {
       const feed = clients.get(socket);

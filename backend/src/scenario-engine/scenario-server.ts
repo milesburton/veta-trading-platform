@@ -26,7 +26,8 @@ interface ScenarioResult {
   shocksApplied: ScenarioShock[];
 }
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("SCENARIO_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+const IDLE_TIMEOUT_MS =
+  Number(Deno.env.get("SCENARIO_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
 const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
 
 serveJsonService({

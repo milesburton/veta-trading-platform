@@ -8,8 +8,17 @@ import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer } from "@veta/messaging";
 import { isKnownCounterparty } from "./counterparties.ts";
-import { CxlRejReason, CxlRejResponseTo, ExecType, MsgType, OrdStatus, OrdType, Side, Tag } from "./fix-dictionary.ts";
 import { computeFill } from "./fill-math.ts";
+import {
+  CxlRejReason,
+  CxlRejResponseTo,
+  ExecType,
+  MsgType,
+  OrdStatus,
+  OrdType,
+  Side,
+  Tag,
+} from "./fix-dictionary.ts";
 import { isMarketOpenForOrderEntry } from "./fix-market-session.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";

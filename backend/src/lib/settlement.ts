@@ -1,6 +1,6 @@
+import { SIFMA_BOND_CALENDAR, US_EQUITY_CALENDAR } from "@veta/market-calendars";
 import type { Desk } from "@veta/primitives";
 import { isHoliday } from "@veta/trading-calendar";
-import { SIFMA_BOND_CALENDAR, US_EQUITY_CALENDAR } from "@veta/market-calendars";
 
 export type { Desk } from "@veta/primitives";
 

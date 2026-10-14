@@ -1695,9 +1695,6 @@ services:
       "--allow-all",
       "/app/backend/src/discord-bot/discord-bot.ts",
     ]
-    depends_on:
-      ollama:
-        condition: service_healthy
     environment:
       DISCORD_BOT_PORT: "5034"
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}

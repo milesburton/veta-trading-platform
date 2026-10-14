@@ -266,7 +266,9 @@ export function resolveCurrentSession(calendar: TradingCalendar, now: Date): Ses
   );
   const schedule = buildSessionSchedule(calendar, dateStr);
   const phase =
-    weekend || holiday ? "CLOSED" : resolvePhaseFromMinute(schedule, marketMinute, calendar.dailyBreaks);
+    weekend || holiday
+      ? "CLOSED"
+      : resolvePhaseFromMinute(schedule, marketMinute, calendar.dailyBreaks);
   return resolveSession(phase);
 }
 

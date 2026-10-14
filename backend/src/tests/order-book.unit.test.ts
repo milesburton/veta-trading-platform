@@ -56,7 +56,10 @@ Deno.test("[order-book] cancel removes the order from whichever side holds it", 
 
 Deno.test("[order-book] marketable buy fully matches a resting ask at the ask's price", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 10, remainingQty: 10 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 10, remainingQty: 10 })
+  );
 
   const result = matchOrder(
     book,
@@ -76,7 +79,10 @@ Deno.test("[order-book] marketable buy fully matches a resting ask at the ask's 
 
 Deno.test("[order-book] partial fill leaves remainder resting when restRemainder is true", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 })
+  );
 
   const result = matchOrder(
     book,
@@ -94,7 +100,10 @@ Deno.test("[order-book] partial fill leaves remainder resting when restRemainder
 
 Deno.test("[order-book] partial fill remainder is dropped when restRemainder is false", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 })
+  );
 
   const result = matchOrder(
     book,
@@ -110,7 +119,10 @@ Deno.test("[order-book] partial fill remainder is dropped when restRemainder is 
 
 Deno.test("[order-book] no-fill when incoming price does not cross the book", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 105, quantity: 10, remainingQty: 10 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 105, quantity: 10, remainingQty: 10 })
+  );
 
   const result = matchOrder(
     book,
@@ -128,8 +140,14 @@ Deno.test("[order-book] no-fill when incoming price does not cross the book", ()
 
 Deno.test("[order-book] incoming order walks the book across multiple price levels in price priority", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 101, quantity: 5, remainingQty: 5, seq: 0 }));
-  book = addOrder(book, order({ orderId: "S2", side: "SELL", price: 100, quantity: 5, remainingQty: 5, seq: 1 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 101, quantity: 5, remainingQty: 5, seq: 0 })
+  );
+  book = addOrder(
+    book,
+    order({ orderId: "S2", side: "SELL", price: 100, quantity: 5, remainingQty: 5, seq: 1 })
+  );
 
   const result = matchOrder(
     book,
@@ -150,7 +168,10 @@ Deno.test("[order-book] incoming order walks the book across multiple price leve
 
 Deno.test("[order-book] two competing buys against one resting ask fill in time priority, second buy partially unfilled", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 6, remainingQty: 6 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 6, remainingQty: 6 })
+  );
 
   const first = matchOrder(
     book,

@@ -1,5 +1,9 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { isKnownCounterparty, loadCounterparties, resolveCounterparty } from "../fix/counterparties.ts";
+import {
+  isKnownCounterparty,
+  loadCounterparties,
+  resolveCounterparty,
+} from "../fix/counterparties.ts";
 
 Deno.test("[fix-counterparties] unknown SenderCompID resolves to null / not known", () => {
   loadCounterparties("");

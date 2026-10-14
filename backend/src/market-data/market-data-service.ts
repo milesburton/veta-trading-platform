@@ -251,7 +251,7 @@ if (ALPHA_VANTAGE_KEY) {
             if (q) quoteCache.set(toSeed[i], q);
           })
           .catch(() => {}),
-      i * 1_500,
+      i * 1_500
     );
   }
 }

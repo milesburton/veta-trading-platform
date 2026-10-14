@@ -1,9 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import {
-  capToDepth,
-  depthSliceCap,
-  estimatedDepth,
-} from "../algo/depth-cap.ts";
+import { capToDepth, depthSliceCap, estimatedDepth } from "../algo/depth-cap.ts";
 
 const tick = (volume: number | undefined): { volumes: Record<string, number> } => ({
   volumes: volume === undefined ? {} : { AAPL: volume },
@@ -27,10 +23,7 @@ Deno.test("depthSliceCap: never below one share", () => {
 });
 
 Deno.test("depthSliceCap: uncapped when depth is unknown", () => {
-  assertEquals(
-    depthSliceCap(tick(undefined), "AAPL"),
-    Number.POSITIVE_INFINITY,
-  );
+  assertEquals(depthSliceCap(tick(undefined), "AAPL"), Number.POSITIVE_INFINITY);
 });
 
 Deno.test("capToDepth: leaves small slices alone", () => {

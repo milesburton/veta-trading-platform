@@ -6,6 +6,7 @@ import {
   clampHeartbeatIntervalMs,
   classifyGatewayEnvelope,
   connect,
+  createTriageHealthProbe,
   decideTriageRequest,
   decideWelcomePost,
   extractHeartbeatIntervalMs,
@@ -510,4 +511,47 @@ Deno.test("retryTransient rethrows after exhausting attempts", async () => {
     caught = err;
   }
   assertEquals((caught as Error).message, "boom");
+});
+
+Deno.test("triage health probe reports provider reachability", async () => {
+  const probe = createTriageHealthProbe(
+    { providerId: "ollama", isAvailable: () => Promise.resolve(true) },
+    true
+  );
+  assertEquals(await probe(), { provider: "ollama", enabled: true, reachable: true });
+});
+
+Deno.test("triage health probe reports unreachable when the provider check throws", async () => {
+  const probe = createTriageHealthProbe(
+    { providerId: "ollama", isAvailable: () => Promise.reject(new Error("down")) },
+    true
+  );
+  assertEquals((await probe()).reachable, false);
+});
+
+Deno.test("triage health probe skips the provider check when triage is disabled", async () => {
+  let calls = 0;
+  const probe = createTriageHealthProbe(
+    { providerId: "ollama", isAvailable: () => Promise.resolve(++calls > 0) },
+    false
+  );
+  assertEquals((await probe()).reachable, false);
+  assertEquals(calls, 0);
+});
+
+Deno.test("triage health probe caches results within the window", async () => {
+  let calls = 0;
+  let clock = 0;
+  const probe = createTriageHealthProbe(
+    { providerId: "ollama", isAvailable: () => Promise.resolve(++calls > 0) },
+    true,
+    () => clock
+  );
+  await probe();
+  clock = 5_000;
+  await probe();
+  assertEquals(calls, 1);
+  clock = 20_000;
+  await probe();
+  assertEquals(calls, 2);
 });

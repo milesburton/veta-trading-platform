@@ -320,7 +320,10 @@ Deno.test("backoffDelayMs: caps at maxMs regardless of failure count", () => {
 Deno.test("flushedSymbols: returns symbols whose pending entry is the flushed vector", () => {
   const aapl = makeFv("AAPL", 1);
   const msft = makeFv("MSFT", 1);
-  const pending = new Map([["AAPL", aapl], ["MSFT", msft]]);
+  const pending = new Map([
+    ["AAPL", aapl],
+    ["MSFT", msft],
+  ]);
   assertEquals(flushedSymbols(pending, [aapl, msft]), ["AAPL", "MSFT"]);
 });
 
@@ -328,7 +331,10 @@ Deno.test("flushedSymbols: keeps symbols updated while the insert was in flight"
   const stale = makeFv("AAPL", 1);
   const fresh = makeFv("AAPL", 2);
   const msft = makeFv("MSFT", 1);
-  const pending = new Map([["AAPL", fresh], ["MSFT", msft]]);
+  const pending = new Map([
+    ["AAPL", fresh],
+    ["MSFT", msft],
+  ]);
   assertEquals(flushedSymbols(pending, [stale, msft]), ["MSFT"]);
 });
 

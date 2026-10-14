@@ -7,7 +7,11 @@ import { handleAdminRoute } from "../gateway/routes/admin.ts";
 type SentOrder = Record<string, unknown>;
 
 const realFetch = globalThis.fetch;
-const ENV_KEYS = ["LOAD_TEST_USER_IDS", "LOAD_TEST_MAX_ORDERS", "LOAD_TEST_ORDERS_PER_SEC_PER_USER"];
+const ENV_KEYS = [
+  "LOAD_TEST_USER_IDS",
+  "LOAD_TEST_MAX_ORDERS",
+  "LOAD_TEST_ORDERS_PER_SEC_PER_USER",
+];
 const realEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, Deno.env.get(k)]));
 
 function setEnv(values: Record<string, string | undefined>) {
@@ -38,7 +42,8 @@ function makeContext(role = "admin", options: { ready?: boolean } = {}) {
     isReady: () => options.ready ?? true,
   };
   const ctx = {
-    requireAuth: () => Promise.resolve({ user: { id: "admin-1", name: "Admin", role, avatar_emoji: "A" } }),
+    requireAuth: () =>
+      Promise.resolve({ user: { id: "admin-1", name: "Admin", role, avatar_emoji: "A" } }),
     producer,
     publishAccessEvent: (event: Record<string, unknown>) => accessEvents.push(event),
     urls: { marketSim: "http://market-sim.example" },
@@ -53,7 +58,8 @@ function makeContext(role = "admin", options: { ready?: boolean } = {}) {
 
 function unauthenticated(): GatewayContext {
   return {
-    requireAuth: () => Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
+    requireAuth: () =>
+      Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
   } as unknown as GatewayContext;
 }
 
@@ -82,9 +88,19 @@ async function waitFor(condition: () => boolean, timeoutMs = 2_000): Promise<voi
 Deno.test("/load-test rejects unauthenticated, non-admin and bus-down requests", async () => {
   try {
     assertEquals((await call(post("/load-test", {}), "/load-test", unauthenticated())).status, 401);
-    assertEquals((await call(post("/load-test", {}), "/load-test", makeContext("trader").ctx)).status, 403);
-    assertEquals((await call(post("/load-test", {}), "/load-test", makeContext("oncall").ctx)).status, 403);
-    const down = await call(post("/load-test", {}), "/load-test", makeContext("admin", { ready: false }).ctx);
+    assertEquals(
+      (await call(post("/load-test", {}), "/load-test", makeContext("trader").ctx)).status,
+      403
+    );
+    assertEquals(
+      (await call(post("/load-test", {}), "/load-test", makeContext("oncall").ctx)).status,
+      403
+    );
+    const down = await call(
+      post("/load-test", {}),
+      "/load-test",
+      makeContext("admin", { ready: false }).ctx
+    );
     assertEquals(down.status, 503);
     assertEquals((await down.json()).error, "Bus unavailable");
   } finally {
@@ -95,9 +111,18 @@ Deno.test("/load-test rejects unauthenticated, non-admin and bus-down requests",
 Deno.test("/load-test rejects an invalid JSON body and bad quantity ranges", async () => {
   try {
     const { ctx } = makeContext();
-    assertEquals((await call(post("/load-test", undefined, "{not json"), "/load-test", ctx)).status, 400);
+    assertEquals(
+      (await call(post("/load-test", undefined, "{not json"), "/load-test", ctx)).status,
+      400
+    );
 
-    const invalidRanges: unknown[] = [[10, 10], [-1, 5], [10, 5], [1.5, 9], [1, 1_000_001]];
+    const invalidRanges: unknown[] = [
+      [10, 10],
+      [-1, 5],
+      [10, 5],
+      [1.5, 9],
+      [1, 1_000_001],
+    ];
     for (const quantityRange of invalidRanges) {
       const res = await call(post("/load-test", { quantityRange }), "/load-test", ctx);
       assertEquals(res.status, 400, JSON.stringify(quantityRange));
@@ -132,9 +157,14 @@ Deno.test("/load-test submits attributed orders, caps the count and uses live re
   try {
     const { ctx, sent, accessEvents } = makeContext();
     const res = await call(
-      post("/load-test", { symbols: ["AAPL"], orderCount: 50, strategy: "TWAP", quantityRange: [5, 9] }),
+      post("/load-test", {
+        symbols: ["AAPL"],
+        orderCount: 50,
+        strategy: "TWAP",
+        quantityRange: [5, 9],
+      }),
       "/load-test",
-      ctx,
+      ctx
     );
     assertEquals(res.status, 202);
     const summary = await res.json();
@@ -155,22 +185,33 @@ Deno.test("/load-test submits attributed orders, caps the count and uses live re
       const quantity = order.quantity as number;
       assert(quantity >= 5 && quantity <= 9, `quantity ${quantity}`);
       const limitPrice = order.limitPrice as number;
-      if (order.side === "BUY") assert(limitPrice >= 200 * 0.98 * 1.02 && limitPrice <= 200 * 1.02 * 1.02);
+      if (order.side === "BUY")
+        assert(limitPrice >= 200 * 0.98 * 1.02 && limitPrice <= 200 * 1.02 * 1.02);
       else assert(limitPrice >= 200 * 0.98 * 0.98 && limitPrice <= 200 * 1.02 * 0.98);
     }
     assertEquals(new Set(sent.map((o) => o.clientOrderId)).size, 4);
-    assertEquals(accessEvents, [{ action: "http_request", userId: "admin-1", userRole: "admin", path: "/load-test" }]);
+    assertEquals(accessEvents, [
+      { action: "http_request", userId: "admin-1", userRole: "admin", path: "/load-test" },
+    ]);
   } finally {
     restore();
   }
 });
 
 Deno.test("/load-test falls back to default reference prices when market-sim is unreachable", async () => {
-  setEnv({ LOAD_TEST_USER_IDS: "u-1", LOAD_TEST_MAX_ORDERS: "2", LOAD_TEST_ORDERS_PER_SEC_PER_USER: "1000000" });
+  setEnv({
+    LOAD_TEST_USER_IDS: "u-1",
+    LOAD_TEST_MAX_ORDERS: "2",
+    LOAD_TEST_ORDERS_PER_SEC_PER_USER: "1000000",
+  });
   globalThis.fetch = (() => Promise.reject(new TypeError("connection refused"))) as typeof fetch;
   try {
     const { ctx, sent } = makeContext();
-    const res = await call(post("/load-test", { symbols: ["MSFT", "ZZZZ"], orderCount: 2 }), "/load-test", ctx);
+    const res = await call(
+      post("/load-test", { symbols: ["MSFT", "ZZZZ"], orderCount: 2 }),
+      "/load-test",
+      ctx
+    );
     assertEquals(res.status, 202);
     await waitFor(() => sent.length === 2);
     for (const order of sent) {
@@ -187,8 +228,15 @@ Deno.test("/demo-day rejects unauthenticated, wrong-role and bus-down requests a
   setEnv({ LOAD_TEST_USER_IDS: "u-1" });
   try {
     assertEquals((await call(post("/demo-day", {}), "/demo-day", unauthenticated())).status, 401);
-    assertEquals((await call(post("/demo-day", {}), "/demo-day", makeContext("trader").ctx)).status, 403);
-    assertEquals((await call(post("/demo-day", {}), "/demo-day", makeContext("admin", { ready: false }).ctx)).status, 503);
+    assertEquals(
+      (await call(post("/demo-day", {}), "/demo-day", makeContext("trader").ctx)).status,
+      403
+    );
+    assertEquals(
+      (await call(post("/demo-day", {}), "/demo-day", makeContext("admin", { ready: false }).ctx))
+        .status,
+      503
+    );
 
     setEnv({ LOAD_TEST_USER_IDS: undefined });
     const res = await call(post("/demo-day", {}), "/demo-day", makeContext().ctx);
@@ -199,7 +247,12 @@ Deno.test("/demo-day rejects unauthenticated, wrong-role and bus-down requests a
   }
 });
 
-const SCENARIOS: Array<{ scenario: string | undefined; label: string; total: number; strategies?: string[] }> = [
+const SCENARIOS: Array<{
+  scenario: string | undefined;
+  label: string;
+  total: number;
+  strategies?: string[];
+}> = [
   { scenario: "market-open", label: "Market Open", total: 120 },
   { scenario: "volatile", label: "Volatile Session", total: 100 },
   {
@@ -216,7 +269,9 @@ const SCENARIOS: Array<{ scenario: string | undefined; label: string; total: num
 for (const { scenario, label, total, strategies } of SCENARIOS) {
   Deno.test(`/demo-day scenario ${scenario ?? "(default)"} schedules ${total} attributed orders`, async () => {
     setEnv({ LOAD_TEST_USER_IDS: "u-1,u-2" });
-    stubFetch(() => new Response(JSON.stringify([{ symbol: "AAPL", price: 1_000 }]), { status: 200 }));
+    stubFetch(
+      () => new Response(JSON.stringify([{ symbol: "AAPL", price: 1_000 }]), { status: 200 })
+    );
     const time = new FakeTime();
     try {
       const { ctx, sent, accessEvents } = makeContext("oncall");
@@ -238,11 +293,17 @@ for (const { scenario, label, total, strategies } of SCENARIOS) {
         assertEquals(order._demoDayJobId, summary.jobId);
         assert((order.quantity as number) > 0);
         assertEquals(order.limitPrice, Math.round((order.limitPrice as number) * 100) / 100);
-        if (strategies) assert(strategies.includes(order.strategy as string), String(order.strategy));
+        if (strategies)
+          assert(strategies.includes(order.strategy as string), String(order.strategy));
       }
       const aapl = sent.filter((o) => o.asset === "AAPL").map((o) => o.limitPrice as number);
-      assert(aapl.every((p) => p > 900 && p < 1_100), "AAPL orders should be priced from the live asset feed");
-      assertEquals(accessEvents, [{ action: "http_request", userId: "admin-1", userRole: "oncall", path: "/demo-day" }]);
+      assert(
+        aapl.every((p) => p > 900 && p < 1_100),
+        "AAPL orders should be priced from the live asset feed"
+      );
+      assertEquals(accessEvents, [
+        { action: "http_request", userId: "admin-1", userRole: "oncall", path: "/demo-day" },
+      ]);
     } finally {
       time.restore();
       restore();
@@ -267,7 +328,10 @@ Deno.test("/demo-day falls back to default prices when the asset feed fails or r
       await time.runMicrotasks();
       const msft = sent.filter((o) => o.asset === "MSFT").map((o) => o.limitPrice as number);
       assert(msft.length > 0);
-      assert(msft.every((p) => p > 421 * 0.95 && p < 421 * 1.05), `${failure}: ${msft}`);
+      assert(
+        msft.every((p) => p > 421 * 0.95 && p < 421 * 1.05),
+        `${failure}: ${msft}`
+      );
     }
   } finally {
     time.restore();
@@ -294,14 +358,32 @@ Deno.test("/demo-day treats an invalid JSON body as the standard scenario", asyn
 
 Deno.test("/load-gen endpoints reject a bus outage and unauthorised roles", async () => {
   try {
-    assertEquals((await call(post("/load-gen/start", {}), "/load-gen/start", makeContext("admin", { ready: false }).ctx)).status, 503);
-    assertEquals((await call(post("/load-gen/start", {}), "/load-gen/start", unauthenticated())).status, 401);
-    assertEquals((await call(post("/load-gen/stop"), "/load-gen/stop", makeContext("trader").ctx)).status, 403);
-    assertEquals((await call(post("/load-gen/stop"), "/load-gen/stop", unauthenticated())).status, 401);
+    assertEquals(
+      (
+        await call(
+          post("/load-gen/start", {}),
+          "/load-gen/start",
+          makeContext("admin", { ready: false }).ctx
+        )
+      ).status,
+      503
+    );
+    assertEquals(
+      (await call(post("/load-gen/start", {}), "/load-gen/start", unauthenticated())).status,
+      401
+    );
+    assertEquals(
+      (await call(post("/load-gen/stop"), "/load-gen/stop", makeContext("trader").ctx)).status,
+      403
+    );
+    assertEquals(
+      (await call(post("/load-gen/stop"), "/load-gen/stop", unauthenticated())).status,
+      401
+    );
     const status = await call(
       new Request("http://localhost/load-gen/status"),
       "/load-gen/status",
-      makeContext("viewer").ctx,
+      makeContext("viewer").ctx
     );
     assertEquals(status.status, 403);
   } finally {
@@ -312,7 +394,11 @@ Deno.test("/load-gen endpoints reject a bus outage and unauthorised roles", asyn
 Deno.test("/load-gen/start tolerates an empty body and /load-gen/stop reports the stopped state", async () => {
   try {
     const { ctx } = makeContext("oncall");
-    const started = await call(post("/load-gen/start", undefined, "not json"), "/load-gen/start", ctx);
+    const started = await call(
+      post("/load-gen/start", undefined, "not json"),
+      "/load-gen/start",
+      ctx
+    );
     assert(started.status === 200 || started.status === 409);
     await started.body?.cancel();
 

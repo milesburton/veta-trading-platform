@@ -3,7 +3,7 @@ title: "ADR 0006: LLM provider and failure handling for Discord ticket triage"
 description: "Discord bug triage generated tickets with a CPU-only Ollama model inside the main stack, which timed out under host load and left reporters without a reply. Records the options for hosting the model and the failure handling that applies whichever is chosen."
 ---
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-10-14
 
@@ -42,8 +42,9 @@ happened.
 CPU in the main stack, and point `LLM_OLLAMA_BASE_URL` at it. Inference then no longer
 competes with the trading services for CPU.
 
-This is marked Proposed because it adds a dependency (below) and the choice between the
-options should be confirmed before it is implemented.
+The GPU host option was confirmed on 2026-10-14. The host URL and model are deployment
+configuration (`LLM_OLLAMA_BASE_URL`, `LLM_MODEL_ID`) and are not committed. The `discord-bot`
+service no longer waits for the in-stack Ollama container to be healthy.
 
 ## Alternatives considered
 

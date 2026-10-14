@@ -32,7 +32,9 @@ Deno.test("[replay-helpers] a requested offset is parsed as a number", () => {
 // ── isForeignKeyViolation ────────────────────────────────────────────────────
 
 Deno.test("[replay-helpers] recognises a Postgres FK-constraint error message", () => {
-  const err = new Error('update or delete on table "sessions" violates foreign key constraint "chunks_session_id_fkey"');
+  const err = new Error(
+    'update or delete on table "sessions" violates foreign key constraint "chunks_session_id_fkey"'
+  );
   assertEquals(isForeignKeyViolation(err), true);
 });
 

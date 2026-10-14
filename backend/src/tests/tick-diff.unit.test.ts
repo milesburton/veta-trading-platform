@@ -4,9 +4,9 @@ import {
   buildTickDiff,
   createSingleFlightPublisher,
   createTickDiffState,
+  FULL_SNAPSHOT_INTERVAL_MS,
   fanOutTick,
   forFeed,
-  FULL_SNAPSHOT_INTERVAL_MS,
   isEmptyDiff,
   lagThresholdBytes,
   MAX_CLIENT_BUFFERED_BYTES,
@@ -590,17 +590,28 @@ Deno.test("fanOutTick does not build a snapshot when no lagging socket has drain
   const slow = fakeSocket(500);
   let builds = 0;
 
-  const result = fanOutTick([slow], "tick", new Set([slow]), () => {
-    builds++;
-    return "snapshot";
-  }, 100);
+  const result = fanOutTick(
+    [slow],
+    "tick",
+    new Set([slow]),
+    () => {
+      builds++;
+      return "snapshot";
+    },
+    100
+  );
 
   assertEquals(builds, 0);
   assert(result.lagging.has(slow));
 });
 
 Deno.test("fanOutTick reports sockets whose send throws", () => {
-  const broken = { bufferedAmount: 0, send: () => { throw new Error("closed"); } };
+  const broken = {
+    bufferedAmount: 0,
+    send: () => {
+      throw new Error("closed");
+    },
+  };
   const ok = fakeSocket();
 
   const result = fanOutTick([broken, ok], "tick", new Set(), () => "snapshot", 100);
@@ -640,8 +651,20 @@ Deno.test("lagThresholdBytes leaves room for a snapshot larger than the floor", 
 
 Deno.test("fanOutTick does not mark a socket lagging while a snapshot under the threshold drains", () => {
   const snapshotBytes = 11_000_000;
-  const draining = { bufferedAmount: snapshotBytes, sent: [] as string[], send(d: string) { this.sent.push(d); } };
-  const result = fanOutTick([draining], "tick", new Set(), () => "snapshot", lagThresholdBytes(snapshotBytes));
+  const draining = {
+    bufferedAmount: snapshotBytes,
+    sent: [] as string[],
+    send(d: string) {
+      this.sent.push(d);
+    },
+  };
+  const result = fanOutTick(
+    [draining],
+    "tick",
+    new Set(),
+    () => "snapshot",
+    lagThresholdBytes(snapshotBytes)
+  );
   assertEquals(result.lagging.size, 0);
   assertEquals(draining.sent, ["tick"]);
 });

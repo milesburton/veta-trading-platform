@@ -26,15 +26,7 @@ const tickVolume = (dailyVolume: number) => dailyVolume / 390;
 const fillRatio = (dailyVolume: number, requested: number) => {
   const tick = { volumes: { X: tickVolume(dailyVolume) } };
   const qty = capToDepth(requested, tick, "X");
-  const result = matchAgainstSnapshot(
-    "c",
-    "X",
-    "BUY",
-    qty,
-    1e9,
-    snapshot(dailyVolume),
-    0,
-  );
+  const result = matchAgainstSnapshot("c", "X", "BUY", qty, 1e9, snapshot(dailyVolume), 0);
   return result.filledQty / qty;
 };
 
@@ -52,15 +44,7 @@ for (const [name, dailyVolume, requested] of scenarios) {
 }
 
 Deno.test("depth cap against the book: uncapped oversized child is only partly filled", () => {
-  const result = matchAgainstSnapshot(
-    "c",
-    "X",
-    "BUY",
-    2_000,
-    1e9,
-    snapshot(500_000),
-    0,
-  );
+  const result = matchAgainstSnapshot("c", "X", "BUY", 2_000, 1e9, snapshot(500_000), 0);
   assert(result.filledQty / 2_000 < 1);
 });
 

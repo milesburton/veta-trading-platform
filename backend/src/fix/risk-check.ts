@@ -45,7 +45,9 @@ export async function checkRisk(
       logger.error(`[FIX Exchange] risk-engine /check returned ${res.status}`);
       return {
         allowed: false,
-        reasons: ["Risk engine unavailable — all orders are blocked until the risk service is restored"],
+        reasons: [
+          "Risk engine unavailable — all orders are blocked until the risk service is restored",
+        ],
         warnings: [],
       };
     }
@@ -54,7 +56,9 @@ export async function checkRisk(
       logger.error("[FIX Exchange] risk-engine /check returned a malformed response");
       return {
         allowed: false,
-        reasons: ["Risk engine unavailable — all orders are blocked until the risk service is restored"],
+        reasons: [
+          "Risk engine unavailable — all orders are blocked until the risk service is restored",
+        ],
         warnings: [],
       };
     }
@@ -67,7 +71,9 @@ export async function checkRisk(
     logger.error("[FIX Exchange] risk-engine unreachable", { detail: err });
     return {
       allowed: false,
-      reasons: ["Risk engine unavailable — all orders are blocked until the risk service is restored"],
+      reasons: [
+        "Risk engine unavailable — all orders are blocked until the risk service is restored",
+      ],
       warnings: [],
     };
   }

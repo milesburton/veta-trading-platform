@@ -25,14 +25,11 @@ Deno.test("[market-hours-by-asset-class] equity is closed on a weekend", () => {
   assertEquals(isAssetClassOpen("equity", new Date("2026-08-01T15:00:00Z")), false);
 });
 
-Deno.test(
-  "[market-hours-by-asset-class] fx is NOT gated by the US equity calendar (regression)",
-  () => {
-    const midweek = new Date("2026-07-29T12:00:00Z");
-    assertEquals(isAssetClassOpen("equity", midweek), false);
-    assert(isAssetClassOpen("fx", midweek), "fx should not be gated by the US equity calendar");
-  }
-);
+Deno.test("[market-hours-by-asset-class] fx is NOT gated by the US equity calendar (regression)", () => {
+  const midweek = new Date("2026-07-29T12:00:00Z");
+  assertEquals(isAssetClassOpen("equity", midweek), false);
+  assert(isAssetClassOpen("fx", midweek), "fx should not be gated by the US equity calendar");
+});
 
 Deno.test("[market-hours-by-asset-class] isAssetClass validates against the real enum", () => {
   for (const ac of ASSET_CLASSES) assert(isAssetClass(ac));
@@ -53,31 +50,25 @@ Deno.test("[market-hours-by-asset-class] buildMarketHoursPayload covers every as
   }
 });
 
-Deno.test(
-  "[market-hours-by-asset-class] buildMarketHoursPayload reflects real session state per class",
-  () => {
-    const midweek = new Date("2026-07-29T12:00:00Z");
-    const payload = buildMarketHoursPayload(allowNone(), midweek);
-    assertEquals(payload.assetClasses.equity.isOpen, false);
-    assertEquals(payload.assetClasses.fx.isOpen, true);
-  }
-);
+Deno.test("[market-hours-by-asset-class] buildMarketHoursPayload reflects real session state per class", () => {
+  const midweek = new Date("2026-07-29T12:00:00Z");
+  const payload = buildMarketHoursPayload(allowNone(), midweek);
+  assertEquals(payload.assetClasses.equity.isOpen, false);
+  assertEquals(payload.assetClasses.fx.isOpen, true);
+});
 
-Deno.test(
-  "[market-hours-by-asset-class] buildMarketHoursPayload echoes back the override flags passed in",
-  () => {
-    const overrides: Record<AssetClass, boolean> = {
-      equity: true,
-      fx: false,
-      commodity: true,
-      bond: false,
-    };
-    const payload = buildMarketHoursPayload(overrides, new Date("2026-07-29T14:00:00Z"));
-    for (const ac of ASSET_CLASSES) {
-      assertEquals(payload.assetClasses[ac].allowOutOfHoursOverride, overrides[ac]);
-    }
+Deno.test("[market-hours-by-asset-class] buildMarketHoursPayload echoes back the override flags passed in", () => {
+  const overrides: Record<AssetClass, boolean> = {
+    equity: true,
+    fx: false,
+    commodity: true,
+    bond: false,
+  };
+  const payload = buildMarketHoursPayload(overrides, new Date("2026-07-29T14:00:00Z"));
+  for (const ac of ASSET_CLASSES) {
+    assertEquals(payload.assetClasses[ac].allowOutOfHoursOverride, overrides[ac]);
   }
-);
+});
 
 function allowAll(): Record<AssetClass, boolean> {
   return { equity: true, fx: true, commodity: true, bond: true };

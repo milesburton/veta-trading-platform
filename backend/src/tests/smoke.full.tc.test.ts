@@ -1339,9 +1339,7 @@ Deno.test({
               }
             }
 
-            const syntheticViewer = body.personas.find(
-              (p) => p.id === "synthetic-trader-1-viewer"
-            );
+            const syntheticViewer = body.personas.find((p) => p.id === "synthetic-trader-1-viewer");
             assertExists(syntheticViewer, "synthetic-trader-1-viewer persona missing");
             assertEquals(syntheticViewer?.role, "viewer");
           }

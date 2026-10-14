@@ -1,6 +1,6 @@
 import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
-import type { FeatureVector } from "../types/intelligence.ts";
 import { applyShocks } from "../scenario-engine/apply-shocks.ts";
+import type { FeatureVector } from "../types/intelligence.ts";
 
 function fv(overrides: Partial<FeatureVector> = {}): FeatureVector {
   return {
