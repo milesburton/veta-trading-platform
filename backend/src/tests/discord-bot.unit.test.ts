@@ -3,14 +3,17 @@ import {
   buildMotd,
   buildTriagePrompt,
   buildWelcomeMessage,
-  classifyGatewayEnvelope,
   clampHeartbeatIntervalMs,
+  classifyGatewayEnvelope,
   connect,
   decideTriageRequest,
   decideWelcomePost,
   extractHeartbeatIntervalMs,
   isTriageRateLimited,
   parseTriageResponse,
+  retryTransient,
+  TimeoutError,
+  withTimeout,
 } from "../discord-bot/discord-bot.ts";
 
 Deno.test("buildWelcomeMessage mentions the joining member", () => {
@@ -439,4 +442,72 @@ Deno.test("isTriageRateLimited resets once the window has passed", () => {
   assertEquals(isTriageRateLimited(userId, start), false);
   assertEquals(isTriageRateLimited(userId, start), false);
   assertEquals(isTriageRateLimited(userId, start + 11 * 60 * 1000), false);
+});
+
+Deno.test("withTimeout rejects with TimeoutError when work outlasts the limit", async () => {
+  const never = new Promise<string>(() => {});
+  let caught: unknown;
+  try {
+    await withTimeout(never, 10);
+  } catch (err) {
+    caught = err;
+  }
+  assert(caught instanceof TimeoutError);
+});
+
+Deno.test("withTimeout resolves with the work result when it finishes in time", async () => {
+  assertEquals(await withTimeout(Promise.resolve("ok"), 1_000), "ok");
+});
+
+Deno.test("retryTransient retries thrown errors with exponential backoff", async () => {
+  const delays: number[] = [];
+  let calls = 0;
+  const result = await retryTransient(
+    () => {
+      calls++;
+      return calls < 3 ? Promise.reject(new Error("tls")) : Promise.resolve("sent");
+    },
+    () => false,
+    { baseDelayMs: 100, sleep: (ms) => Promise.resolve(void delays.push(ms)) }
+  );
+  assertEquals(result, "sent");
+  assertEquals(calls, 3);
+  assertEquals(delays, [100, 200]);
+});
+
+Deno.test("retryTransient retries transient outcomes and returns the last one", async () => {
+  let calls = 0;
+  const result = await retryTransient(
+    () => Promise.resolve(++calls),
+    () => true,
+    { maxAttempts: 3, sleep: () => Promise.resolve() }
+  );
+  assertEquals(result, 3);
+});
+
+Deno.test("retryTransient does not retry a non-transient outcome", async () => {
+  let calls = 0;
+  await retryTransient(
+    () => Promise.resolve(++calls),
+    () => false,
+    { sleep: () => Promise.resolve() }
+  );
+  assertEquals(calls, 1);
+});
+
+Deno.test("retryTransient rethrows after exhausting attempts", async () => {
+  let caught: unknown;
+  try {
+    await retryTransient(
+      () => Promise.reject(new Error("boom")),
+      () => false,
+      {
+        maxAttempts: 2,
+        sleep: () => Promise.resolve(),
+      }
+    );
+  } catch (err) {
+    caught = err;
+  }
+  assertEquals((caught as Error).message, "boom");
 });
