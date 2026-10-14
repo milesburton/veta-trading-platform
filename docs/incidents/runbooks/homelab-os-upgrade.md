@@ -46,7 +46,7 @@ exists in 24.04 repos, or Docker config breaks), fix the runbook below
 ## Pre-upgrade checklist (prod)
 
 ```bash
-ssh miles@<server-host>
+ssh <user>@<server-host>
 
 # 1. Confirm disk has headroom — upgrade needs ~5 GB free
 df -h /

@@ -57,7 +57,7 @@ curl -sS http://<gpu-host>:11434/api/tags | jq '.models[].name'
 End-to-end check of LLM-advisory:
 
 ```bash
-curl -sS -X POST http://veta.home/api/llm-advisory/advisories \
+curl -sS -X POST "$VETA_PLATFORM_URL/api/llm-advisory/advisories" \
   -H 'Content-Type: application/json' \
   --cookie "$YOUR_SESSION_COOKIE" \
   -d '{"symbol":"AAPL"}'

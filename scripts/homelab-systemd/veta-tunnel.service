@@ -11,6 +11,7 @@ RestartSec=10s
 
 Environment=AUTOSSH_GATETIME=0
 Environment=AUTOSSH_POLL=30
+EnvironmentFile=/etc/veta-tunnel/env
 
 ExecStart=/usr/bin/autossh -M 0 -N \
   -o ServerAliveInterval=30 \
@@ -21,7 +22,7 @@ ExecStart=/usr/bin/autossh -M 0 -N \
   -o UserKnownHostsFile=/etc/veta-tunnel/known_hosts \
   -i /etc/veta-tunnel/id_ed25519 \
   -R 18443:127.0.0.1:443 \
-  veta-tunnel@ovh.agileview.co.uk
+  veta-tunnel@${VETA_EDGE_HOST}
 
 User=root
 

@@ -45,6 +45,12 @@ cd frontend && npm run electron:dev
 | `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
 
+## Internal network details
+
+This repository is public, so addresses and hostnames of the deployment environment are never committed. Private (RFC 1918) addresses, internal hostnames and login names live in OpenBao or in untracked `.env` files and are referenced through environment variables. Documentation uses placeholders such as `<gpu-host>` or `<server-host>`.
+
+`scripts/check-private-network-details.sh` enforces this. It runs as the last pre-commit step against staged files and in CI against every tracked file. Test files are exempt. To block specific names as well, list one extended regular expression per line in `.private-network-denylist` (untracked) or set `PRIVATE_NETWORK_DENYLIST` in your environment.
+
 ## Secrets
 
 Production credentials live in [OpenBao](https://openbao.org), a self-hosted secrets manager running on the production server as its own compose project (`deploy/openbao/compose.yml`, container `veta-openbao`). It listens on `127.0.0.1:8200` only. No container talks to it: the deploy reads secrets and passes them to Docker Compose. Running the vault itself (health, upgrades, backup and restore) is covered on the [OpenBao page](/veta-trading-platform/platform/supporting/openbao/).

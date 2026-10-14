@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GATEWAY_CONTAINER="${VETA_GATEWAY_CONTAINER:-veta-gateway-1}"
-PLATFORM_URL="${VETA_PLATFORM_URL:-http://veta.home}"
+PLATFORM_URL="${VETA_PLATFORM_URL:-http://localhost}"
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'

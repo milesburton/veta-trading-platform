@@ -125,6 +125,9 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
+      - name: No internal network details in tracked files
+        run: scripts/check-private-network-details.sh all
+
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.7.x

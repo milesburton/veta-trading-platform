@@ -23,6 +23,7 @@ sudo apt-get install -y autossh
 sudo install -d -m 0700 -o root -g root /etc/veta-tunnel
 sudo ssh-keygen -t ed25519 -N "" -C veta-tunnel@homelab -f /etc/veta-tunnel/id_ed25519
 sudo install -m 0644 /path/to/repo/scripts/homelab-systemd/veta-tunnel.service /etc/systemd/system/
+echo 'VETA_EDGE_HOST=<edge-host>' | sudo install -m 0600 /dev/stdin /etc/veta-tunnel/env
 
 # 3. host-prune
 sudo install -m 0644 /path/to/repo/scripts/homelab-systemd/veta-host-prune.{service,timer} /etc/systemd/system/
