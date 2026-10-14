@@ -22,7 +22,7 @@ The visual anomalies suite is a required merge gate. It walks 10 scenarios (logi
 
 Pixel-diff screenshot regression cannot catch these because the previous screenshot was also wrong; the bug looks identical to its baseline.
 
-Tolerance is **1px**. Elements with `clip` or `clip-path` are filtered out (legitimate visual trimming). Elements with the `sr-only` class are also skipped; those are intentionally clipped accessibility text for screen readers.
+Tolerance is **1px**. Absolutely positioned elements with `clip` or `clip-path` are filtered out (legitimate visual trimming). Elements with the `sr-only` class are also skipped; those are intentionally clipped accessibility text for screen readers.
 
 ### Accessibility violations
 
@@ -33,7 +33,7 @@ Tolerance is **1px**. Elements with `clip` or `clip-path` are filtered out (legi
 - Link distinguishability (links that rely on colour alone to differ from surrounding text)
 - Form labelling (inputs without an associated label)
 
-The `region` rule is disabled because Starlight pages have their own landmark structure that does not pass axe's default heuristic.
+The `region` rule is disabled in `captureAnomalies`.
 
 ## Scenarios run
 
@@ -56,7 +56,7 @@ Theme variants exist because a dark-mode change can silently break contrast on i
 
 ## Report shape
 
-`captureAnomalies(page, scenarioName)` returns and accumulates:
+`captureAnomalies(page, scenarioName)`, defined in the spec, returns and accumulates an `AnomalyReport` (types in `tests/helpers/visualAnomalies.ts`):
 
 ```typescript
 type AnomalyReport = {
@@ -72,16 +72,17 @@ type AnomalyReport = {
   }>;
   axe: Array<{
     id: string;
-    impact: "minor" | "moderate" | "serious" | "critical";
+    impact: string | null;
     description: string;
     helpUrl: string;
     nodeCount: number;
-    sampleSelectors: string[];   // first 3 affected elements
+    sampleSelector?: string;
+    targets?: Array<{ selector: string; html: string }>;   // first 5 affected nodes
   }>;
 };
 ```
 
-After all tests run, the suite writes the array of reports to `docs/visual-anomalies/report.json`.
+After all tests run, the suite writes `docs/visual-anomalies/report.json`, containing `generatedAt`, a per-scenario summary (`overflowCount`, `axeCount`) and the full `reports` array.
 
 ## In CI
 
