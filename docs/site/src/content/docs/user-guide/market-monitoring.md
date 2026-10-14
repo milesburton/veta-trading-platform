@@ -60,7 +60,7 @@ The header bar shows live system status:
 | Feed status (green dot + "live") | All data feeds are current                                    |
 | Feed status (amber + "slow")     | Some feeds are delayed                                        |
 | Feed status (red + "stale")      | Data feeds are offline                                        |
-| Market Data depth (e.g. "3d")   | Average history depth across tracked symbols; the tooltip shows the symbol count and minimum depth |
+| Market Data depth (e.g. "5 sym · 3d") | Symbol count and average history depth across tracked symbols; the tooltip adds the minimum depth |
 | Service health dots              | Green/red indicators for each backend service                 |
 
 When the minimum data depth is below 7 days, analytics accuracy is limited. Below 6 hours, scenario analysis and volatility estimates are unreliable.
