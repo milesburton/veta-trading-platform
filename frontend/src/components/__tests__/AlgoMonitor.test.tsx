@@ -1,4 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { STRATEGIES } from "@shared/primitives";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { AlgoMonitor } from "@veta/frontend/components/AlgoMonitor";
 import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
@@ -393,6 +394,14 @@ describe("AlgoMonitor – strategy filter", () => {
     expect(screen.queryByText("AAPL")).not.toBeInTheDocument();
     expect(screen.getByText("MSFT")).toBeInTheDocument();
     expect(screen.queryByText("GOOGL")).not.toBeInTheDocument();
+  });
+
+  it("offers every strategy as a filter option", () => {
+    renderMonitor(orders);
+    const values = Array.from(screen.getByRole("combobox").querySelectorAll("option")).map(
+      (option) => option.getAttribute("value")
+    );
+    expect(values).toEqual(["ALL", ...STRATEGIES]);
   });
 });
 
