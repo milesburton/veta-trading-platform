@@ -1,6 +1,7 @@
 import { useSignal } from "@preact/signals-react";
 import { ExchangeBadge, useExchangeStatus } from "@veta/frontend/components/ExchangeBadge.tsx";
 import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
 import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
@@ -14,7 +15,7 @@ import type {
 } from "@veta/frontend/types.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { memo, useEffect, useMemo, useRef } from "react";
-import { List } from "react-window";
+import { List, useListRef } from "react-window";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";
@@ -295,6 +296,7 @@ const Row = memo(function Row({
 
 export function MarketLadder() {
   const broadcast = useChannelOut();
+  const channelIn = useChannelIn();
   const { outgoing } = useChannelContext();
   const channelHex = outgoing !== null ? (CHANNEL_COLOURS[outgoing]?.hex ?? null) : null;
   const assets = useAppSelector((s) => s.market.assets);
@@ -316,6 +318,8 @@ export function MarketLadder() {
   const sectorFilter = useSignal("All");
   const localSelected = useSignal<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useListRef(null);
+  const scrollPending = useRef(false);
   const listHeight = useSignal(400);
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
 
@@ -368,6 +372,30 @@ export function MarketLadder() {
     ro.observe(containerRef.current);
     return () => ro.disconnect();
   }, [listHeight]);
+
+  const incomingAsset = channelIn.selectedAsset;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: localSelected, search and sectorFilter are stable signal refs
+  useEffect(() => {
+    if (!incomingAsset || incomingAsset === localSelected.value) return;
+    const target = assets.find((a) => a.symbol === incomingAsset);
+    if (!target) return;
+    const visible = filtered.some((a) => a.symbol === incomingAsset);
+    if (!visible) {
+      search.value = "";
+      sectorFilter.value = "All";
+    }
+    localSelected.value = incomingAsset;
+    scrollPending.current = true;
+  }, [incomingAsset, assets]);
+
+  useEffect(() => {
+    if (!scrollPending.current) return;
+    const index = filtered.findIndex((a) => a.symbol === localSelected.value);
+    if (index < 0) return;
+    scrollPending.current = false;
+    listRef.current?.scrollToRow({ index, align: "smart" });
+  }, [filtered, listRef, localSelected.value]);
 
   function onSelectAsset(symbol: string | null) {
     localSelected.value = symbol;
@@ -506,6 +534,7 @@ export function MarketLadder() {
 
       <div ref={containerRef} className="flex-1 overflow-hidden" data-testid="ladder-table">
         <List<RowData>
+          listRef={listRef}
           rowComponent={Row as Parameters<typeof List<RowData>>[0]["rowComponent"]}
           rowCount={filtered.length}
           rowHeight={ROW_HEIGHT}
