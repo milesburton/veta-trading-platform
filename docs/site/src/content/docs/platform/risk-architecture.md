@@ -12,14 +12,17 @@ guarantees that follow.
 ## The chokepoint
 
 Every order, regardless of source, is published to the Kafka topic
-`orders.new`. The only consumer of that topic is the OMS service.
+`orders.new`. The OMS is the only service that acts on it; the gateway also subscribes, but only to push order events to connected clients.
 The OMS performs three pre-trade checks before publishing
 `orders.submitted` (which is the topic downstream services act on):
 
 1. **Local limit checks** in the OMS itself: `max_order_qty`,
    `max_daily_notional`, `allowed_strategies`,
    `dark_pool_access` enforced against the user's `trading_limits`
-   row.
+   row. `max_daily_notional` is compared with the single order's
+   notional (quantity times limit price), not a running daily total,
+   and an order without a limit price has a notional of zero, so it
+   passes this check (tracked in #849).
 2. **Risk-engine pre-trade check** via HTTP `POST /check` to the
    risk-engine service. The check evaluates configured risk rules
    (position concentration, order count, kill-switch state, etc.)
@@ -34,11 +37,12 @@ If any check rejects, the order is published to `orders.rejected`
 with a structured reason and never reaches `orders.submitted`. No
 downstream service (algo strategies, EMS, dark-pool router,
 RFQ service) consumes from `orders.new` directly; they all
-consume `orders.submitted` (or further-downstream topics).
+consume `orders.submitted`, `orders.routed` (the algo strategies) or
+topics further downstream.
 
 ## Producers of `orders.new`
 
-The following six call sites publish to `orders.new`. Each is a
+The following seven call sites, in five files, publish to `orders.new`. Each is a
 known and intentional entry point. The integration test described
 below fails if any new producer is added without being added to
 the allowlist.
@@ -60,8 +64,9 @@ or downstream topics directly.
 ## What this design guarantees
 
 - **No route bypasses risk.** A new feature can only submit an
-  order by publishing to `orders.new`. OMS is the only consumer of
-  that topic; no other service consumes from it. Bypassing risk
+  order by publishing to `orders.new`. OMS is the only service that
+  acts on that topic (the gateway reads it only to push events to
+  clients). Bypassing risk
   requires modifying OMS, not a new feature service.
 - **Risk-engine outages reject, not allow.** The catch branch in
   OMS publishes `orders.rejected` with a "risk service unavailable"
@@ -109,7 +114,7 @@ file is not in the allowlist.
 
 The allowlist is small and the rule is simple:
 
-- **`orders.new` producers**: six files listed above.
+- **`orders.new` producers**: the five files listed above.
 - **`orders.submitted` producers**: exactly one file, `oms/oms-server.ts`.
 
 If a future PR adds a producer outside this set, the test fails. The

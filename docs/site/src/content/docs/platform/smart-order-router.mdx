@@ -97,6 +97,6 @@ This is a simulation. Real production SORs handle order-protection compliance (R
 ## Source map
 
 - [`backend/src/ems/venue-router.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/venue-router.ts): best-venue selection across venue books
-- [`backend/src/ems/fill-math.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/fill-math.ts): venue table, weighted-random fallback picker, fill math, liquidity-flag generator
-- [`backend/src/ems/ems-server.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/ems-server.ts): consumes child orders, applies venue + fill + impact
+- [`backend/src/ems/fill-math.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/fill-math.ts): venue table, weighted-random fallback picker, fill math, fees
+- [`backend/src/ems/ems-server.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/ems/ems-server.ts): consumes child orders, applies venue + fill + impact, and picks the liquidity flag (`pickLiquidityFlag`)
 - [`backend/src/algo/sniper-strategy.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/algo/sniper-strategy.ts): SNIPER's best-price routing across the same venue set
