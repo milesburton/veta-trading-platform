@@ -122,6 +122,7 @@ export default defineConfig({
                 { label: "0001 Zero-downtime deploys on plain compose", slug: "platform/decisions/0001-rolling-deploys-on-plain-compose" },
                 { label: "0002 Blue-green deploys", slug: "platform/decisions/0002-blue-green-deploys" },
                 { label: "0003 Market-session and auction enforcement", slug: "platform/decisions/0003-market-session-and-auction-enforcement" },
+                { label: "0006 Discord triage LLM provider", slug: "platform/decisions/0006-discord-triage-llm-provider" },
               ],
             },
             {

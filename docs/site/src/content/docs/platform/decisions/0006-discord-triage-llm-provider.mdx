@@ -1,0 +1,67 @@
+---
+title: "ADR 0006: LLM provider and failure handling for Discord ticket triage"
+description: "Discord bug triage generated tickets with a CPU-only Ollama model inside the main stack, which timed out under host load and left reporters without a reply. Records the options for hosting the model and the failure handling that applies whichever is chosen."
+---
+
+**Status:** Proposed
+
+**Date:** 2026-10-14
+
+## Context
+
+A member types `Raise. <what's wrong>` in the Discord channel, or mentions the bot. The
+`discord-bot` service asks an LLM to turn the free text into a ticket title and description,
+then files a GitHub issue. Triage is configured through `LLM_PROVIDER`, with `ollama` and
+`anthropic` providers available alongside a mock.
+
+In production the bot used Ollama with `qwen2.5:3b` running on CPU in the same compose
+stack as the trading services. On 2026-10-14 a `Raise.` request reached the bot, the model
+accepted a 157 token prompt, and the 120 second abort timeout fired without any output. The
+host load average was about twice its core count, and the Ollama container is limited to
+3 GB of memory with no CPU reservation. The reporter received no visible response.
+
+Two further weaknesses made the failure silent:
+
+- The generation timeout is 120 seconds, far longer than a person waits in a chat channel.
+- The fallback reply ("triage unavailable") is posted through the same Discord REST client
+  that intermittently fails with TLS errors, and the post is not retried.
+
+## Decision
+
+Two parts, independent of each other.
+
+**1. Failure handling, regardless of provider.** The bot must always tell the reporter what
+happened.
+
+- Reduce the triage generation timeout to a value measured in tens of seconds.
+- On timeout or provider error, post the fallback reply that points to the in-app
+  "Raise a ticket" button.
+- Retry Discord REST posts a small, bounded number of times on transient network errors.
+
+**2. Host the model on the dedicated GPU machine.** Run Ollama on the GPU host instead of on
+CPU in the main stack, and point `LLM_OLLAMA_BASE_URL` at it. Inference then no longer
+competes with the trading services for CPU.
+
+This is marked Proposed because it adds a dependency (below) and the choice between the
+options should be confirmed before it is implemented.
+
+## Alternatives considered
+
+| Option | For | Against |
+| --- | --- | --- |
+| Keep CPU Ollama in the stack, add a CPU reservation | No new dependency | Takes cores from trading services on an already oversubscribed host; a 3B model on CPU stays slow |
+| Ollama on the GPU host | Fast inference, no contention with the stack, no per-request cost, ticket text stays on the private network | A second machine to keep available; a network hop; model lifecycle managed separately |
+| Anthropic provider | No local inference to operate, fast, already implemented | Ticket text leaves the private network; per-request cost; a new secret to hold in the vault; a hosted service dependency |
+
+## Consequences
+
+- Triage depends on the GPU host being reachable. The failure handling above is what makes
+  that acceptable: when the host is down, reporters get the fallback reply within seconds
+  instead of silence.
+- The bot's health endpoint should report triage provider reachability separately from the
+  Discord gateway connection, because a connected gateway says nothing about whether
+  tickets can be filed.
+- The platform's compose files no longer need to run an Ollama container for triage. Any
+  other consumer of the in-stack Ollama service must be checked before removing it.
+- If the GPU host proves unreliable, switching to the Anthropic provider is a configuration
+  change, not a code change.
