@@ -288,5 +288,5 @@ After ~30 s the tunnel is up and the deployment URL is live.
 For the server side of deployment (auto-pull, prune, etc.) see:
 
 - [veta-auto-pull](../supporting/veta-auto-pull): main to server continuous deploy
-- [veta-host-prune](../supporting/veta-host-prune): weekly Docker prune
+- [veta-host-prune](../supporting/veta-host-prune): daily Docker prune
 - [Synthetic probe](../supporting/synthetic-probe): outside-in liveness check

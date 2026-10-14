@@ -35,12 +35,12 @@ they cannot trivially compromise GitHub itself or GHCR.
 
 | Asset                                 | Sensitivity                                        | Where it lives                                                          | Who legitimately reads it               |
 | ------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------- |
-| Trading limits and risk configuration | High (bypass equals unbounded loss)                | Postgres `risk_config_versions`                                         | `risk-engine`, admin role               |
-| Order history                         | High (regulatory artefact, must be tamper-evident) | Postgres `orders`, journal Kafka topic                                  | `journal`, trader, admin                |
+| Trading limits and risk configuration | High (bypass equals unbounded loss)                | Postgres `risk.config_versions`                                         | `risk-engine`, admin role               |
+| Order history                         | High (regulatory artefact, must be tamper-evident) | Postgres `journal.events`, journal Kafka topics                                  | `journal`, trader, admin                |
 | User session tokens                   | High (direct authentication bypass)                | Browser cookie, validated by `user-service` per request                 | `user-service`                          |
 | Backend service credentials           | High (DB password, broker keys when wired)         | OpenBao on the server; container environments at runtime                | The service that owns the credential    |
 | Trading-decision pipeline             | High (manipulation is market abuse)                | In-memory state across `feature-engine`, `signal-engine`, `risk-engine` | The pipeline services                   |
-| Audit log integrity                   | High (needed to reconstruct any incident)          | Postgres `audit_events`, journal Kafka topic                            | `journal`, admin (read), no one (write) |
+| Audit log integrity                   | High (needed to reconstruct any incident)          | Postgres `journal.events` and `risk.events`, journal Kafka topics                            | `journal`, admin (read), no one (write) |
 | Market data                           | Low (synthetic or delayed-public)                  | `market-data` service memory, Redpanda topics                           | All trading services                    |
 
 ## Attack surfaces
@@ -98,17 +98,17 @@ hurdles in order.
    - **Control**: the cookie carries an opaque token; role is looked up
      server-side every request.
 4. They try to bypass the risk engine by hitting an undocumented route.
-   - **Control**: gateway routes are explicitly enumerated; an audit
-     test for "every order-creating route invokes risk-engine" is on
-     the deferred list (see professional-standards: _Bypass-resistance
-     proven by integration test_).
+   - **Control**: gateway routes are explicitly enumerated, and
+     `risk-bypass.test.ts` fails if any file outside an allowlist
+     publishes to `orders.new` or `orders.submitted` (see
+     [Risk architecture](../risk-architecture/)).
 
 ### Chain 3: Compromised npm dependency ships a crypto-miner
 
 1. A transitive dep is hijacked and pushes a malicious patch release.
 2. CI builds the image with the bad dep and pushes to GHCR.
-   - **Control**: Dependabot watches for advisories; planned CodeQL
-     and `gitleaks` will catch a class of compromises but not all.
+   - **Control**: Dependabot watches for advisories; CodeQL and
+     `gitleaks` run in CI and catch a class of compromises but not all.
 3. The server auto-pull deploys the image to prod.
    - **Control**: per-container CPU and memory limits cap how much
      the miner can consume; alerts on sustained CPU saturation are
@@ -138,9 +138,10 @@ hurdles in order.
    - **Control**: journal subscribes with a bounded consumer; per-topic
      retention is configured; backpressure surfaces as visible lag.
 3. Topic disk fills up.
-   - **Control**: Redpanda retention plus disk-monitor reporting; rate
-     limiting per consumer is planned (see professional-standards:
-     _Rate limiting per endpoint, per IP, per user_).
+   - **Control**: Redpanda retention plus disk-monitor reporting; the
+     gateway applies a per-IP and per-user token-bucket rate limit
+     (see professional-standards: _Rate limiting per endpoint, per IP,
+     per user_).
 
 ### Chain 5: XSS via a market-data string, attacker reads session token
 
@@ -152,8 +153,12 @@ hurdles in order.
 3. They try to read the cookie from JavaScript.
    - **Control**: session cookie is `httpOnly`, so JS cannot read it.
 4. They try to exfiltrate other DOM state.
-   - **Control**: a Content Security Policy is on the deferred list;
-     today the defence is React's escaping plus the `httpOnly` cookie.
+   - **Control**: the edge sets a Content-Security-Policy with
+     `default-src 'self'` and `connect-src` limited to the platform
+     origin, which restricts where data can be sent. `script-src`
+     still allows `'unsafe-inline'`, so it does not stop injected
+     inline script; the main defences remain React's escaping and
+     the `httpOnly` cookie.
 
 ### Chain 6: Replay attack with an old auth token after revocation
 
@@ -184,8 +189,9 @@ is "Deferred" or "Partially".
   Root or Docker access on the server still yields every credential at
   once. What the vault adds is an audit log of every read, a single
   revocable read-only deploy credential, and no plaintext secrets file.
-- **No rate limiting on public endpoints.** Anyone who finds the
-  gateway can attempt a denial-of-service.
+- **Rate limiting is per source IP and per user.** The edge Traefik
+  and the gateway both apply token buckets, which blunt a single noisy
+  client but not a distributed denial-of-service.
 - **CI/CD trust boundary.** GHCR plus `BOT_PAT` is a single failure
   domain; image signing (`cosign`) is planned.
 - **No restore drill.** Backups themselves are deferred; the rehearsal

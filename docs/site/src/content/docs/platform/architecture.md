@@ -72,6 +72,7 @@ graph LR
     KAFKA["Redpanda :9092"]:::bus
     OMS["OMS :5002<br/><i>Validation + routing</i>"]:::trading
     RISK["Risk Engine :5032<br/><i>11 pre-trade checks</i>"]:::risk
+    ALGO["Algo strategies<br/><i>9 consumers, see below</i>"]:::algo
     EMS["EMS :5001<br/><i>Execution + FIX bridge</i>"]:::trading
     FIXEX["FIX Exchange :9880<br/><i>Matching engine</i>"]:::fix
     JOURNAL["Journal :5009<br/><i>PostgreSQL store</i>"]:::storage
@@ -80,8 +81,11 @@ graph LR
     KAFKA -->|"orders.new"| OMS
     OMS -->|"POST /check"| RISK
     OMS -->|"orders.routed"| KAFKA
-    KAFKA -->|"orders.routed"| EMS
+    KAFKA -->|"orders.routed"| ALGO
+    ALGO -->|"orders.child"| KAFKA
+    KAFKA -->|"orders.child"| EMS
     EMS --> FIXEX
+    EMS -->|"orders.filled"| KAFKA
     KAFKA -->|"orders.*"| JOURNAL
     EMS -->|"exec reports"| FIXARC
 
@@ -90,6 +94,7 @@ graph LR
     classDef risk fill:#ef4444,stroke:#dc2626,color:#fff
     classDef fix fill:#f472b6,stroke:#ec4899,color:#000
     classDef storage fill:#2dd4bf,stroke:#14b8a6,color:#000
+    classDef algo fill:#38bdf8,stroke:#0ea5e9,color:#000
 ```
 
 ### Algo strategies (all 9 are independent Kafka consumers)
