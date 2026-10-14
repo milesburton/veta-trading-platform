@@ -35,7 +35,7 @@ Each algo strategy exposes additional parameters:
 
 ## Trading limits
 
-Strategies your account is not allowed to use are greyed out in the strategy list with "(not permitted)". The ticket does not pre-check quantity or notional. The OMS enforces your personal limits when the order is submitted and rejects the order with a reason, for example "Order quantity 5000 exceeds your limit of 1000" or "Order notional exceeds your daily limit". A rejected order has the Rejected status in the blotter. The [risk engine](/veta-trading-platform/user-guide/risk-controls/) applies further pre-trade checks.
+Strategies your account is not allowed to use are greyed out in the strategy list with "(not permitted)". The ticket pre-checks quantity and notional against your personal limits, shows any violations in a "Trading limit violations" box and disables submission until they are resolved. The OMS enforces the same limits server-side and rejects an order that breaches them with a reason, for example "Order quantity 5000 exceeds your limit of 1000" or "Order notional exceeds your daily limit". A rejected order has the Rejected status in the blotter. The [risk engine](/veta-trading-platform/user-guide/risk-controls/) applies further pre-trade checks.
 
 ## Fixed income orders
 
