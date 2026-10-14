@@ -2,6 +2,10 @@
 set -euo pipefail
 
 MODE="${1:-staged}"
+case "$MODE" in
+  staged|all) ;;
+  *) echo "usage: $0 [staged|all]" >&2; exit 2 ;;
+esac
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
@@ -20,7 +24,6 @@ candidate_files() {
   case "$MODE" in
     staged) git diff --cached --name-only --diff-filter=ACMR ;;
     all) git ls-files ;;
-    *) echo "usage: $0 [staged|all]" >&2; exit 2 ;;
   esac | grep -vE "$EXEMPT_PATHS" || true
 }
 
