@@ -38,13 +38,14 @@ Right-click any order (or a multi-selection) to open the context menu:
 | --- | --- | --- |
 | Select and broadcast | Everyone                                      | Focus this order across linked panels  |
 | View asset in ladder | Everyone                                      | Navigate the market ladder to this asset |
+| Create similar order | Traders, single order only                    | Open the order ticket pre-filled from this order |
 | Copy order ID        | Everyone                                      | Copy the order ID to clipboard         |
 | Hold                 | Traders (own), desk-head, risk-manager, admin | Pause active orders                    |
 | Unhold               | Traders (own), desk-head, risk-manager, admin | Resume held orders                     |
 | Cancel               | Traders (own), desk-head, risk-manager, admin | Cancel active or held orders           |
 | Force Kill           | Admin, risk-manager only                      | Immediately terminate orders           |
 
-Traders can only manage their own orders. Desk-heads can manage orders from their desk. Risk-managers and admins can manage any order.
+Traders can only manage their own orders. Desk-heads, risk-managers and admins can manage any order in the blotter. Force Kill is limited to admins and risk-managers.
 
 ## Sorting and filtering
 

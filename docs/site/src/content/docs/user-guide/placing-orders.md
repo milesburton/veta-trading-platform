@@ -12,33 +12,30 @@ Orders are placed through the **Order Ticket** panel. The ticket adapts based on
 1. Select an instrument via the [Symbol Search](/veta-trading-platform/user-guide/finding-instruments/) or market ladder.
 2. Choose **BUY** or **SELL**.
 3. Enter a **Quantity** (shares) and **Limit Price**.
-4. Select a **Strategy** (LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE).
+4. Select a **Strategy** (LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, MOMENTUM).
 5. Click **Place Order**.
 
-Available strategies depend on your [trading style](/veta-trading-platform/ux/trading-styles/). High-touch traders have access to LIMIT and basic algo strategies. Low-touch and algo traders have the full range, including ICEBERG, SNIPER, and ARRIVAL_PRICE.
+Available strategies depend on the strategies enabled on your account, which an admin sets and which usually follow your [trading style](/veta-trading-platform/ux/trading-styles/).
 
 ## Strategy parameters
 
 Each algo strategy exposes additional parameters:
 
-| Strategy      | Parameters                             |
+| Strategy | Parameters |
 | --- | --- |
-| LIMIT         | Limit price only                       |
-| TWAP          | Number of slices, participation cap    |
-| POV           | Participation rate, min/max slice size |
-| VWAP          | Historical volume curve window         |
-| ICEBERG       | Visible quantity per slice             |
-| SNIPER        | Aggression threshold                   |
-| ARRIVAL_PRICE | Slippage tolerance (bps)               |
+| LIMIT | Limit price only |
+| TWAP | Number of slices, participation cap |
+| POV | Participation rate, minimum and maximum slice size |
+| VWAP | Maximum deviation, start and end offsets in seconds |
+| ICEBERG | Visible quantity per slice |
+| SNIPER | Aggression percentage, maximum venues |
+| ARRIVAL_PRICE | Urgency, maximum slippage (bps) |
+| IS | Urgency, maximum slippage (bps), minimum and maximum slices |
+| MOMENTUM | Entry threshold (bps), maximum tranches, short and long EMA periods, cooldown ticks |
 
-## Risk limit warnings
+## Trading limits
 
-The ticket validates your order against your personal trading limits in real time:
-
-- **Quantity limit**: amber warning if quantity exceeds your max order size.
-- **Notional limit**: amber warning if price multiplied by quantity exceeds your daily notional cap.
-
-Orders that exceed limits show a warning, and the submit button is disabled.
+Strategies your account is not allowed to use are greyed out in the strategy list with "(not permitted)". The ticket pre-checks quantity and notional against your personal limits, shows any violations in a "Trading limit violations" box and disables submission until they are resolved. The OMS enforces the same limits server-side and rejects an order that breaches them with a reason, for example "Order quantity 5000 exceeds your limit of 1000" or "Order notional exceeds your daily limit". A rejected order has the Rejected status in the blotter. The [risk engine](/veta-trading-platform/user-guide/risk-controls/) applies further pre-trade checks.
 
 ## Fixed income orders
 
