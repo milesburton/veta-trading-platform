@@ -132,7 +132,7 @@ The labels are filterable in the GitHub Issues list, so the on-call view is `is:
 
 ## Troubleshooting
 
-- **Alert hit Discord but no issue appeared.** Check the gateway logs for `[ticketing]` lines. If absent, the severity wasn't CRITICAL. If `[ticketing] reason=no-token`, the env var is missing or under 20 chars. If `[ticketing] reason=github-api-failed`, the token is invalid or rate-limited.
+- **Alert hit Discord but no issue appeared.** Check the gateway logs for `[ticketing]` lines. If absent, either the severity wasn't CRITICAL or no usable token was found (the token file and `GITHUB_TICKETING_TOKEN` are both missing, or the token is under 20 characters), and ticketing silently no-ops. `[ticketing] GitHub issue creation failed` or `unreachable` means the token is invalid, rate-limited or GitHub could not be reached.
 - **Multiple duplicate issues for the same alert.** Dedupe failed — the title might be drifting (e.g. message contains a changing timestamp). Stabilise the message so the title is stable across firings.
 - **Issue created but no labels.** Token lacks `issues:write` scope. GitHub silently drops labels on insufficient scopes but the create succeeds.
 - **Comments instead of new issues forever.** Once an issue is open for >1h, dedupe stops matching and a fresh one opens. If on-call wants to keep dedupe alive, they can edit the issue title to refresh `created_at` — but it's usually better to close and let a fresh one open.

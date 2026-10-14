@@ -85,6 +85,7 @@ CREATE TABLE replay.chunks (
 );
 ```
 
+- `replay.chunks.session_id` is `ON DELETE CASCADE` in migration `0009_session_replay.sql` and was changed to `RESTRICT` by `0021_replay_chunks_restrict.sql`; the schema above shows the current state.
 - `session_id` is a UUID generated client-side before recording starts.
 - `seq` is a monotonically increasing integer per session, starting at 0.
 - `events` is a JSON array of `rrweb.eventWithTime` objects.
@@ -137,9 +138,9 @@ The exported WebM plays in every modern browser, Slack, and most video tools, so
 
 | Concern | Mitigation |
 |---|---|
-| Sensitive input data | `sessionRecorder` calls `rrweb.record({ maskAllInputs: true, maskTextClass: "veta-mask", maskTextSelector: "[data-mask]" })` — all `<input>` values are replaced with `*` |
-| Text masking | CSS class `veta-mask` and `data-mask` attributes on elements hide text content |
-| Recording toggle | Only users with `admin` or `compliance` roles can enable/disable recording via the toggle in the Session Replay panel |
+| Sensitive input data | `sessionRecorder` calls `rrweb.record` with `maskAllInputs: true` and `maskInputOptions: { password: true }`, so all input values are replaced with `*` |
+| Text masking | Elements matching `[data-sensitive]` have their text masked, and elements with the `no-replay` class are blocked from the recording entirely |
+| Recording toggle | The toggle and Delete button are shown only to `admin` and `compliance` users. The gateway itself admits `risk-manager`, `compliance`, `oncall` and `admin` to every replay endpoint, so the role check for the toggle is a UI one |
 | Session deletion | Only `admin` and `compliance` users see the **Delete** button. The FK (`ON DELETE RESTRICT`) blocks deletion while chunks exist and returns `409`, retaining event data for compliance. |
 | CORS | `replay-service` returns `corsOptions()` on `OPTIONS` preflight requests |
 
