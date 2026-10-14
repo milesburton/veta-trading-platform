@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.86.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.1...veta-trading-platform-v1.86.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* **ladder:** follow incoming channel selection and scroll to the asset ([#831](https://github.com/milesburton/veta-trading-platform/issues/831)) ([f25cac2](https://github.com/milesburton/veta-trading-platform/commit/f25cac24762cf2793ee23a1fe4fbab29742bfa19))
+
 ## [1.86.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.0...veta-trading-platform-v1.86.1) (2026-10-13)
 
 
