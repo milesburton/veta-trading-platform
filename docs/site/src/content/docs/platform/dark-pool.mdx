@@ -35,7 +35,7 @@ The `/pool/stats` endpoint deliberately returns only aggregate quantities, not p
 
 Every `EXPIRY_SWEEP_MS` (2 s by default) the pool looks for orders unmatched for longer than `ORDER_TIMEOUT_MS` (30 s by default) and handles them according to `RESIDUAL_ACTION`:
 
-- `reroute` (default), the residual quantity is sent back to the lit market via the EMS.
+- `reroute` (default): the residual quantity is sent back to the lit market via the EMS.
 - `expire`: the residual is cancelled outright.
 
 `reroute` is the realistic default for a serious participant: don't leave shares unfilled, but don't print the whole order on the lit book the second the dark cross expires either.
