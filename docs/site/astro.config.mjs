@@ -122,6 +122,8 @@ export default defineConfig({
                 { label: "0001 Zero-downtime deploys on plain compose", slug: "platform/decisions/0001-rolling-deploys-on-plain-compose" },
                 { label: "0002 Blue-green deploys", slug: "platform/decisions/0002-blue-green-deploys" },
                 { label: "0003 Market-session and auction enforcement", slug: "platform/decisions/0003-market-session-and-auction-enforcement" },
+                { label: "0004 FIX pre-trade risk checks without full OMS integration", slug: "platform/decisions/0004-fix-risk-check-without-oms-integration" },
+                { label: "0005 Deploy accessibility via a gateway-only health gate", slug: "platform/decisions/0005-deploy-visibility-gateway-health-gate" },
                 { label: "0006 Discord triage LLM provider", slug: "platform/decisions/0006-discord-triage-llm-provider" },
               ],
             },
