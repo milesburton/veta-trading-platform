@@ -124,6 +124,7 @@ export default defineConfig({
                 { label: "0004 FIX pre-trade risk checks without full OMS integration", slug: "platform/decisions/0004-fix-risk-check-without-oms-integration" },
                 { label: "0005 Deploy accessibility via a gateway-only health gate", slug: "platform/decisions/0005-deploy-visibility-gateway-health-gate" },
                 { label: "0006 Discord triage LLM provider", slug: "platform/decisions/0006-discord-triage-llm-provider" },
+                { label: "0007 Vite+ frontend toolchain", slug: "platform/decisions/0007-vite-plus-frontend-toolchain" },
               ],
             },
             {
@@ -167,6 +168,7 @@ export default defineConfig({
           items: [
             { label: "Coding approach", slug: "development/coding-approach" },
             { label: "Project structure", slug: "development/structure" },
+            { label: "Frontend toolchain", slug: "development/frontend-toolchain" },
             {
               label: "Testing",
               items: [
