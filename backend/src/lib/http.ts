@@ -3,6 +3,7 @@ import type { Duplex } from "node:stream";
 import { serve, type ServerType } from "@hono/node-server";
 import { WebSocketServer } from "ws";
 import type { ZodTypeAny, z } from "zod";
+import { trackHttpServerRequest } from "./telemetry.ts";
 
 // docs: /reference/api-gateway/
 export const CORS_HEADERS: Record<string, string> = {
@@ -148,7 +149,11 @@ export function serveFetch(
   options: { port: number; hostname?: string; signal?: AbortSignal },
   handler: (req: Request) => Response | Promise<Response>
 ): ServerType {
-  const server = serve({ port: options.port, hostname: options.hostname, fetch: handler });
+  const server = serve({
+    port: options.port,
+    hostname: options.hostname,
+    fetch: (req) => trackHttpServerRequest(req, () => handler(req)),
+  });
   server.on("upgrade", async (incoming: IncomingMessage, socket: Duplex, head: Buffer) => {
     const req = requestFromUpgrade(incoming);
     const pending: PendingUpgrade = { incoming, socket, head, upgraded: false };

@@ -8,6 +8,7 @@ import {
   injectTraceContext,
   recordGauge,
   setupProcessMetrics,
+  trackHttpServerRequest,
   withExtractedContext,
   withSpan,
 } from "../lib/telemetry.ts";
@@ -297,9 +298,9 @@ test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, an
       assertEquals([...fake.observableGauges.keys()].sort(), [
         "process_cpu_seconds_total",
         "process_memory_usage_bytes",
-        "process_runtime_deno_memory_external_bytes",
-        "process_runtime_deno_memory_heap_total_bytes",
-        "process_runtime_deno_memory_heap_used_bytes",
+        "process_runtime_nodejs_memory_external_bytes",
+        "process_runtime_nodejs_memory_heap_total_bytes",
+        "process_runtime_nodejs_memory_heap_used_bytes",
         "process_uptime_seconds",
         "v8js.memory.heap.size",
       ]);
@@ -463,4 +464,39 @@ test("[telemetry] OTEL loader failures gracefully fall back to no-op behavior", 
       assertEquals(Object.keys(carrier).length, 0);
     }
   );
+});
+
+test("[telemetry] trackHttpServerRequest counts in-flight requests and records body sizes", async () => {
+  const added: number[] = [];
+  const sizes: number[] = [];
+  const api = {
+    metrics: {
+      getMeter: () => ({
+        createUpDownCounter: () => ({ add: (value: number) => added.push(value) }),
+        createHistogram: () => ({ record: (value: number) => sizes.push(value) }),
+      }),
+    },
+  };
+  await withEnv({ OTEL_ENABLED: "true" }, async () => {
+    __setOtelApiLoaderForTests(() => Promise.resolve(api as never));
+    const req = new Request("http://localhost/orders", {
+      method: "POST",
+      body: "hello",
+      headers: { "content-length": "5" },
+    });
+    const res = await trackHttpServerRequest(req, () => new Response("ok"));
+    assertEquals(await res.text(), "ok");
+    assertEquals(added, [1, -1]);
+    assertEquals(sizes, [5]);
+  });
+});
+
+test("[telemetry] trackHttpServerRequest passes through when telemetry is disabled", async () => {
+  await withEnv({ OTEL_ENABLED: undefined }, async () => {
+    const res = await trackHttpServerRequest(
+      new Request("http://localhost/"),
+      () => new Response("plain")
+    );
+    assertEquals(await res.text(), "plain");
+  });
 });

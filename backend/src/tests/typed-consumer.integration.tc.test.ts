@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { z } from "zod";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
@@ -13,7 +14,8 @@ test({
   async fn(t) {
     const rp = await startEphemeralRedpanda();
     process.env["REDPANDA_BROKERS"] = rp.brokers;
-    const messaging = await import(`../lib/messaging.ts?broker=${encodeURIComponent(rp.brokers)}`);
+    vi.resetModules();
+    const messaging = await import("../lib/messaging.ts");
 
     const orderTopic = `typed-order-${crypto.randomUUID().slice(0, 8)}`;
     const fillTopic = `typed-fill-${crypto.randomUUID().slice(0, 8)}`;

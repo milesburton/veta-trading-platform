@@ -57,6 +57,8 @@ constructor parameter properties). `erasableSyntaxOnly` in `tsconfig.json` enfor
   `OTEL_DENO` flag is now `OTEL_ENABLED`.
 - WebSocket sockets are kept alive with ping and pong frames. The `idleTimeout` option on
   `upgradeWebSocket()` keeps its meaning, and the gateway still passes 300 seconds.
+- Node resolves host names through libuv's thread pool, which defaults to four threads. A burst of slow lookups, for example for services that are stopped, can starve unrelated connections such as the gateway's Kafka clients. `UV_THREADPOOL_SIZE=64` is set in the base image and in `supervisord.conf`.
+- kafkajs schedules a timer with a negative delay on Node 24, which Node reports as `TimeoutNegativeWarning` on every service. The base image silences that one warning with `--disable-warning`.
 - Local services load `.env` with `node --env-file-if-exists`, replacing the per-service
   dotenv import.
 - The synthetic probe on the edge host now needs Node.js 24 instead of the Deno binary. That

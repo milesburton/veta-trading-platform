@@ -6,7 +6,7 @@ FROM node:24-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--import=/app/backend/src/lib/otel-register.ts"
+ENV UV_THREADPOOL_SIZE=64
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates \
@@ -18,6 +18,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 COPY . .
+
+ENV NODE_OPTIONS="--disable-warning=TimeoutNegativeWarning --import=/app/backend/src/lib/otel-register.ts"
 
 # Drop privileges. UID/GID 1993 is kept from the previous runtime image so that
 # anything mounted writable at runtime keeps the same host ownership (chown to 1993:1993).

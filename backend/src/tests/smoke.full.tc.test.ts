@@ -501,7 +501,7 @@ test({
             asset: "AAPL",
             side: "BUY",
             quantity: 10,
-            limitPrice: 99_999,
+            limitPrice: 1_000,
             strategy: "LIMIT",
           });
           assertEquals(event, "orderAck", `Expected orderAck, got ${event}`);

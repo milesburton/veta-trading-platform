@@ -52,7 +52,20 @@ interface ObservableLike {
   removeCallback(callback: (result: ObservableResultLike) => void | Promise<void>): void;
 }
 
+interface UpDownCounterLike {
+  add(value: number, attributes?: Record<string, string | number | boolean>): void;
+}
+
+interface HistogramLike {
+  record(value: number, attributes?: Record<string, string | number | boolean>): void;
+}
+
 interface MeterLike {
+  createUpDownCounter(
+    name: string,
+    options?: { description?: string; unit?: string }
+  ): UpDownCounterLike;
+  createHistogram(name: string, options?: { description?: string; unit?: string }): HistogramLike;
   createGauge(name: string, options?: { description?: string; unit?: string }): GaugeLike;
   createObservableGauge(
     name: string,
@@ -60,6 +73,12 @@ interface MeterLike {
   ): ObservableLike;
 }
 
+interface HttpServerInstruments {
+  active: UpDownCounterLike;
+  bodySize: HistogramLike;
+}
+
+let httpInstrumentsPromise: Promise<HttpServerInstruments | null> | null = null;
 let tracerCache: TracerLike | null = null;
 let meterCache: MeterLike | null = null;
 const gaugeCache = new Map<string, GaugeLike>();
@@ -119,6 +138,44 @@ async function getMeter(): Promise<MeterLike | null> {
   }
 }
 
+function getHttpServerInstruments(): Promise<HttpServerInstruments | null> {
+  httpInstrumentsPromise ??= getMeter().then((meter) =>
+    meter
+      ? {
+          active: meter.createUpDownCounter("http.server.active_requests", {
+            description: "Number of in-flight HTTP server requests",
+            unit: "{request}",
+          }),
+          bodySize: meter.createHistogram("http.server.request.body.size", {
+            description: "Size of HTTP server request bodies",
+            unit: "By",
+          }),
+        }
+      : null
+  );
+  return httpInstrumentsPromise;
+}
+
+export async function trackHttpServerRequest(
+  req: Request,
+  handler: () => Response | Promise<Response>
+): Promise<Response> {
+  if (!isOtelEnabled()) return handler();
+  const instruments = await getHttpServerInstruments();
+  if (!instruments) return handler();
+  const attributes = { "http.request.method": req.method };
+  const contentLength = Number(req.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > 0) {
+    instruments.bodySize.record(contentLength, attributes);
+  }
+  instruments.active.add(1, attributes);
+  try {
+    return await handler();
+  } finally {
+    instruments.active.add(-1, attributes);
+  }
+}
+
 interface ProcessMetricsHandle {
   stop(): void;
 }
@@ -138,21 +195,27 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
     description: "Resident set size of the process",
     unit: "By",
   });
-  const heapUsedGauge = meter.createObservableGauge("process_runtime_deno_memory_heap_used_bytes", {
-    description: "V8 heap used by the runtime",
-    unit: "By",
-  });
+  const heapUsedGauge = meter.createObservableGauge(
+    "process_runtime_nodejs_memory_heap_used_bytes",
+    {
+      description: "V8 heap used by the runtime",
+      unit: "By",
+    }
+  );
   const heapTotalGauge = meter.createObservableGauge(
-    "process_runtime_deno_memory_heap_total_bytes",
+    "process_runtime_nodejs_memory_heap_total_bytes",
     {
       description: "V8 heap total allocated by the runtime",
       unit: "By",
     }
   );
-  const externalGauge = meter.createObservableGauge("process_runtime_deno_memory_external_bytes", {
-    description: "Memory used by C++ objects bound to JavaScript",
-    unit: "By",
-  });
+  const externalGauge = meter.createObservableGauge(
+    "process_runtime_nodejs_memory_external_bytes",
+    {
+      description: "Memory used by C++ objects bound to JavaScript",
+      unit: "By",
+    }
+  );
   const v8HeapGauge = meter.createObservableGauge("v8js.memory.heap.size", {
     description: "V8 heap size in use",
     unit: "By",
@@ -312,6 +375,7 @@ export function __setOtelApiLoaderForTests(loader: (() => Promise<OTelApiLike>) 
   tracerCache = null;
   meterCache = null;
   gaugeCache.clear();
+  httpInstrumentsPromise = null;
   processMetricsHandle = null;
 }
 
@@ -321,5 +385,6 @@ export function __resetTelemetryForTests(): void {
   tracerCache = null;
   meterCache = null;
   gaugeCache.clear();
+  httpInstrumentsPromise = null;
   processMetricsHandle = null;
 }
