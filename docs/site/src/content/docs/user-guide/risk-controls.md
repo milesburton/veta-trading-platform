@@ -30,7 +30,7 @@ If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fa
 Each trader has personal limits enforced by the OMS when an order is submitted:
 
 - **Max order quantity**: the largest single order allowed (e.g. 10,000 shares)
-- **Max daily notional**: the total notional value allowed per day (e.g. $1,000,000)
+- **Max daily notional**: the total notional value of accepted orders allowed per trading day (e.g. $1,000,000). Market orders are valued at the latest price
 - **Allowed strategies**: which algo strategies the trader can use
 
 An order that breaches a limit is rejected with the reason. The order ticket greys out strategies that are not allowed.

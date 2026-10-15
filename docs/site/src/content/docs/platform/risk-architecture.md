@@ -19,10 +19,14 @@ The OMS performs three pre-trade checks before publishing
 1. **Local limit checks** in the OMS itself: `max_order_qty`,
    `max_daily_notional`, `allowed_strategies`,
    `dark_pool_access` enforced against the user's `trading_limits`
-   row. `max_daily_notional` is compared with the single order's
-   notional (quantity times limit price), not a running daily total,
-   and an order without a limit price has a notional of zero, so it
-   passes this check (tracked in #849).
+   row. `max_daily_notional` is a cumulative per-user total for the
+   trading day (New York calendar date). Each accepted order adds its
+   notional to the user's running total, and an order that would take
+   the total above the limit is rejected without consuming any of it.
+   Notional is quantity times limit price; an order without a limit
+   price is valued at the latest market-sim price, and is rejected if
+   no price is available. The running total is held in OMS memory, so
+   it resets on an OMS restart and is not shared between OMS instances.
 2. **Risk-engine pre-trade check** via HTTP `POST /check` to the
    risk-engine service. The check evaluates configured risk rules
    (position concentration, order count, kill-switch state, etc.)

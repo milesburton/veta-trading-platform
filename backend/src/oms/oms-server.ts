@@ -33,6 +33,12 @@ import {
   OrderResumeCommandSchema,
 } from "@veta/schemas/orders";
 import { waitForUrl } from "@veta/wait-for";
+import {
+  createDailyNotionalLedger,
+  createMarketPriceSource,
+  orderReferencePrice,
+  tradingDayKey,
+} from "./daily-notional.ts";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -93,6 +99,9 @@ const DEFAULT_LIMITS: TradingLimits = {
 const MARKET_SIM_URL = `http://${
   Deno.env.get("MARKET_SIM_HOST") ?? "localhost"
 }:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+
+const dailyNotional = createDailyNotionalLedger();
+const marketPrices = createMarketPriceSource(MARKET_SIM_URL);
 
 const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }>();
 
@@ -446,13 +455,35 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  const notional = order.quantity * (order.limitPrice ?? 0);
-  if (notional > limits.max_daily_notional) {
+  const referencePrice = orderReferencePrice(
+    order.limitPrice,
+    order.limitPrice === undefined ? await marketPrices.priceFor(order.asset) : undefined
+  );
+  if (referencePrice === null) {
     await producer
       ?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
-        reason: `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
+        reason: `No reference price available for ${order.asset}, so the order notional cannot be checked against your daily limit`,
+        ts: Date.now(),
+      })
+      .catch(() => {});
+    return;
+  }
+
+  const notional = order.quantity * referencePrice;
+  const dailyDecision = dailyNotional.reserve(
+    order.userId ?? "unknown",
+    tradingDayKey(Date.now()),
+    notional,
+    limits.max_daily_notional
+  );
+  if (!dailyDecision.allowed) {
+    await producer
+      ?.send("orders.rejected", {
+        clientOrderId: order.clientOrderId,
+        userId: order.userId,
+        reason: `Order notional $${notional.toLocaleString()} would take today's total above your daily limit of $${limits.max_daily_notional.toLocaleString()} ($${dailyDecision.used.toLocaleString()} already used)`,
         ts: Date.now(),
       })
       .catch(() => {});
