@@ -8,8 +8,8 @@
     "build": "tsc && vp build",
     "preview": "vp preview",
     "new:panel": "deno run --allow-read --allow-write scripts/new-panel.ts",
-    "lint": "deno run -A npm:@biomejs/biome check src/",
-    "lint:fix": "deno run -A npm:@biomejs/biome check --write src/",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/",
     "lint:full": "npm run lint && npm run test:coverage",
     "fallow:audit": "npx fallow audit",
     "fallow:health": "npx fallow health --score --hotspots",
@@ -86,8 +86,8 @@
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
-      "deno run -A npm:@biomejs/biome check --write",
-      "bash -c './node_modules/.bin/tsc --noEmit --skipLibCheck --project tsconfig.json'"
+      "biome check --write",
+      "bash -c './node_modules/.bin/tsc --noEmit --project tsconfig.json'"
     ]
   },
   "build": {
