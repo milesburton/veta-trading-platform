@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { PriceFanPanel } from "@veta/frontend/components/PriceFanPanel";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const useGetPriceFanQuery = vi.fn();
 

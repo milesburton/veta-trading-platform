@@ -4,7 +4,7 @@ import { PanelMenu } from "@veta/frontend/components/PanelMenu";
 import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const removeTabById = vi.fn();
 

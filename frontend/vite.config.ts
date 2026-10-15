@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, lazyPlugins } from "vite-plus";
 import process from "node:process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,22 +53,22 @@ export default defineConfig(async ({ mode }) => {
     base: isElectronMode ? "./" : "/",
     define: {
       "import.meta.env.VITE_BUILD_DATE": JSON.stringify(
-        process.env.VITE_BUILD_DATE || new Date().toISOString().slice(0, 10)
+        process.env.VITE_BUILD_DATE || new Date().toISOString().slice(0, 10),
       ),
       "import.meta.env.VITE_COMMIT_SHA": JSON.stringify(process.env.VITE_COMMIT_SHA || "dev"),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
-        process.env.VITE_APP_VERSION || readPlatformVersion()
+        process.env.VITE_APP_VERSION || readPlatformVersion(),
       ),
       "import.meta.env.VITE_GITHUB_REPO_URL": JSON.stringify(
-        process.env.VITE_GITHUB_REPO_URL || "https://github.com/milesburton/veta-trading-platform"
+        process.env.VITE_GITHUB_REPO_URL || "https://github.com/milesburton/veta-trading-platform",
       ),
     },
-    plugins: [
+    plugins: lazyPlugins(() => [
       react({
         babel: { plugins: [["module:@preact/signals-react-transform"]] },
       }),
       ...extraPlugins,
-    ],
+    ]),
     resolve: {
       alias: {
         "@shared": path.resolve(__dirname, "../shared"),

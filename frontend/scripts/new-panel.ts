@@ -153,7 +153,7 @@ export function ${name}() {
 function testTemplate(a: Args): string {
   const name = componentName(a.id);
   return `import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { ${name} } from "@veta/frontend/components/${name}";
 
 describe("${name}", () => {
@@ -207,7 +207,7 @@ async function main(): Promise<void> {
   console.log(
     `  3. Run: npx biome check --write src/components/${name}.tsx src/components/dashboard`
   );
-  console.log(`  4. Test: npx vitest run src/components/__tests__/${name}.test.tsx`);
+  console.log(`  4. Test: npm run test:unit -- --run src/components/__tests__/${name}.test.tsx`);
 }
 
 if (import.meta.main) {

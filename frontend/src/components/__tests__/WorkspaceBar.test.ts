@@ -11,7 +11,7 @@ import {
 import type { IJsonModel } from "flexlayout-react";
 import { type ComponentType, createElement, type ReactNode } from "react";
 import { Provider } from "react-redux";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 
 const publishSharedWorkspaceMock = vi.fn();
 

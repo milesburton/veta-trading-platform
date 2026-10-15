@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { AlertToast } from "@veta/frontend/components/AlertToast";
 import type { Alert } from "@veta/frontend/store/alertsSlice";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const dispatch = vi.fn();
 const drawerOpenRef = { value: false };

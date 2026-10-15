@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { FixSessionsPanel } from "@veta/frontend/components/FixSessionsPanel";
 import type { FixExecution, FixSessionInfo } from "@veta/frontend/store/fixApi";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const state: {
   sessions: FixSessionInfo[];

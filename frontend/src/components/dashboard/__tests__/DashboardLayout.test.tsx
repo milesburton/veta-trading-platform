@@ -14,7 +14,7 @@ import {
 } from "@veta/frontend/components/dashboard/panelRegistry";
 import { type IJsonModel, Model } from "flexlayout-react";
 import { useContext } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 /** Build a minimal flexlayout JSON model with the given panel types */
 function makeMinimalModel(panelTypes: PanelId[]): IJsonModel {

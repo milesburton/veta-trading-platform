@@ -5,7 +5,7 @@ import { type AuthUser, authSlice } from "@veta/frontend/store/authSlice";
 import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { userApi } from "@veta/frontend/store/userApi";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 const { useAllServiceHealth } = vi.hoisted(() => ({
   useAllServiceHealth: vi.fn(() => [] as import("../../types").ServiceHealth[]),

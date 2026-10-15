@@ -3,7 +3,7 @@ import {
   isStrategyAllowedInSession,
   resolveSession,
 } from "@veta/frontend/domain/market/marketSession";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("resolveSession", () => {
   it.each([

@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LlmSubsystemPanel } from "@veta/frontend/components/LlmSubsystemPanel";
 import { llmSubsystemSlice } from "@veta/frontend/store/llmSubsystemSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const refetch = vi.fn();
 const updateState = vi.fn();

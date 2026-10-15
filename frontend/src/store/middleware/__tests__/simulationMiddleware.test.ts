@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { simulationMiddleware } from "@veta/frontend/store/middleware/simulationMiddleware";
 import { ordersSlice } from "@veta/frontend/store/ordersSlice";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 function makeOrder(over: Partial<Parameters<typeof ordersSlice.actions.orderAdded>[0]> = {}) {
   const now = Date.now();

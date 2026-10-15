@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { DataDepthPanel } from "@veta/frontend/components/DataDepthPanel";
 import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const sampleResponse = {
   totalSymbols: 2,

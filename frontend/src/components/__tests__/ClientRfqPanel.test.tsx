@@ -4,7 +4,7 @@ import { ClientRfqPanel } from "@veta/frontend/components/ClientRfqPanel";
 import type { SellSideRfq } from "@veta/frontend/components/rfq/shared";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 function makeStore() {
   return configureStore({

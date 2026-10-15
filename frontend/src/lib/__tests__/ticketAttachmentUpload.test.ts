@@ -3,7 +3,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   uploadAttachment,
 } from "@veta/frontend/lib/ticketAttachmentUpload";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 describe("MAX_ATTACHMENT_BYTES", () => {
   it("is 10MB", () => {

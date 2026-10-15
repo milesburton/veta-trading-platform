@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MarketHoursModeSwitch } from "@veta/frontend/components/MarketHoursModeSwitch";
 import type { MarketHoursConfig } from "@veta/frontend/store/gatewayApi.ts";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 function config(equity: boolean, rest: boolean): MarketHoursConfig {
   const entry = (allowOutOfHoursOverride: boolean) => ({

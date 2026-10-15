@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { ServiceHealthPanel } from "@veta/frontend/components/ServiceHealthPanel";
 import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const state: {
   byService: Record<string, { kind: "ok" | "error" | "warn"; version: string }>;

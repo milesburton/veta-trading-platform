@@ -1,5 +1,5 @@
 import { countsAsUp, isExpectedAbsence } from "@veta/frontend/lib/serviceHealth.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("isExpectedAbsence", () => {
   it("is true for a service on standby, optional or not", () => {

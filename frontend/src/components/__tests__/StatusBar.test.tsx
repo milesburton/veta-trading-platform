@@ -18,7 +18,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { type IJsonModel, Model } from "flexlayout-react";
 import { Provider } from "react-redux";
-import { vi } from "vitest";
+import { vi } from "vite-plus/test";
 
 const serviceHealthHolder = vi.hoisted(() => ({
   resolve: (_svc: { name: string }) =>
@@ -143,7 +143,7 @@ test("header exposes Grafana and User Guide external links", () => {
 });
 
 import { alertAdded } from "@veta/frontend/store/alertsSlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("StatusBar – connected state", () => {
   it("does not show disconnected banner when connected", () => {
@@ -785,7 +785,7 @@ describe("StatusBar – authenticated user", () => {
 
 import { DrawersProvider } from "@veta/frontend/components/drawers/DrawersContext";
 import type { ServiceHealth } from "@veta/frontend/types";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach } from "vite-plus/test";
 
 vi.mock("../MarketHoursModeBadge.tsx", () => ({ MarketHoursModeBadge: () => null }));
 

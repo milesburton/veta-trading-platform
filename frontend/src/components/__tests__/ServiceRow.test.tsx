@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { ServiceRow } from "@veta/frontend/components/ServiceRow";
 import { StatusDot } from "@veta/frontend/components/StatusDot";
 import type { ServiceHealth } from "@veta/frontend/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function makeSvc(overrides: Partial<ServiceHealth> = {}): ServiceHealth {
   return {

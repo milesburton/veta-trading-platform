@@ -4,7 +4,7 @@ import { RiskDashboardPanel } from "@veta/frontend/components/RiskDashboardPanel
 import { breakersSlice } from "@veta/frontend/store/breakersSlice";
 import type { RiskConfig, RiskPosition } from "@veta/frontend/store/riskApi";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const updateRiskConfig = vi.fn();
 

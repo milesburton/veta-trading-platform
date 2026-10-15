@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LoadTestPanel } from "@veta/frontend/components/LoadTestPanel";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const runLoadTest = vi.fn();
 

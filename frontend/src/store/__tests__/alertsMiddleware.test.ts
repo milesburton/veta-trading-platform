@@ -5,7 +5,7 @@ import { orderBookUpdated } from "@veta/frontend/store/marketSlice";
 import { alertsMiddleware } from "@veta/frontend/store/middleware/alertsMiddleware";
 import { orderPatched } from "@veta/frontend/store/ordersSlice";
 import type { OrderBookSnapshot } from "@veta/frontend/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 function createHarness(
   authUser: { id: string } | null = { id: "u1" },

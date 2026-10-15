@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { TradeRecommendationPanel } from "@veta/frontend/components/TradeRecommendationPanel";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const getRecommendations = vi.fn();
 

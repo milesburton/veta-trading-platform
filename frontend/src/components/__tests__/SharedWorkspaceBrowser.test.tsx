@@ -4,7 +4,7 @@ import { SharedWorkspaceBrowser } from "@veta/frontend/components/SharedWorkspac
 import { authSlice } from "@veta/frontend/store/authSlice";
 import type { IJsonModel } from "flexlayout-react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const listSharedWorkspaces = vi.fn();
 const fetchSharedWorkspace = vi.fn();

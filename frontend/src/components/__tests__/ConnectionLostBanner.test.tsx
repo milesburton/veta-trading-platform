@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { ConnectionLostBanner } from "@veta/frontend/components/ConnectionLostBanner";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 function makeStore(opts: { connected: boolean; connectionFailures: number }) {
   return configureStore({

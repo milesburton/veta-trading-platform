@@ -1,6 +1,6 @@
 import { buildRoutingSankeyData } from "@veta/frontend/domain/orderRouting/sankeyData";
 import type { ChildOrder, OrderRecord } from "@veta/frontend/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const now = Date.now();
 

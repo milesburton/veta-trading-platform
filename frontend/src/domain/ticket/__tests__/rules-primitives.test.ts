@@ -13,7 +13,7 @@ import { runSpreadCheck } from "@veta/frontend/domain/ticket/rules/spreadCheck";
 import { runStaticValidation } from "@veta/frontend/domain/ticket/rules/staticValidation";
 import type { TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
 import type { TradingLimits } from "@veta/frontend/store/authSlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const LIMITS: TradingLimits = {
   max_order_qty: 10_000,

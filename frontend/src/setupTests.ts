@@ -1,5 +1,5 @@
-import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import "@testing-library/jest-dom/vitest";
+import { vi } from "vite-plus/test";
 
 // vite.config.ts injects VITE_GITHUB_REPO_URL via `define:` at build time,
 // which doesn't fire under vitest. Seed it so githubLinks helpers + the

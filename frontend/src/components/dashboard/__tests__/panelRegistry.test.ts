@@ -8,7 +8,7 @@ import {
   PANEL_TITLES,
   SINGLETON_PANELS,
 } from "@veta/frontend/components/dashboard/panelRegistry.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("PANEL_IDS completeness", () => {
   it("contains at least 15 panels", () => {

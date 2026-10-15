@@ -8,7 +8,7 @@ import {
 } from "@veta/frontend/components/dashboard/layoutUtils.ts";
 import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
 import { Model } from "flexlayout-react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 // Helpers
 

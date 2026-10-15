@@ -3,7 +3,7 @@ import {
   marketHoursModeDetail,
 } from "@veta/frontend/domain/market/marketHoursMode";
 import type { MarketHoursConfig } from "@veta/frontend/store/gatewayApi";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function config(overrides: [boolean, boolean, boolean, boolean]): MarketHoursConfig {
   const [equity, fx, commodity, bond] = overrides;

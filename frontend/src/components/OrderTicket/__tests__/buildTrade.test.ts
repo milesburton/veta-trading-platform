@@ -1,6 +1,6 @@
 import type { BondDef } from "@veta/frontend/data/bondUniverse.ts";
 import type { AssetDef } from "@veta/frontend/types.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { type BuildTradeInputs, buildTrade } from "../buildTrade";
 
 const APPL: AssetDef = {

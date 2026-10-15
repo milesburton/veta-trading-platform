@@ -1,6 +1,6 @@
 import type { LlmSubsystemStatus } from "@veta/frontend/store/llmSubsystemSlice";
 import { llmStateReceived, llmSubsystemSlice } from "@veta/frontend/store/llmSubsystemSlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = llmSubsystemSlice;
 const initialState = { status: null, lastUpdated: null };

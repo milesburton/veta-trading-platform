@@ -1,5 +1,5 @@
 import { parseQuickTrade } from "@veta/frontend/domain/quickTrade/parse";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("parseQuickTrade — happy paths", () => {
   it("parses basic shorthand", () => {

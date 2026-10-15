@@ -4,7 +4,7 @@ import { CandlestickChart } from "@veta/frontend/components/CandlestickChart";
 import { themeSlice } from "@veta/frontend/store/themeSlice.ts";
 import type { OhlcCandle } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 function renderWithStore(ui: React.ReactElement) {
   const testStore = configureStore({ reducer: { theme: themeSlice.reducer } });

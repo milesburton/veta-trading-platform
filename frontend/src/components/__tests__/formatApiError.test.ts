@@ -1,5 +1,5 @@
 import { formatApiError } from "@veta/frontend/components/LoginPage";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("formatApiError", () => {
   it("falls back to a generic message for null", () => {

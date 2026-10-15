@@ -4,7 +4,7 @@ import { VolatilityProfilePanel } from "@veta/frontend/components/VolatilityProf
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import * as React from "react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const useGetVolProfileQuery = vi.fn();
 

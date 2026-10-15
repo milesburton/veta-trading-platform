@@ -4,7 +4,7 @@ import {
   formatCenterTime,
   isCenterOpen,
 } from "@veta/frontend/domain/market/financialCenters";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function centerById(id: string) {
   const center = FINANCIAL_CENTERS.find((c) => c.id === id);

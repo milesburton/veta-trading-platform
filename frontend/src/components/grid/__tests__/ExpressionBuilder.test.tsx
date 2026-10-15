@@ -4,7 +4,7 @@ import {
   ExpressionBuilderInline,
 } from "@veta/frontend/components/grid/ExpressionBuilder";
 import type { FieldDef } from "@veta/frontend/types/gridPrefs";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const dispatch = vi.fn();
 const setFilterExpr = vi.fn((payload: unknown) => ({

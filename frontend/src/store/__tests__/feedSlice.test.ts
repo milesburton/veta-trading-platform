@@ -1,5 +1,5 @@
 import { type FeedState, feedReceived, feedSlice } from "@veta/frontend/store/feedSlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = feedSlice;
 

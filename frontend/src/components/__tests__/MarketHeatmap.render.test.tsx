@@ -7,7 +7,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { AssetDef } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function makeAsset(over: Partial<AssetDef>): AssetDef {
   return {

@@ -13,7 +13,7 @@ import {
   STORAGE_KEY_PREFIX,
 } from "@veta/frontend/components/dashboard/layoutModels.ts";
 import { Model } from "flexlayout-react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function countTabs(model: ReturnType<typeof makeDefaultModel>): number {
   let count = 0;

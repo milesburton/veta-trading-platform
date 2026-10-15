@@ -10,7 +10,7 @@ import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderRecord } from "@veta/frontend/types";
 import * as React from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("recharts", () => {
   const MockContainer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;

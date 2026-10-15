@@ -3,7 +3,7 @@ import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { simulationMiddleware } from "@veta/frontend/store/middleware/simulationMiddleware";
 import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import type { OrderRecord } from "@veta/frontend/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 function makeStore() {
   return configureStore({

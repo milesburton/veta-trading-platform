@@ -4,7 +4,7 @@ import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { gatewayMiddleware, parseCandles } from "@veta/frontend/store/middleware/gatewayMiddleware";
 import { newsApi } from "@veta/frontend/store/newsApi";
 import { setSelectedAsset } from "@veta/frontend/store/uiSlice";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 class FakeWebSocket {
   static instances: FakeWebSocket[] = [];

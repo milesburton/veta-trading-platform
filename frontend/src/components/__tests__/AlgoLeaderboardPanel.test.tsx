@@ -4,7 +4,7 @@ import { AlgoLeaderboardPanel } from "@veta/frontend/components/AlgoLeaderboardP
 import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import type { OrderRecord } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
   return {

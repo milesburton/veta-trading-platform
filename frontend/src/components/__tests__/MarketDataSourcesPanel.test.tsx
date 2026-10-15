@@ -5,7 +5,7 @@ import { authSlice } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const useGetSourcesQuery = vi.fn();
 const useGetOverridesQuery = vi.fn();

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { ALERTS_DRAWER_ID, AlertDrawer, AlertList } from "@veta/frontend/components/AlertDrawer";
 import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/DrawersContext";
 import { useEffect } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const dispatch = vi.fn();
 const addPanel = vi.fn();

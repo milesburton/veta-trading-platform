@@ -1,5 +1,5 @@
 import { formatPrice } from "@veta/frontend/utils/formatPrice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("formatPrice", () => {
   it("formats equity symbols to 2 decimals", () => {

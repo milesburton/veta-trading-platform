@@ -1,5 +1,5 @@
 import { sha256Async as fromAlias, sha256Async as fromRelative } from "@veta/frontend/lib/sha256";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("@veta/frontend/* alias", () => {
   it("resolves to the same module as a relative import", () => {

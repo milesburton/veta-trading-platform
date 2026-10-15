@@ -7,7 +7,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderBookSnapshot } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 // lightweight-charts renders to canvas — stub it
 vi.mock("lightweight-charts", () => {

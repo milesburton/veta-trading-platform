@@ -6,7 +6,7 @@ import {
   publishSharedWorkspace,
   saveWorkspacePrefs,
 } from "@veta/frontend/hooks/useWorkspaceSync";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 describe("useWorkspaceSync helpers", () => {
   const fetchMock = vi.fn();

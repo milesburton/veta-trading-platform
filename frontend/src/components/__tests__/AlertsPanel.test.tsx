@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { AlertsPanel } from "@veta/frontend/components/AlertsPanel";
 import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("../AlertDrawer.tsx", () => ({
   AlertList: ({

@@ -55,7 +55,7 @@ surface is:
 
 ```bash
 # Component tests
-cd frontend && ./node_modules/.bin/vitest run src/components/__tests__/<PanelName>Panel
+cd frontend && npm run test:unit -- --run src/components/__tests__/<PanelName>Panel
 
 # Type-check everything (catches missing PANEL_TITLES entries)
 ./node_modules/.bin/tsc --noEmit --skipLibCheck

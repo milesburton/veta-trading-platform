@@ -1,5 +1,5 @@
 import { patchTabConfig } from "@veta/frontend/components/dashboard/DashboardLayout";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("patchTabConfig", () => {
   it("sets outgoing channel on matching tab", () => {
