@@ -1,0 +1,64 @@
+---
+title: "ADR 0007: Vite+ as the frontend toolchain"
+description: "The frontend moved from Vite, Vitest and Biome to the Vite+ toolchain, with Oxlint and Oxfmt replacing Biome. Records the reasons, the options considered and the consequences."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-10-15
+
+## Context
+
+The frontend used four separate tools, each with its own version, configuration and install
+step: Vite for the dev server and builds, Vitest for unit tests, Biome for linting and
+formatting, and ad hoc `npx` calls in hooks and CI. Dependency installation in CI and in the
+pre-commit hook differed between jobs.
+
+Vite+ bundles the build, test, lint and format commands behind one `vp` binary and one
+pinned version. It aliases `vite` to its own core package, runs Vitest, and provides Oxlint
+and Oxfmt.
+
+## Decision
+
+Adopt Vite+ for the frontend, the Electron build, CI, the git hooks and the docs site, in
+six steps that were merged separately:
+
+1. Frontend build and test (`vp dev`, `vp build`, `vp test`).
+2. Electron build, which needed no code change beyond step 1.
+3. CI dependency installation through `setup-vp`, pinned by commit.
+4. Docs site dependency installation through `setup-vp`.
+5. Git hooks run frontend checks through the local `vp` binary.
+6. Biome replaced by Oxlint and Oxfmt.
+
+Choices made along the way:
+
+- `@vitejs/plugin-react` stays, because the Babel transform for signals depends on it.
+- Oxlint runs without type-aware rules. They fail on `moduleResolution: node10` in the root
+  and Electron tsconfig files, and the type-check already covers that ground.
+- The React compiler rules (`immutability`, `refs`, `purity`, `set-state-in-effect`,
+  `static-components`) are off. They flag every signal `.value` write, which is the
+  intended pattern in this codebase.
+- Oxfmt options match the previous Biome output (100 columns, double quotes, semicolons,
+  ES5 trailing commas), so the reformat touched 43 files rather than the 119 that default
+  options would have changed.
+- The root `deno task lint` runs Oxlint through Deno at a pinned version, because the
+  backend CI job has no frontend `node_modules`.
+
+## Alternatives considered
+
+| Option | For | Against |
+| --- | --- | --- |
+| Stay on Vite, Vitest and Biome | No migration work | Four tools to version and install separately |
+| ESLint and Prettier | Largest rule ecosystem | Slower, more configuration, no gain over Oxlint for the rules in use |
+| Oxlint and Oxfmt without Vite+ | Same lint and format speed | Leaves the build, test and install split unchanged |
+
+## Consequences
+
+- One pinned toolchain version in `frontend/package.json`, installed the same way locally,
+  in hooks and in CI.
+- The Vitest major version moved from 4 to 5 as part of the migration.
+- `vp lint` and `vp fmt` do not discover the config files on their own, so scripts pass
+  `-c .oxlintrc.json` and `-c .oxfmtrc.json` explicitly.
+- Inline suppressions use `oxlint-disable-next-line`. Biome directives are no longer read.
+- Some Biome rules have no Oxlint equivalent. The accessibility rule `useSemanticElements`
+  was dropped, and its suppression comments removed.

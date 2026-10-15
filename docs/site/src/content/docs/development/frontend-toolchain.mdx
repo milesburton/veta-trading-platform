@@ -1,0 +1,72 @@
+---
+title: Frontend Toolchain
+description: How the frontend is built, tested, linted and formatted with Vite+, and where each tool is configured.
+sidebar:
+  order: 3
+---
+
+The frontend uses Vite+, which provides one `vp` command for the
+dev server, builds, unit tests, linting and formatting. The decision and its alternatives are
+recorded in [ADR 0007](/veta-trading-platform/platform/decisions/0007-vite-plus-frontend-toolchain/).
+
+## Commands
+
+Run these from `frontend/`. The npm scripts wrap `vp`, so either form works.
+
+| Task | Command |
+| --- | --- |
+| Dev server | `npm run dev` |
+| Production build | `npm run build` |
+| Unit tests | `npm run test:unit` or `./node_modules/.bin/vp test run` |
+| Coverage | `npm run test:coverage` |
+| Lint and format check | `npm run lint` |
+| Fix lint and formatting | `npm run lint:fix` |
+| Type-check | `npm run typecheck` |
+
+Use the local binary, `./node_modules/.bin/vp`, in scripts and hooks. A global `vp` is not
+required and is not what CI uses.
+
+## Lint and format configuration
+
+| Tool | Config | Scope |
+| --- | --- | --- |
+| Oxlint (`vp lint`) | `frontend/.oxlintrc.json` | `frontend/src/` |
+| Oxfmt (`vp fmt`) | `frontend/.oxfmtrc.json` | `frontend/src/` |
+
+`vp lint` and `vp fmt` do not find these files on their own. Pass `-c .oxlintrc.json` and
+`-c .oxfmtrc.json`, as the npm scripts do. Without the flag, Oxfmt falls back to its default
+style and reports over two hundred files as unformatted.
+
+The rule set follows the previous Biome configuration: correctness rules as errors,
+`exhaustive-deps` as a warning, `no-explicit-any` and `no-array-index-key` as errors, plus the
+click and focus accessibility rules. Type-aware rules and the React compiler rules are off,
+for the reasons in the ADR.
+
+## Suppressing a rule
+
+Use a next-line directive with the reason after the dashes:
+
+```ts
+// oxlint-disable-next-line react-hooks/exhaustive-deps -- fetchAll is stable
+```
+
+In JSX, wrap the same text as `{/* oxlint-disable-next-line rule -- reason */}`. List several
+rules in one directive, separated by commas. Two consecutive directive lines do not both
+apply, because each one covers only the line directly after it.
+
+## Where it runs
+
+| Place | What runs |
+| --- | --- |
+| Pre-commit hook | Frontend lint, type-check and unit tests through the local `vp` binary |
+| `deno task lint` | Oxlint at a pinned version through Deno, so the backend CI job needs no frontend install |
+| CI frontend job | `setup-vp` installs dependencies, then `npm run lint` and `npm run typecheck` |
+| Clean-state workflow | `npm run lint:fix`, failing if it changes any file |
+| Electron build | `vp build --mode electron` |
+
+## Notes
+
+- `vite` is aliased in `frontend/package.json` to the Vite+ core package, and `vitest` is
+  pinned to the version Vite+ expects. Do not bump either on its own.
+- `@vitejs/plugin-react` remains in use because the signals Babel transform runs through it.
+- Tests import from `vite-plus/test`.
