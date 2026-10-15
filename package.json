@@ -7,7 +7,7 @@
     "prepare": "git config core.hooksPath .husky",
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
-    "lint": "cd frontend && ./node_modules/.bin/vp lint -c .oxlintrc.json src/ && ./node_modules/.bin/vp fmt -c .oxfmtrc.json --check src/",
+    "lint": "deno run -A npm:oxlint@1.88.0 -c frontend/.oxlintrc.json frontend/src/",
     "lint:fix": "cd frontend && ./node_modules/.bin/vp lint -c .oxlintrc.json --fix src/ && ./node_modules/.bin/vp fmt -c .oxfmtrc.json src/",
     "format": "cd frontend && ./node_modules/.bin/vp fmt -c .oxfmtrc.json src/",
     "format:fix": "cd frontend && ./node_modules/.bin/vp fmt -c .oxfmtrc.json src/",
