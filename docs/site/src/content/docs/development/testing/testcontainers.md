@@ -77,6 +77,7 @@ Every file listed in the `test:testcontainers` task in `deno.json` runs as part 
 | `registration.integration.tc.test.ts` | user-service | Registration persists the trader archetype to `trading_limits` |
 | `preferences.integration.tc.test.ts` | user-service + gateway | User preferences and saved workspaces |
 | `trading-limits-lookup.integration.tc.test.ts` | user-service | Service-token access to the per-user trading limits route |
+| `fix.integration.tc.test.ts` | market-sim, fix-exchange, fix-gateway, fix-archive, risk-engine | FIX Logon and NewOrderSingle over real TCP, plus the pre-trade risk check |
 | `venues.integration.tc.test.ts` | RFQ, dark pool, CCP stack | RFQ sell-side, dark-pool crossing, CCP novation |
 | `product-service.integration.tc.test.ts` | product-service | Structured-product lifecycle |
 | `analytics-services.integration.tc.test.ts` | analytics, news, recommendation stack | Analytics, news and recommendation HTTP behaviour |

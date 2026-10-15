@@ -10,8 +10,8 @@ import { startStack, type TestStack } from "./testcontainers/services.ts";
 // sessionPhase, so reaching HALTED/CLOSED from a fresh start here would be
 // impractically slow for this suite.
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
-const FIX_EXCHANGE_TCP_PORT = 19_880;
-const FIX_EXCHANGE_TCP_PORT_RISK = 19_882;
+const FIX_EXCHANGE_TCP_PORT = 9_880;
+const FIX_EXCHANGE_TCP_PORT_RISK = FIX_EXCHANGE_TCP_PORT;
 
 const SOH = "\x01";
 
@@ -36,7 +36,7 @@ class FixMessageReader {
     while (true) {
       const msgEnd = this.#buffer.indexOf(`${SOH}10=`);
       if (msgEnd !== -1) {
-        const trailerEnd = msgEnd + 7;
+        const trailerEnd = msgEnd + 8;
         if (trailerEnd <= this.#buffer.length) {
           const raw = this.#buffer.slice(0, trailerEnd);
           this.#buffer = this.#buffer.slice(trailerEnd);
@@ -45,12 +45,13 @@ class FixMessageReader {
       }
       if (Date.now() > deadline) throw new Error("timed out waiting for a FIX message");
       const remaining = deadline - Date.now();
+      let timer: number | undefined;
       const bytesRead = await Promise.race([
         this.#conn.read(readBuf),
-        new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error("read timeout")), Math.max(remaining, 1))
-        ),
-      ]);
+        new Promise<null>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("read timeout")), Math.max(remaining, 1));
+        }),
+      ]).finally(() => clearTimeout(timer));
       if (bytesRead === null) throw new Error("connection closed while waiting for a message");
       this.#buffer += new TextDecoder().decode(readBuf.subarray(0, bytesRead));
     }
@@ -98,21 +99,23 @@ Deno.test({
           signal: AbortSignal.timeout(5_000),
         });
         assertEquals(exRes.status, 200);
+        await exRes.body?.cancel();
         const gwRes = await fetch(`${url(stack, "fix-gateway")}/health`, {
           signal: AbortSignal.timeout(5_000),
         });
         assertEquals(gwRes.status, 200);
+        await gwRes.body?.cancel();
       });
 
       await t.step("/sessions reflects a Logon'd counterparty and clears on disconnect", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const before = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+          signal: AbortSignal.timeout(5_000),
+        });
+        assertEquals((await before.json()).sessions, []);
+
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
-          const before = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
-            signal: AbortSignal.timeout(5_000),
-          });
-          assertEquals((await before.json()).sessions, []);
-
           await conn.write(new TextEncoder().encode(logonMsg()));
           await reader.next();
 
@@ -145,7 +148,7 @@ Deno.test({
       });
 
       await t.step("NewOrderSingle over a direct TCP session gets acked and filled", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -186,7 +189,7 @@ Deno.test({
       });
 
       await t.step("the fill is archived to fix-archive via fix.execution", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         let clOrdId: string;
         try {
@@ -231,7 +234,7 @@ Deno.test({
       });
 
       await t.step("Logon from an unprovisioned SenderCompID is rejected", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
           const logon = encode([
@@ -252,7 +255,7 @@ Deno.test({
       });
 
       await t.step("NewOrderSingle carrying Account round-trips to the archive", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         let clOrdId: string;
         try {
@@ -299,7 +302,7 @@ Deno.test({
       });
 
       await t.step("NewOrderSingle with a market order routed to IEX is rejected", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -330,7 +333,7 @@ Deno.test({
       });
 
       await t.step("OrderCancelRequest for an unknown order gets OrderCancelReject", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -356,7 +359,7 @@ Deno.test({
       });
 
       await t.step("OrderCancelRequest stops a working order before it fully fills", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -419,7 +422,7 @@ Deno.test({
       });
 
       await t.step("OrderCancelReplaceRequest changes price on a working order", async () => {
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -524,7 +527,10 @@ Deno.test({
         // disable market-hours enforcement so this isn't flaky depending
         // on the real-world clock, same rationale as
         // risk-rejection.integration.tc.test.ts.
-        "risk-engine": { RISK_ENGINE_MARKET_HOURS_ENFORCED: "false" },
+        "risk-engine": {
+          RISK_ENGINE_MARKET_HOURS_ENFORCED: "false",
+          RISK_ENGINE_TEST_MODE: "1",
+        },
       },
       startupTimeoutMs: 60_000,
     });
@@ -542,7 +548,7 @@ Deno.test({
         }
         assert(mid > 0, "no live AAPL price within 20s");
 
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT_RISK });
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT_RISK });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
@@ -587,7 +593,18 @@ Deno.test({
         }
         assert(mid > 0, "no live AAPL price within 20s");
 
-        const conn = await Deno.connect({ hostname: "localhost", port: FIX_EXCHANGE_TCP_PORT_RISK });
+        for (const symbol of ["MSFT", "GOOGL", "AMZN", "NVDA"]) {
+          const seeded = await fetch(`${url(stack, "risk-engine")}/test/positions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: "GATEWAY", symbol, netQty: 100, avgPrice: 100 }),
+            signal: AbortSignal.timeout(5_000),
+          });
+          assertEquals(seeded.status, 200);
+          await seeded.body?.cancel();
+        }
+
+        const conn = await Deno.connect({ hostname: "127.0.0.1", port: FIX_EXCHANGE_TCP_PORT_RISK });
         const reader = new FixMessageReader(conn);
         try {
           await conn.write(new TextEncoder().encode(logonMsg()));
