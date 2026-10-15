@@ -6,7 +6,6 @@ import "#veta/bootstrap";
  * Divides order into N time slices; on each interval publishes "orders.child"
  * to the bus. EMS subscribes and executes the fill.
  */
-
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
@@ -84,7 +83,13 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     if (i > 0) await new Promise<void>((r) => setTimeout(r, INTERVAL_MS));
 
     const now = Date.now();
-    const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, inFlight, now);
+    const budget = await readSliceBudget(
+      readProgress,
+      order.orderId,
+      order.quantity,
+      inFlight,
+      now
+    );
     if (!budget) {
       logger.warn(`Slice ${i + 1}/${numSlices} skipped for ${order.orderId}: journal unavailable`);
       continue;

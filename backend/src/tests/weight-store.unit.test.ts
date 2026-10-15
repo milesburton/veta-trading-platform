@@ -2,7 +2,6 @@ import { test } from "#veta/test";
 import { assertEquals, assertStrictEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 // fallow-ignore-file complexity
-
 import {
   createWeightStore,
   DEFAULT_WEIGHTS,

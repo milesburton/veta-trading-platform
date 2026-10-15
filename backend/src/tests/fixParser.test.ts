@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-
 import { decode, encode, SOH, utcTimestamp, validateChecksum } from "../fix/fix-parser.ts";
 
 test("[fix-parser] encode starts with 8=FIX.4.4", () => {

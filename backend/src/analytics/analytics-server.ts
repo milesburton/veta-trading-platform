@@ -16,7 +16,6 @@ import "#veta/bootstrap";
  *   GET  /vol-surface/:symbol      — Implied vol surface (5 expiries × 9 strikes)
  *   GET  /health
  */
-
 import { decodePathSegment, json, serveJsonService } from "#veta/http";
 import { logger } from "#veta/logger";
 import { armIdleExit } from "../shared/idle-exit.ts";

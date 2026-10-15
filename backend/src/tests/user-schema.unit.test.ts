@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assert } from "#veta/test-assert";
-
 import {
   AlertCreateSchema,
   AuthorizeRequestSchema,

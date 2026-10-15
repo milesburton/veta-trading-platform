@@ -3,7 +3,6 @@ import "#veta/bootstrap";
  * Central Counterparty Clearing (CCP) Service.
  * See platform/post-trade-ccp for novation, margin, and settlement details.
  */
-
 import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";

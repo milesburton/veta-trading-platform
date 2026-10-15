@@ -4,13 +4,21 @@ import { serveFetch } from "#veta/http";
 // FIX 4.4 Exchange — TCP listener on port 9880 (internal only)
 // Accepts FIX sessions from fix-gateway, processes NewOrderSingle messages,
 // and returns ExecutionReports using simulated fills from the market-sim.
-
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer } from "#veta/messaging";
 import { isKnownCounterparty } from "./counterparties.ts";
-import { CxlRejReason, CxlRejResponseTo, ExecType, MsgType, OrdStatus, OrdType, Side, Tag } from "./fix-dictionary.ts";
 import { computeFill } from "./fill-math.ts";
+import {
+  CxlRejReason,
+  CxlRejResponseTo,
+  ExecType,
+  MsgType,
+  OrdStatus,
+  OrdType,
+  Side,
+  Tag,
+} from "./fix-dictionary.ts";
 import { isMarketOpenForOrderEntry } from "./fix-market-session.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";

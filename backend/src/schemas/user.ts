@@ -1,5 +1,5 @@
-import { TRADER_ARCHETYPE_IDS } from "#veta/trader-archetypes";
 import { z } from "zod";
+import { TRADER_ARCHETYPE_IDS } from "#veta/trader-archetypes";
 import { UserIdSchema } from "./primitives.ts";
 
 export const SessionValidateSchema = z.object({

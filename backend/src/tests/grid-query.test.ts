@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-
 import { applyExprGroup, applySort, evalExprGroup, evalOp } from "../lib/grid-query.ts";
 import type { ExprGroup } from "../types/grid-query.ts";
 

@@ -1,9 +1,18 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
+import { z } from "zod";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { z } from "zod";
-import { CORS_HEADERS, corsOptions, decodePathSegment, json, jsonError, parseBody, parseQuery, serveJsonService } from "../lib/http.ts";
+import {
+  CORS_HEADERS,
+  corsOptions,
+  decodePathSegment,
+  json,
+  jsonError,
+  parseBody,
+  parseQuery,
+  serveJsonService,
+} from "../lib/http.ts";
 
 test("json wraps data as a 200 JSON response with CORS headers by default", async () => {
   const res = json({ ok: true });
@@ -34,7 +43,10 @@ test("corsOptions returns a 204 with no body and CORS headers", async () => {
   const res = corsOptions();
   assertEquals(res.status, 204);
   assertEquals(await res.text(), "");
-  assertEquals(res.headers.get("Access-Control-Allow-Methods"), CORS_HEADERS["Access-Control-Allow-Methods"]);
+  assertEquals(
+    res.headers.get("Access-Control-Allow-Methods"),
+    CORS_HEADERS["Access-Control-Allow-Methods"]
+  );
 });
 
 const Schema = z.object({ name: z.string(), age: z.number() });
@@ -162,7 +174,6 @@ test("serveJsonService delegates non-/health requests to the provided handler", 
     await once(server, "close");
   }
 });
-
 
 test("decodePathSegment decodes a percent-encoded segment", () => {
   assertEquals(decodePathSegment("BRK%2EB"), "BRK.B");

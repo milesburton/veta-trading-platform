@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assertEquals, assertRejects } from "#veta/test-assert";
-
 import { createAnthropicProvider } from "./anthropic.ts";
 
 test("anthropic provider: defaults to claude-opus-4-8 for the mock model id", () => {
@@ -15,14 +14,8 @@ test("anthropic provider: honours an explicit model id", () => {
 });
 
 test("anthropic provider: is available only when an api key is present", async () => {
-  assertEquals(
-    await createAnthropicProvider("mock-v1", "sk-test").isAvailable(),
-    true,
-  );
-  assertEquals(
-    await createAnthropicProvider("mock-v1", "").isAvailable(),
-    false,
-  );
+  assertEquals(await createAnthropicProvider("mock-v1", "sk-test").isAvailable(), true);
+  assertEquals(await createAnthropicProvider("mock-v1", "").isAvailable(), false);
 });
 
 test("anthropic provider: generate throws without an api key", async () => {
@@ -30,7 +23,7 @@ test("anthropic provider: generate throws without an api key", async () => {
   await assertRejects(
     () => provider.generate("hi", "system"),
     Error,
-    "ANTHROPIC_API_KEY is not set",
+    "ANTHROPIC_API_KEY is not set"
   );
 });
 
@@ -56,8 +49,8 @@ test("anthropic provider: generate returns text blocks, token usage and latency"
           stop_sequence: null,
           usage: { input_tokens: 12, output_tokens: 34 },
         }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
     );
   }) as typeof fetch;
 
@@ -85,9 +78,12 @@ test("anthropic provider: generate surfaces an API error", async () => {
   globalThis.fetch = (() =>
     Promise.resolve(
       new Response(
-        JSON.stringify({ type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } }),
-        { status: 401, headers: { "content-type": "application/json" } },
-      ),
+        JSON.stringify({
+          type: "error",
+          error: { type: "authentication_error", message: "invalid x-api-key" },
+        }),
+        { status: 401, headers: { "content-type": "application/json" } }
+      )
     )) as typeof fetch;
 
   try {

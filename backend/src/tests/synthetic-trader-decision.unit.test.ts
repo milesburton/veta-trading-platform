@@ -144,7 +144,13 @@ test("[synthetic-trader-decision] trades a priced symbol when the least concentr
     random: sequenceRandom([0.1, 0.1, 0.1, 0.5]),
   });
   const tracker = new PositionTracker();
-  tracker.recordAck({ clientOrderId: "c1", asset: "AAPL", side: "BUY", quantity: 100, limitPrice: 200 });
+  tracker.recordAck({
+    clientOrderId: "c1",
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: 200,
+  });
   const decision = engine.decide(tracker, (symbol) => (symbol === "AAPL" ? 200 : undefined));
   assertEquals(decision.kind, "order");
   if (decision.kind === "order") assertEquals(decision.order.asset, "AAPL");
@@ -152,5 +158,8 @@ test("[synthetic-trader-decision] trades a priced symbol when the least concentr
 
 test("[synthetic-trader-decision] every FX desk symbol is in the market-sim FX universe", () => {
   const simulated = new Set(FX_ASSETS.map((a) => a.symbol));
-  assertEquals(DESK_CONFIG.fx.symbols.filter((symbol) => !simulated.has(symbol)), []);
+  assertEquals(
+    DESK_CONFIG.fx.symbols.filter((symbol) => !simulated.has(symbol)),
+    []
+  );
 });

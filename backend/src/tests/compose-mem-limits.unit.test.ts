@@ -1,6 +1,6 @@
-import { runCommand } from "../lib/process.ts";
 import { test } from "#veta/test";
 import { assert } from "#veta/test-assert";
+import { runCommand } from "../lib/process.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 

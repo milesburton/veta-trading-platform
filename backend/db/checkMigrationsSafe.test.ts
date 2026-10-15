@@ -10,37 +10,58 @@ test("flags DROP TABLE", () => {
 
 test("flags DROP COLUMN", () => {
   const v = scanSql("m.sql", "ALTER TABLE orders DROP COLUMN legacy_field;");
-  assertEquals(v.some((x) => x.rule === "drop-column"), true);
+  assertEquals(
+    v.some((x) => x.rule === "drop-column"),
+    true
+  );
 });
 
 test("flags DELETE without WHERE", () => {
   const v = scanSql("m.sql", "DELETE FROM sessions;");
-  assertEquals(v.some((x) => x.rule === "delete-without-where"), true);
+  assertEquals(
+    v.some((x) => x.rule === "delete-without-where"),
+    true
+  );
 });
 
 test("allows DELETE with WHERE", () => {
   const v = scanSql("m.sql", "DELETE FROM sessions WHERE expired = true;");
-  assertEquals(v.some((x) => x.rule === "delete-without-where"), false);
+  assertEquals(
+    v.some((x) => x.rule === "delete-without-where"),
+    false
+  );
 });
 
 test("flags TRUNCATE", () => {
   const v = scanSql("m.sql", "TRUNCATE TABLE audit_log;");
-  assertEquals(v.some((x) => x.rule === "truncate"), true);
+  assertEquals(
+    v.some((x) => x.rule === "truncate"),
+    true
+  );
 });
 
 test("flags RENAME COLUMN", () => {
   const v = scanSql("m.sql", "ALTER TABLE orders RENAME COLUMN qty TO quantity;");
-  assertEquals(v.some((x) => x.rule === "rename-column"), true);
+  assertEquals(
+    v.some((x) => x.rule === "rename-column"),
+    true
+  );
 });
 
 test("flags NOT NULL column without default", () => {
   const v = scanSql("m.sql", "ALTER TABLE orders ADD COLUMN venue TEXT NOT NULL;");
-  assertEquals(v.some((x) => x.rule === "add-not-null-no-default"), true);
+  assertEquals(
+    v.some((x) => x.rule === "add-not-null-no-default"),
+    true
+  );
 });
 
 test("allows NOT NULL column with default", () => {
   const v = scanSql("m.sql", "ALTER TABLE orders ADD COLUMN venue TEXT NOT NULL DEFAULT 'XOFF';");
-  assertEquals(v.some((x) => x.rule === "add-not-null-no-default"), false);
+  assertEquals(
+    v.some((x) => x.rule === "add-not-null-no-default"),
+    false
+  );
 });
 
 test("allows additive CREATE TABLE IF NOT EXISTS", () => {

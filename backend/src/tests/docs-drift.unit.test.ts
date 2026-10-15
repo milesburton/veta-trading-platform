@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
+import { readDirEntries, walk } from "#veta/fs-walk";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { readDirEntries, walk } from "#veta/fs-walk";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const DOCS_ROOT = `${REPO_ROOT}docs/site/src/content/docs`;
@@ -200,9 +200,7 @@ test("[docs-drift] test-inventory.json exists and matches the files discovered b
     );
   }
 
-  const excludes: string[] = JSON.parse(
-    await readFile(`${REPO_ROOT}vitest.exclude.json`, "utf8")
-  );
+  const excludes: string[] = JSON.parse(await readFile(`${REPO_ROOT}vitest.exclude.json`, "utf8"));
   const ignored = excludes.map((glob) => {
     const body = glob
       .replace(/^\*\*\//, "")

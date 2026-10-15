@@ -1,5 +1,5 @@
-import { json, jsonError, parseBody } from "#veta/http";
 import { z } from "zod";
+import { json, jsonError, parseBody } from "#veta/http";
 import { isAllowedAttachmentType } from "../../../../shared/attachmentTypes.ts";
 import { type GatewayContext, isResponse } from "../context.ts";
 
@@ -148,7 +148,10 @@ export async function handleTicketAttachmentsRoute(
     return jsonError("file exceeds 10MB limit", 413);
   }
   if (!isAllowedAttachmentType(contentType)) {
-    return jsonError("only PNG, JPEG, GIF, WebP, MP4, WebM and QuickTime attachments are supported", 400);
+    return jsonError(
+      "only PNG, JPEG, GIF, WebP, MP4, WebM and QuickTime attachments are supported",
+      400
+    );
   }
 
   const objectKey = `${authResult.user.id}/${crypto.randomUUID()}-${sanitizeFileName(fileName)}`;

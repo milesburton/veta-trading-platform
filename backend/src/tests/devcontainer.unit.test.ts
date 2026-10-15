@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
+import { parse as parseJsonc } from "jsonc-parser";
 import { test } from "#veta/test";
 import { assert, assertEquals, assertStringIncludes } from "#veta/test-assert";
-import { parse as parseJsonc } from "jsonc-parser";
 import { runCommand } from "../lib/process.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
@@ -56,20 +56,12 @@ test("[devcontainer] post-start.sh has no hardcoded workspace path that diverges
 
 test("[devcontainer] post-start.sh is syntactically valid bash", async () => {
   const { code, stderr } = await runCommand("bash", ["-n", POST_START_SH]);
-  assertEquals(
-    code,
-    0,
-    `bash -n reported syntax errors in post-start.sh:\n${stderr}`
-  );
+  assertEquals(code, 0, `bash -n reported syntax errors in post-start.sh:\n${stderr}`);
 });
 
 test("[devcontainer] post-create.sh is syntactically valid bash", async () => {
   const { code, stderr } = await runCommand("bash", ["-n", POST_CREATE_SH]);
-  assertEquals(
-    code,
-    0,
-    `bash -n reported syntax errors in post-create.sh:\n${stderr}`
-  );
+  assertEquals(code, 0, `bash -n reported syntax errors in post-create.sh:\n${stderr}`);
 });
 
 test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so the script does not need to hardcode it", async () => {

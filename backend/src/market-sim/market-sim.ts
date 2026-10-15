@@ -1,26 +1,26 @@
 import "#veta/bootstrap";
-import { serveFetch, upgradeWebSocket } from "#veta/http";
 import { marketSimPool } from "#veta/db";
+import { serveFetch, upgradeWebSocket } from "#veta/http";
 import { logger } from "#veta/logger";
 import type { OrderBookLevel, OrderBookSnapshot, MarketFeed } from "#veta/market-client";
 import { createProducer } from "#veta/messaging";
-import { intradayVolumeFactor } from "#veta/time-scale";
 import { recordGauge } from "#veta/telemetry";
+import { intradayVolumeFactor } from "#veta/time-scale";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bond-assets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodity-assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fx-assets.ts";
-import { parseAllowOutOfHours } from "./market-hours.ts";
-import {
-  applyMarketHoursUpdate,
-  createMarketHoursSettingsStore,
-  marketHoursUpdateSchema,
-} from "./market-hours-settings.ts";
 import {
   ASSET_CLASSES,
   type AssetClass,
   buildMarketHoursPayload,
   isAssetClassOpen,
 } from "./market-hours-by-asset-class.ts";
+import {
+  applyMarketHoursUpdate,
+  createMarketHoursSettingsStore,
+  marketHoursUpdateSchema,
+} from "./market-hours-settings.ts";
+import { parseAllowOutOfHours } from "./market-hours.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -111,8 +111,8 @@ createProducer("market-sim")
 // tick loop to enqueue indefinitely can create an oversized batch and starve
 // this service's HTTP event loop. Market ticks are ephemeral and periodic full
 // snapshots let consumers recover from a skipped diff.
-const publishMarketTick = createSingleFlightPublisher<unknown>((value) =>
-  producer?.send("market.ticks", value) ?? Promise.resolve()
+const publishMarketTick = createSingleFlightPublisher<unknown>(
+  (value) => producer?.send("market.ticks", value) ?? Promise.resolve()
 );
 
 const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
@@ -163,9 +163,7 @@ let marketMinute = 0;
 let tickCount = 0;
 const TICKS_PER_MINUTE = 240;
 
-const DEFAULT_ALLOW_OUT_OF_HOURS = parseAllowOutOfHours(
-  process.env.MARKET_SIM_ALLOW_OUT_OF_HOURS
-);
+const DEFAULT_ALLOW_OUT_OF_HOURS = parseAllowOutOfHours(process.env.MARKET_SIM_ALLOW_OUT_OF_HOURS);
 let allowOutOfHours: Record<AssetClass, boolean> = {
   equity: DEFAULT_ALLOW_OUT_OF_HOURS,
   fx: DEFAULT_ALLOW_OUT_OF_HOURS,
@@ -336,10 +334,10 @@ function buildSnapshotMessage(feed: MarketFeed): string {
   const snapshot =
     feed === "full"
       ? {
-        ...base,
-        orderBook: computeOrderBook(marketData, allSymbols),
-        venueBooks: computeVenueBooks(marketData, allSymbols),
-      }
+          ...base,
+          orderBook: computeOrderBook(marketData, allSymbols),
+          venueBooks: computeVenueBooks(marketData, allSymbols),
+        }
       : base;
   return JSON.stringify({ event: "marketData", data: snapshot });
 }
@@ -410,18 +408,16 @@ setInterval(() => {
     const results = [...new Set(clients.values())]
       .map((feed) => ({ feed, data: forFeed(diff, feed) }))
       .filter(({ data }) => !isEmptyDiff(data))
-      .map(({ feed, data }) =>
-        ({
-          feed,
-          result: fanOutTick(
-            clientsOn(feed),
-            JSON.stringify({ event: "marketUpdate", data }),
-            laggingClients,
-            () => snapshotFor(feed),
-            lagThresholdBytes(snapshotBytes[feed])
-          ),
-        })
-      );
+      .map(({ feed, data }) => ({
+        feed,
+        result: fanOutTick(
+          clientsOn(feed),
+          JSON.stringify({ event: "marketUpdate", data }),
+          laggingClients,
+          () => snapshotFor(feed),
+          lagThresholdBytes(snapshotBytes[feed])
+        ),
+      }));
     const processedFeeds = new Set(results.map((r) => r.feed));
     const carriedLagging = [...laggingClients].filter((socket) => {
       const feed = clients.get(socket);

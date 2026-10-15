@@ -1,7 +1,6 @@
-import { test } from "#veta/test";
 import { runNode } from "#veta/run-node";
+import { test } from "#veta/test";
 import { assert, assertEquals, assertRejects } from "#veta/test-assert";
-
 import {
   __resetTelemetryForTests,
   __setOtelApiLoaderForTests,

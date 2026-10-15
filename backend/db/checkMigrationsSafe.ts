@@ -52,7 +52,8 @@ const RULES: Rule[] = [
   },
   {
     id: "add-not-null-no-default",
-    pattern: /\bADD\s+COLUMN\b(?![\s\S]*?\bIF\s+NOT\s+EXISTS\b[\s\S]*?)?[\s\S]*?\bNOT\s+NULL\b(?![\s\S]*?\bDEFAULT\b)/i,
+    pattern:
+      /\bADD\s+COLUMN\b(?![\s\S]*?\bIF\s+NOT\s+EXISTS\b[\s\S]*?)?[\s\S]*?\bNOT\s+NULL\b(?![\s\S]*?\bDEFAULT\b)/i,
     why: "a NOT NULL column with no default rejects the live version's inserts",
   },
 ];
@@ -95,9 +96,7 @@ async function main(): Promise<void> {
   }
   const dir = join(dirname, "migrations");
 
-  const targets = args.length > 0
-    ? args
-    : (await migrationFiles(dir)).map((f) => join(dir, f));
+  const targets = args.length > 0 ? args : (await migrationFiles(dir)).map((f) => join(dir, f));
 
   const allViolations: Violation[] = [];
   for (const path of targets) {

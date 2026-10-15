@@ -1,6 +1,6 @@
+import { Pool } from "#veta/db";
 import { test } from "#veta/test";
 import { assertEquals, assertNotEquals, assertStrictEquals } from "#veta/test-assert";
-import { Pool } from "#veta/db";
 import {
   createWeightStore,
   DEFAULT_WEIGHTS,

@@ -1,14 +1,9 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import {
-  bookFromSnapshot,
-  matchAgainstSnapshot,
-} from "../ems/matching-engine.ts";
+import { bookFromSnapshot, matchAgainstSnapshot } from "../ems/matching-engine.ts";
 import type { OrderBookSnapshot } from "../lib/market-sim-client.ts";
 
-function snapshot(
-  overrides: Partial<OrderBookSnapshot> = {},
-): OrderBookSnapshot {
+function snapshot(overrides: Partial<OrderBookSnapshot> = {}): OrderBookSnapshot {
   return {
     bids: [
       { price: 99.9, size: 100 },
@@ -36,22 +31,14 @@ test("[matching-engine] bookFromSnapshot skips zero-size levels", () => {
   const book = bookFromSnapshot(
     "AAPL",
     snapshot({ bids: [{ price: 99.9, size: 0 }], asks: [] }),
-    0,
+    0
   );
   assertEquals(book.bids.length, 0);
   assertEquals(book.asks.length, 0);
 });
 
 test("[matching-engine] a marketable buy fills against the best ask first", () => {
-  const result = matchAgainstSnapshot(
-    "C1",
-    "AAPL",
-    "BUY",
-    50,
-    101,
-    snapshot(),
-    0,
-  );
+  const result = matchAgainstSnapshot("C1", "AAPL", "BUY", 50, 101, snapshot(), 0);
   assertEquals(result.filledQty, 50);
   assertEquals(result.remainingQty, 0);
   assertEquals(result.avgFillPrice, 100.1);
@@ -59,15 +46,7 @@ test("[matching-engine] a marketable buy fills against the best ask first", () =
 });
 
 test("[matching-engine] a buy walks multiple ask levels and averages the fill price", () => {
-  const result = matchAgainstSnapshot(
-    "C2",
-    "AAPL",
-    "BUY",
-    150,
-    101,
-    snapshot(),
-    0,
-  );
+  const result = matchAgainstSnapshot("C2", "AAPL", "BUY", 150, 101, snapshot(), 0);
   assertEquals(result.filledQty, 150);
   assertEquals(result.remainingQty, 0);
   const expectedAvg = (100.1 * 100 + 100.2 * 50) / 150;
@@ -76,44 +55,20 @@ test("[matching-engine] a buy walks multiple ask levels and averages the fill pr
 });
 
 test("[matching-engine] demand exceeding total depth leaves a remainder unfilled", () => {
-  const result = matchAgainstSnapshot(
-    "C3",
-    "AAPL",
-    "BUY",
-    1_000,
-    101,
-    snapshot(),
-    0,
-  );
+  const result = matchAgainstSnapshot("C3", "AAPL", "BUY", 1_000, 101, snapshot(), 0);
   assertEquals(result.filledQty, 300);
   assertEquals(result.remainingQty, 700);
 });
 
 test("[matching-engine] a non-crossing limit price yields no fill", () => {
-  const result = matchAgainstSnapshot(
-    "C4",
-    "AAPL",
-    "BUY",
-    50,
-    99,
-    snapshot(),
-    0,
-  );
+  const result = matchAgainstSnapshot("C4", "AAPL", "BUY", 50, 99, snapshot(), 0);
   assertEquals(result.filledQty, 0);
   assertEquals(result.remainingQty, 50);
   assertEquals(result.avgFillPrice, undefined);
 });
 
 test("[matching-engine] a sell fills against the best bid first", () => {
-  const result = matchAgainstSnapshot(
-    "C5",
-    "AAPL",
-    "SELL",
-    50,
-    99,
-    snapshot(),
-    0,
-  );
+  const result = matchAgainstSnapshot("C5", "AAPL", "SELL", 50, 99, snapshot(), 0);
   assertEquals(result.filledQty, 50);
   assertEquals(result.avgFillPrice, 99.9);
 });
@@ -132,13 +87,21 @@ test("[matching-engine] equal-price levels fill in snapshot order", () => {
     "BUY",
     150,
     100.1,
-    snapshot({ asks: [{ price: 100.1, size: 100 }, { price: 100.1, size: 100 }] }),
-    0,
+    snapshot({
+      asks: [
+        { price: 100.1, size: 100 },
+        { price: 100.1, size: 100 },
+      ],
+    }),
+    0
   );
-  assertEquals(result.fills.map((f) => [f.restingOrderId, f.matchedQty]), [
-    ["SYN-AAPL-SELL-0", 100],
-    ["SYN-AAPL-SELL-1", 50],
-  ]);
+  assertEquals(
+    result.fills.map((f) => [f.restingOrderId, f.matchedQty]),
+    [
+      ["SYN-AAPL-SELL-0", 100],
+      ["SYN-AAPL-SELL-1", 50],
+    ]
+  );
 });
 
 test("[matching-engine] a fill inside the touch level carries zero impact", () => {

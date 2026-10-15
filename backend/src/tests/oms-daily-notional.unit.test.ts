@@ -81,16 +81,10 @@ test("price source caches snapshot and returns undefined on failure", async () =
   await source.priceFor("AAPL");
   assertEquals(calls, 2);
 
-  const failing = createMarketPriceSource(
-    "http://x",
-    1_000,
-    (() => Promise.reject(new Error("down"))) as typeof fetch
-  );
+  const failing = createMarketPriceSource("http://x", 1_000, (() =>
+    Promise.reject(new Error("down"))) as typeof fetch);
   assertEquals(await failing.priceFor("AAPL"), undefined);
-  const malformed = createMarketPriceSource(
-    "http://x",
-    1_000,
-    (() => Promise.resolve(new Response(JSON.stringify({ AAPL: "x" })))) as typeof fetch
-  );
+  const malformed = createMarketPriceSource("http://x", 1_000, (() =>
+    Promise.resolve(new Response(JSON.stringify({ AAPL: "x" })))) as typeof fetch);
   assertEquals(await malformed.priceFor("AAPL"), undefined);
 });

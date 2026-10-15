@@ -1,6 +1,6 @@
+import { Pool } from "#veta/db";
 import { test } from "#veta/test";
 import { assert, assertEquals, assertGreater } from "#veta/test-assert";
-import { Pool } from "#veta/db";
 import { createJobStore } from "../llm-advisory/job-store.ts";
 import type {
   AdvisoryNote,

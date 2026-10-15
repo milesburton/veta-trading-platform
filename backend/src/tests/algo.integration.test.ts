@@ -7,7 +7,6 @@ import { assert, assertEquals, assertExists } from "#veta/test-assert";
  * then polls the journal until the order is routed, has child slices, and
  * observability events confirm the decision log is populated.
  */
-
 import {
   GATEWAY_URL,
   JOURNAL_URL,

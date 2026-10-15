@@ -21,7 +21,6 @@ import "#veta/bootstrap";
  * Subscribes to: orders.routed, orders.filled
  * Publishes to:  orders.child, orders.expired, algo.heartbeat
  */
-
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
@@ -31,7 +30,12 @@ import {
   type RoutedOrder,
   RoutedOrderSchema,
 } from "#veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startExpirySweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
 const PORT = Number(process.env.MOMENTUM_ALGO_PORT) || 5025;

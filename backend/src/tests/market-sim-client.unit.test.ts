@@ -1,7 +1,7 @@
-import { closeServer, listeningPort } from "#veta/test-server";
 import { serveFetch, upgradeWebSocket } from "#veta/http";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
+import { closeServer, listeningPort } from "#veta/test-server";
 import {
   createMarketSimClient,
   marketSimFeedUrl,
@@ -35,7 +35,10 @@ test("full message replaces the running tick wholesale", () => {
   assertEquals(next.prices, { MSFT: 400 });
   assertEquals(next.volumes, { MSFT: 2_000 });
   assertEquals(next.marketMinute, 60);
-  assert(next.venueBooks?.XNAS === undefined, "stale venue from before the full snapshot must not survive");
+  assert(
+    next.venueBooks?.XNAS === undefined,
+    "stale venue from before the full snapshot must not survive"
+  );
   assert(next.venueBooks?.XNYS?.MSFT !== undefined);
 });
 
@@ -90,7 +93,11 @@ test("venueBooks merge per-venue and per-symbol without clobbering other venues"
   const next = mergeTick(latest, diff);
 
   assertEquals(next.venueBooks?.XNAS?.AAPL?.mid, 191);
-  assertEquals(next.venueBooks?.XNAS?.MSFT?.mid, 400, "untouched symbol in the same venue must survive");
+  assertEquals(
+    next.venueBooks?.XNAS?.MSFT?.mid,
+    400,
+    "untouched symbol in the same venue must survive"
+  );
   assertEquals(next.venueBooks?.XNYS?.AAPL?.mid, 190.5, "untouched venue must survive");
 });
 
@@ -160,16 +167,13 @@ test("parseTickFrame rejects a JSON value that isn't an object", () => {
 
 test("createMarketSimClient connects, merges an incoming tick, and notifies onTick callbacks", async () => {
   const controller = new AbortController();
-  const server = serveFetch(
-    { port: 0, signal: controller.signal },
-    (req) => {
-      const { socket, response } = upgradeWebSocket(req);
-      socket.onopen = () => {
-        socket.send(JSON.stringify({ event: "marketData", data: { prices: { AAPL: 199 } } }));
-      };
-      return response;
-    }
-  );
+  const server = serveFetch({ port: 0, signal: controller.signal }, (req) => {
+    const { socket, response } = upgradeWebSocket(req);
+    socket.onopen = () => {
+      socket.send(JSON.stringify({ event: "marketData", data: { prices: { AAPL: 199 } } }));
+    };
+    return response;
+  });
   const port = await listeningPort(server);
   const client = createMarketSimClient("127.0.0.1", port);
 
@@ -193,17 +197,14 @@ test("createMarketSimClient connects, merges an incoming tick, and notifies onTi
 
 test("createMarketSimClient ignores malformed frames without crashing the connection", async () => {
   const controller = new AbortController();
-  const server = serveFetch(
-    { port: 0, signal: controller.signal },
-    (req) => {
-      const { socket, response } = upgradeWebSocket(req);
-      socket.onopen = () => {
-        socket.send("not json{{{");
-        socket.send(JSON.stringify({ event: "marketData", data: { prices: { MSFT: 400 } } }));
-      };
-      return response;
-    }
-  );
+  const server = serveFetch({ port: 0, signal: controller.signal }, (req) => {
+    const { socket, response } = upgradeWebSocket(req);
+    socket.onopen = () => {
+      socket.send("not json{{{");
+      socket.send(JSON.stringify({ event: "marketData", data: { prices: { MSFT: 400 } } }));
+    };
+    return response;
+  });
   const port = await listeningPort(server);
   const client = createMarketSimClient("127.0.0.1", port);
 
@@ -224,16 +225,13 @@ test("createMarketSimClient ignores malformed frames without crashing the connec
 test("createMarketSimClient.start() is a no-op while already connected", async () => {
   const controller = new AbortController();
   let openCount = 0;
-  const server = serveFetch(
-    { port: 0, signal: controller.signal },
-    (req) => {
-      const { socket, response } = upgradeWebSocket(req);
-      socket.onopen = () => {
-        openCount++;
-      };
-      return response;
-    }
-  );
+  const server = serveFetch({ port: 0, signal: controller.signal }, (req) => {
+    const { socket, response } = upgradeWebSocket(req);
+    socket.onopen = () => {
+      openCount++;
+    };
+    return response;
+  });
   const port = await listeningPort(server);
   const client = createMarketSimClient("127.0.0.1", port);
 
@@ -267,14 +265,11 @@ test("marketSimFeedUrl asks market-sim for the requested feed", () => {
 test("createMarketSimClient requests the prices feed unless told otherwise", async () => {
   const controller = new AbortController();
   const feeds: (string | null)[] = [];
-  const server = serveFetch(
-    { port: 0, signal: controller.signal },
-    (req) => {
-      feeds.push(new URL(req.url).searchParams.get("feed"));
-      const { response } = upgradeWebSocket(req);
-      return response;
-    }
-  );
+  const server = serveFetch({ port: 0, signal: controller.signal }, (req) => {
+    feeds.push(new URL(req.url).searchParams.get("feed"));
+    const { response } = upgradeWebSocket(req);
+    return response;
+  });
   const port = await listeningPort(server);
   const light = createMarketSimClient("127.0.0.1", port);
   const full = createMarketSimClient("127.0.0.1", port, { feed: "full" });

@@ -1,6 +1,10 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import { isKnownCounterparty, loadCounterparties, resolveCounterparty } from "../fix/counterparties.ts";
+import {
+  isKnownCounterparty,
+  loadCounterparties,
+  resolveCounterparty,
+} from "../fix/counterparties.ts";
 
 test("[fix-counterparties] unknown SenderCompID resolves to null / not known", () => {
   loadCounterparties("");

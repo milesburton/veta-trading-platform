@@ -32,7 +32,11 @@ test("[data-depth-cache] concurrent callers share one in-flight load", async () 
 test("[data-depth-cache] serves the cached value until the ttl expires", async () => {
   let clock = 0;
   let loads = 0;
-  const cache = createSingleFlightCache(() => Promise.resolve(++loads), 1_000, () => clock);
+  const cache = createSingleFlightCache(
+    () => Promise.resolve(++loads),
+    1_000,
+    () => clock
+  );
 
   assertEquals(await cache.get(), 1);
   clock = 999;

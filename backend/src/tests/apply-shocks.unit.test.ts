@@ -1,7 +1,7 @@
 import { test } from "#veta/test";
 import { assertAlmostEquals, assertEquals } from "#veta/test-assert";
-import type { FeatureVector } from "../types/intelligence.ts";
 import { applyShocks } from "../scenario-engine/apply-shocks.ts";
+import type { FeatureVector } from "../types/intelligence.ts";
 
 function fv(overrides: Partial<FeatureVector> = {}): FeatureVector {
   return {

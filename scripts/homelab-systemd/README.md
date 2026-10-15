@@ -1,15 +1,16 @@
 # Homelab systemd units
 
 Three systemd timers / services manage the homelab's continuous-deploy
-+ ingress lifecycle. Install commands are minimal here; **full docs** for
-each are in Astro.
 
-| Unit | What it does | Astro page |
-|---|---|---|
-| `veta-auto-pull.{service,timer}` | Polls `origin/main` every 5 min, runs `deploy.sh` on SHA change | [veta-auto-pull](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-auto-pull/) |
-| `veta-tunnel.service` | `autossh` reverse tunnel to the OVH edge — public traffic comes back via this | [veta-tunnel](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-tunnel/) |
+- ingress lifecycle. Install commands are minimal here; **full docs** for
+  each are in Astro.
+
+| Unit                              | What it does                                                                  | Astro page                                                                                                  |
+| --------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `veta-auto-pull.{service,timer}`  | Polls `origin/main` every 5 min, runs `deploy.sh` on SHA change               | [veta-auto-pull](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-auto-pull/)   |
+| `veta-tunnel.service`             | `autossh` reverse tunnel to the OVH edge — public traffic comes back via this | [veta-tunnel](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-tunnel/)         |
 | `veta-host-prune.{service,timer}` | Daily Docker prune (04:00 UTC). Stops auto-pull image churn from filling disk | [veta-host-prune](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-host-prune/) |
-| `veta.slice`, `ci.slice` | CPU isolation between production containers and the self-hosted CI runner | [CI/CD](https://milesburton.github.io/veta-trading-platform/development/ci-cd/) |
+| `veta.slice`, `ci.slice`          | CPU isolation between production containers and the self-hosted CI runner     | [CI/CD](https://milesburton.github.io/veta-trading-platform/development/ci-cd/)                             |
 
 ## One-time install (all three)
 

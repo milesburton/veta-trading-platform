@@ -1,6 +1,6 @@
+import type { MsgProducer } from "#veta/messaging";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import type { MsgProducer } from "#veta/messaging";
 import { DEFAULT_EQUITY_SYMBOLS, LoadAgent } from "../gateway/load-agent.ts";
 
 interface SentMessage {

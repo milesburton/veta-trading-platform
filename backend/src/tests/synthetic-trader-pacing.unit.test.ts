@@ -10,8 +10,14 @@ test("[synthetic-trader-pacing] delay is always within [min, max]", () => {
 });
 
 test("[synthetic-trader-pacing] delay is not degenerate (min random returns min, max random returns max)", () => {
-  assertEquals(nextDelayMs(30_000, 480_000, () => 0), 30_000);
-  assertEquals(nextDelayMs(30_000, 480_000, () => 1), 480_000);
+  assertEquals(
+    nextDelayMs(30_000, 480_000, () => 0),
+    30_000
+  );
+  assertEquals(
+    nextDelayMs(30_000, 480_000, () => 1),
+    480_000
+  );
 });
 
 test("[synthetic-trader-pacing] defaults min==max to a fixed delay", () => {

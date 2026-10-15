@@ -17,7 +17,6 @@ import "#veta/bootstrap";
  * Kill/resume events are captured by observability for regulatory audit.
  * HTTP surface: GET /health
  */
-
 import { SERVICE_TOKEN_HEADER } from "#veta/auth";
 import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
@@ -42,8 +41,7 @@ import {
 const PORT = Number(process.env.OMS_PORT) || 5_002;
 const VERSION = process.env.COMMIT_SHA || "dev";
 const RISK_ENGINE_URL = `http://${process.env.RISK_ENGINE_HOST ?? "localhost"}:${process.env.RISK_ENGINE_PORT ?? "5032"}`;
-const RISK_ENGINE_ENABLED =
-  (process.env.RISK_ENGINE_ENABLED ?? "true").toLowerCase() !== "false";
+const RISK_ENGINE_ENABLED = (process.env.RISK_ENGINE_ENABLED ?? "true").toLowerCase() !== "false";
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 const USER_SERVICE_URL = `http://${
   process.env.USER_SERVICE_HOST ?? "localhost"

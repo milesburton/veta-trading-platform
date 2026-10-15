@@ -1,6 +1,6 @@
+import { z } from "zod";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { z } from "zod";
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";
 
 const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";

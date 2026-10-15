@@ -9,7 +9,6 @@ import { assert, assertEquals, assertExists } from "#veta/test-assert";
  * These tests verify that internal health endpoints and bus-adjacent
  * behaviour are correct.
  */
-
 import { loginAs } from "./test-helpers.ts";
 
 const GATEWAY_URL = "http://localhost:5011";

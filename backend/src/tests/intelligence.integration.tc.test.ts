@@ -1,7 +1,6 @@
 import { test } from "#veta/test";
 import { assert, assertEquals, assertExists } from "#veta/test-assert";
 // fallow-ignore-file complexity
-
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 

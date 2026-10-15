@@ -1,9 +1,9 @@
 import type { Socket } from "node:net";
-import { connectTcp } from "../lib/tcp.ts";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import { MsgType, OrdStatus, Side, Tag } from "../fix/fix-dictionary.ts";
 import { decode, encode } from "../fix/fix-parser.ts";
+import { connectTcp } from "../lib/tcp.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
 // The market-hours reject path itself (ADR 0003 Phase 6) is unit-tested
@@ -121,45 +121,48 @@ test({
         await gwRes.body?.cancel();
       });
 
-      await t.step("/sessions reflects a Logon'd counterparty and clears on disconnect", async () => {
-        const before = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
-          signal: AbortSignal.timeout(5_000),
-        });
-        assertEquals((await before.json()).sessions, []);
-
-        const conn = await connectTcp("127.0.0.1", FIX_EXCHANGE_TCP_PORT);
-        const reader = new FixMessageReader(conn);
-        try {
-          conn.write(logonMsg());
-          await reader.next();
-
-          const after = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+      await t.step(
+        "/sessions reflects a Logon'd counterparty and clears on disconnect",
+        async () => {
+          const before = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
             signal: AbortSignal.timeout(5_000),
           });
-          const { sessions } = (await after.json()) as {
-            sessions: { counterparty: string | null; state: string; openOrders: number }[];
-          };
-          assertEquals(sessions.length, 1);
-          assertEquals(sessions[0].counterparty, "GATEWAY");
-          assertEquals(sessions[0].state, "ACTIVE");
-          assertEquals(sessions[0].openOrders, 0);
-        } finally {
-          conn.destroy();
-        }
+          assertEquals((await before.json()).sessions, []);
 
-        // Deregistration happens once fix-exchange observes the closed
-        // socket, which is asynchronous relative to this side's conn.close().
-        const deadline = Date.now() + 5_000;
-        while (Date.now() < deadline) {
-          const res = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
-            signal: AbortSignal.timeout(5_000),
-          });
-          const { sessions } = (await res.json()) as { sessions: unknown[] };
-          if (sessions.length === 0) return;
-          await new Promise((r) => setTimeout(r, 200));
+          const conn = await connectTcp("127.0.0.1", FIX_EXCHANGE_TCP_PORT);
+          const reader = new FixMessageReader(conn);
+          try {
+            conn.write(logonMsg());
+            await reader.next();
+
+            const after = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+              signal: AbortSignal.timeout(5_000),
+            });
+            const { sessions } = (await after.json()) as {
+              sessions: { counterparty: string | null; state: string; openOrders: number }[];
+            };
+            assertEquals(sessions.length, 1);
+            assertEquals(sessions[0].counterparty, "GATEWAY");
+            assertEquals(sessions[0].state, "ACTIVE");
+            assertEquals(sessions[0].openOrders, 0);
+          } finally {
+            conn.destroy();
+          }
+
+          // Deregistration happens once fix-exchange observes the closed
+          // socket, which is asynchronous relative to this side's conn.close().
+          const deadline = Date.now() + 5_000;
+          while (Date.now() < deadline) {
+            const res = await fetch(`${url(stack, "fix-exchange")}/sessions`, {
+              signal: AbortSignal.timeout(5_000),
+            });
+            const { sessions } = (await res.json()) as { sessions: unknown[] };
+            if (sessions.length === 0) return;
+            await new Promise((r) => setTimeout(r, 200));
+          }
+          throw new Error("session was not deregistered after disconnect");
         }
-        throw new Error("session was not deregistered after disconnect");
-      });
+      );
 
       await t.step("NewOrderSingle over a direct TCP session gets acked and filled", async () => {
         const conn = await connectTcp("127.0.0.1", FIX_EXCHANGE_TCP_PORT);
@@ -237,7 +240,11 @@ test({
           const res = await fetch(`${ARCHIVE}/executions?symbol=AAPL&limit=50`, {
             signal: AbortSignal.timeout(5_000),
           });
-          const rows = (await res.json()) as { clOrdId: string; execType: string; ordStatus: string }[];
+          const rows = (await res.json()) as {
+            clOrdId: string;
+            execType: string;
+            ordStatus: string;
+          }[];
           found = rows.find((r) => r.clOrdId === clOrdId) ?? null;
           if (!found) await new Promise((r) => setTimeout(r, 300));
         }

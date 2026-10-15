@@ -74,9 +74,7 @@ test("[compose] every Tier 1/2/3 registry service carries the on-demand profile"
 
 test("[compose] the 8 synthetic traders are gated behind on-demand, not started by default", () => {
   const blocks = readServiceBlocks();
-  const synthetic = [...blocks.entries()].filter(([name]) =>
-    name.startsWith("synthetic-trader-")
-  );
+  const synthetic = [...blocks.entries()].filter(([name]) => name.startsWith("synthetic-trader-"));
   assertEquals(synthetic.length, 8, "expected exactly 8 synthetic-trader-* compose blocks");
   for (const [name, profiles] of synthetic) {
     assertEquals(

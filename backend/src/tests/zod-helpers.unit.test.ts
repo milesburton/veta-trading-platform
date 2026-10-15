@@ -1,7 +1,6 @@
+import { z } from "zod";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { z } from "zod";
-
 import { parseBody, parseQuery } from "../lib/http.ts";
 import { OrderSideSchema, StrategySchema } from "../schemas/primitives.ts";
 

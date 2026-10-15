@@ -1,6 +1,6 @@
 import "#veta/bootstrap";
-import { serveFetch } from "#veta/http";
 import { llmAdvisoryPool } from "#veta/db";
+import { serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createProducer } from "#veta/messaging";
 import { createJobStore } from "./job-store.ts";

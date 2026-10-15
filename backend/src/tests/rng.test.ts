@@ -53,12 +53,15 @@ test("seeded mean approximates 0.5 over many draws", () => {
 });
 
 test("MARKET_SIM_SEED env applies a deterministic seed at module load (subprocess)", async () => {
-  const { stdout } = await runNode(`
+  const { stdout } = await runNode(
+    `
       import { currentSeed, nextRandom } from "${
         new URL("../market-sim/rng.ts", import.meta.url).href
       }";
       console.log(JSON.stringify({ seed: currentSeed(), first: nextRandom() }));
-    `, { MARKET_SIM_SEED: "12345" });
+    `,
+    { MARKET_SIM_SEED: "12345" }
+  );
   const out = JSON.parse(stdout);
   if (out.seed !== 12_345) {
     throw new Error(`expected seed 12345, got ${out.seed}`);
@@ -69,19 +72,25 @@ test("MARKET_SIM_SEED env applies a deterministic seed at module load (subproces
 });
 
 test("MARKET_SIM_SEED with non-numeric value leaves RNG unseeded (subprocess)", async () => {
-  const { stdout } = await runNode(`
+  const { stdout } = await runNode(
+    `
       import { currentSeed } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
       console.log(JSON.stringify({ seed: currentSeed() }));
-    `, { MARKET_SIM_SEED: "not-a-number" });
+    `,
+    { MARKET_SIM_SEED: "not-a-number" }
+  );
   const out = JSON.parse(stdout);
   if (out.seed !== null) throw new Error(`expected null seed, got ${out.seed}`);
 });
 
 test("MARKET_SIM_SEED empty string leaves RNG unseeded (subprocess)", async () => {
-  const { stdout } = await runNode(`
+  const { stdout } = await runNode(
+    `
       import { currentSeed } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
       console.log(JSON.stringify({ seed: currentSeed() }));
-    `, { MARKET_SIM_SEED: "" });
+    `,
+    { MARKET_SIM_SEED: "" }
+  );
   const out = JSON.parse(stdout);
   if (out.seed !== null) throw new Error(`expected null seed, got ${out.seed}`);
 });

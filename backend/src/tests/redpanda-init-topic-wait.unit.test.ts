@@ -1,6 +1,6 @@
-import { runCommand } from "../lib/process.ts";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
+import { runCommand } from "../lib/process.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 
@@ -12,7 +12,14 @@ interface ComposeConfig {
 }
 
 async function getRedpandaInitCommand(): Promise<string | null> {
-  const { stdout, stderr, code } = await runCommand("docker", ["compose", "-f", `${REPO_ROOT}compose.yml`, "config", "--format", "json"]);
+  const { stdout, stderr, code } = await runCommand("docker", [
+    "compose",
+    "-f",
+    `${REPO_ROOT}compose.yml`,
+    "config",
+    "--format",
+    "json",
+  ]);
   if (code !== 0) {
     const errText = stderr;
     if (errText.includes("docker: command not found") || errText.includes("not found")) {

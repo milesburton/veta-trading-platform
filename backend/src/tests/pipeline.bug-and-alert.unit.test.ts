@@ -21,7 +21,6 @@ import { assert, assertEquals } from "#veta/test-assert";
 //
 // Written after the 2026-05-20 postmortem to keep the bug/alert
 // pipeline shape pinned by an automated test rather than a runbook.
-
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
 import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";

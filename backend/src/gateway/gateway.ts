@@ -1,12 +1,12 @@
 import "#veta/bootstrap";
-// fallow-ignore-file unused-file
-import { serveDir } from "../lib/static-files.ts";
 import { getCookieToken } from "#veta/auth";
 import { decodePathSegment, serveFetch } from "#veta/http";
 import { logger, registerLogSink } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+// fallow-ignore-file unused-file
+import { serveDir } from "../lib/static-files.ts";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
@@ -309,8 +309,7 @@ const userLimiter = new RateLimiter({
 });
 
 // docs: /reference/api-gateway/
-const PUBLIC_GUEST_TRADING =
-  (process.env.PUBLIC_GUEST_TRADING ?? "false").toLowerCase() === "true";
+const PUBLIC_GUEST_TRADING = (process.env.PUBLIC_GUEST_TRADING ?? "false").toLowerCase() === "true";
 const guestSubmitLimiter = new RateLimiter({
   capacity: Number(process.env.GUEST_SUBMIT_CAPACITY) || 10,
   refillPerSecond: Number(process.env.GUEST_SUBMIT_REFILL) || 1,

@@ -2,7 +2,6 @@ import { test } from "#veta/test";
 import { assert, assertEquals, assertGreater } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 // fallow-ignore-file complexity
-
 import type {
   AdvisoryNote,
   AdvisoryTriggerReason,

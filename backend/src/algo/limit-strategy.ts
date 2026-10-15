@@ -7,7 +7,6 @@ import "#veta/bootstrap";
  * When limit price is touched, publishes "orders.child" to the bus.
  * EMS subscribes to "orders.child" and executes the fill.
  */
-
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
@@ -95,7 +94,13 @@ await createTypedConsumer("limit-algo-routed", [
 
 async function sendTriggeredChild(order: PendingLimit, marketPrice: number): Promise<void> {
   const now = Date.now();
-  const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, order.inFlight, now);
+  const budget = await readSliceBudget(
+    readProgress,
+    order.orderId,
+    order.quantity,
+    order.inFlight,
+    now
+  );
   if (!budget) return;
   setInFlight(order.orderId, budget.inFlight);
   if (budget.inFlight || budget.remaining <= 0) return;

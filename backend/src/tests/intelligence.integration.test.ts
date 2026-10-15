@@ -1,5 +1,5 @@
+import { logger } from "#veta/logger";
 import { test } from "#veta/test";
-import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
  * Integration tests for the Market Intelligence pipeline.
  *
@@ -23,8 +23,7 @@ import { assert, assertEquals, assertExists } from "#veta/test-assert";
  *  9. Gateway proxy routes for intelligence are accessible (with auth)
  * 10. Signal direction is consistent with the reported score
  */
-
-import { logger } from "#veta/logger";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { loginAs } from "./test-helpers.ts";
 
 const FEATURE_ENGINE_URL = "http://localhost:5017";

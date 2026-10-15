@@ -4,7 +4,6 @@ import "#veta/bootstrap";
  * See platform/dark-pool for midpoint matching, residual handling, and
  * the pre-trade transparency policy.
  */
-
 import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
@@ -125,7 +124,6 @@ consumer?.onMessage((_topic, raw) => {
     `Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`
   );
 });
-
 
 async function runMatchCycle(): Promise<void> {
   const tick = marketClient.getLatest();

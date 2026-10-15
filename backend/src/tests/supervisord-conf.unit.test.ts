@@ -43,8 +43,16 @@ test("[supervisord.conf] risk-engine and fix-exchange autostart and are not in a
 
   for (const group of ["algos", "microstructure", "analytics", "aux"]) {
     const members = groupPrograms(conf, group);
-    assertEquals(members.includes("risk-engine"), false, `risk-engine must not be in [group:${group}]`);
-    assertEquals(members.includes("fix-exchange"), false, `fix-exchange must not be in [group:${group}]`);
+    assertEquals(
+      members.includes("risk-engine"),
+      false,
+      `risk-engine must not be in [group:${group}]`
+    );
+    assertEquals(
+      members.includes("fix-exchange"),
+      false,
+      `fix-exchange must not be in [group:${group}]`
+    );
   }
 });
 

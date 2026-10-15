@@ -19,7 +19,6 @@ import { readFile, writeFile } from "node:fs/promises";
  *   PUT  /overrides                  → { overrides: Record<string, string> }
  *   GET  /cache                      → debug: all cached quotes
  */
-
 import { corsOptions, decodePathSegment, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { alphaVantageProvider } from "./providers/alpha-vantage-equity.ts";
@@ -251,7 +250,7 @@ if (ALPHA_VANTAGE_KEY) {
             if (q) quoteCache.set(toSeed[i], q);
           })
           .catch(() => {}),
-      i * 1_500,
+      i * 1_500
     );
   }
 }

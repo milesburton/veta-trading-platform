@@ -6,7 +6,6 @@ import "#veta/bootstrap";
  * On each market tick, sizes a child slice as POV_RATE × tick volume,
  * then publishes "orders.child" to the bus. EMS executes.
  */
-
 import { logger } from "#veta/logger";
 import { createMarketSimClient, type MarketTick } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
@@ -70,7 +69,13 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
   if (tickVolume === 0) return;
 
   const now = Date.now();
-  const budget = await readSliceBudget(readProgress, state.orderId, state.quantity, state.inFlight, now);
+  const budget = await readSliceBudget(
+    readProgress,
+    state.orderId,
+    state.quantity,
+    state.inFlight,
+    now
+  );
   if (!budget) return;
   setInFlight(state.id, budget.inFlight);
   if (budget.inFlight || budget.remaining <= 0) return;

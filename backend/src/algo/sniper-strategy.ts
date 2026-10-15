@@ -3,14 +3,18 @@ import "#veta/bootstrap";
  * SNIPER order algorithm
  * Multi-venue smart routing strategy. Picks the best-price venues from the EMS venue set on each price trigger and splits an aggression-controlled share of remaining quantity across them. See platform/smart-order-router for the full routing model.
  */
-
 import { logger } from "#veta/logger";
 import type { MarketTick } from "#veta/market-client";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
 import type { FillEvent, RoutedOrder } from "#veta/schemas/orders";
 import { FillEventSchema, RoutedOrderSchema } from "#veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startExpirySweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
 import { availableSniperQty } from "./sniper-math.ts";
 
 const PORT = Number(process.env.SNIPER_ALGO_PORT) || 5022;

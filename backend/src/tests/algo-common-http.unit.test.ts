@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
+import { FakeTime } from "#veta/fake-time";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { FakeTime } from "#veta/fake-time";
 import {
   serveAlgoHealth,
   spawnKillWatchdog,
@@ -68,7 +68,12 @@ test({
 
     const health = await fetch(`http://127.0.0.1:${port}/health`);
     assertEquals(health.status, 200);
-    assertEquals(await health.json(), { service: "twap-algo", version: "abc123", status: "ok", activeOrders: 3 });
+    assertEquals(await health.json(), {
+      service: "twap-algo",
+      version: "abc123",
+      status: "ok",
+      activeOrders: 3,
+    });
 
     active = 0;
     const again = await fetch(`http://127.0.0.1:${port}/health`);
@@ -103,7 +108,10 @@ test("[startExpirySweep] expires overdue orders with their average fill and keep
     await time.runMicrotasks();
 
     assertEquals([...orders.keys()], ["o2"]);
-    assertEquals(sent.map((s) => s.topic), ["orders.expired", "orders.expired"]);
+    assertEquals(
+      sent.map((s) => s.topic),
+      ["orders.expired", "orders.expired"]
+    );
     assertEquals(sent[0].msg.orderId, "o1");
     assertEquals(sent[0].msg.avgFillPrice, 100);
     assertEquals(sent[0].msg.algo, "TWAP");
@@ -121,7 +129,12 @@ test("[startExpirySweep] tolerates a missing producer and a failing producer", a
     startExpirySweep(withoutProducer, null, "TWAP", "twap");
 
     const failing = new Map([["o2", expirable({ orderId: "o2" })]]);
-    startExpirySweep(failing, { send: () => Promise.reject(new Error("broker down")) }, "TWAP", "twap");
+    startExpirySweep(
+      failing,
+      { send: () => Promise.reject(new Error("broker down")) },
+      "TWAP",
+      "twap"
+    );
 
     await time.tickAsync(5_000);
     await time.runMicrotasks();
@@ -161,7 +174,8 @@ test("[startJournalProgressSweep] leaves working orders alone", async () => {
   try {
     const { sent, producer } = recordingProducer();
     const orders = new Map([["o1", tracked()]]);
-    const reader = () => Promise.resolve<OrderProgress | null>({ filledQty: 10, avgFillPrice: 99 } as OrderProgress);
+    const reader = () =>
+      Promise.resolve<OrderProgress | null>({ filledQty: 10, avgFillPrice: 99 } as OrderProgress);
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 
     await time.tickAsync(1_000);
@@ -179,7 +193,11 @@ test("[startJournalProgressSweep] publishes a complete heartbeat once the order 
   try {
     const { sent, producer } = recordingProducer();
     const orders = new Map([["o1", tracked()]]);
-    const reader = () => Promise.resolve<OrderProgress | null>({ filledQty: 100, avgFillPrice: 101.5 } as OrderProgress);
+    const reader = () =>
+      Promise.resolve<OrderProgress | null>({
+        filledQty: 100,
+        avgFillPrice: 101.5,
+      } as OrderProgress);
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 
     await time.tickAsync(1_000);
@@ -205,7 +223,7 @@ test("[startJournalProgressSweep] expires an unfilled order past its deadline, w
     ]);
     const reader = (orderId: string) =>
       Promise.resolve<OrderProgress | null>(
-        orderId === "o1" ? ({ filledQty: 30, avgFillPrice: 98 } as OrderProgress) : null,
+        orderId === "o1" ? ({ filledQty: 30, avgFillPrice: 98 } as OrderProgress) : null
       );
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 
@@ -213,7 +231,10 @@ test("[startJournalProgressSweep] expires an unfilled order past its deadline, w
     await time.runMicrotasks();
 
     assertEquals(orders.size, 0);
-    assertEquals(sent.map((s) => s.topic), ["orders.expired", "orders.expired"]);
+    assertEquals(
+      sent.map((s) => s.topic),
+      ["orders.expired", "orders.expired"]
+    );
     assertEquals(sent[0].msg.filledQty, 30);
     assertEquals(sent[1].msg.filledQty, 0);
   } finally {
@@ -231,7 +252,10 @@ test("[startJournalProgressSweep] survives a failing progress reader and keeps s
       calls += 1;
       return calls === 1
         ? Promise.reject(new Error("journal unavailable"))
-        : Promise.resolve<OrderProgress | null>({ filledQty: 100, avgFillPrice: 100 } as OrderProgress);
+        : Promise.resolve<OrderProgress | null>({
+            filledQty: 100,
+            avgFillPrice: 100,
+          } as OrderProgress);
     };
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 

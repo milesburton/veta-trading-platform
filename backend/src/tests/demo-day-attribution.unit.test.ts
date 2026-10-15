@@ -1,6 +1,6 @@
+import { FakeTime } from "#veta/fake-time";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { FakeTime } from "#veta/fake-time";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleDemoDay, testTraderIds } from "../gateway/routes/admin.ts";
 

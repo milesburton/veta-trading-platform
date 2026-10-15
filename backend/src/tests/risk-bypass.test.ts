@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
+import { relative } from "node:path";
+import { walk } from "#veta/fs-walk";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { walk } from "#veta/fs-walk";
-import { relative } from "node:path";
 
 const SRC_ROOT = new URL("../", import.meta.url).pathname;
 
@@ -19,9 +19,7 @@ const ORDERS_SUBMITTED_PRODUCERS = new Set<string>(["oms/oms-server.ts"]);
 async function findProducers(topic: string): Promise<Set<string>> {
   const found = new Set<string>();
   const escaped = topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(
-    String.raw`producer\s*[?]?\.send\s*\(\s*["']${escaped}["']`
-  );
+  const pattern = new RegExp(String.raw`producer\s*[?]?\.send\s*\(\s*["']${escaped}["']`);
 
   for await (const entry of walk(SRC_ROOT, {
     exts: [".ts"],

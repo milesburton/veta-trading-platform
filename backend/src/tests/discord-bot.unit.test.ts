@@ -1,7 +1,7 @@
-import { closeServer, listeningPort } from "#veta/test-server";
 import { serveFetch, upgradeWebSocket } from "#veta/http";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
+import { closeServer, listeningPort } from "#veta/test-server";
 import {
   buildMotd,
   buildTriagePrompt,

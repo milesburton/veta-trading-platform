@@ -3,7 +3,6 @@ import "#veta/bootstrap";
  * Fixed Income RFQ (Request for Quote) Service.
  * See platform/post-trade-rfq for the dealer-driven workflow details.
  */
-
 import { CORS_HEADERS, corsOptions, json, jsonError, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
@@ -699,7 +698,9 @@ serveFetch({ port: PORT }, async (req) => {
 
     if (action === "confirm") {
       const clientUserId = actionBody.clientUserId as string | undefined;
-      const actorCheck = checkSellSideActor(action, clientUserId, { clientUserId: rfq.clientUserId });
+      const actorCheck = checkSellSideActor(action, clientUserId, {
+        clientUserId: rfq.clientUserId,
+      });
       if (!actorCheck.ok) return jsonError(actorCheck.error, actorCheck.status);
       rfq.state = "CONFIRMED";
       rfq.clientConfirmedAt = Date.now();

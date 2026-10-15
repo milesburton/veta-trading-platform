@@ -41,9 +41,12 @@ test("[rfq-math] priceBond falls as yield rises, above the coupon rate", () => {
 });
 
 test("[rfq-math] priceBond handles the zero-yield edge case without dividing by zero", () => {
-  const price = priceBond(bond({ couponRate: 0.04, totalPeriods: 10, periodsPerYear: 2, faceValue: 1000 }), 0);
+  const price = priceBond(
+    bond({ couponRate: 0.04, totalPeriods: 10, periodsPerYear: 2, faceValue: 1000 }),
+    0
+  );
   // sum of coupons + face, undiscounted: (0.04*1000/2)*10 + 1000, as a fraction of face
-  const expected = ((0.04 * 1000 / 2) * 10 + 1000) / 1000;
+  const expected = (((0.04 * 1000) / 2) * 10 + 1000) / 1000;
   assertEquals(price, expected);
 });
 
@@ -132,17 +135,28 @@ test("[rfq-math] selectBestQuote returns undefined for an empty list", () => {
 });
 
 test("[rfq-math] selectBestQuote for BUY picks the lowest yield", () => {
-  const quotes = [quote({ dealerId: "A", yield: 0.05 }), quote({ dealerId: "B", yield: 0.045 }), quote({ dealerId: "C", yield: 0.048 })];
+  const quotes = [
+    quote({ dealerId: "A", yield: 0.05 }),
+    quote({ dealerId: "B", yield: 0.045 }),
+    quote({ dealerId: "C", yield: 0.048 }),
+  ];
   assertEquals(selectBestQuote(quotes, "BUY")?.dealerId, "B");
 });
 
 test("[rfq-math] selectBestQuote for SELL picks the highest yield", () => {
-  const quotes = [quote({ dealerId: "A", yield: 0.05 }), quote({ dealerId: "B", yield: 0.045 }), quote({ dealerId: "C", yield: 0.048 })];
+  const quotes = [
+    quote({ dealerId: "A", yield: 0.05 }),
+    quote({ dealerId: "B", yield: 0.045 }),
+    quote({ dealerId: "C", yield: 0.048 }),
+  ];
   assertEquals(selectBestQuote(quotes, "SELL")?.dealerId, "A");
 });
 
 test("[rfq-math] selectBestQuote keeps the first quote on an exact tie", () => {
-  const quotes = [quote({ dealerId: "first", yield: 0.045 }), quote({ dealerId: "second", yield: 0.045 })];
+  const quotes = [
+    quote({ dealerId: "first", yield: 0.045 }),
+    quote({ dealerId: "second", yield: 0.045 }),
+  ];
   assertEquals(selectBestQuote(quotes, "BUY")?.dealerId, "first");
 });
 

@@ -1,6 +1,6 @@
+import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 
 test("RateLimiter: allows requests up to capacity, then blocks", () => {
   const limiter = new RateLimiter({ capacity: 3, refillPerSecond: 1 });

@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
-
 import { type BondPosition, computeDurationLadder } from "../analytics/duration-ladder.ts";
 import { rateAt } from "../analytics/spread-analysis.ts";
 import type { YieldCurvePoint } from "../analytics/types.ts";

@@ -9,7 +9,6 @@ import { assert, assertEquals, assertExists } from "#veta/test-assert";
  *
  *   npm run test:load
  */
-
 import {
   ARCHIVE_URL,
   GATEWAY_URL,

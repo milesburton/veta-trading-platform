@@ -7,7 +7,6 @@ import "#veta/bootstrap";
  *
  * State machine: draft → structured → issued → sold → unwound
  */
-
 import { serve } from "@hono/node-server";
 import { corsOptions, json } from "#veta/http";
 import { logger } from "#veta/logger";
@@ -70,262 +69,271 @@ function jsonOk(body: unknown, status = 200): Response {
   return json(body, status);
 }
 
-serve({ port: PORT, fetch: async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  const path = url.pathname;
-  const method = req.method;
+serve({
+  port: PORT,
+  fetch: async (req: Request): Promise<Response> => {
+    const url = new URL(req.url);
+    const path = url.pathname;
+    const method = req.method;
 
-  if (method === "OPTIONS") {
-    return corsOptions();
-  }
-
-  if (path === "/health" && method === "GET") {
-    return jsonOk({
-      service: "product-service",
-      version: VERSION,
-      status: "ok",
-    });
-  }
-
-  // GET /products/stats — MUST be checked before /:id route
-  if (path === "/products/stats" && method === "GET") {
-    const counts: Record<ProductState, number> = {
-      draft: 0,
-      structured: 0,
-      issued: 0,
-      sold: 0,
-      unwound: 0,
-    };
-    for (const p of productStore.values()) {
-      counts[p.state] = (counts[p.state] ?? 0) + 1;
-    }
-    return jsonOk({ counts, total: productStore.size });
-  }
-
-  if (path === "/products" && method === "POST") {
-    let body: {
-      name?: string;
-      description?: string;
-      targetNotional?: number;
-      currency?: string;
-      createdBy?: string;
-      legs?: Array<{
-        type: "equity" | "bond" | "option";
-        symbol: string;
-        weight: number;
-        isin?: string;
-        optionSpec?: {
-          strike: number;
-          expiry: string;
-          putCall: "CALL" | "PUT";
-        };
-      }>;
-    };
-    try {
-      body = (await req.json()) as typeof body;
-    } catch {
-      return jsonErr("Invalid JSON body", 400);
+    if (method === "OPTIONS") {
+      return corsOptions();
     }
 
-    if (!body.name) return jsonErr("name is required", 400);
-    if (!body.createdBy) return jsonErr("createdBy is required", 400);
-    if (body.targetNotional === undefined || body.targetNotional <= 0) {
-      return jsonErr("targetNotional must be a positive number", 400);
+    if (path === "/health" && method === "GET") {
+      return jsonOk({
+        service: "product-service",
+        version: VERSION,
+        status: "ok",
+      });
     }
 
-    const now = Date.now();
-    const rawLegs = body.legs ?? [];
-    const legs: ProductLeg[] = rawLegs.map((l) => ({
-      legId: nextLegId(),
-      type: l.type,
-      symbol: l.symbol,
-      weight: l.weight,
-      isin: l.isin,
-      optionSpec: l.optionSpec,
-    }));
-
-    const product: Product = {
-      productId: nextProductId(),
-      name: body.name,
-      description: body.description ?? "",
-      state: "draft",
-      legs,
-      targetNotional: body.targetNotional,
-      currency: body.currency ?? "USD",
-      createdBy: body.createdBy,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    productStore.set(product.productId, product);
-    producer?.send("products.created", product).catch(() => {});
-
-    return jsonOk(product, 201);
-  }
-
-  if (path === "/products" && method === "GET") {
-    const stateFilter = url.searchParams.get("state") as ProductState | null;
-    const userIdParam = url.searchParams.get("userId");
-    const userRoleParam = url.searchParams.get("userRole");
-
-    let products = Array.from(productStore.values());
-
-    if (userRoleParam === "external-client" && userIdParam) {
-      products = products.filter((p) => p.state === "issued" || p.state === "sold");
+    // GET /products/stats — MUST be checked before /:id route
+    if (path === "/products/stats" && method === "GET") {
+      const counts: Record<ProductState, number> = {
+        draft: 0,
+        structured: 0,
+        issued: 0,
+        sold: 0,
+        unwound: 0,
+      };
+      for (const p of productStore.values()) {
+        counts[p.state] = (counts[p.state] ?? 0) + 1;
+      }
+      return jsonOk({ counts, total: productStore.size });
     }
 
-    if (stateFilter) {
-      products = products.filter((p) => p.state === stateFilter);
+    if (path === "/products" && method === "POST") {
+      let body: {
+        name?: string;
+        description?: string;
+        targetNotional?: number;
+        currency?: string;
+        createdBy?: string;
+        legs?: Array<{
+          type: "equity" | "bond" | "option";
+          symbol: string;
+          weight: number;
+          isin?: string;
+          optionSpec?: {
+            strike: number;
+            expiry: string;
+            putCall: "CALL" | "PUT";
+          };
+        }>;
+      };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return jsonErr("Invalid JSON body", 400);
+      }
+
+      if (!body.name) return jsonErr("name is required", 400);
+      if (!body.createdBy) return jsonErr("createdBy is required", 400);
+      if (body.targetNotional === undefined || body.targetNotional <= 0) {
+        return jsonErr("targetNotional must be a positive number", 400);
+      }
+
+      const now = Date.now();
+      const rawLegs = body.legs ?? [];
+      const legs: ProductLeg[] = rawLegs.map((l) => ({
+        legId: nextLegId(),
+        type: l.type,
+        symbol: l.symbol,
+        weight: l.weight,
+        isin: l.isin,
+        optionSpec: l.optionSpec,
+      }));
+
+      const product: Product = {
+        productId: nextProductId(),
+        name: body.name,
+        description: body.description ?? "",
+        state: "draft",
+        legs,
+        targetNotional: body.targetNotional,
+        currency: body.currency ?? "USD",
+        createdBy: body.createdBy,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      productStore.set(product.productId, product);
+      producer?.send("products.created", product).catch(() => {});
+
+      return jsonOk(product, 201);
     }
 
-    products.sort((a, b) => b.createdAt - a.createdAt);
+    if (path === "/products" && method === "GET") {
+      const stateFilter = url.searchParams.get("state") as ProductState | null;
+      const userIdParam = url.searchParams.get("userId");
+      const userRoleParam = url.searchParams.get("userRole");
 
-    return jsonOk(products);
-  }
+      let products = Array.from(productStore.values());
 
-  const matchProduct = path.match(/^\/products\/([^/]+)$/);
-  if (matchProduct && method === "GET") {
-    const product = productStore.get(matchProduct[1]);
-    if (!product) return jsonErr("Product not found", 404);
-    return jsonOk(product);
-  }
+      if (userRoleParam === "external-client" && userIdParam) {
+        products = products.filter((p) => p.state === "issued" || p.state === "sold");
+      }
 
-  const matchLegs = path.match(/^\/products\/([^/]+)\/legs$/);
-  if (matchLegs && method === "PUT") {
-    const product = productStore.get(matchLegs[1]);
-    if (!product) return jsonErr("Product not found", 404);
-    if (product.state !== "draft") {
-      return jsonErr(
-        `Cannot update legs: product is in '${product.state}' state (must be 'draft')`,
-        400
-      );
+      if (stateFilter) {
+        products = products.filter((p) => p.state === stateFilter);
+      }
+
+      products.sort((a, b) => b.createdAt - a.createdAt);
+
+      return jsonOk(products);
     }
 
-    let body: {
-      legs?: Array<{
-        type: "equity" | "bond" | "option";
-        symbol: string;
-        weight: number;
-        isin?: string;
-        optionSpec?: {
-          strike: number;
-          expiry: string;
-          putCall: "CALL" | "PUT";
-        };
-      }>;
-    };
-    try {
-      body = (await req.json()) as typeof body;
-    } catch {
-      return jsonErr("Invalid JSON body", 400);
+    const matchProduct = path.match(/^\/products\/([^/]+)$/);
+    if (matchProduct && method === "GET") {
+      const product = productStore.get(matchProduct[1]);
+      if (!product) return jsonErr("Product not found", 404);
+      return jsonOk(product);
     }
 
-    const rawLegs = body.legs ?? [];
-    const legs: ProductLeg[] = rawLegs.map((l) => ({
-      legId: nextLegId(),
-      type: l.type,
-      symbol: l.symbol,
-      weight: l.weight,
-      isin: l.isin,
-      optionSpec: l.optionSpec,
-    }));
+    const matchLegs = path.match(/^\/products\/([^/]+)\/legs$/);
+    if (matchLegs && method === "PUT") {
+      const product = productStore.get(matchLegs[1]);
+      if (!product) return jsonErr("Product not found", 404);
+      if (product.state !== "draft") {
+        return jsonErr(
+          `Cannot update legs: product is in '${product.state}' state (must be 'draft')`,
+          400
+        );
+      }
 
-    product.legs = legs;
-    product.updatedAt = Date.now();
-    productStore.set(product.productId, product);
+      let body: {
+        legs?: Array<{
+          type: "equity" | "bond" | "option";
+          symbol: string;
+          weight: number;
+          isin?: string;
+          optionSpec?: {
+            strike: number;
+            expiry: string;
+            putCall: "CALL" | "PUT";
+          };
+        }>;
+      };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return jsonErr("Invalid JSON body", 400);
+      }
 
-    return jsonOk(product);
-  }
+      const rawLegs = body.legs ?? [];
+      const legs: ProductLeg[] = rawLegs.map((l) => ({
+        legId: nextLegId(),
+        type: l.type,
+        symbol: l.symbol,
+        weight: l.weight,
+        isin: l.isin,
+        optionSpec: l.optionSpec,
+      }));
 
-  const matchStructure = path.match(/^\/products\/([^/]+)\/structure$/);
-  if (matchStructure && method === "PUT") {
-    const product = productStore.get(matchStructure[1]);
-    if (!product) return jsonErr("Product not found", 404);
-    if (product.state !== "draft") {
-      return jsonErr(
-        `Cannot structure: product is in '${product.state}' state (must be 'draft')`,
-        400
-      );
-    }
-    if (product.legs.length === 0) {
-      return jsonErr("Cannot structure: product has no legs", 400);
-    }
+      product.legs = legs;
+      product.updatedAt = Date.now();
+      productStore.set(product.productId, product);
 
-    const weightSum = product.legs.reduce((s, l) => s + l.weight, 0);
-    if (Math.abs(weightSum - 1.0) > 0.001) {
-      return jsonErr(`Weights must sum to 1.0 (currently ${weightSum.toFixed(4)})`, 400);
-    }
-
-    product.state = "structured";
-    product.updatedAt = Date.now();
-    productStore.set(product.productId, product);
-    producer?.send("products.updated", product).catch(() => {});
-
-    return jsonOk(product);
-  }
-
-  const matchIssue = path.match(/^\/products\/([^/]+)\/issue$/);
-  if (matchIssue && method === "PUT") {
-    const product = productStore.get(matchIssue[1]);
-    if (!product) return jsonErr("Product not found", 404);
-    if (product.state !== "structured") {
-      return jsonErr(
-        `Cannot issue: product is in '${product.state}' state (must be 'structured')`,
-        400
-      );
+      return jsonOk(product);
     }
 
-    product.state = "issued";
-    product.issuedAt = Date.now();
-    product.updatedAt = Date.now();
-    productStore.set(product.productId, product);
-    producer?.send("products.updated", product).catch(() => {});
+    const matchStructure = path.match(/^\/products\/([^/]+)\/structure$/);
+    if (matchStructure && method === "PUT") {
+      const product = productStore.get(matchStructure[1]);
+      if (!product) return jsonErr("Product not found", 404);
+      if (product.state !== "draft") {
+        return jsonErr(
+          `Cannot structure: product is in '${product.state}' state (must be 'draft')`,
+          400
+        );
+      }
+      if (product.legs.length === 0) {
+        return jsonErr("Cannot structure: product has no legs", 400);
+      }
 
-    return jsonOk(product);
-  }
+      const weightSum = product.legs.reduce((s, l) => s + l.weight, 0);
+      if (Math.abs(weightSum - 1.0) > 0.001) {
+        return jsonErr(`Weights must sum to 1.0 (currently ${weightSum.toFixed(4)})`, 400);
+      }
 
-  const matchSell = path.match(/^\/products\/([^/]+)\/sell$/);
-  if (matchSell && method === "PUT") {
-    const product = productStore.get(matchSell[1]);
-    if (!product) return jsonErr("Product not found", 404);
-    if (product.state !== "issued") {
-      return jsonErr(`Cannot sell: product is in '${product.state}' state (must be 'issued')`, 400);
+      product.state = "structured";
+      product.updatedAt = Date.now();
+      productStore.set(product.productId, product);
+      producer?.send("products.updated", product).catch(() => {});
+
+      return jsonOk(product);
     }
 
-    let body: { soldTo?: string; rfqId?: string };
-    try {
-      body = (await req.json()) as typeof body;
-    } catch {
-      body = {};
+    const matchIssue = path.match(/^\/products\/([^/]+)\/issue$/);
+    if (matchIssue && method === "PUT") {
+      const product = productStore.get(matchIssue[1]);
+      if (!product) return jsonErr("Product not found", 404);
+      if (product.state !== "structured") {
+        return jsonErr(
+          `Cannot issue: product is in '${product.state}' state (must be 'structured')`,
+          400
+        );
+      }
+
+      product.state = "issued";
+      product.issuedAt = Date.now();
+      product.updatedAt = Date.now();
+      productStore.set(product.productId, product);
+      producer?.send("products.updated", product).catch(() => {});
+
+      return jsonOk(product);
     }
 
-    product.state = "sold";
-    product.soldTo = body.soldTo;
-    product.rfqId = body.rfqId;
-    product.updatedAt = Date.now();
-    productStore.set(product.productId, product);
-    producer?.send("products.sold", product).catch(() => {});
+    const matchSell = path.match(/^\/products\/([^/]+)\/sell$/);
+    if (matchSell && method === "PUT") {
+      const product = productStore.get(matchSell[1]);
+      if (!product) return jsonErr("Product not found", 404);
+      if (product.state !== "issued") {
+        return jsonErr(
+          `Cannot sell: product is in '${product.state}' state (must be 'issued')`,
+          400
+        );
+      }
 
-    return jsonOk(product);
-  }
+      let body: { soldTo?: string; rfqId?: string };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        body = {};
+      }
 
-  const matchUnwind = path.match(/^\/products\/([^/]+)\/unwind$/);
-  if (matchUnwind && method === "PUT") {
-    const product = productStore.get(matchUnwind[1]);
-    if (!product) return jsonErr("Product not found", 404);
-    if (product.state !== "sold") {
-      return jsonErr(`Cannot unwind: product is in '${product.state}' state (must be 'sold')`, 400);
+      product.state = "sold";
+      product.soldTo = body.soldTo;
+      product.rfqId = body.rfqId;
+      product.updatedAt = Date.now();
+      productStore.set(product.productId, product);
+      producer?.send("products.sold", product).catch(() => {});
+
+      return jsonOk(product);
     }
 
-    product.state = "unwound";
-    product.updatedAt = Date.now();
-    productStore.set(product.productId, product);
-    producer?.send("products.updated", product).catch(() => {});
+    const matchUnwind = path.match(/^\/products\/([^/]+)\/unwind$/);
+    if (matchUnwind && method === "PUT") {
+      const product = productStore.get(matchUnwind[1]);
+      if (!product) return jsonErr("Product not found", 404);
+      if (product.state !== "sold") {
+        return jsonErr(
+          `Cannot unwind: product is in '${product.state}' state (must be 'sold')`,
+          400
+        );
+      }
 
-    return jsonOk(product);
-  }
+      product.state = "unwound";
+      product.updatedAt = Date.now();
+      productStore.set(product.productId, product);
+      producer?.send("products.updated", product).catch(() => {});
 
-  return json({ error: "Not found" }, 404);
-} });
+      return jsonOk(product);
+    }
+
+    return json({ error: "Not found" }, 404);
+  },
+});
 
 logger.info(`Listening on port ${PORT}`);

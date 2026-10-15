@@ -1,8 +1,6 @@
+import type { CheckRequest, RiskConfig } from "#veta/schemas/risk";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-
-import type { CheckRequest, RiskConfig } from "#veta/schemas/risk";
-
 import {
   checkConcentration,
   checkDailyPnlStop,

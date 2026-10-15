@@ -1,6 +1,6 @@
+import { Pool } from "#veta/db";
 import { test } from "#veta/test";
 import { assert } from "#veta/test-assert";
-import { Pool } from "#veta/db";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";

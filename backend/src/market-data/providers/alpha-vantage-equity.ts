@@ -13,11 +13,9 @@ async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
   if (!ALPHA_VANTAGE_KEY) return null;
   try {
     logger.debug("polling GLOBAL_QUOTE", { ...PROV, symbol });
-    const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${
-      encodeURIComponent(
-        symbol,
-      )
-    }&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(
+      symbol
+    )}&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as Record<string, Record<string, string>>;
@@ -59,14 +57,9 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
   }
   try {
     logger.debug("polling CURRENCY_EXCHANGE_RATE", { ...PROV, symbol });
-    const url =
-      `${ALPHA_VANTAGE_BASE}?function=CURRENCY_EXCHANGE_RATE&from_currency=${
-        encodeURIComponent(
-          fromCurrency,
-        )
-      }&to_currency=${
-        encodeURIComponent(toCurrency)
-      }&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=CURRENCY_EXCHANGE_RATE&from_currency=${encodeURIComponent(
+      fromCurrency
+    )}&to_currency=${encodeURIComponent(toCurrency)}&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as Record<string, Record<string, string>>;
@@ -84,8 +77,7 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
       symbol,
       price,
       volume: 0,
-      latestTradingDay: rate["6. Last Refreshed"] ??
-        new Date().toISOString().slice(0, 10),
+      latestTradingDay: rate["6. Last Refreshed"] ?? new Date().toISOString().slice(0, 10),
       fetchedAt: Date.now(),
       stale: false,
     };
@@ -95,24 +87,17 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
   }
 }
 
-async function seedIntradayHistory(
-  symbol: string,
-  journalUrl: string,
-): Promise<void> {
+async function seedIntradayHistory(symbol: string, journalUrl: string): Promise<void> {
   if (!ALPHA_VANTAGE_KEY) return;
   try {
     logger.info("fetching intraday history", { ...PROV, symbol });
-    const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${
-      encodeURIComponent(
-        symbol,
-      )
-    }&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(
+      symbol
+    )}&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as Record<string, unknown>;
-    const series = data["Time Series (1min)"] as
-      | Record<string, Record<string, string>>
-      | undefined;
+    const series = data["Time Series (1min)"] as Record<string, Record<string, string>> | undefined;
     if (!series) {
       logger.warn("no intraday data", { ...PROV, symbol });
       return;
@@ -168,13 +153,8 @@ export const alphaVantageProvider: ProviderDef = {
   supportsSymbol(_symbol: string): boolean {
     return true;
   },
-  async fetchQuote(
-    symbol: string,
-    _journalUrl: string,
-  ): Promise<CachedQuote | null> {
-    return symbol.includes("/")
-      ? await fetchFxRate(symbol)
-      : await fetchGlobalQuote(symbol);
+  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
+    return symbol.includes("/") ? await fetchFxRate(symbol) : await fetchGlobalQuote(symbol);
   },
   async seedHistory(symbol: string, journalUrl: string): Promise<void> {
     if (!symbol.includes("/")) await seedIntradayHistory(symbol, journalUrl);

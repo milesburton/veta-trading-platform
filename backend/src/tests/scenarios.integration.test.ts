@@ -1,7 +1,6 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 // fallow-ignore-file complexity
-
 import { loginAsVerified } from "./test-helpers.ts";
 
 const GATEWAY_URL = "http://localhost:5011";

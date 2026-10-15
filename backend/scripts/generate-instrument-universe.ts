@@ -5,14 +5,13 @@ import { writeFile } from "node:fs/promises";
 // bonds) are untouched; this script only appends new synthetic records.
 //
 // Run: node backend/scripts/generate-instrument-universe.ts
-
+import { CURATED_BONDS } from "../../shared/curatedBonds.ts";
+import { CURATED_COMMODITY_SEEDS } from "../src/market-sim/commodity-assets.ts";
+import { CURATED_FX_SEEDS } from "../src/market-sim/fx-assets.ts";
 // Import only the hand-curated seed arrays (not the merged SP500_ASSETS/
 // FX_ASSETS/etc. exports) so re-running this script treats a prior run's
 // own generated output as regenerable, not as permanently reserved symbols.
 import { CURATED_EQUITY_SEEDS } from "../src/market-sim/sp500-assets.ts";
-import { CURATED_FX_SEEDS } from "../src/market-sim/fx-assets.ts";
-import { CURATED_COMMODITY_SEEDS } from "../src/market-sim/commodity-assets.ts";
-import { CURATED_BONDS } from "../../shared/curatedBonds.ts";
 
 const TARGET_NEW_EQUITIES = 1_700;
 const TARGET_NEW_FX = 30;
@@ -142,7 +141,16 @@ const NAME_PREFIXES = [
 ];
 
 const NAME_CORES: Record<(typeof SECTORS)[number], string[]> = {
-  Technology: ["Systems", "Software", "Networks", "Cloud", "Compute", "Data", "Semiconductor", "Robotics"],
+  Technology: [
+    "Systems",
+    "Software",
+    "Networks",
+    "Cloud",
+    "Compute",
+    "Data",
+    "Semiconductor",
+    "Robotics",
+  ],
   "Consumer Discretionary": ["Retail", "Apparel", "Motors", "Leisure", "Hospitality", "Brands"],
   "Communication Services": ["Media", "Broadcasting", "Telecom", "Wireless", "Streaming"],
   Financials: ["Capital", "Financial", "Holdings", "Trust", "Insurance", "Bancorp"],
@@ -275,7 +283,14 @@ function generateFx(count: number): GeneratedFxSeed[] {
     const symbol = claimSymbol(`${pair.base}/${pair.quote}`);
     if (!symbol) continue;
     const quoteInfo = FX_CURRENCIES.find((c) => c.code === pair.quote);
-    const baseName = pair.base === "USD" ? "US Dollar" : pair.base === "EUR" ? "Euro" : pair.base === "GBP" ? "British Pound" : "Japanese Yen";
+    const baseName =
+      pair.base === "USD"
+        ? "US Dollar"
+        : pair.base === "EUR"
+          ? "Euro"
+          : pair.base === "GBP"
+            ? "British Pound"
+            : "Japanese Yen";
     // EM/minor pairs: wider price range, higher vol than G10 majors.
     const initialPrice = round(0.05 + rng() * 25, 4);
     const volatility = round(0.006 + rng() * 0.012, 4);
@@ -295,28 +310,154 @@ function generateFx(count: number): GeneratedFxSeed[] {
 
 // ─── Commodities ────────────────────────────────────────────────────────────
 
-const COMMODITY_SEEDS: { root: string; name: string; sector: string; price: number; vol: number }[] = [
-  { root: "ZL", name: "Soybean Oil Front Month", sector: "Commodities/Agriculture", price: 45, vol: 0.018 },
-  { root: "ZM", name: "Soybean Meal Front Month", sector: "Commodities/Agriculture", price: 320, vol: 0.017 },
-  { root: "ZO", name: "Oats Front Month", sector: "Commodities/Agriculture", price: 3.6, vol: 0.02 },
-  { root: "ZR", name: "Rough Rice Front Month", sector: "Commodities/Agriculture", price: 17, vol: 0.019 },
-  { root: "CC", name: "Cocoa Front Month", sector: "Commodities/Agriculture", price: 8_500, vol: 0.03 },
-  { root: "OJ", name: "Orange Juice Front Month", sector: "Commodities/Agriculture", price: 340, vol: 0.028 },
-  { root: "LBS", name: "Lumber Front Month", sector: "Commodities/Materials", price: 550, vol: 0.035 },
-  { root: "HE", name: "Lean Hogs Front Month", sector: "Commodities/Agriculture", price: 85, vol: 0.022 },
-  { root: "LE", name: "Live Cattle Front Month", sector: "Commodities/Agriculture", price: 190, vol: 0.016 },
-  { root: "GF", name: "Feeder Cattle Front Month", sector: "Commodities/Agriculture", price: 260, vol: 0.017 },
-  { root: "HO", name: "Heating Oil Front Month", sector: "Commodities/Energy", price: 2.6, vol: 0.024 },
-  { root: "BZ", name: "Brent Crude Oil Front Month", sector: "Commodities/Energy", price: 82, vol: 0.023 },
-  { root: "ALI", name: "Aluminum Front Month", sector: "Commodities/Materials", price: 2_300, vol: 0.015 },
-  { root: "ZNC", name: "Zinc Front Month", sector: "Commodities/Materials", price: 2_600, vol: 0.017 },
-  { root: "NIC", name: "Nickel Front Month", sector: "Commodities/Materials", price: 17_500, vol: 0.024 },
-  { root: "TIN", name: "Tin Front Month", sector: "Commodities/Materials", price: 26_000, vol: 0.02 },
+const COMMODITY_SEEDS: {
+  root: string;
+  name: string;
+  sector: string;
+  price: number;
+  vol: number;
+}[] = [
+  {
+    root: "ZL",
+    name: "Soybean Oil Front Month",
+    sector: "Commodities/Agriculture",
+    price: 45,
+    vol: 0.018,
+  },
+  {
+    root: "ZM",
+    name: "Soybean Meal Front Month",
+    sector: "Commodities/Agriculture",
+    price: 320,
+    vol: 0.017,
+  },
+  {
+    root: "ZO",
+    name: "Oats Front Month",
+    sector: "Commodities/Agriculture",
+    price: 3.6,
+    vol: 0.02,
+  },
+  {
+    root: "ZR",
+    name: "Rough Rice Front Month",
+    sector: "Commodities/Agriculture",
+    price: 17,
+    vol: 0.019,
+  },
+  {
+    root: "CC",
+    name: "Cocoa Front Month",
+    sector: "Commodities/Agriculture",
+    price: 8_500,
+    vol: 0.03,
+  },
+  {
+    root: "OJ",
+    name: "Orange Juice Front Month",
+    sector: "Commodities/Agriculture",
+    price: 340,
+    vol: 0.028,
+  },
+  {
+    root: "LBS",
+    name: "Lumber Front Month",
+    sector: "Commodities/Materials",
+    price: 550,
+    vol: 0.035,
+  },
+  {
+    root: "HE",
+    name: "Lean Hogs Front Month",
+    sector: "Commodities/Agriculture",
+    price: 85,
+    vol: 0.022,
+  },
+  {
+    root: "LE",
+    name: "Live Cattle Front Month",
+    sector: "Commodities/Agriculture",
+    price: 190,
+    vol: 0.016,
+  },
+  {
+    root: "GF",
+    name: "Feeder Cattle Front Month",
+    sector: "Commodities/Agriculture",
+    price: 260,
+    vol: 0.017,
+  },
+  {
+    root: "HO",
+    name: "Heating Oil Front Month",
+    sector: "Commodities/Energy",
+    price: 2.6,
+    vol: 0.024,
+  },
+  {
+    root: "BZ",
+    name: "Brent Crude Oil Front Month",
+    sector: "Commodities/Energy",
+    price: 82,
+    vol: 0.023,
+  },
+  {
+    root: "ALI",
+    name: "Aluminum Front Month",
+    sector: "Commodities/Materials",
+    price: 2_300,
+    vol: 0.015,
+  },
+  {
+    root: "ZNC",
+    name: "Zinc Front Month",
+    sector: "Commodities/Materials",
+    price: 2_600,
+    vol: 0.017,
+  },
+  {
+    root: "NIC",
+    name: "Nickel Front Month",
+    sector: "Commodities/Materials",
+    price: 17_500,
+    vol: 0.024,
+  },
+  {
+    root: "TIN",
+    name: "Tin Front Month",
+    sector: "Commodities/Materials",
+    price: 26_000,
+    vol: 0.02,
+  },
   { root: "URA", name: "Uranium Front Month", sector: "Commodities/Energy", price: 84, vol: 0.03 },
-  { root: "EUA", name: "EU Carbon Allowance Front Month", sector: "Commodities/Energy", price: 65, vol: 0.025 },
-  { root: "MW", name: "Hard Red Spring Wheat Front Month", sector: "Commodities/Agriculture", price: 6.8, vol: 0.02 },
-  { root: "DA", name: "Class III Milk Front Month", sector: "Commodities/Agriculture", price: 18.4, vol: 0.021 },
-  { root: "IRON", name: "Iron Ore Front Month", sector: "Commodities/Materials", price: 110, vol: 0.026 },
+  {
+    root: "EUA",
+    name: "EU Carbon Allowance Front Month",
+    sector: "Commodities/Energy",
+    price: 65,
+    vol: 0.025,
+  },
+  {
+    root: "MW",
+    name: "Hard Red Spring Wheat Front Month",
+    sector: "Commodities/Agriculture",
+    price: 6.8,
+    vol: 0.02,
+  },
+  {
+    root: "DA",
+    name: "Class III Milk Front Month",
+    sector: "Commodities/Agriculture",
+    price: 18.4,
+    vol: 0.021,
+  },
+  {
+    root: "IRON",
+    name: "Iron Ore Front Month",
+    sector: "Commodities/Materials",
+    price: 110,
+    vol: 0.026,
+  },
 ];
 
 interface GeneratedCommoditySeed {
@@ -344,7 +485,9 @@ function generateCommodities(count: number): GeneratedCommoditySeed[] {
     });
   }
   if (out.length < count) {
-    throw new Error(`generateCommodities: only produced ${out.length}/${count}, add more seeds to COMMODITY_SEEDS`);
+    throw new Error(
+      `generateCommodities: only produced ${out.length}/${count}, add more seeds to COMMODITY_SEEDS`
+    );
   }
   return out;
 }
@@ -365,7 +508,12 @@ const CORP_ISSUERS = [
   { ticker: "PEP", name: "PepsiCo Inc.", sector: "Consumer Staples", rating: "A+" },
   { ticker: "HD", name: "Home Depot Inc.", sector: "Consumer Discretionary", rating: "A" },
   { ticker: "DIS", name: "Walt Disney Co.", sector: "Communication Services", rating: "A-" },
-  { ticker: "VZ", name: "Verizon Communications Inc.", sector: "Communication Services", rating: "BBB+" },
+  {
+    ticker: "VZ",
+    name: "Verizon Communications Inc.",
+    sector: "Communication Services",
+    rating: "BBB+",
+  },
   { ticker: "T", name: "AT&T Inc.", sector: "Communication Services", rating: "BBB" },
   { ticker: "BA", name: "Boeing Co.", sector: "Industrials", rating: "BBB-" },
   { ticker: "CAT", name: "Caterpillar Inc.", sector: "Industrials", rating: "A" },
@@ -597,7 +745,7 @@ async function writeBonds(): Promise<void> {
     "// backend/src/market-sim/bond-universe.ts and frontend/src/data/bondUniverse.ts",
     "// so both sides read one generated source instead of hand-duplicating records.",
     "",
-    "import type { BondDef } from \"./bondUniverseTypes.ts\";",
+    'import type { BondDef } from "./bondUniverseTypes.ts";',
     "",
     "export const GENERATED_BONDS: BondDef[] = " + tsLiteral(seeds) + ";",
     "",

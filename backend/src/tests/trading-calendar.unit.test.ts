@@ -1,14 +1,6 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import {
-  buildSessionSchedule,
-  isEarlyClose,
-  isHoliday,
-  resolveCurrentSession,
-  resolvePhaseFromMinute,
-  totalTradingMinutes,
-} from "../lib/trading-calendar.ts";
-import {
   calendarForOrder,
   COMMODITY_CALENDAR,
   FX_CALENDAR,
@@ -17,6 +9,14 @@ import {
   US_EQUITY_CALENDAR,
   XTKS_CALENDAR,
 } from "../lib/market-calendars.ts";
+import {
+  buildSessionSchedule,
+  isEarlyClose,
+  isHoliday,
+  resolveCurrentSession,
+  resolvePhaseFromMinute,
+  totalTradingMinutes,
+} from "../lib/trading-calendar.ts";
 
 test("buildSessionSchedule produces 5 contiguous phases starting at minute 0", () => {
   const schedule = buildSessionSchedule(US_EQUITY_CALENDAR);
@@ -37,8 +37,10 @@ test("early close shortens the continuous phase", () => {
   const normalContinuous = normal.find((s) => s.phase === "CONTINUOUS");
   const earlyContinuous = early.find((s) => s.phase === "CONTINUOUS");
   assert(normalContinuous && earlyContinuous);
-  assert(earlyContinuous.endMinute - earlyContinuous.startMinute <
-    normalContinuous.endMinute - normalContinuous.startMinute);
+  assert(
+    earlyContinuous.endMinute - earlyContinuous.startMinute <
+      normalContinuous.endMinute - normalContinuous.startMinute
+  );
 });
 
 test("resolvePhaseFromMinute resolves each phase boundary correctly", () => {
@@ -75,14 +77,8 @@ test("totalTradingMinutes: normal vs early-close day", () => {
 test("dailyBreaks: commodity market halts during its daily maintenance window", () => {
   const schedule = buildSessionSchedule(COMMODITY_CALENDAR);
   // 16:00-17:00 CT break is minutes 1380-1439 relative to the 17:00 CT open
-  assertEquals(
-    resolvePhaseFromMinute(schedule, 1400, COMMODITY_CALENDAR.dailyBreaks),
-    "HALTED"
-  );
-  assertEquals(
-    resolvePhaseFromMinute(schedule, 700, COMMODITY_CALENDAR.dailyBreaks),
-    "CONTINUOUS"
-  );
+  assertEquals(resolvePhaseFromMinute(schedule, 1400, COMMODITY_CALENDAR.dailyBreaks), "HALTED");
+  assertEquals(resolvePhaseFromMinute(schedule, 700, COMMODITY_CALENDAR.dailyBreaks), "CONTINUOUS");
 });
 
 test("dailyBreaks: Tokyo lunch break halts trading between morning and afternoon sessions", () => {
@@ -95,10 +91,7 @@ test("dailyBreaks: Tokyo lunch break halts trading between morning and afternoon
 
 test("dailyBreaks: a calendar with no breaks resolves normally (degenerate/absent case)", () => {
   const schedule = buildSessionSchedule(US_EQUITY_CALENDAR);
-  assertEquals(
-    resolvePhaseFromMinute(schedule, 200, US_EQUITY_CALENDAR.dailyBreaks),
-    "CONTINUOUS"
-  );
+  assertEquals(resolvePhaseFromMinute(schedule, 200, US_EQUITY_CALENDAR.dailyBreaks), "CONTINUOUS");
 });
 
 test("SIFMA bond calendar diverges from the equity calendar on Columbus Day and Veterans Day", () => {
@@ -145,7 +138,8 @@ test("resolveCurrentSession follows the FX calendar's continuous week, not equit
 });
 
 test("resolveCurrentSession closes CME Globex from Friday's daily break until Sunday's open", () => {
-  const open = (iso: string) => resolveCurrentSession(COMMODITY_CALENDAR, new Date(iso)).allowsOrderEntry;
+  const open = (iso: string) =>
+    resolveCurrentSession(COMMODITY_CALENDAR, new Date(iso)).allowsOrderEntry;
   assertEquals(open("2026-10-09T20:00:00Z"), true);
   assertEquals(open("2026-10-09T21:30:00Z"), false);
   assertEquals(open("2026-10-10T04:30:00Z"), false);

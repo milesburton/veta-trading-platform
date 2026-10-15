@@ -1,10 +1,6 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import {
-  capToDepth,
-  depthSliceCap,
-  estimatedDepth,
-} from "../algo/depth-cap.ts";
+import { capToDepth, depthSliceCap, estimatedDepth } from "../algo/depth-cap.ts";
 
 const tick = (volume: number | undefined): { volumes: Record<string, number> } => ({
   volumes: volume === undefined ? {} : { AAPL: volume },
@@ -28,10 +24,7 @@ test("depthSliceCap: never below one share", () => {
 });
 
 test("depthSliceCap: uncapped when depth is unknown", () => {
-  assertEquals(
-    depthSliceCap(tick(undefined), "AAPL"),
-    Number.POSITIVE_INFINITY,
-  );
+  assertEquals(depthSliceCap(tick(undefined), "AAPL"), Number.POSITIVE_INFINITY);
 });
 
 test("capToDepth: leaves small slices alone", () => {

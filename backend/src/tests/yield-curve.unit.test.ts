@@ -1,9 +1,6 @@
 import { test } from "#veta/test";
 import { assert, assertAlmostEquals, assertEquals, assertGreater } from "#veta/test-assert";
-import type {
-  NelsonSiegelParams,
-  YieldCurvePoint,
-} from "../analytics/types.ts";
+import type { NelsonSiegelParams, YieldCurvePoint } from "../analytics/types.ts";
 import {
   _internalForTests,
   buildYieldCurveResponse,
@@ -73,12 +70,6 @@ test("[yield-curve] response uses defaults and caller overrides", () => {
 
 test("[yield-curve] nelsonSiegel handles non-positive tau", () => {
   const { nelsonSiegel } = _internalForTests;
-  assertEquals(
-    nelsonSiegel(0, DEFAULT_PARAMS),
-    DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1,
-  );
-  assertEquals(
-    nelsonSiegel(-1, DEFAULT_PARAMS),
-    DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1,
-  );
+  assertEquals(nelsonSiegel(0, DEFAULT_PARAMS), DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1);
+  assertEquals(nelsonSiegel(-1, DEFAULT_PARAMS), DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1);
 });

@@ -1,4 +1,3 @@
-
 const RELAY_HOST = process.env.KAFKA_RELAY_HOST || "localhost";
 const RELAY_PORT = Number(process.env.KAFKA_RELAY_PORT) || 5007;
 const RELAY_URL = process.env.KAFKA_RELAY_URL || `http://${RELAY_HOST}:${RELAY_PORT}`;

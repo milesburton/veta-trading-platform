@@ -1,8 +1,8 @@
 import "#veta/bootstrap";
 import { serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
-import { isDeskOpen } from "./desk-calendar.ts";
 import { DecisionEngine } from "./decision-engine.ts";
+import { isDeskOpen } from "./desk-calendar.ts";
 import { GatewaySocket } from "./gateway-socket.ts";
 import { nextDelayMs } from "./pacing.ts";
 import { interpretOrderEvent, PricesSchema } from "./payloads.ts";
@@ -36,7 +36,11 @@ if (ENABLED && !PASSWORD) {
 
 function startTrading(): void {
   const tracker = new PositionTracker();
-  const engine = new DecisionEngine({ archetypeId: ARCHETYPE_ID, userId: USER_ID, symbols: SYMBOLS });
+  const engine = new DecisionEngine({
+    archetypeId: ARCHETYPE_ID,
+    userId: USER_ID,
+    symbols: SYMBOLS,
+  });
 
   let latestPrices: Record<string, number> = {};
   let dailyNotional = 0;

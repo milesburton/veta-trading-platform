@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
-
 import { intradayVolumeFactor, TRADING_DAY_MINUTES } from "../lib/time-scale.ts";
 import { generatePrice, marketData } from "../market-sim/price-engine.ts";
 import { ASSET_MAP, SP500_ASSETS } from "../market-sim/sp500-assets.ts";

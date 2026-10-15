@@ -1,6 +1,6 @@
+import { FakeTime } from "#veta/fake-time";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-import { FakeTime } from "#veta/fake-time";
 import { MsgType, Tag } from "../fix/fix-dictionary.ts";
 import { decode, encode } from "../fix/fix-parser.ts";
 import { FixSession, type SessionConfig, type SessionState } from "../fix/fix-session.ts";
@@ -218,7 +218,11 @@ test("[fix-session] initiator: receiving Logon back while LOGON_SENT transitions
   session.handleInbound(logonReply);
   assertEquals(session.sessionState, "ACTIVE");
   assertEquals(states, ["LOGON_SENT", "ACTIVE"]);
-  assertEquals(sent.length, 1, "no second Logon should be sent in response to the acceptor's reply");
+  assertEquals(
+    sent.length,
+    1,
+    "no second Logon should be sent in response to the acceptor's reply"
+  );
   session.disconnect();
 });
 
@@ -298,7 +302,11 @@ test("[fix-session] SequenceReset with a positive NewSeqNo advances the expected
     [Tag.ClOrdID, "c1"],
   ]);
   session.handleInbound(nos);
-  assertEquals(appMessages.length, 1, "sequence 10 should now be accepted as in-order after the reset");
+  assertEquals(
+    appMessages.length,
+    1,
+    "sequence 10 should now be accepted as in-order after the reset"
+  );
   session.disconnect();
 });
 
@@ -340,7 +348,11 @@ test("[fix-session] ResendRequest with EndSeqNo=0 (resend-to-infinity) gap-fills
   session.handleInbound(resendReq);
 
   const reply = decode(sent[0]);
-  assertEquals(reply.get(Tag.NewSeqNo), "2", "NewSeqNo reflects outSeq at the point the gap-fill message is built, before its own MsgSeqNum is assigned");
+  assertEquals(
+    reply.get(Tag.NewSeqNo),
+    "2",
+    "NewSeqNo reflects outSeq at the point the gap-fill message is built, before its own MsgSeqNum is assigned"
+  );
   session.disconnect();
 });
 

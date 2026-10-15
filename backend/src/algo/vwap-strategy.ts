@@ -7,7 +7,6 @@ import "#veta/bootstrap";
  * Only executes when price deviation from VWAP is within tolerance.
  * Publishes "orders.child" to the bus; EMS subscribes and executes.
  */
-
 import { logger } from "#veta/logger";
 import { createMarketSimClient, type MarketTick } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
@@ -101,7 +100,13 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
   }
 
   const now = Date.now();
-  const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, order.inFlight, now);
+  const budget = await readSliceBudget(
+    readProgress,
+    order.orderId,
+    order.quantity,
+    order.inFlight,
+    now
+  );
   if (!budget) return;
   setInFlight(order.id, budget.inFlight);
   if (budget.inFlight || budget.remaining <= 0) return;

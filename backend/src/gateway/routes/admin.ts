@@ -203,9 +203,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const ORDERS_PER_SECOND_PER_USER = Number(
-    process.env.LOAD_TEST_ORDERS_PER_SEC_PER_USER ?? "5"
-  );
+  const ORDERS_PER_SECOND_PER_USER = Number(process.env.LOAD_TEST_ORDERS_PER_SEC_PER_USER ?? "5");
 
   let prices: Record<string, number> = {};
   try {

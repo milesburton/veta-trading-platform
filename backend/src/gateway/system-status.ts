@@ -1,5 +1,5 @@
-import { runCommand } from "../lib/process.ts";
 import { CORS_HEADERS, upgradeWebSocket } from "#veta/http";
+import { runCommand } from "../lib/process.ts";
 
 export interface DiskStatus {
   total: number;

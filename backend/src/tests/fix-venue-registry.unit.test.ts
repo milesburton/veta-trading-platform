@@ -1,6 +1,10 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import { getFixVenueCapabilities, isRegisteredVenue, validateVenueRouting } from "../fix/venue-registry.ts";
+import {
+  getFixVenueCapabilities,
+  isRegisteredVenue,
+  validateVenueRouting,
+} from "../fix/venue-registry.ts";
 
 test("[fix-venue-registry] no ExDestination is always valid (venue routing optional)", () => {
   assertEquals(validateVenueRouting(undefined, true, 100).ok, true);

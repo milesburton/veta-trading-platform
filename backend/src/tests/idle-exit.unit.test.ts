@@ -1,6 +1,6 @@
+import { FakeTime } from "#veta/fake-time";
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import { FakeTime } from "#veta/fake-time";
 import { armConsumerIdleExit, armIdleExit } from "../shared/idle-exit.ts";
 
 test("[armIdleExit] exits after timeoutMs with no touch()", () => {

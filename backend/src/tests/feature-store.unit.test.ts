@@ -2,7 +2,6 @@ import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 // fallow-ignore-file complexity
-
 import type { FeatureVector } from "#veta/types/intelligence";
 import { buildBatchInsert, createFeatureStore } from "../feature-engine/feature-store.ts";
 import { makeAsyncConnect } from "./test-helpers.ts";

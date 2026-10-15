@@ -1,4 +1,4 @@
-import { serveFetch } from "#veta/http";
+import { createHash } from "node:crypto";
 /**
  * Static file server for the built frontend.
  *
@@ -8,10 +8,9 @@ import { serveFetch } from "#veta/http";
  * The client polls /__version every 30 s and shows a reload banner when the
  * hash changes, enabling zero-downtime frontend deployments.
  */
-
-import { createHash } from "node:crypto";
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { serveFetch } from "#veta/http";
 import { serveDir } from "./backend/src/lib/static-files.ts";
 
 const PORT = Number(process.env.FRONTEND_PORT ?? 8080);

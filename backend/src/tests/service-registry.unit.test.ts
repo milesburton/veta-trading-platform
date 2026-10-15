@@ -139,10 +139,7 @@ test("[registry] Tier 0 services never carry an idleTimeoutSeconds", () => {
 });
 
 test("[registry] every supervisorProgram override names a real supervisord program", () => {
-  const conf = readFileSync(
-    new URL("../../../supervisord.conf", import.meta.url).pathname,
-    "utf8"
-  );
+  const conf = readFileSync(new URL("../../../supervisord.conf", import.meta.url).pathname, "utf8");
   const programs = new Set([...conf.matchAll(/^\[program:([a-z0-9-]+)\]/gm)].map((m) => m[1]));
   for (const svc of SERVICE_REGISTRY) {
     if (svc.supervisorProgram && !programs.has(svc.supervisorProgram)) {
@@ -159,10 +156,7 @@ test("[registry] every supervisorProgram override names a real supervisord progr
 const NOT_SUPERVISORD_MANAGED = new Set(["ollama"]);
 
 test("[registry] a composeName with no supervisorProgram override matches a real supervisord program, for every tier >= 1 service", () => {
-  const conf = readFileSync(
-    new URL("../../../supervisord.conf", import.meta.url).pathname,
-    "utf8"
-  );
+  const conf = readFileSync(new URL("../../../supervisord.conf", import.meta.url).pathname, "utf8");
   const programs = new Set([...conf.matchAll(/^\[program:([a-z0-9-]+)\]/gm)].map((m) => m[1]));
   const missing: string[] = [];
   for (const svc of SERVICE_REGISTRY) {

@@ -19,10 +19,7 @@ function makeFakeProducer() {
   } as unknown as GatewayContext["producer"];
 }
 
-function makeContext(
-  role = "trader",
-  overrides: Partial<GatewayContext> = {}
-): GatewayContext {
+function makeContext(role = "trader", overrides: Partial<GatewayContext> = {}): GatewayContext {
   const ctx: Record<string, unknown> = {
     requireAuth: (_req: Request) =>
       Promise.resolve({ user: { id: "u-1", name: "Test User", role, avatar_emoji: "🧪" } }),

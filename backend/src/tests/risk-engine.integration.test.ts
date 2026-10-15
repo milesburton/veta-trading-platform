@@ -1,6 +1,5 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
-
 import { timeout } from "./test-helpers.ts";
 
 const BASE = "http://localhost:5032";
