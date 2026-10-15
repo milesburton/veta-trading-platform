@@ -84,7 +84,7 @@ export function ProductBookPanel() {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchProducts is stable (no deps change)
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- fetchProducts is stable (no deps change)
   useEffect(() => {
     void fetchProducts();
   }, [stateFilter.value]);

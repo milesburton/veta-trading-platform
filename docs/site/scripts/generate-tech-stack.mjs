@@ -42,7 +42,6 @@ const coreLinks = {
   uuid: "https://www.npmjs.com/package/uuid",
   husky: "https://typicode.github.io/husky/",
   "lint-staged": "https://github.com/lint-staged/lint-staged",
-  biome: "https://biomejs.dev/",
   postgresql: "https://www.postgresql.org/",
   redpanda: "https://redpanda.com/",
   grafana: "https://grafana.com/",
@@ -173,7 +172,7 @@ function generate() {
 
   // Testing toolchain
   const testNames = ["playwright", "@playwright/test", "vitest", "@vitest/coverage-v8",
-    "@biomejs/biome", "@testing-library/react", "msw"];
+    "@testing-library/react", "msw"];
   const testRows = testNames
     .filter((n) => frontendPackages.has(n))
     .map((n) => pkgRow(n, frontendPackages.get(n)));

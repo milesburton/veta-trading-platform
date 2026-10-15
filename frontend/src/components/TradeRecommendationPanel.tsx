@@ -101,8 +101,7 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
 
   return (
     <li className="border-b border-panel last:border-0" data-testid="recommendation-row">
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: list row toggle */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: list row toggle */}
+      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- list row toggle */}
       <div
         className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-surface/60 transition-colors"
         onClick={() => {
@@ -343,7 +342,7 @@ export function TradeRecommendationPanel() {
           {/* List */}
           <section
             className="flex-1 min-h-0 overflow-y-auto"
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+            // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region needs keyboard focus (WCAG SC 2.1.1)
             tabIndex={0}
             aria-label="Trade recommendation"
           >

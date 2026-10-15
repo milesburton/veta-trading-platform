@@ -60,7 +60,7 @@ describe("getVenueCapabilities", () => {
   });
 
   it("returns undefined for unknown venue", () => {
-    // biome-ignore lint/suspicious/noExplicitAny: testing unknown MIC
+    // oxlint-disable-next-line typescript/no-explicit-any -- testing unknown MIC
     expect(getVenueCapabilities("UNKNOWN" as any)).toBeUndefined();
   });
 });

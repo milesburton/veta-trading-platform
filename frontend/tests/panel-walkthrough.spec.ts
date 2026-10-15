@@ -128,7 +128,6 @@ test.afterAll(() => {
     panels: merged,
   };
   fs.writeFileSync(path.join(REPORT_DIR, "report.json"), `${JSON.stringify(summary, null, 2)}\n`);
-  // biome-ignore lint/suspicious/noConsole: informational test summary
   console.log(
     `[panel-walkthrough] ${summary.rendered}/${summary.totalPanels} rendered, ` +
       `${summary.withConsoleErrors} with console errors, ` +

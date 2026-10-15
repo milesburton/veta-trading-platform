@@ -13,17 +13,20 @@ describe("resolveSession", () => {
     ["CLOSING_AUCTION", true, false, true, ["LIMIT"], "Closing Auction"],
     ["HALTED", false, false, true, [], "Trading Halted"],
     ["CLOSED", false, false, false, [], "Market Closed"],
-  ] as const)("%s → entry=%s amend=%s cancel=%s", (phase, entry, amend, cancel, strategies, label) => {
-    const s = resolveSession(phase);
-    expect(s.allowsOrderEntry).toBe(entry);
-    expect(s.allowsAmend).toBe(amend);
-    expect(s.allowsCancel).toBe(cancel);
-    expect(s.phaseLabel).toBe(label);
-    if (strategies) expect(s.supportedStrategies).toEqual(strategies);
-    if (phase === "CONTINUOUS") {
-      expect(s.supportedStrategies.length).toBeGreaterThan(5);
+  ] as const)(
+    "%s → entry=%s amend=%s cancel=%s",
+    (phase, entry, amend, cancel, strategies, label) => {
+      const s = resolveSession(phase);
+      expect(s.allowsOrderEntry).toBe(entry);
+      expect(s.allowsAmend).toBe(amend);
+      expect(s.allowsCancel).toBe(cancel);
+      expect(s.phaseLabel).toBe(label);
+      if (strategies) expect(s.supportedStrategies).toEqual(strategies);
+      if (phase === "CONTINUOUS") {
+        expect(s.supportedStrategies.length).toBeGreaterThan(5);
+      }
     }
-  });
+  );
 
   it("passes through nextTransitionAt", () => {
     const ts = Date.now() + 60_000;

@@ -62,7 +62,7 @@ export function BugReportModal({ open, onClose }: Props) {
   const [submitBugReport, { isLoading }] = useSubmitBugReportMutation();
   const [presignAttachment] = usePresignTicketAttachmentMutation();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: submitted, undelivered and localError are stable signal refs whose .value is reset on open; only `open` should retrigger this effect
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- submitted, undelivered and localError are stable signal refs whose .value is reset on open; only `open` should retrigger this effect
   useEffect(() => {
     if (!open) return;
     submitted.value = false;

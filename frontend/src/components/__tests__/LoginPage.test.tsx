@@ -40,13 +40,12 @@ const mockAuthorizeOAuth =
   vi.fn<() => Promise<{ data?: { code: string }; error?: { status: number } }>>();
 const mockExchangeOAuthCode =
   vi.fn<() => Promise<{ data?: { user: AuthUser }; error?: { status: number } }>>();
-const mockRegisterOAuthUser =
-  vi.fn<
-    () => Promise<{
-      data?: { userId: string; name: string; role: string };
-      error?: { status: number; data?: { error?: string } };
-    }>
-  >();
+const mockRegisterOAuthUser = vi.fn<
+  () => Promise<{
+    data?: { userId: string; name: string; role: string };
+    error?: { status: number; data?: { error?: string } };
+  }>
+>();
 const mockLoginAsGuest =
   vi.fn<() => Promise<{ data?: { user: AuthUser }; error?: { status: number } }>>();
 const mockDemoPersonas = vi.fn<() => import("@veta/frontend/store/userApi").DemoPersona[]>(

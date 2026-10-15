@@ -114,7 +114,7 @@ export function OptionPricingPanel() {
   }, [currentPrice, strike]);
 
   const optionPrefill = useAppSelector((s) => s.ui.optionPrefill);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — consume once and clear
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional — consume once and clear
   useEffect(() => {
     if (optionPrefill) {
       strike.value = optionPrefill.strike.toFixed(2);

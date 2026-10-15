@@ -121,7 +121,7 @@ export function AlgoLeaderboardPanel() {
     };
   }, [tick]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentional for timed refresh
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- tick is intentional for timed refresh
   const metrics = useMemo(() => computeMetrics(allOrders, 300_000), [allOrders, tick.value]);
 
   return (
@@ -140,7 +140,7 @@ export function AlgoLeaderboardPanel() {
 
       <section
         className="flex-1 min-h-0 overflow-y-auto"
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region needs keyboard focus (WCAG SC 2.1.1)
         tabIndex={0}
         aria-label="Algo leaderboard"
       >

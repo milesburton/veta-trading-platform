@@ -32,7 +32,7 @@ export function SalesWorkbenchPanel() {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchAll is stable (no deps change)
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- fetchAll is stable (no deps change)
   useEffect(() => {
     fetchAll();
     intervalRef.current = setInterval(fetchAll, 10_000);

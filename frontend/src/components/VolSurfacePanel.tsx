@@ -79,7 +79,7 @@ export function VolSurfacePanel() {
     if (!surfaceMap.has(point.expiryLabel)) {
       surfaceMap.set(point.expiryLabel, new Map());
     }
-    // biome-ignore lint/style/noNonNullAssertion: we just set the key above
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- we just set the key above
     surfaceMap.get(point.expiryLabel)!.set(point.moneyness, point);
   }
 

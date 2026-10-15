@@ -113,7 +113,7 @@ export function ResizableHeader({
       className={`select-none ${textAlign} ${frozenBorder} ${className}`}
       aria-sort={isActive ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: role is set conditionally to "button" when sortable */}
+      {/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- role is set conditionally to "button" when sortable */}
       <span
         className={`flex items-center gap-1 ${
           align === "right" ? "justify-end" : ""

@@ -10,9 +10,8 @@ vi.mock("html-to-image", () => ({
   toCanvas: vi.fn(),
 }));
 
-const { pickMimeType, renderReplayToWebM, timeRangeOfSession, viewportFromEvents } = await import(
-  "../replayVideoExport.ts"
-);
+const { pickMimeType, renderReplayToWebM, timeRangeOfSession, viewportFromEvents } =
+  await import("../replayVideoExport.ts");
 
 function ev(timestamp: number, type = 3, data: unknown = {}): eventWithTime {
   return { type, data, timestamp } as eventWithTime;

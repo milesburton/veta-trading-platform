@@ -13,9 +13,9 @@ import {
   unholdOrdersThunk,
 } from "@veta/frontend/store/ordersSlice.ts";
 import { selectOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
-import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import type { ChildOrder, OrderRecord } from "@veta/frontend/types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import { fillPct } from "@veta/frontend/utils/fillPct.ts";
 import { formatTime } from "@veta/frontend/utils/format.ts";
 import { applyCfRules } from "@veta/frontend/utils/gridFilter.ts";

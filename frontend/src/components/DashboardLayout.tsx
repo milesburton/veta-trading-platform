@@ -31,13 +31,6 @@ export {
 } from "./dashboard/layoutModels.ts";
 
 export type { LayoutItem } from "./dashboard/layoutUtils.ts";
-export {
-  DEFAULT_LAYOUT,
-  modelToLayoutItems,
-} from "./dashboard/layoutUtils.ts";
+export { DEFAULT_LAYOUT, modelToLayoutItems } from "./dashboard/layoutUtils.ts";
 export type { PanelId } from "./dashboard/panelRegistry.ts";
-export {
-  PANEL_IDS,
-  PANEL_TITLES,
-  SINGLETON_PANELS,
-} from "./dashboard/panelRegistry.ts";
+export { PANEL_IDS, PANEL_TITLES, SINGLETON_PANELS } from "./dashboard/panelRegistry.ts";

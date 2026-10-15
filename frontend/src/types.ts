@@ -7,13 +7,7 @@ import type {
   Strategy,
 } from "@shared/primitives";
 
-export type {
-  AssetClass,
-  Desk,
-  LiquidityFlag,
-  OrderSide,
-  Strategy,
-} from "@shared/primitives";
+export type { AssetClass, Desk, LiquidityFlag, OrderSide, Strategy } from "@shared/primitives";
 
 export type MarketType = "lit" | "dark" | "otc";
 

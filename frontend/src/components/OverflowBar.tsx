@@ -36,7 +36,7 @@ export function OverflowBar({
   const widthCache = useRef<WeakMap<HTMLElement, number>>(new WeakMap());
   const burgerRef = useRef<HTMLButtonElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the child set changes
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- re-measure when the child set changes
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -123,7 +123,7 @@ export function OverflowBar({
     >
       {items.map((child, i) => (
         <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: stable child order driven by parent
+          // oxlint-disable-next-line react/no-array-index-key -- stable child order driven by parent
           key={i}
           ref={(el) => {
             itemRefs.current[i] = el;
