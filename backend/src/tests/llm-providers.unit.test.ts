@@ -1,4 +1,5 @@
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 import { createMockProvider } from "../llm-advisory/providers/mock.ts";
 import { createOllamaProvider } from "../llm-advisory/providers/ollama.ts";
 
@@ -28,7 +29,7 @@ function stubFetch(handler: (captured: Captured) => Response): { captured: Captu
   };
 }
 
-Deno.test("[ollama] generate posts the prompt to /api/generate and maps token counts", async () => {
+test("[ollama] generate posts the prompt to /api/generate and maps token counts", async () => {
   const stub = stubFetch(() =>
     new Response(JSON.stringify({ response: "advice", prompt_eval_count: 21, eval_count: 8 }), { status: 200 })
   );
@@ -51,7 +52,7 @@ Deno.test("[ollama] generate posts the prompt to /api/generate and maps token co
   }
 });
 
-Deno.test("[ollama] generate defaults missing token counts to zero", async () => {
+test("[ollama] generate defaults missing token counts to zero", async () => {
   const stub = stubFetch(() => new Response(JSON.stringify({ response: "x" }), { status: 200 }));
   try {
     const result = await createOllamaProvider("m", "http://o").generate("p", "s");
@@ -62,7 +63,7 @@ Deno.test("[ollama] generate defaults missing token counts to zero", async () =>
   }
 });
 
-Deno.test("[ollama] generate throws with the status and body on a non-ok response", async () => {
+test("[ollama] generate throws with the status and body on a non-ok response", async () => {
   const stub = stubFetch(() => new Response("model not found", { status: 404 }));
   try {
     await assertRejects(
@@ -75,7 +76,7 @@ Deno.test("[ollama] generate throws with the status and body on a non-ok respons
   }
 });
 
-Deno.test("[ollama] isAvailable reflects /api/tags and swallows network errors", async () => {
+test("[ollama] isAvailable reflects /api/tags and swallows network errors", async () => {
   const up = stubFetch(() => new Response("{}", { status: 200 }));
   try {
     assertEquals(await createOllamaProvider("m", "http://o/").isAvailable(), true);
@@ -100,7 +101,7 @@ Deno.test("[ollama] isAvailable reflects /api/tags and swallows network errors",
   }
 });
 
-Deno.test("[mock provider] is always available and returns a deterministic canned response per prompt", async () => {
+test("[mock provider] is always available and returns a deterministic canned response per prompt", async () => {
   const provider = createMockProvider();
   assertEquals(provider.providerId, "mock");
   assertEquals(await provider.isAvailable(), true);

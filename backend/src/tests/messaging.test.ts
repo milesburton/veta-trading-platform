@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test } from "#veta/test";
 import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 
 import { z } from "zod";

@@ -1,6 +1,6 @@
-import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { logger } from "@veta/logger";
-import type { FeatureVector } from "@veta/types/intelligence";
+import type { Pool } from "#veta/db";
+import { logger } from "#veta/logger";
+import type { FeatureVector } from "#veta/types/intelligence";
 
 const MAX_PER_SYMBOL = 500;
 const FEATURE_COLS = 9;

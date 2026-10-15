@@ -1,9 +1,11 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { readFileSync } from "node:fs";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 
 const CONF_PATH = new URL("../../../supervisord.conf", import.meta.url).pathname;
 
 function readConf(): string {
-  return Deno.readTextFileSync(CONF_PATH);
+  return readFileSync(CONF_PATH, "utf8");
 }
 
 function programBlock(conf: string, program: string): string {
@@ -19,7 +21,7 @@ function groupPrograms(conf: string, group: string): string[] {
   return match[1].split(",").map((p) => p.trim());
 }
 
-Deno.test("[supervisord.conf] every program is defined exactly once", () => {
+test("[supervisord.conf] every program is defined exactly once", () => {
   const conf = readConf();
   const names = [...conf.matchAll(/^\[program:([a-z0-9-]+)\]/gm)].map((m) => m[1]);
   const seen = new Set<string>();
@@ -31,7 +33,7 @@ Deno.test("[supervisord.conf] every program is defined exactly once", () => {
   assertEquals(duplicates, []);
 });
 
-Deno.test("[supervisord.conf] risk-engine and fix-exchange autostart and are not in any group", () => {
+test("[supervisord.conf] risk-engine and fix-exchange autostart and are not in any group", () => {
   const conf = readConf();
   for (const program of ["risk-engine", "fix-exchange"]) {
     const block = programBlock(conf, program);
@@ -46,7 +48,7 @@ Deno.test("[supervisord.conf] risk-engine and fix-exchange autostart and are not
   }
 });
 
-Deno.test("[supervisord.conf] the always-on core block matches the intended Tier 0 program set", () => {
+test("[supervisord.conf] the always-on core block matches the intended Tier 0 program set", () => {
   const conf = readConf();
   const allGroupMembers = new Set([
     ...groupPrograms(conf, "algos"),
@@ -74,7 +76,7 @@ Deno.test("[supervisord.conf] the always-on core block matches the intended Tier
   assertEquals(new Set(ungrouped), expectedCore);
 });
 
-Deno.test("[supervisord.conf] every idle-safe group member has autostart=false", () => {
+test("[supervisord.conf] every idle-safe group member has autostart=false", () => {
   const conf = readConf();
   for (const group of ["algos", "microstructure", "analytics", "aux"]) {
     for (const program of groupPrograms(conf, group)) {

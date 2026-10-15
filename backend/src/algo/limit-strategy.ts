@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * LIMIT order algorithm
  *
@@ -8,12 +8,11 @@ import "@veta/bootstrap";
  * EMS subscribes to "orders.child" and executes the fill.
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import type { RoutedOrder } from "@veta/schemas/orders";
-import { RoutedOrderSchema } from "@veta/schemas/orders";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
+import type { RoutedOrder } from "#veta/schemas/orders";
+import { RoutedOrderSchema } from "#veta/schemas/orders";
 import {
   armAlgoIdleExit,
   serveAlgoHealth,
@@ -28,10 +27,10 @@ import {
   type TrackedOrder,
 } from "./fill-progress.ts";
 
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const PORT = Number(Deno.env.get("ALGO_TRADER_PORT")) || 5_003;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const PORT = Number(process.env.ALGO_TRADER_PORT) || 5_003;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
@@ -59,7 +58,7 @@ function isTriggered(order: PendingLimit, marketPrice: number): boolean {
   return order.side === "BUY" ? marketPrice <= order.limitPrice : marketPrice >= order.limitPrice;
 }
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("LIMIT_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.LIMIT_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => pendingOrders.size === 0, "limit-algo");
 
 await createTypedConsumer("limit-algo-routed", [

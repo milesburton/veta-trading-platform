@@ -38,7 +38,7 @@ selectively re-adds only what the workload genuinely requires:
 | --- | --- | --- |
 | `traefik` | `NET_BIND_SERVICE` | bind 80/443 as non-root |
 | `postgres` | `CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID` | initdb permission setup |
-| All others | none | Deno runtimes, kafkajs clients, ollama, kafka-relay |
+| All others | none | Node runtimes, kafkajs clients, ollama, kafka-relay |
 
 Without capabilities, an in-container attacker cannot raw-socket scan,
 modify network namespaces, or override file permissions outside their
@@ -51,10 +51,10 @@ This blocks setuid escalation: even if an attacker finds a setuid binary
 inside the container, the kernel refuses to honour the bit. The class of
 "defeat the non-root constraint" exploits is closed off.
 
-### Non-root execution (Deno services)
+### Non-root execution (Node services)
 
 The shared base Dockerfile (`docker/base/Dockerfile`) ends with
-`USER deno:deno`, mapping all Deno-based trading services to UID 1993
+`USER veta:veta`, mapping all Node-based trading services to UID 1993
 inside their containers. An attacker who lands RCE has the privileges
 of UID 1993, not 0. Combined with capability drop, the post-exploit
 position is meaningfully constrained.
@@ -82,7 +82,7 @@ on the host (see `scripts/host-prune.sh`).
 
 ### `tmpfs:/tmp`
 
-Each Deno service gets `/tmp` as a tmpfs mount. Anything that does land
+Each Node service gets `/tmp` as a tmpfs mount. Anything that does land
 in `/tmp` exists only in RAM and dies with the container. Nothing
 persists, and no on-disk artefacts survive a restart.
 
@@ -94,7 +94,7 @@ The gateway's `AbuseTracker` produces escalating decisions against a WebSocket c
 
 - **Level 1** (handled by the per-socket frame rate limiter, not `AbuseTracker`): reject a single over-rate frame and send `rateLimited` back to the client. Soft, no state kept.
 - **Level 2** (`AbuseTracker.recordRateLimited`): a single socket hits the per-socket frame limit `ABUSE_PER_SOCKET_THRESHOLD` times (10) within `ABUSE_PER_SOCKET_WINDOW_MS` (60 s). Decision: `forceClose`. The socket is closed and a `ws_disconnected_abuse` access event is published.
-- **Level 3** (`AbuseTracker.recordRateLimited` escalating further): a single userId accumulates `ABUSE_USER_FORCE_CLOSE_THRESHOLD` force-closes (3) within `ABUSE_USER_WINDOW_MS` (5 min). Decision: `blockUser`. New WebSocket upgrade attempts for that userId are refused for `ABUSE_USER_BACKOFF_MS` (5 min), checked by `AbuseTracker.upgradeDecision` before `Deno.upgradeWebSocket` runs.
+- **Level 3** (`AbuseTracker.recordRateLimited` escalating further): a single userId accumulates `ABUSE_USER_FORCE_CLOSE_THRESHOLD` force-closes (3) within `ABUSE_USER_WINDOW_MS` (5 min). Decision: `blockUser`. New WebSocket upgrade attempts for that userId are refused for `ABUSE_USER_BACKOFF_MS` (5 min), checked by `AbuseTracker.upgradeDecision` before `upgradeWebSocket` runs.
 
 There is no IP-banning. UserIds are the control surface: unauthenticated sockets share a single anonymous key, so level-3 effects on anonymous traffic apply globally. That matches the threat model above: a real attacker authenticating anonymously is just one of many anonymous callers, so anonymous traffic as a whole is the unit of defence.
 
@@ -116,9 +116,9 @@ Shared workspace IDs are always created server-side as alphanumeric tokens. `use
 
 ## Residual risks (not yet mitigated)
 
-### `read_only: true` not yet applied to Deno services
+### `read_only: true` not yet applied to Node services
 
-The Deno-based trading services are *not* yet read-only. They could be:
+The Node-based trading services are *not* yet read-only. They could be:
 they don't write to local disk at runtime (logs go to stdout, state goes
 to Postgres or Kafka). The reason it isn't done in this pass is that
 the failure mode of getting it wrong on a live server (one service
@@ -158,5 +158,5 @@ docker inspect veta-gateway-1 --format '{{ .HostConfig.CapDrop }}'
 docker inspect veta-gateway-1 --format '{{ .HostConfig.SecurityOpt }}'
 # Expect to include: no-new-privileges:true
 docker exec veta-gateway-1 id -u
-# Expect: 1993 (deno)
+# Expect: 1993 (veta)
 ```

@@ -2,10 +2,10 @@
  * Alpha Vantage provider — equity GLOBAL_QUOTE and FX CURRENCY_EXCHANGE_RATE.
  */
 
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 import type { CachedQuote, ProviderDef } from "./types.ts";
 
-const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
+const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY ?? "";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 const PROV = { provider: "alpha-vantage" };
 

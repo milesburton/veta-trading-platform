@@ -1,8 +1,9 @@
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
 import { PlatformStats } from "../gateway/platform-stats.ts";
 
-Deno.test("PlatformStats counts alerts by severity", () => {
+test("PlatformStats counts alerts by severity", () => {
   const s = new PlatformStats();
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "m", ts: Date.now() });
   s.recordAlert({ severity: "WARNING", source: "x", message: "m", ts: Date.now() });
@@ -14,7 +15,7 @@ Deno.test("PlatformStats counts alerts by severity", () => {
   assertEquals(snap.alertsBySeverity.INFO, 1);
 });
 
-Deno.test("PlatformStats prunes events older than 24h", () => {
+test("PlatformStats prunes events older than 24h", () => {
   const s = new PlatformStats();
   const now = Date.now();
   s.recordAlert({
@@ -29,7 +30,7 @@ Deno.test("PlatformStats prunes events older than 24h", () => {
   assertEquals(snap.lastCritical?.message, "fresh");
 });
 
-Deno.test("PlatformStats lastCritical is most recent CRITICAL", () => {
+test("PlatformStats lastCritical is most recent CRITICAL", () => {
   const s = new PlatformStats();
   const now = Date.now();
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "first", ts: now - 60_000 });
@@ -39,7 +40,7 @@ Deno.test("PlatformStats lastCritical is most recent CRITICAL", () => {
   assertEquals(snap.lastCritical?.message, "later");
 });
 
-Deno.test("PlatformStats counts unique bug reporters", () => {
+test("PlatformStats counts unique bug reporters", () => {
   const s = new PlatformStats();
   s.recordBug({ title: "a", userId: "alice", ts: Date.now() });
   s.recordBug({ title: "b", userId: "alice", ts: Date.now() });
@@ -49,7 +50,7 @@ Deno.test("PlatformStats counts unique bug reporters", () => {
   assertEquals(snap.uniqueBugReporters, 2);
 });
 
-Deno.test("PlatformStats serviceUpRatio is mean of snapshot ratios", () => {
+test("PlatformStats serviceUpRatio is mean of snapshot ratios", () => {
   const s = new PlatformStats();
   s.recordServiceSnapshot(32, 32);
   s.recordServiceSnapshot(28, 32);
@@ -66,21 +67,21 @@ Deno.test("PlatformStats serviceUpRatio is mean of snapshot ratios", () => {
   }
 });
 
-Deno.test("PlatformStats serviceUpRatio is null when no snapshots", () => {
+test("PlatformStats serviceUpRatio is null when no snapshots", () => {
   const s = new PlatformStats();
   const snap = s.snapshot();
   assertEquals(snap.serviceUpRatio, null);
   assertEquals(snap.worstServiceUpRatio, null);
 });
 
-Deno.test("PlatformStats setDeploySha surfaces in snapshot", () => {
+test("PlatformStats setDeploySha surfaces in snapshot", () => {
   const s = new PlatformStats();
   s.setDeploySha("deadbeef1234");
   const snap = s.snapshot();
   assertEquals(snap.lastDeploySha, "deadbeef1234");
 });
 
-Deno.test("PlatformStats snapshot(now) re-prunes using the supplied now", () => {
+test("PlatformStats snapshot(now) re-prunes using the supplied now", () => {
   const s = new PlatformStats();
   const now = Date.now();
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "earlier", ts: now });
@@ -96,7 +97,7 @@ Deno.test("PlatformStats snapshot(now) re-prunes using the supplied now", () => 
   assertEquals(snap.lastCritical?.message, "later");
 });
 
-Deno.test("PlatformStats event at exact cutoff is included (>= boundary)", () => {
+test("PlatformStats event at exact cutoff is included (>= boundary)", () => {
   const s = new PlatformStats();
   const now = Date.now();
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "fresh", ts: now });
@@ -106,7 +107,7 @@ Deno.test("PlatformStats event at exact cutoff is included (>= boundary)", () =>
   assertEquals(snap.lastCritical?.message, "fresh");
 });
 
-Deno.test("PlatformStats serviceUpRatio treats total=0 snapshots as 100% up", () => {
+test("PlatformStats serviceUpRatio treats total=0 snapshots as 100% up", () => {
   const s = new PlatformStats();
   s.recordServiceSnapshot(0, 0);
   s.recordServiceSnapshot(8, 10);
@@ -119,7 +120,7 @@ Deno.test("PlatformStats serviceUpRatio treats total=0 snapshots as 100% up", ()
   assertEquals(snap.worstServiceUpRatio, 0.8);
 });
 
-Deno.test("PlatformStats deploy SHA can be updated mid-window", () => {
+test("PlatformStats deploy SHA can be updated mid-window", () => {
   const s = new PlatformStats();
   s.setDeploySha("aaaa1111");
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "before", ts: Date.now() });

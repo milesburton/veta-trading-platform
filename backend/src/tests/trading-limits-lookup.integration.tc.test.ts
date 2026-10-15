@@ -1,12 +1,13 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { startStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const SERVICE_TOKEN_HEADER = "x-veta-service-token";
 const SERVICE_TOKEN = "test-internal-service-token";
 const T = () => AbortSignal.timeout(8_000);
 
-Deno.test({
+test({
   name: "user-service trading limits lookup for service callers (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {

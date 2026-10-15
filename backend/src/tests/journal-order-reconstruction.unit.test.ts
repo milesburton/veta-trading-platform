@@ -1,4 +1,5 @@
-import { assertEquals, assertStrictEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals, assertStrictEquals } from "#veta/test-assert";
 import { reconstructOrdersFromRows } from "../journal/order-reconstruction.ts";
 
 const T0 = new Date("2026-10-09T13:30:00Z");
@@ -18,7 +19,7 @@ const submitted = [
   { clientOrderId: "c1", expiresAt: 60 },
 ];
 
-Deno.test("[journal-reconstruct] decodes float8 strings from the driver as numbers", () => {
+test("[journal-reconstruct] decodes float8 strings from the driver as numbers", () => {
   const [order] = reconstructOrdersFromRows(
     [submitted],
     [["o1", "orders.child", at(1), "BUY", "4", "175.72", null, "k1", null]]
@@ -30,7 +31,7 @@ Deno.test("[journal-reconstruct] decodes float8 strings from the driver as numbe
   assertStrictEquals(child.limitPrice, 175.72);
 });
 
-Deno.test("[journal-reconstruct] applies routing, child and fill events in order", () => {
+test("[journal-reconstruct] applies routing, child and fill events in order", () => {
   const [order] = reconstructOrdersFromRows(
     [submitted, ["o1", "orders.routed", at(1), null, null, null, null, null, null, null, {}]],
     [
@@ -47,7 +48,7 @@ Deno.test("[journal-reconstruct] applies routing, child and fill events in order
   assertStrictEquals(child.avgFillPrice, 175.7);
 });
 
-Deno.test("[journal-reconstruct] keeps a reject reason and sorts newest first", () => {
+test("[journal-reconstruct] keeps a reject reason and sorts newest first", () => {
   const orders = reconstructOrdersFromRows(
     [
       submitted,

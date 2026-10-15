@@ -11,7 +11,7 @@ The full procedure lives in the docs playbook and is the source of truth:
 Always scaffold with the generator rather than editing the coupling points by hand:
 
 ```bash
-cd frontend && deno task new:panel <panel-id> "<Title>" --desc "<description>"
+cd frontend && npm run new:panel -- <panel-id> "<Title>" --desc "<description>"
 ```
 
 `<panel-id>` is kebab-case. The generator is idempotent (re-running with the same id is a

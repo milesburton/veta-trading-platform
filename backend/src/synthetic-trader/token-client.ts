@@ -1,4 +1,4 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 
 export interface TokenClientConfig {
   userServiceUrl: string;
@@ -39,7 +39,7 @@ async function deriveChallenge(verifier: string): Promise<string> {
 
 export class TokenClient {
   #config: Required<TokenClientConfig>;
-  #timer: number | undefined;
+  #timer: ReturnType<typeof setInterval> | undefined;
 
   constructor(config: TokenClientConfig) {
     this.#config = {

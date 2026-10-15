@@ -1,8 +1,9 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 10_000) => AbortSignal.timeout(ms);
 
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
@@ -28,7 +29,7 @@ const SERVICES = [
 
 const EMPTY_FILTER = { kind: "group", id: "root", join: "AND", rules: [] };
 
-Deno.test({
+test({
   name: "service contracts + order flow (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {
@@ -301,9 +302,7 @@ Deno.test({
         await aliceDelete.body?.cancel();
       });
     } catch (err) {
-      await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
-      );
+      process.stderr.write(`\n--- service logs ---\n${stack.dumpLogs()}`);
       throw err;
     } finally {
       await stack.teardown();

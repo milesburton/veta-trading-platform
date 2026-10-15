@@ -89,8 +89,8 @@ pacing is lost.
 purely additive; check existing `marketHours.test.ts` doesn't hardcode a date that is now
 also a holiday.
 
-**Status: Shipped**, at `backend/src/lib/trading-calendar.ts` (`@veta/trading-calendar`)
-and `backend/src/lib/market-calendars.ts` (`@veta/market-calendars`) rather than the
+**Status: Shipped**, at `backend/src/lib/trading-calendar.ts` (`#veta/trading-calendar`)
+and `backend/src/lib/market-calendars.ts` (`#veta/market-calendars`) rather than the
 `backend/src/market-sim/tradingCalendar.ts` path specified above — the calendar covers
 equities, FX, bonds, and commodities across multiple exchanges, with daily-break support.
 `marketHours.ts`'s `isUsEquityRegularSession()` delegates to it. Tests:
@@ -98,7 +98,7 @@ equities, FX, bonds, and commodities across multiple exchanges, with daily-break
 
 ### Phase 2 — Plumb `sessionPhase` into the shared market client
 
-`@veta/market-client`'s `MarketTick` interface (`backend/src/lib/market-sim-client.ts`) does
+`#veta/market-client`'s `MarketTick` interface (`backend/src/lib/market-sim-client.ts`) does
 not carry `sessionPhase` at all, even though `market-sim.ts`'s WebSocket payload includes
 it. No backend process outside `market-sim.ts` itself can observe session phase today.
 Add `sessionPhase` as an optional field to `MarketTick`/`mergeTick()`, and have
@@ -115,7 +115,7 @@ the full tick object rather than field-by-field assertions.
 (`backend/src/lib/market-sim-client.ts`), carried correctly across full snapshots and
 partial diffs. `risk-engine.ts`'s `consumeMarketTicks()` does not track it into
 `RiskState`, though — the market-hours check (Phase 3) resolves session state
-independently via `@veta/trading-calendar` instead, since `sessionPhase` reflects
+independently via `#veta/trading-calendar` instead, since `sessionPhase` reflects
 market-sim's simulated pacing rather than real wall-clock time, and a risk check gating
 real order entry is better served by the real calendar. `fix-exchange.ts` (Phase 6) is
 the one consumer that reads `sessionPhase` directly, since it wants the simulator's own
@@ -145,7 +145,7 @@ only new tests are added.
 
 **Status: Shipped as `checkMarketHours`**, gated by `RiskConfig.marketHoursEnforced` in
 `backend/src/schemas/risk.ts`. It resolves session state directly from
-`@veta/trading-calendar` per order rather than a `RiskState`-tracked `sessionPhase` (see
+`#veta/trading-calendar` per order rather than a `RiskState`-tracked `sessionPhase` (see
 Phase 2). **Gap:** the check only tests `session.allowsOrderEntry`, a blanket open/closed
 gate — it does not restrict to auction-eligible strategies during
 `PRE_OPEN`/`OPENING_AUCTION`/`CLOSING_AUCTION`. `resolveSession()` in `trading-calendar.ts`
@@ -224,7 +224,7 @@ of this ADR's scope.
 
 ### Phase 6 — FIX path: same enforcement, independent wiring
 
-`fix-exchange.ts` is a standalone Deno process with its own `@veta/market-client`
+`fix-exchange.ts` is a standalone Deno process with its own `#veta/market-client`
 WebSocket connection to market-sim (see [FIX protocol](../../fix-protocol/)) — it does not
 call risk-engine or OMS, so Phase 3's check does not cover it by construction. Phase 2's
 `MarketTick.sessionPhase` field is already available to it via the same client library, so

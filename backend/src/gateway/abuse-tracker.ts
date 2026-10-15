@@ -48,7 +48,7 @@ export class AbuseTracker {
 
   /**
    * Decide whether a userId is currently blocked from upgrading a new WS.
-   * Called at upgrade time, before Deno.upgradeWebSocket.
+   * Called at upgrade time, before upgradeWebSocket.
    */
   upgradeDecision(userId: string | null, now: number = Date.now()): AbuseDecision {
     const key = this.#userKey(userId);

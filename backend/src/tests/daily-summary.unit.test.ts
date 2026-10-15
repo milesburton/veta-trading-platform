@@ -1,5 +1,6 @@
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
 import { buildDailySummary, startDailySummary } from "../gateway/daily-summary.ts";
 import { PlatformStats } from "../gateway/platform-stats.ts";
 
@@ -20,7 +21,7 @@ function expectHeaderPrefix(stats: PlatformStats, expected: string, detail: stri
   }
 }
 
-Deno.test("buildDailySummary header: ✅ when worst window is 100%", () => {
+test("buildDailySummary header: ✅ when worst window is 100%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   const msg = buildDailySummary(ctx(stats));
@@ -33,25 +34,25 @@ Deno.test("buildDailySummary header: ✅ when worst window is 100%", () => {
   if (!msg.includes("(prod)")) throw new Error("expected env in header");
 });
 
-Deno.test("buildDailySummary header: ⚠️ when worst window below 100% but at-or-above 95%", () => {
+test("buildDailySummary header: ⚠️ when worst window below 100% but at-or-above 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(31, 32);
   expectHeaderPrefix(stats, "⚠️", "expected ⚠️ start");
 });
 
-Deno.test("buildDailySummary header: ⚠️ when worst window is exactly 99.9% (not ✅)", () => {
+test("buildDailySummary header: ⚠️ when worst window is exactly 99.9% (not ✅)", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(999, 1000);
   expectHeaderPrefix(stats, "⚠️", "expected ⚠️ at 99.9%");
 });
 
-Deno.test("buildDailySummary header: ⚠️ at exactly 95% (boundary)", () => {
+test("buildDailySummary header: ⚠️ at exactly 95% (boundary)", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(95, 100);
   expectHeaderPrefix(stats, "⚠️", "expected ⚠️ at 95%");
 });
 
-Deno.test("buildDailySummary header: 🚨 just below 95%", () => {
+test("buildDailySummary header: 🚨 just below 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(94, 100);
   const msg = buildDailySummary(ctx(stats));
@@ -60,7 +61,7 @@ Deno.test("buildDailySummary header: 🚨 just below 95%", () => {
   }
 });
 
-Deno.test("buildDailySummary header: 🚨 when worst window below 95%", () => {
+test("buildDailySummary header: 🚨 when worst window below 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(20, 32);
   const msg = buildDailySummary(ctx(stats));
@@ -69,7 +70,7 @@ Deno.test("buildDailySummary header: 🚨 when worst window below 95%", () => {
   }
 });
 
-Deno.test("buildDailySummary lists no alerts when none recorded", () => {
+test("buildDailySummary lists no alerts when none recorded", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   const msg = buildDailySummary(ctx(stats));
@@ -78,7 +79,7 @@ Deno.test("buildDailySummary lists no alerts when none recorded", () => {
   }
 });
 
-Deno.test("buildDailySummary breaks down alerts by severity", () => {
+test("buildDailySummary breaks down alerts by severity", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   stats.recordAlert({
@@ -108,7 +109,7 @@ Deno.test("buildDailySummary breaks down alerts by severity", () => {
   }
 });
 
-Deno.test("buildDailySummary surfaces unknown-severity alerts in the breakdown", () => {
+test("buildDailySummary surfaces unknown-severity alerts in the breakdown", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   stats.recordAlert({
@@ -135,7 +136,7 @@ Deno.test("buildDailySummary surfaces unknown-severity alerts in the breakdown",
   }
 });
 
-Deno.test("buildDailySummary lists down services in 'now' line", () => {
+test("buildDailySummary lists down services in 'now' line", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(31, 32);
   const msg = buildDailySummary(ctx(stats, { gateway: true, oms: false, ems: true }));
@@ -144,7 +145,7 @@ Deno.test("buildDailySummary lists down services in 'now' line", () => {
   }
 });
 
-Deno.test("buildDailySummary lists bug counts with unique reporter count", () => {
+test("buildDailySummary lists bug counts with unique reporter count", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   stats.recordBug({ title: "x", userId: "alice", ts: Date.now() });
@@ -156,7 +157,7 @@ Deno.test("buildDailySummary lists bug counts with unique reporter count", () =>
   }
 });
 
-Deno.test("startDailySummary schedules next fire at 09:00 UTC", () => {
+test("startDailySummary schedules next fire at 09:00 UTC", () => {
   const baseNow = Date.UTC(2026, 4, 20, 5, 0, 0);
   let calls = 0;
   const h = startDailySummary({
@@ -179,7 +180,7 @@ Deno.test("startDailySummary schedules next fire at 09:00 UTC", () => {
   assertEquals(calls, 0);
 });
 
-Deno.test("startDailySummary nextFire rolls over to tomorrow if past today's hour", () => {
+test("startDailySummary nextFire rolls over to tomorrow if past today's hour", () => {
   const baseNow = Date.UTC(2026, 4, 20, 14, 30, 0);
   const h = startDailySummary({
     version: "v",
@@ -197,7 +198,7 @@ Deno.test("startDailySummary nextFire rolls over to tomorrow if past today's hou
   assertEquals(nextFire, expected);
 });
 
-Deno.test("buildDailySummary uptime formats <1h as Nm only", () => {
+test("buildDailySummary uptime formats <1h as Nm only", () => {
   const stats = new PlatformStats();
   const baseNow = 1_700_000_000_000;
   const c = {
@@ -213,7 +214,7 @@ Deno.test("buildDailySummary uptime formats <1h as Nm only", () => {
   }
 });
 
-Deno.test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
+test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
   const stats = new PlatformStats();
   const baseNow = 1_700_000_000_000;
   const c = {
@@ -229,7 +230,7 @@ Deno.test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
   }
 });
 
-Deno.test("buildDailySummary 'no samples in window yet' path when no service snapshots", () => {
+test("buildDailySummary 'no samples in window yet' path when no service snapshots", () => {
   const stats = new PlatformStats();
   const msg = buildDailySummary(ctx(stats, null));
   if (!msg.includes("**Services:** no samples in window yet")) {
@@ -237,7 +238,7 @@ Deno.test("buildDailySummary 'no samples in window yet' path when no service sna
   }
 });
 
-Deno.test("buildDailySummary includes Deployed SHA when setDeploySha was called", () => {
+test("buildDailySummary includes Deployed SHA when setDeploySha was called", () => {
   const stats = new PlatformStats();
   stats.setDeploySha("deadbeef1234567");
   stats.recordServiceSnapshot(10, 10);
@@ -249,7 +250,7 @@ Deno.test("buildDailySummary includes Deployed SHA when setDeploySha was called"
   }
 });
 
-Deno.test("buildDailySummary omits Deployed SHA when none set", () => {
+test("buildDailySummary omits Deployed SHA when none set", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(10, 10);
   const msg = buildDailySummary(ctx(stats));
@@ -258,7 +259,7 @@ Deno.test("buildDailySummary omits Deployed SHA when none set", () => {
   }
 });
 
-Deno.test("startDailySummary clamps hourUtc to the default for invalid input", () => {
+test("startDailySummary clamps hourUtc to the default for invalid input", () => {
   const stats = new PlatformStats();
   const baseNow = Date.UTC(2026, 4, 20, 14, 30, 0);
   const c = {
@@ -279,7 +280,7 @@ Deno.test("startDailySummary clamps hourUtc to the default for invalid input", (
   }
 });
 
-Deno.test("startDailySummary constructs successfully with no sender (uses default)", () => {
+test("startDailySummary constructs successfully with no sender (uses default)", () => {
   const stats = new PlatformStats();
   const baseNow = Date.UTC(2026, 4, 20, 8, 30, 0);
   const h = startDailySummary({
@@ -296,7 +297,7 @@ Deno.test("startDailySummary constructs successfully with no sender (uses defaul
   assertEquals(next, Date.UTC(2026, 4, 20, 9, 0, 0));
 });
 
-Deno.test("buildDailySummary header: ℹ️ when no worst service ratio exists yet", () => {
+test("buildDailySummary header: ℹ️ when no worst service ratio exists yet", () => {
   const stats = new PlatformStats();
   const msg = buildDailySummary(ctx(stats, { gateway: true, oms: true }));
   if (!msg.startsWith("ℹ️")) {
@@ -307,7 +308,7 @@ Deno.test("buildDailySummary header: ℹ️ when no worst service ratio exists y
   }
 });
 
-Deno.test("buildDailySummary bug line uses singular 'user' for one reporter", () => {
+test("buildDailySummary bug line uses singular 'user' for one reporter", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   stats.recordBug({ title: "x", userId: "alice", ts: Date.now() });
@@ -317,7 +318,7 @@ Deno.test("buildDailySummary bug line uses singular 'user' for one reporter", ()
   }
 });
 
-Deno.test({
+test({
   name: "startDailySummary fires scheduled callback, reschedules, and swallows sender rejection",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -336,7 +337,7 @@ Deno.test({
     try {
       globalThis.setTimeout = ((fn: () => void, delay?: number) => {
         scheduled.push({ fn, delay: delay ?? 0 });
-        return scheduled.length as ReturnType<typeof setTimeout>;
+        return scheduled.length as unknown as ReturnType<typeof setTimeout>;
       }) as typeof setTimeout;
       globalThis.clearTimeout = ((id: unknown) => {
         cleared.push(id);

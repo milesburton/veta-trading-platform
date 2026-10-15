@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 import { buildLoadgenMessage } from "../gateway/discord-notifier.ts";
 import {
@@ -21,31 +22,31 @@ function jsonReq(
   });
 }
 
-Deno.test("parseAnnouncement accepts a well-formed start event", () => {
+test("parseAnnouncement accepts a well-formed start event", () => {
   const a = parseAnnouncement({ event: "start", runner: "soak", note: "vus=50" });
   assertEquals(a, { event: "start", runner: "soak", note: "vus=50" });
 });
 
-Deno.test("parseAnnouncement accepts a stop event without a note", () => {
+test("parseAnnouncement accepts a stop event without a note", () => {
   const a = parseAnnouncement({ event: "stop", runner: "matrix" });
   assertEquals(a, { event: "stop", runner: "matrix", note: undefined });
 });
 
-Deno.test("parseAnnouncement rejects unknown event values", () => {
+test("parseAnnouncement rejects unknown event values", () => {
   assertEquals(parseAnnouncement({ event: "pause", runner: "soak" }), null);
 });
 
-Deno.test("parseAnnouncement rejects empty runner", () => {
+test("parseAnnouncement rejects empty runner", () => {
   assertEquals(parseAnnouncement({ event: "start", runner: "" }), null);
 });
 
-Deno.test("parseAnnouncement rejects non-object bodies", () => {
+test("parseAnnouncement rejects non-object bodies", () => {
   assertEquals(parseAnnouncement(null), null);
   assertEquals(parseAnnouncement("hello"), null);
   assertEquals(parseAnnouncement(42), null);
 });
 
-Deno.test("buildLoadgenMessage flags noise window on start", () => {
+test("buildLoadgenMessage flags noise window on start", () => {
   const msg = buildLoadgenMessage({ event: "start", runner: "soak", note: "vus=50" });
   assert(msg.includes("started"));
   assert(msg.includes("soak"));
@@ -53,13 +54,13 @@ Deno.test("buildLoadgenMessage flags noise window on start", () => {
   assert(msg.toLowerCase().includes("disregard"));
 });
 
-Deno.test("buildLoadgenMessage announces signal-restored on stop", () => {
+test("buildLoadgenMessage announces signal-restored on stop", () => {
   const msg = buildLoadgenMessage({ event: "stop", runner: "matrix" });
   assert(msg.includes("stopped"));
   assert(msg.toLowerCase().includes("real signal"));
 });
 
-Deno.test("buildLoadgenMessage strips newlines from runner and note", () => {
+test("buildLoadgenMessage strips newlines from runner and note", () => {
   const msg = buildLoadgenMessage({
     event: "start",
     runner: "soak\n@here injected",
@@ -71,9 +72,9 @@ Deno.test("buildLoadgenMessage strips newlines from runner and note", () => {
   }
 });
 
-Deno.test("route returns null when LOADGEN_ANNOUNCE_TOKEN is unset", async () => {
-  const prev = Deno.env.get("LOADGEN_ANNOUNCE_TOKEN");
-  Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
+test("route returns null when LOADGEN_ANNOUNCE_TOKEN is unset", async () => {
+  const prev = process.env.LOADGEN_ANNOUNCE_TOKEN;
+  delete process.env["LOADGEN_ANNOUNCE_TOKEN"];
   try {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq("POST", "/loadgen-announce", { event: "start", runner: "soak" }),
@@ -82,12 +83,12 @@ Deno.test("route returns null when LOADGEN_ANNOUNCE_TOKEN is unset", async () =>
     );
     assertEquals(r, null);
   } finally {
-    if (prev !== undefined) Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", prev);
+    if (prev !== undefined) process.env["LOADGEN_ANNOUNCE_TOKEN"] = prev;
   }
 });
 
-Deno.test("route returns 403 when the token header is wrong", async () => {
-  Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
+test("route returns 403 when the token header is wrong", async () => {
+  process.env["LOADGEN_ANNOUNCE_TOKEN"] = "real-token";
   try {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq(
@@ -103,12 +104,12 @@ Deno.test("route returns 403 when the token header is wrong", async () => {
     );
     assertEquals(r?.status, 403);
   } finally {
-    Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
+    delete process.env["LOADGEN_ANNOUNCE_TOKEN"];
   }
 });
 
-Deno.test("route returns 400 on malformed body", async () => {
-  Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
+test("route returns 400 on malformed body", async () => {
+  process.env["LOADGEN_ANNOUNCE_TOKEN"] = "real-token";
   try {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq(
@@ -124,14 +125,14 @@ Deno.test("route returns 400 on malformed body", async () => {
     );
     assertEquals(r?.status, 400);
   } finally {
-    Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
+    delete process.env["LOADGEN_ANNOUNCE_TOKEN"];
   }
 });
 
-Deno.test("route returns 202 when token correct but no Discord webhook", async () => {
-  Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
-  const prev = Deno.env.get("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
+test("route returns 202 when token correct but no Discord webhook", async () => {
+  process.env["LOADGEN_ANNOUNCE_TOKEN"] = "real-token";
+  const prev = process.env.DISCORD_WEBHOOK_URL;
+  delete process.env["DISCORD_WEBHOOK_URL"];
   try {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq(
@@ -149,13 +150,13 @@ Deno.test("route returns 202 when token correct but no Discord webhook", async (
     const body = await r?.json();
     assertEquals(body.ok, false);
   } finally {
-    Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
-    if (prev !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", prev);
+    delete process.env["LOADGEN_ANNOUNCE_TOKEN"];
+    if (prev !== undefined) process.env["DISCORD_WEBHOOK_URL"] = prev;
   }
 });
 
-Deno.test("route returns null for wrong path", async () => {
-  Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
+test("route returns null for wrong path", async () => {
+  process.env["LOADGEN_ANNOUNCE_TOKEN"] = "real-token";
   try {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq("POST", "/other", { event: "start", runner: "soak" }),
@@ -164,12 +165,12 @@ Deno.test("route returns null for wrong path", async () => {
     );
     assertEquals(r, null);
   } finally {
-    Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
+    delete process.env["LOADGEN_ANNOUNCE_TOKEN"];
   }
 });
 
-Deno.test("route returns null for GET method", async () => {
-  Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
+test("route returns null for GET method", async () => {
+  process.env["LOADGEN_ANNOUNCE_TOKEN"] = "real-token";
   try {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq("GET", "/loadgen-announce", undefined),
@@ -178,6 +179,6 @@ Deno.test("route returns null for GET method", async () => {
     );
     assertEquals(r, null);
   } finally {
-    Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
+    delete process.env["LOADGEN_ANNOUNCE_TOKEN"];
   }
 });

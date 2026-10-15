@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
 import { gatewayHostEnvBlock, SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
 
 const COMPOSE_PATH = new URL("../../../compose.yml", import.meta.url).pathname;
@@ -39,23 +41,23 @@ function extractGatewayHostBlock(composeText: string): string {
   return out.join("\n");
 }
 
-Deno.test("[registry] gateway HOST env block in compose.yml matches generated output", () => {
-  const composeText = Deno.readTextFileSync(COMPOSE_PATH);
+test("[registry] gateway HOST env block in compose.yml matches generated output", () => {
+  const composeText = readFileSync(COMPOSE_PATH, "utf8");
   const actual = extractGatewayHostBlock(composeText);
   const expected = gatewayHostEnvBlock();
   if (actual !== expected) {
     throw new Error(
       `Gateway HOST env block in compose.yml has drifted from shared/serviceRegistry.ts.\n\n` +
         `If you added or renamed a service, regenerate the block:\n\n` +
-        `  deno run --allow-read --allow-write scripts/generate-compose-host-env.ts\n\n` +
+        `  node scripts/generate-compose-host-env.ts\n\n` +
         `Got:\n${actual}\n\nExpected:\n${expected}`
     );
   }
 });
 
-Deno.test("[registry] SVC_PROXY in gateway.ts covers every registry composeName", () => {
+test("[registry] SVC_PROXY in gateway.ts covers every registry composeName", () => {
   const gatewayPath = new URL("../gateway/gateway.ts", import.meta.url).pathname;
-  const text = Deno.readTextFileSync(gatewayPath);
+  const text = readFileSync(gatewayPath, "utf8");
   const proxyStart = text.indexOf("SVC_PROXY: Record<string, string>");
   if (proxyStart === -1) throw new Error("SVC_PROXY not found in gateway.ts");
   const proxyEnd = text.indexOf("};", proxyStart);
@@ -77,7 +79,7 @@ Deno.test("[registry] SVC_PROXY in gateway.ts covers every registry composeName"
   }
 });
 
-Deno.test("[registry] every service has a unique id, envPrefix, composeName, port", () => {
+test("[registry] every service has a unique id, envPrefix, composeName, port", () => {
   const ids = new Set<string>();
   const envPrefixes = new Set<string>();
   const composeNames = new Set<string>();
@@ -96,7 +98,7 @@ Deno.test("[registry] every service has a unique id, envPrefix, composeName, por
   assertEquals(ids.size, SERVICE_REGISTRY.length);
 });
 
-Deno.test("[registry] every service has a valid tier", () => {
+test("[registry] every service has a valid tier", () => {
   for (const svc of SERVICE_REGISTRY) {
     if (![0, 1, 2, 3].includes(svc.tier)) {
       throw new Error(`${svc.id} has an invalid tier: ${svc.tier}`);
@@ -118,7 +120,7 @@ const EXPECTED_TIER_0_IDS = new Set([
   "prometheus",
 ]);
 
-Deno.test("[registry] Tier 0 (always-on) is exactly the intended core set", () => {
+test("[registry] Tier 0 (always-on) is exactly the intended core set", () => {
   const actualTier0 = new Set(SERVICE_REGISTRY.filter((s) => s.tier === 0).map((s) => s.id));
   assertEquals(
     actualTier0,
@@ -128,7 +130,7 @@ Deno.test("[registry] Tier 0 (always-on) is exactly the intended core set", () =
   );
 });
 
-Deno.test("[registry] Tier 0 services never carry an idleTimeoutSeconds", () => {
+test("[registry] Tier 0 services never carry an idleTimeoutSeconds", () => {
   for (const svc of SERVICE_REGISTRY) {
     if (svc.tier === 0 && svc.idleTimeoutSeconds !== undefined) {
       throw new Error(`${svc.id} is Tier 0 but has idleTimeoutSeconds set — Tier 0 never idles.`);
@@ -136,9 +138,10 @@ Deno.test("[registry] Tier 0 services never carry an idleTimeoutSeconds", () => 
   }
 });
 
-Deno.test("[registry] every supervisorProgram override names a real supervisord program", () => {
-  const conf = Deno.readTextFileSync(
-    new URL("../../../supervisord.conf", import.meta.url).pathname
+test("[registry] every supervisorProgram override names a real supervisord program", () => {
+  const conf = readFileSync(
+    new URL("../../../supervisord.conf", import.meta.url).pathname,
+    "utf8"
   );
   const programs = new Set([...conf.matchAll(/^\[program:([a-z0-9-]+)\]/gm)].map((m) => m[1]));
   for (const svc of SERVICE_REGISTRY) {
@@ -151,13 +154,14 @@ Deno.test("[registry] every supervisorProgram override names a real supervisord 
   }
 });
 
-// ollama isn't a Deno process supervisord manages — it's its own container in
+// ollama isn't a Node process supervisord manages — it's its own container in
 // compose.yml, with no dev-container wake path today.
 const NOT_SUPERVISORD_MANAGED = new Set(["ollama"]);
 
-Deno.test("[registry] a composeName with no supervisorProgram override matches a real supervisord program, for every tier >= 1 service", () => {
-  const conf = Deno.readTextFileSync(
-    new URL("../../../supervisord.conf", import.meta.url).pathname
+test("[registry] a composeName with no supervisorProgram override matches a real supervisord program, for every tier >= 1 service", () => {
+  const conf = readFileSync(
+    new URL("../../../supervisord.conf", import.meta.url).pathname,
+    "utf8"
   );
   const programs = new Set([...conf.matchAll(/^\[program:([a-z0-9-]+)\]/gm)].map((m) => m[1]));
   const missing: string[] = [];

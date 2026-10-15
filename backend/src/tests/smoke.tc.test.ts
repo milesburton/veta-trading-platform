@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
  * Reduced smoke-test set targeting key platform invariants.
  *
@@ -11,11 +13,10 @@
  * still the post-deploy gate on the homelab; this file is the in-CI
  * smoke check that runs alongside the Testcontainers integration suite.
  */
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 8_000) => AbortSignal.timeout(ms);
 
 interface ReadyResponse {
@@ -53,7 +54,7 @@ const SERVICES = [
   "gateway",
 ] as const;
 
-Deno.test({
+test({
   name: "smoke (testcontainers, reduced critical path)",
   ignore: !SHOULD_RUN,
   async fn(t) {
@@ -277,9 +278,7 @@ Deno.test({
         assert(Array.isArray(await res.json()));
       });
     } catch (err) {
-      await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`),
-      );
+      process.stderr.write(`\n--- service logs ---\n${stack.dumpLogs()}`);
       throw err;
     } finally {
       await stack.teardown();

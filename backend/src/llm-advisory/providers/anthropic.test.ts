@@ -1,19 +1,20 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals, assertRejects } from "#veta/test-assert";
 
 import { createAnthropicProvider } from "./anthropic.ts";
 
-Deno.test("anthropic provider: defaults to claude-opus-4-8 for the mock model id", () => {
+test("anthropic provider: defaults to claude-opus-4-8 for the mock model id", () => {
   const provider = createAnthropicProvider("mock-v1", "sk-test");
   assertEquals(provider.providerId, "anthropic");
   assertEquals(provider.modelId, "claude-opus-4-8");
 });
 
-Deno.test("anthropic provider: honours an explicit model id", () => {
+test("anthropic provider: honours an explicit model id", () => {
   const provider = createAnthropicProvider("claude-haiku-4-5", "sk-test");
   assertEquals(provider.modelId, "claude-haiku-4-5");
 });
 
-Deno.test("anthropic provider: is available only when an api key is present", async () => {
+test("anthropic provider: is available only when an api key is present", async () => {
   assertEquals(
     await createAnthropicProvider("mock-v1", "sk-test").isAvailable(),
     true,
@@ -24,7 +25,7 @@ Deno.test("anthropic provider: is available only when an api key is present", as
   );
 });
 
-Deno.test("anthropic provider: generate throws without an api key", async () => {
+test("anthropic provider: generate throws without an api key", async () => {
   const provider = createAnthropicProvider("mock-v1", "");
   await assertRejects(
     () => provider.generate("hi", "system"),
@@ -33,7 +34,7 @@ Deno.test("anthropic provider: generate throws without an api key", async () => 
   );
 });
 
-Deno.test("anthropic provider: generate returns text blocks, token usage and latency", async () => {
+test("anthropic provider: generate returns text blocks, token usage and latency", async () => {
   const realFetch = globalThis.fetch;
   const requests: { url: string; body: Record<string, unknown> }[] = [];
   globalThis.fetch = ((input: Request | URL | string, init?: RequestInit) => {
@@ -79,7 +80,7 @@ Deno.test("anthropic provider: generate returns text blocks, token usage and lat
   }
 });
 
-Deno.test("anthropic provider: generate surfaces an API error", async () => {
+test("anthropic provider: generate surfaces an API error", async () => {
   const realFetch = globalThis.fetch;
   globalThis.fetch = (() =>
     Promise.resolve(

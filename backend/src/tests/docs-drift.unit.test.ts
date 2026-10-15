@@ -1,5 +1,7 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { walk } from "jsr:@std/fs@0.217/walk";
+import { readFile, stat } from "node:fs/promises";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { readDirEntries, walk } from "#veta/fs-walk";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const DOCS_ROOT = `${REPO_ROOT}docs/site/src/content/docs`;
@@ -22,14 +24,14 @@ async function readAllDocsMarkdown(): Promise<Map<string, string>> {
     includeDirs: false,
     exts: [".md", ".mdx"],
   })) {
-    out.set(entry.path, await Deno.readTextFile(entry.path));
+    out.set(entry.path, await readFile(entry.path, "utf8"));
   }
   return out;
 }
 
 async function listAlgoStrategyFiles(): Promise<Set<string>> {
   const out = new Set<string>();
-  for await (const entry of Deno.readDir(ALGO_DIR)) {
+  for (const entry of await readDirEntries(ALGO_DIR)) {
     if (entry.isFile && entry.name.endsWith("-strategy.ts")) {
       out.add(entry.name.replace("-strategy.ts", ""));
     }
@@ -56,7 +58,7 @@ function parseSupervisordPrograms(conf: string): Set<string> {
   return programs;
 }
 
-Deno.test("[docs-drift] every backend test file referenced in docs exists on disk", async () => {
+test("[docs-drift] every backend test file referenced in docs exists on disk", async () => {
   const docs = await readAllDocsMarkdown();
   const existingTestFiles = await listBackendTestFiles();
   const pattern = /backend\/src\/tests\/[a-zA-Z0-9._-]+\.test\.ts/g;
@@ -89,7 +91,7 @@ function resolveScreenshotRef(ref: string): string {
   return `${SCREENSHOTS_CANONICAL_DIR}/${relative}`;
 }
 
-Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file", async () => {
+test("[docs-drift] every screenshot referenced in docs resolves to a file", async () => {
   const docs = await readAllDocsMarkdown();
   const pattern = /\/veta-trading-platform\/screenshots\/[a-zA-Z0-9/_.-]+\.(?:png|jpg|jpeg|svg)/g;
   const missing: { docPath: string; ref: string }[] = [];
@@ -103,7 +105,7 @@ Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file",
       if (KNOWN_PENDING_SCREENSHOTS.has(filename)) continue;
       const onDisk = resolveScreenshotRef(ref);
       try {
-        await Deno.stat(onDisk);
+        await stat(onDisk);
       } catch {
         missing.push({ docPath: docPath.replace(REPO_ROOT, ""), ref });
       }
@@ -121,10 +123,10 @@ Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file",
   );
 });
 
-Deno.test("[docs-drift] every algo strategy named in docs prose exists in backend/src/algo", async () => {
+test("[docs-drift] every algo strategy named in docs prose exists in backend/src/algo", async () => {
   const existing = await listAlgoStrategyFiles();
   const docPath = `${DOCS_ROOT}/user-guide/algo-trading.md`;
-  const content = await Deno.readTextFile(docPath);
+  const content = await readFile(docPath, "utf8");
 
   const tableRowPattern = /^\| (LIMIT|TWAP|VWAP|POV|ICEBERG|SNIPER|ARRIVAL_PRICE|IS|MOMENTUM)\b/gm;
   const namedInTable = new Set<string>();
@@ -158,9 +160,9 @@ Deno.test("[docs-drift] every algo strategy named in docs prose exists in backen
   );
 });
 
-Deno.test("[docs-drift] every service named in supervisord.conf comment of platform/services.md exists in supervisord", async () => {
-  const services = parseSupervisordPrograms(await Deno.readTextFile(SUPERVISORD_CONF));
-  const servicesMd = await Deno.readTextFile(`${DOCS_ROOT}/platform/services.md`);
+test("[docs-drift] every service named in supervisord.conf comment of platform/services.md exists in supervisord", async () => {
+  const services = parseSupervisordPrograms(await readFile(SUPERVISORD_CONF, "utf8"));
+  const servicesMd = await readFile(`${DOCS_ROOT}/platform/services.md`, "utf8");
 
   const backtickedServices = [...servicesMd.matchAll(/`([a-z][a-z0-9-]+)`/g)].map((m) => m[1]);
 
@@ -174,7 +176,7 @@ Deno.test("[docs-drift] every service named in supervisord.conf comment of platf
     (name) => /^[a-z]+(-[a-z0-9]+)*$/.test(name) && name.includes("-")
   );
   const missing = explicitlyClaimedAsService.filter(
-    (name) => !services.has(name) && !["docker-compose", "deno-task", "deno-test"].includes(name)
+    (name) => !services.has(name) && !["docker-compose"].includes(name)
   );
 
   assertEquals(
@@ -184,13 +186,13 @@ Deno.test("[docs-drift] every service named in supervisord.conf comment of platf
   );
 });
 
-Deno.test("[docs-drift] test-inventory.json exists and matches the files discovered by the deno.json test:unit task", async () => {
+test("[docs-drift] test-inventory.json exists and matches the files discovered by the unit test configuration", async () => {
   const inventoryPath = `${REPO_ROOT}docs/site/src/data/test-inventory.json`;
   let inventory: {
     backend: { unit: { files: number } };
   };
   try {
-    const raw = await Deno.readTextFile(inventoryPath);
+    const raw = await readFile(inventoryPath, "utf8");
     inventory = JSON.parse(raw);
   } catch {
     throw new Error(
@@ -198,22 +200,20 @@ Deno.test("[docs-drift] test-inventory.json exists and matches the files discove
     );
   }
 
-  const denoJson = JSON.parse(await Deno.readTextFile(`${REPO_ROOT}deno.json`));
-  const unitTaskCmd: string = denoJson.tasks?.["test:unit"] ?? "";
-  const ignored = (unitTaskCmd.match(/--ignore='([^']*)'/)?.[1] ?? "")
-    .split(",")
-    .filter(Boolean)
-    .map((glob) => {
-      const body = glob
-        .replace(/^\*\*\//, "")
-        .split("*")
-        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
-        .join("[^/]*");
-      return new RegExp(`^${body}$`);
-    });
+  const excludes: string[] = JSON.parse(
+    await readFile(`${REPO_ROOT}vitest.exclude.json`, "utf8")
+  );
+  const ignored = excludes.map((glob) => {
+    const body = glob
+      .replace(/^\*\*\//, "")
+      .split("*")
+      .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+      .join("[^/]*");
+    return new RegExp(`^${body}$`);
+  });
 
   const walk = async (dir: string): Promise<string[]> => {
-    const entries = await Array.fromAsync(Deno.readDir(dir));
+    const entries = await readDirEntries(dir);
     const nested = await Promise.all(
       entries.map(async (entry): Promise<string[]> => {
         if (entry.isDirectory) {
@@ -233,13 +233,13 @@ Deno.test("[docs-drift] test-inventory.json exists and matches the files discove
   assertEquals(
     inventory.backend.unit.files,
     unitFiles.length,
-    `Inventory says ${inventory.backend.unit.files} backend unit files but the 'test:unit' task discovers ${unitFiles.length}. Regenerate via 'cd docs/site && npm run generate'.`
+    `Inventory says ${inventory.backend.unit.files} backend unit files but the unit test configuration discovers ${unitFiles.length}. Regenerate via 'cd docs/site && npm run generate'.`
   );
 });
 
-Deno.test("[docs-drift] every <Term name='...'> in docs references a real glossary id", async () => {
+test("[docs-drift] every <Term name='...'> in docs references a real glossary id", async () => {
   const docs = await readAllDocsMarkdown();
-  const glossarySource = await Deno.readTextFile(`${REPO_ROOT}docs/site/src/data/glossary.ts`);
+  const glossarySource = await readFile(`${REPO_ROOT}docs/site/src/data/glossary.ts`, "utf8");
   const knownIds = new Set<string>();
   for (const match of glossarySource.matchAll(/^\s*id:\s*"([a-z0-9-]+)"/gm)) {
     knownIds.add(match[1]);
@@ -289,7 +289,7 @@ async function resolveSlugToFile(slug: string): Promise<string | null> {
   ];
   for (const c of candidates) {
     try {
-      await Deno.stat(c);
+      await stat(c);
       return c;
     } catch {
       // continue
@@ -309,7 +309,7 @@ function slugifyHeading(text: string): string {
 
 /** Extract all heading anchors from a markdown/mdx file. */
 async function extractAnchors(filePath: string): Promise<Set<string>> {
-  const content = await Deno.readTextFile(filePath);
+  const content = await readFile(filePath, "utf8");
   const anchors = new Set<string>();
   // ATX headings: `# Heading`, `## Heading`, etc.
   for (const match of content.matchAll(/^#{1,6}\s+(.+?)\s*$/gm)) {
@@ -322,8 +322,8 @@ async function extractAnchors(filePath: string): Promise<Set<string>> {
   return anchors;
 }
 
-Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/rbac.ts", async () => {
-  const rbacSrc = await Deno.readTextFile(`${REPO_ROOT}frontend/src/auth/rbac.ts`);
+test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/rbac.ts", async () => {
+  const rbacSrc = await readFile(`${REPO_ROOT}frontend/src/auth/rbac.ts`, "utf8");
   const arrMatch = rbacSrc.match(/export const AUTH_ROLES\s*=\s*\[([\s\S]*?)\]/);
   assert(arrMatch, "Could not find AUTH_ROLES in frontend/src/auth/rbac.ts");
   const sourceRoles = arrMatch[1]
@@ -334,7 +334,7 @@ Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/
   let generated: { roles: { id: string; canTrade: boolean }[] };
   try {
     generated = JSON.parse(
-      await Deno.readTextFile(`${REPO_ROOT}docs/site/src/data/rbac-roles.json`)
+      await readFile(`${REPO_ROOT}docs/site/src/data/rbac-roles.json`, "utf8")
     );
   } catch {
     throw new Error(
@@ -348,7 +348,7 @@ Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/
     "rbac-roles.json is stale; regenerate via 'cd docs/site && npm run generate'."
   );
 
-  const tableSrc = await Deno.readTextFile(`${REPO_ROOT}docs/site/src/components/RbacTable.astro`);
+  const tableSrc = await readFile(`${REPO_ROOT}docs/site/src/components/RbacTable.astro`, "utf8");
   const notesMatch = tableSrc.match(/ACCESS_NOTES[^=]*=\s*\{([\s\S]*?)\};/);
   assert(notesMatch, "Could not find ACCESS_NOTES in docs/site/src/components/RbacTable.astro");
   const notesKeys = new Set<string>();
@@ -364,7 +364,7 @@ Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/
   );
 });
 
-Deno.test("[docs-drift] every cross-page heading anchor link resolves to a real heading", async () => {
+test("[docs-drift] every cross-page heading anchor link resolves to a real heading", async () => {
   // Focused test: catches the failure mode we hit three times in the recent
   // docs reorgs: a heading moves to a new sub-page, but a link from another
   // page still references the old #anchor. Build doesn't warn; the link
@@ -443,7 +443,7 @@ Deno.test("[docs-drift] every cross-page heading anchor link resolves to a real 
   );
 });
 
-Deno.test("[docs-drift] every <Source line={n} label='symbol'> points at a line containing the symbol", async () => {
+test("[docs-drift] every <Source line={n} label='symbol'> points at a line containing the symbol", async () => {
   const docs = await readAllDocsMarkdown();
   const tagPattern = /<Source\s+([^>]*?)\/>/g;
   const stale: string[] = [];
@@ -456,7 +456,7 @@ Deno.test("[docs-drift] every <Source line={n} label='symbol'> points at a line 
       const label = attrs.match(/label="([^"]+)"/)?.[1];
       if (!path || !line || !label || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) continue;
 
-      const lines = (await Deno.readTextFile(`${REPO_ROOT}${path}`)).split("\n");
+      const lines = (await readFile(`${REPO_ROOT}${path}`, "utf8")).split("\n");
       const target = lines[Number(line) - 1] ?? "";
       if (!target.includes(label)) {
         stale.push(
@@ -469,13 +469,13 @@ Deno.test("[docs-drift] every <Source line={n} label='symbol'> points at a line 
   assertEquals(stale, [], `Stale <Source line> references:\n${stale.join("\n")}`);
 });
 
-Deno.test("[docs-drift] every @veta/ alias in deno.json appears in shared-modules.md", async () => {
-  const config = JSON.parse(await Deno.readTextFile(`${REPO_ROOT}deno.json`)) as {
+test("[docs-drift] every #veta/ import alias in package.json appears in shared-modules.md", async () => {
+  const config = JSON.parse(await readFile(`${REPO_ROOT}package.json`, "utf8")) as {
     imports: Record<string, string>;
   };
-  const page = await Deno.readTextFile(`${DOCS_ROOT}/development/shared-modules.md`);
+  const page = await readFile(`${DOCS_ROOT}/development/shared-modules.md`, "utf8");
   const missing = Object.keys(config.imports)
-    .filter((alias) => alias.startsWith("@veta/"))
+    .filter((alias) => alias.startsWith("#veta/"))
     .filter((alias) => !page.includes(`\`${alias}\``));
   assertEquals(missing, [], `aliases missing from shared-modules.md: ${missing.join(", ")}`);
 });

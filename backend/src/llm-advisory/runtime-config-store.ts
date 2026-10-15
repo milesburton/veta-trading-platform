@@ -1,10 +1,10 @@
-import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import type { Pool } from "#veta/db";
 import type {
   LlmPolicy,
   LlmRuntimeConfig,
   LlmSubsystemState,
   LlmTriggerMode,
-} from "@veta/types/llm-advisory";
+} from "#veta/types/llm-advisory";
 
 export interface RuntimeConfigStore {
   getConfig(): Promise<LlmRuntimeConfig>;

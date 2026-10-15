@@ -1,5 +1,5 @@
 # Dev container image — inherits the pre-built base (all heavy tooling,
-# Redpanda, Playwright, Deno, Node, Docker CLI, etc.) and adds only
+# Redpanda, Playwright, Node, Docker CLI, etc.) and adds only
 # dev-container-specific config.
 #
 # Dockerfile.base is published to:

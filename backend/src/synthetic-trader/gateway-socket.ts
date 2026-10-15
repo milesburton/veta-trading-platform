@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import type { OrderNew } from "@veta/schemas/orders";
+import { logger } from "#veta/logger";
+import type { OrderNew } from "#veta/schemas/orders";
 
 export interface AuthIdentity {
   user: { id: string; role: string };

@@ -1,4 +1,4 @@
 export type {
   ILlmProvider,
   LlmProviderResponse,
-} from "@veta/types/llm-advisory";
+} from "#veta/types/llm-advisory";

@@ -1,3 +1,4 @@
+import { serveFetch } from "#veta/http";
 /**
  * Static file server for the built frontend.
  *
@@ -8,29 +9,27 @@
  * hash changes, enabling zero-downtime frontend deployments.
  */
 
-import { crypto } from "jsr:@std/crypto";
-import { encodeHex } from "jsr:@std/encoding/hex";
-import { serveDir } from "jsr:@std/http/file-server";
+import { createHash } from "node:crypto";
+import { readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { serveDir } from "./backend/src/lib/static-files.ts";
 
-const PORT = Number(Deno.env.get("FRONTEND_PORT") ?? 8080);
-const DIST = new URL("./frontend/dist", import.meta.url).pathname;
+const PORT = Number(process.env.FRONTEND_PORT ?? 8080);
+const DIST = fileURLToPath(new URL("./frontend/dist", import.meta.url));
 
 async function buildHash(): Promise<string> {
   const names: string[] = [];
-  for await (const entry of Deno.readDir(`${DIST}/assets`)) {
-    if (entry.isFile) names.push(entry.name);
+  for (const entry of await readdir(`${DIST}/assets`, { withFileTypes: true })) {
+    if (entry.isFile()) names.push(entry.name);
   }
   names.sort();
-  const encoder = new TextEncoder();
-  const data = encoder.encode(names.join("|"));
-  const hashBuf = await crypto.subtle.digest("SHA-256", data);
-  return encodeHex(new Uint8Array(hashBuf)).slice(0, 16);
+  return createHash("sha256").update(names.join("|")).digest("hex").slice(0, 16);
 }
 
 const VERSION_HASH = await buildHash();
 const VERSION_BODY = JSON.stringify({ hash: VERSION_HASH });
 
-Deno.serve({ port: PORT, hostname: "0.0.0.0" }, async (req) => {
+serveFetch({ port: PORT, hostname: "0.0.0.0" }, async (req) => {
   const url = new URL(req.url);
 
   if (url.pathname === "/__version") {

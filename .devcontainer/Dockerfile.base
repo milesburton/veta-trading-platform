@@ -112,9 +112,6 @@ WORKDIR /home/deno
 # Ensure the Fish configuration directory exists
 RUN mkdir -p /home/deno/.config/fish
 
-# Install Deno
-RUN curl -fsSL https://deno.land/install.sh | sh -s v2.7.14
-
 # Copy Fish shell config (MOTD, aliases, supervisord shortcuts).
 # Edit .devcontainer/config.fish to update — the Dockerfile just copies it.
 COPY --chown=deno:deno config.fish /home/deno/.config/fish/config.fish

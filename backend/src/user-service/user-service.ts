@@ -1,10 +1,9 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { getCookieToken, hasValidServiceToken } from "@veta/auth";
-import { usersPool } from "@veta/db";
-import { parseBody } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createProducer } from "@veta/messaging";
+import "#veta/bootstrap";
+import { getCookieToken, hasValidServiceToken } from "#veta/auth";
+import { usersPool } from "#veta/db";
+import { parseBody, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createProducer } from "#veta/messaging";
 import {
   AlertCreateSchema,
   AuthorizeRequestSchema,
@@ -14,12 +13,12 @@ import {
   SessionValidateSchema,
   SharedWorkspaceCreateSchema,
   TokenRequestSchema,
-} from "@veta/schemas/user";
+} from "#veta/schemas/user";
 import {
   getTraderArchetype,
   STARTER_MAX_DAILY_NOTIONAL,
   STARTER_MAX_ORDER_QTY,
-} from "@veta/trader-archetypes";
+} from "#veta/trader-archetypes";
 import { hashPassword, verifyPassword } from "./credentials.ts";
 
 const AUTH_ROLES = [
@@ -123,26 +122,26 @@ const OAUTH_CLIENTS = new Map<
   }
 >(
   parseOAuthClients(
-    Deno.env.get("OAUTH2_CLIENTS") ??
+    process.env.OAUTH2_CLIENTS ??
       "veta-web:postmessage|openid,profile;veta-automation:postmessage|openid,profile"
   )
 );
 
-const OAUTH_USER_SECRETS = parseUserSecrets(Deno.env.get("OAUTH2_USER_SECRETS") ?? "");
+const OAUTH_USER_SECRETS = parseUserSecrets(process.env.OAUTH2_USER_SECRETS ?? "");
 const DEFAULT_DEV_PASSCODE = "veta-dev-passcode";
-const OAUTH_SHARED_SECRET = Deno.env.get("OAUTH2_SHARED_SECRET") ?? DEFAULT_DEV_PASSCODE;
-const INTERNAL_SERVICE_TOKEN = Deno.env.get("INTERNAL_SERVICE_TOKEN");
+const OAUTH_SHARED_SECRET = process.env.OAUTH2_SHARED_SECRET ?? DEFAULT_DEV_PASSCODE;
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 
 if (
   OAUTH_SHARED_SECRET === DEFAULT_DEV_PASSCODE &&
-  Deno.env.get("VETA_ALLOW_DEFAULT_PASSCODE") !== "true"
+  process.env.VETA_ALLOW_DEFAULT_PASSCODE !== "true"
 ) {
   logger.error(
     "FATAL: OAUTH2_SHARED_SECRET unset or equals the dev default. " +
       "Set OAUTH2_SHARED_SECRET to a strong random value, or set " +
       "VETA_ALLOW_DEFAULT_PASSCODE=true to acknowledge a dev environment."
   );
-  Deno.exit(1);
+  process.exit(1);
 }
 
 const oauthCodes = new Map<
@@ -165,11 +164,11 @@ setInterval(() => {
   }
 }, 30_000);
 
-const PORT = Number(Deno.env.get("USER_SERVICE_PORT")) || 5_008;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.USER_SERVICE_PORT) || 5_008;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
+  (process.env.CORS_ALLOWED_ORIGINS ?? "http://localhost:5173,http://localhost:3000")
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
@@ -180,8 +179,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const COOKIE_SECURE = (Deno.env.get("COOKIE_SECURE") ?? "true").toLowerCase() !== "false";
-const COOKIE_SAMESITE = Deno.env.get("COOKIE_SAMESITE") ?? "Strict";
+const COOKIE_SECURE = (process.env.COOKIE_SECURE ?? "true").toLowerCase() !== "false";
+const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE ?? "Strict";
 const COOKIE_BASE = `HttpOnly; SameSite=${COOKIE_SAMESITE}; Path=/${COOKIE_SECURE ? "; Secure" : ""}`;
 
 function applyCors(res: Response, req: Request): Response {
@@ -401,7 +400,7 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "GET" && path === "/personas") {
-    const demoMode = (Deno.env.get("VETA_DEMO_MODE") ?? "false").toLowerCase() === "true";
+    const demoMode = (process.env.VETA_DEMO_MODE ?? "false").toLowerCase() === "true";
     if (!demoMode) return json({ error: "demo mode disabled" }, 404);
     const client = await usersPool.connect();
     try {
@@ -883,7 +882,7 @@ async function handle(req: Request): Promise<Response> {
   // role=guest. Off by default. The gateway rate-limits order submissions
   // from guests (see PUBLIC_GUEST_TRADING in gateway.ts).
   if (req.method === "POST" && path === "/oauth/guest") {
-    if (Deno.env.get("PUBLIC_GUEST_TRADING") !== "true") {
+    if (process.env.PUBLIC_GUEST_TRADING !== "true") {
       return jsonError("guest mode disabled", 403);
     }
     const guestId = `guest-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -957,7 +956,7 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST" && (path === "/oauth/register" || path === "/auth/register")) {
-    if (Deno.env.get("OAUTH_ALLOW_PUBLIC_REGISTER") !== "true") {
+    if (process.env.OAUTH_ALLOW_PUBLIC_REGISTER !== "true") {
       return jsonError("registration disabled", 403);
     }
     const parsed = await parseBody(req, RegisterRequestSchema);
@@ -1024,4 +1023,4 @@ async function handle(req: Request): Promise<Response> {
 }
 
 logger.info(`running on port ${PORT}`);
-Deno.serve({ port: PORT }, async (req) => applyCors(await handle(req), req));
+serveFetch({ port: PORT }, async (req) => applyCors(await handle(req), req));

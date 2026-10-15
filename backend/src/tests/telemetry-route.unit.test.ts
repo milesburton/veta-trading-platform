@@ -1,5 +1,6 @@
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleTelemetryRoute } from "../gateway/routes/telemetry.ts";
 import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
@@ -12,13 +13,13 @@ function unauthContext(): GatewayContext {
   return makeGatewayUnauthContext();
 }
 
-Deno.test("ignores non-telemetry paths", async () => {
+test("ignores non-telemetry paths", async () => {
   const ctx = makeContext("trader");
   const res = await handleTelemetryRoute(new Request("http://localhost/other"), "/other", ctx);
   assertEquals(res, null);
 });
 
-Deno.test("rejects unauthenticated requests", async () => {
+test("rejects unauthenticated requests", async () => {
   const ctx = unauthContext();
   const res = await handleTelemetryRoute(
     new Request("http://localhost/telemetry/frontend", { method: "POST", body: "{}" }),
@@ -28,7 +29,7 @@ Deno.test("rejects unauthenticated requests", async () => {
   assertEquals(res?.status, 401);
 });
 
-Deno.test("rejects POST with missing memory fields", async () => {
+test("rejects POST with missing memory fields", async () => {
   const ctx = makeContext("trader");
   const res = await handleTelemetryRoute(
     new Request("http://localhost/telemetry/frontend", {
@@ -41,7 +42,7 @@ Deno.test("rejects POST with missing memory fields", async () => {
   assertEquals(res?.status, 400);
 });
 
-Deno.test("accepts well-formed POST and returns ok", async () => {
+test("accepts well-formed POST and returns ok", async () => {
   const ctx = makeContext("trader");
   const res = await handleTelemetryRoute(
     new Request("http://localhost/telemetry/frontend", {
@@ -60,7 +61,7 @@ Deno.test("accepts well-formed POST and returns ok", async () => {
   assertEquals(body, { ok: true });
 });
 
-Deno.test("rejects GET for non-admin/non-oncall", async () => {
+test("rejects GET for non-admin/non-oncall", async () => {
   const ctx = makeContext("trader");
   const res = await handleTelemetryRoute(
     new Request("http://localhost/telemetry/frontend", { method: "GET" }),
@@ -70,7 +71,7 @@ Deno.test("rejects GET for non-admin/non-oncall", async () => {
   assertEquals(res?.status, 403);
 });
 
-Deno.test("admin can GET aggregated samples", async () => {
+test("admin can GET aggregated samples", async () => {
   const ctx = makeContext("admin");
   const res = await handleTelemetryRoute(
     new Request("http://localhost/telemetry/frontend", { method: "GET" }),

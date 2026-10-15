@@ -1,4 +1,4 @@
-import { z } from "@veta/zod";
+import { z } from "zod";
 import { SymbolSchema, TimestampMsSchema } from "./primitives.ts";
 
 export const NewsSentimentSchema = z.enum(["positive", "negative", "neutral"]);

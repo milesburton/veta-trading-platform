@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import type { ServiceSpec } from "../../../shared/serviceRegistry.ts";
 import { isConnectionRefused, proxyWithWake, startingResponse } from "../gateway/wake.ts";
 
@@ -18,7 +19,7 @@ function ok(): Response {
   return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
 }
 
-Deno.test("[isConnectionRefused] true only for a 502 with connection-refused signals in the body", async () => {
+test("[isConnectionRefused] true only for a 502 with connection-refused signals in the body", async () => {
   assertEquals(await isConnectionRefused(badGateway(true)), true);
   assertEquals(await isConnectionRefused(badGateway(false)), false);
   assertEquals(
@@ -33,14 +34,14 @@ Deno.test("[isConnectionRefused] true only for a 502 with connection-refused sig
   assertEquals(await isConnectionRefused(new Response(null, { status: 404 })), false);
 });
 
-Deno.test("[startingResponse] returns 503 with status:starting and applies corsHeaders", () => {
+test("[startingResponse] returns 503 with status:starting and applies corsHeaders", () => {
   const req = new Request("http://localhost/api/analytics/quote");
   const res = startingResponse(req, () => ({ "X-Test": "1" }));
   assertEquals(res.status, 503);
   assertEquals(res.headers.get("X-Test"), "1");
 });
 
-Deno.test("[proxyWithWake] passes through immediately when the first call succeeds", async () => {
+test("[proxyWithWake] passes through immediately when the first call succeeds", async () => {
   let calls = 0;
   const proxyFn = () => {
     calls++;
@@ -59,7 +60,7 @@ Deno.test("[proxyWithWake] passes through immediately when the first call succee
   assertEquals(calls, 1, "must not retry when the first attempt already succeeded");
 });
 
-Deno.test("[proxyWithWake] wakes the program and retries until it succeeds", async () => {
+test("[proxyWithWake] wakes the program and retries until it succeeds", async () => {
   let calls = 0;
   const proxyFn = () => {
     calls++;
@@ -90,7 +91,7 @@ Deno.test("[proxyWithWake] wakes the program and retries until it succeeds", asy
   assertEquals(startCalls, ["analytics"], "must start the program exactly once");
 });
 
-Deno.test("[proxyWithWake] does not call startProgram when already running", async () => {
+test("[proxyWithWake] does not call startProgram when already running", async () => {
   let calls = 0;
   const proxyFn = () => {
     calls++;
@@ -112,7 +113,7 @@ Deno.test("[proxyWithWake] does not call startProgram when already running", asy
   assertEquals(startCalls, [], "already running — startProgram must not be called");
 });
 
-Deno.test("[proxyWithWake] returns a starting response after exhausting all retries", async () => {
+test("[proxyWithWake] returns a starting response after exhausting all retries", async () => {
   const proxyFn = () => Promise.resolve(badGateway());
   const req = new Request("http://localhost/api/analytics/quote");
 
@@ -128,7 +129,7 @@ Deno.test("[proxyWithWake] returns a starting response after exhausting all retr
   assertEquals(body.status, "starting");
 });
 
-Deno.test("[proxyWithWake] does NOT wake or retry on a 502 that isn't a confirmed connection-refused (e.g. a timeout)", async () => {
+test("[proxyWithWake] does NOT wake or retry on a 502 that isn't a confirmed connection-refused (e.g. a timeout)", async () => {
   let calls = 0;
   const proxyFn = () => {
     calls++;
@@ -152,7 +153,7 @@ Deno.test("[proxyWithWake] does NOT wake or retry on a 502 that isn't a confirme
   assertEquals(res.status, 502, "the original failure must be surfaced, not masked as starting");
 });
 
-Deno.test("[proxyWithWake] resolves the supervisorProgram override from the registry spec", async () => {
+test("[proxyWithWake] resolves the supervisorProgram override from the registry spec", async () => {
   let calls = 0;
   const proxyFn = () => {
     calls++;
@@ -177,7 +178,7 @@ Deno.test("[proxyWithWake] resolves the supervisorProgram override from the regi
   assertEquals(startCalls, ["market-data-service"]);
 });
 
-Deno.test("[proxyWithWake] falls back to the compose name when no supervisorProgram override exists", async () => {
+test("[proxyWithWake] falls back to the compose name when no supervisorProgram override exists", async () => {
   let calls = 0;
   const proxyFn = () => {
     calls++;

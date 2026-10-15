@@ -1,9 +1,10 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals, assertRejects } from "#veta/test-assert";
 import { TokenClient } from "../synthetic-trader/token-client.ts";
 
 const realFetch = globalThis.fetch;
 
-Deno.test("[synthetic-trader-token-client] acquire performs authorize then token exchange and returns access_token", async () => {
+test("[synthetic-trader-token-client] acquire performs authorize then token exchange and returns access_token", async () => {
   const calls: { url: string; body: Record<string, unknown> }[] = [];
   globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
     const body = init?.body ? JSON.parse(init.body as string) : {};
@@ -39,7 +40,7 @@ Deno.test("[synthetic-trader-token-client] acquire performs authorize then token
   }
 });
 
-Deno.test("[synthetic-trader-token-client] acquire throws when authorize fails", async () => {
+test("[synthetic-trader-token-client] acquire throws when authorize fails", async () => {
   globalThis.fetch = (() =>
     Promise.resolve(new Response("bad request", { status: 400 }))) as typeof fetch;
   try {
@@ -55,7 +56,7 @@ Deno.test("[synthetic-trader-token-client] acquire throws when authorize fails",
   }
 });
 
-Deno.test("[synthetic-trader-token-client] acquire throws when token exchange returns no access_token", async () => {
+test("[synthetic-trader-token-client] acquire throws when token exchange returns no access_token", async () => {
   globalThis.fetch = (async (url: string | URL) => {
     if (String(url).endsWith("/oauth/authorize")) {
       return new Response(JSON.stringify({ code: "test-code" }), { status: 200 });

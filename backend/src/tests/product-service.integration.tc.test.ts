@@ -1,7 +1,8 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 8_000) => AbortSignal.timeout(ms);
 
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
@@ -16,7 +17,7 @@ interface Product {
   legs: Array<{ legId: string; symbol: string; weight: number }>;
 }
 
-Deno.test({
+test({
   name: "product-service lifecycle (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {

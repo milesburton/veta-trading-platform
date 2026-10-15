@@ -1,6 +1,6 @@
 // ── OTLP receiver ─────────────────────────────────────────────────────────────
-// Receives traces, metrics, and logs from Deno services instrumented with
-// OTEL_DENO=true and the kafka-relay service.
+// Receives traces, metrics, and logs from Node services instrumented with
+// OTEL_ENABLED=true and the kafka-relay service.
 
 otelcol.receiver.otlp "default" {
   grpc {
@@ -61,7 +61,7 @@ loki.write "default" {
 }
 
 // ── Prometheus scrape ─────────────────────────────────────────────────────────
-// Scrape /metrics from all Deno services (auto-exposed by OTEL_DENO=true).
+// Scrape /metrics from all Node services (auto-exposed by OTEL_ENABLED=true).
 
 discovery.docker "containers" {
   host             = "unix:///var/run/docker.sock"

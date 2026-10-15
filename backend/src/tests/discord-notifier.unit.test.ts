@@ -1,5 +1,6 @@
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   buildLoadgenMessage,
   isBugReportValid,
@@ -9,15 +10,15 @@ import {
   sendDailySummary,
 } from "../gateway/discord-notifier.ts";
 
-const REAL_WEBHOOK = Deno.env.get("DISCORD_WEBHOOK_URL");
+const REAL_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 const realFetch = globalThis.fetch;
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/123/abc";
 
 function withWebhook<T>(url: string, fn: () => Promise<T>): Promise<T> {
-  Deno.env.set("DISCORD_WEBHOOK_URL", url);
+  process.env["DISCORD_WEBHOOK_URL"] = url;
   return fn().finally(() => {
-    if (REAL_WEBHOOK === undefined) Deno.env.delete("DISCORD_WEBHOOK_URL");
-    else Deno.env.set("DISCORD_WEBHOOK_URL", REAL_WEBHOOK);
+    if (REAL_WEBHOOK === undefined) delete process.env["DISCORD_WEBHOOK_URL"];
+    else process.env["DISCORD_WEBHOOK_URL"] = REAL_WEBHOOK;
   });
 }
 
@@ -45,16 +46,16 @@ function captureFetch(): CapturedFetch {
   };
 }
 
-Deno.test("notifyDiscord skips when webhook URL is not configured", async () => {
-  const orig = Deno.env.get("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
+test("notifyDiscord skips when webhook URL is not configured", async () => {
+  const orig = process.env.DISCORD_WEBHOOK_URL;
+  delete process.env["DISCORD_WEBHOOK_URL"];
   const f = captureFetch();
   try {
     await notifyDiscord({ severity: "CRITICAL", message: "test" }, "u-1");
     assertEquals(f.calls.length, 0);
   } finally {
     f.restore();
-    if (orig !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", orig);
+    if (orig !== undefined) process.env["DISCORD_WEBHOOK_URL"] = orig;
   }
 });
 
@@ -93,7 +94,7 @@ for (const testCase of [
     expectedCalls: 0,
   },
 ] as const) {
-  Deno.test(testCase.label, async () => {
+  test(testCase.label, async () => {
     await withWebhook(testCase.webhook, async () => {
       const f = captureFetch();
       try {
@@ -112,9 +113,9 @@ for (const testCase of [
   });
 }
 
-Deno.test("sendDailySummary no-ops without webhook env", async () => {
-  const orig = Deno.env.get("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
+test("sendDailySummary no-ops without webhook env", async () => {
+  const orig = process.env.DISCORD_WEBHOOK_URL;
+  delete process.env["DISCORD_WEBHOOK_URL"];
   const f = captureFetch();
   try {
     const ok = await sendDailySummary("daily content");
@@ -122,7 +123,7 @@ Deno.test("sendDailySummary no-ops without webhook env", async () => {
     assertEquals(f.calls.length, 0);
   } finally {
     f.restore();
-    if (orig !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", orig);
+    if (orig !== undefined) process.env["DISCORD_WEBHOOK_URL"] = orig;
   }
 });
 
@@ -144,7 +145,7 @@ for (const testCase of [
     },
   },
 ] as const) {
-  Deno.test(testCase.label, async () => {
+  test(testCase.label, async () => {
     await withWebhook(DISCORD_WEBHOOK, async () => {
       const f = captureFetch();
       try {
@@ -184,7 +185,7 @@ function captureFetchWithRender(pngBytes: Uint8Array): CapturedFetch {
   };
 }
 
-Deno.test("notifyDiscord attaches a Grafana panel screenshot when render succeeds", async () => {
+test("notifyDiscord attaches a Grafana panel screenshot when render succeeds", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     // 1x1 valid PNG so the renderer mock returns a real image payload.
     const png = new Uint8Array([
@@ -215,7 +216,7 @@ Deno.test("notifyDiscord attaches a Grafana panel screenshot when render succeed
   });
 });
 
-Deno.test("notifyDiscord falls back to text-only when render returns non-image", async () => {
+test("notifyDiscord falls back to text-only when render returns non-image", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const f = captureFetch();
     try {
@@ -235,7 +236,7 @@ Deno.test("notifyDiscord falls back to text-only when render returns non-image",
   });
 });
 
-Deno.test("notifyDiscord sanitises attachment filename derived from alert.source", async () => {
+test("notifyDiscord sanitises attachment filename derived from alert.source", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const png = new Uint8Array([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
@@ -291,8 +292,8 @@ Deno.test("notifyDiscord sanitises attachment filename derived from alert.source
   });
 });
 
-Deno.test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PANELS=false", async () => {
-  Deno.env.set("DISCORD_ATTACH_GRAFANA_PANELS", "false");
+test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PANELS=false", async () => {
+  process.env["DISCORD_ATTACH_GRAFANA_PANELS"] = "false";
   try {
     await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
       const f = captureFetch();
@@ -309,11 +310,11 @@ Deno.test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PAN
       }
     });
   } finally {
-    Deno.env.delete("DISCORD_ATTACH_GRAFANA_PANELS");
+    delete process.env["DISCORD_ATTACH_GRAFANA_PANELS"];
   }
 });
 
-Deno.test("notifyDiscord swallows fetch errors and continues", async () => {
+test("notifyDiscord swallows fetch errors and continues", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     globalThis.fetch = (() => Promise.reject(new Error("net down"))) as typeof fetch;
     try {
@@ -331,7 +332,7 @@ Deno.test("notifyDiscord swallows fetch errors and continues", async () => {
   });
 });
 
-Deno.test("isBugReportValid accepts and rejects the expected shapes", () => {
+test("isBugReportValid accepts and rejects the expected shapes", () => {
   const cases = [
     { report: { title: "", description: "long enough body" }, valid: false },
     { report: { title: "ok", description: "short" }, valid: false },
@@ -347,7 +348,7 @@ Deno.test("isBugReportValid accepts and rejects the expected shapes", () => {
   }
 });
 
-Deno.test("notifyDiscordBug returns false when report is invalid", async () => {
+test("notifyDiscordBug returns false when report is invalid", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const f = captureFetch();
     try {
@@ -360,11 +361,11 @@ Deno.test("notifyDiscordBug returns false when report is invalid", async () => {
   });
 });
 
-Deno.test("notifyDiscordBug returns false when no webhook is configured", async () => {
-  const prev = Deno.env.get("DISCORD_WEBHOOK_URL");
-  const prevBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+test("notifyDiscordBug returns false when no webhook is configured", async () => {
+  const prev = process.env.DISCORD_WEBHOOK_URL;
+  const prevBug = process.env.DISCORD_BUG_WEBHOOK_URL;
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
   try {
     const ok = await notifyDiscordBug(
       { title: "valid title", description: "valid description here" },
@@ -373,12 +374,12 @@ Deno.test("notifyDiscordBug returns false when no webhook is configured", async 
     );
     assertEquals(ok, false);
   } finally {
-    if (prev !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", prev);
-    if (prevBug !== undefined) Deno.env.set("DISCORD_BUG_WEBHOOK_URL", prevBug);
+    if (prev !== undefined) process.env["DISCORD_WEBHOOK_URL"] = prev;
+    if (prevBug !== undefined) process.env["DISCORD_BUG_WEBHOOK_URL"] = prevBug;
   }
 });
 
-Deno.test("notifyDiscordBug posts as 'VETA User Tickets' with all optional fields", async () => {
+test("notifyDiscordBug posts as 'VETA User Tickets' with all optional fields", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const f = captureFetch();
     try {
@@ -411,9 +412,9 @@ Deno.test("notifyDiscordBug posts as 'VETA User Tickets' with all optional field
   });
 });
 
-Deno.test("notifyDiscordBug prefers DISCORD_BUG_WEBHOOK_URL when set", async () => {
-  const prevBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/999/bug");
+test("notifyDiscordBug prefers DISCORD_BUG_WEBHOOK_URL when set", async () => {
+  const prevBug = process.env.DISCORD_BUG_WEBHOOK_URL;
+  process.env["DISCORD_BUG_WEBHOOK_URL"] = "https://discord.com/api/webhooks/999/bug";
   await withWebhook("https://discord.com/api/webhooks/123/alerts", async () => {
     const f = captureFetch();
     try {
@@ -429,8 +430,8 @@ Deno.test("notifyDiscordBug prefers DISCORD_BUG_WEBHOOK_URL when set", async () 
       f.restore();
     }
   });
-  if (prevBug === undefined) Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  else Deno.env.set("DISCORD_BUG_WEBHOOK_URL", prevBug);
+  if (prevBug === undefined) delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  else process.env["DISCORD_BUG_WEBHOOK_URL"] = prevBug;
 });
 
 for (const testCase of [
@@ -451,14 +452,14 @@ for (const testCase of [
     includes: "real signal",
   },
 ] as const) {
-  Deno.test(testCase.label, () => {
+  test(testCase.label, () => {
     const msg = buildLoadgenMessage(testCase.payload);
     assert(msg.startsWith(testCase.startsWith));
     assert(msg.includes(testCase.includes));
   });
 }
 
-Deno.test("buildLoadgenMessage sanitises newlines in runner / note", () => {
+test("buildLoadgenMessage sanitises newlines in runner / note", () => {
   const msg = buildLoadgenMessage({
     event: "start",
     runner: "k6\nbad",
@@ -469,18 +470,18 @@ Deno.test("buildLoadgenMessage sanitises newlines in runner / note", () => {
   assertEquals(runnerPart.includes("\n"), false);
 });
 
-Deno.test("notifyDiscordLoadgen returns false when webhook is missing", async () => {
-  const prev = Deno.env.get("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
+test("notifyDiscordLoadgen returns false when webhook is missing", async () => {
+  const prev = process.env.DISCORD_WEBHOOK_URL;
+  delete process.env["DISCORD_WEBHOOK_URL"];
   try {
     const ok = await notifyDiscordLoadgen({ event: "start", runner: "k6" });
     assertEquals(ok, false);
   } finally {
-    if (prev !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", prev);
+    if (prev !== undefined) process.env["DISCORD_WEBHOOK_URL"] = prev;
   }
 });
 
-Deno.test("notifyDiscordLoadgen posts as 'VETA Loadgen'", async () => {
+test("notifyDiscordLoadgen posts as 'VETA Loadgen'", async () => {
   await withWebhook(DISCORD_WEBHOOK, async () => {
     const f = captureFetch();
     try {

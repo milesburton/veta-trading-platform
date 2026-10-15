@@ -1,5 +1,5 @@
-import { calendarForOrder } from "@veta/market-calendars";
-import { resolveCurrentSession } from "@veta/trading-calendar";
+import { calendarForOrder } from "#veta/market-calendars";
+import { resolveCurrentSession } from "#veta/trading-calendar";
 
 export type AssetClass = "equity" | "fx" | "commodity" | "bond";
 export const ASSET_CLASSES: AssetClass[] = ["equity", "fx", "commodity", "bond"];

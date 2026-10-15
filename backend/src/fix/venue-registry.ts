@@ -1,7 +1,7 @@
 // Backend port of frontend/src/domain/market/venue-capabilities.ts's
 // VENUE_REGISTRY, scoped to the fields a FIX NewOrderSingle can actually
 // express (ExDestination -> venue, OrdType Market/Limit, OrderQty). The
-// Deno backend and Vite frontend build separately, so this is a
+// Node backend and Vite frontend build separately, so this is a
 // duplicated literal kept in sync via a drift-guard test, per the same
 // pattern ADR 0003 Phase 1 uses for the trading calendar.
 

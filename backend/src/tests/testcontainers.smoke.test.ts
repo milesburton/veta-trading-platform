@@ -1,12 +1,13 @@
-import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { assert } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert } from "#veta/test-assert";
+import { Pool } from "#veta/db";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";
 
-Deno.test({
+test({
   name: "testcontainers: ephemeral Postgres + migrations",
-  ignore: Deno.env.get("RUN_TESTCONTAINERS") !== "1",
+  ignore: process.env.RUN_TESTCONTAINERS !== "1",
   async fn() {
     const pg = await startEphemeralPostgres();
     try {
@@ -41,9 +42,9 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "testcontainers: ephemeral Redpanda boots and exposes a broker",
-  ignore: Deno.env.get("RUN_TESTCONTAINERS") !== "1",
+  ignore: process.env.RUN_TESTCONTAINERS !== "1",
   async fn() {
     const rp = await startEphemeralRedpanda();
     try {

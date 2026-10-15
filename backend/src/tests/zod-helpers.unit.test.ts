@@ -1,5 +1,6 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { z } from "@veta/zod";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { z } from "zod";
 
 import { parseBody, parseQuery } from "../lib/http.ts";
 import { OrderSideSchema, StrategySchema } from "../schemas/primitives.ts";
@@ -27,7 +28,7 @@ const ExampleSchema = z.object({
   quantity: z.number().positive(),
 });
 
-Deno.test("[parseBody] happy path returns parsed data", async () => {
+test("[parseBody] happy path returns parsed data", async () => {
   const result = await parseBody(
     bodyRequest({ userId: "u1", side: "BUY", quantity: 10 }),
     ExampleSchema
@@ -39,7 +40,7 @@ Deno.test("[parseBody] happy path returns parsed data", async () => {
   assertEquals(result.data.quantity, 10);
 });
 
-Deno.test("[parseBody] invalid JSON returns 400 with 'invalid json'", async () => {
+test("[parseBody] invalid JSON returns 400 with 'invalid json'", async () => {
   const result = await parseBody(badJsonRequest(), ExampleSchema);
   assert(!result.ok);
   if (result.ok) return;
@@ -48,7 +49,7 @@ Deno.test("[parseBody] invalid JSON returns 400 with 'invalid json'", async () =
   assertEquals(body.error, "invalid json");
 });
 
-Deno.test("[parseBody] schema failure returns 400 with validation_failed + issues", async () => {
+test("[parseBody] schema failure returns 400 with validation_failed + issues", async () => {
   const result = await parseBody(
     bodyRequest({ userId: "u1", side: "WAT", quantity: -5 }),
     ExampleSchema
@@ -62,7 +63,7 @@ Deno.test("[parseBody] schema failure returns 400 with validation_failed + issue
   assert(body.issues.length >= 1);
 });
 
-Deno.test("[parseBody] missing required field produces issue with path", async () => {
+test("[parseBody] missing required field produces issue with path", async () => {
   const result = await parseBody(bodyRequest({ side: "BUY", quantity: 10 }), ExampleSchema);
   assert(!result.ok);
   if (result.ok) return;
@@ -71,7 +72,7 @@ Deno.test("[parseBody] missing required field produces issue with path", async (
   assert(paths.includes("userId"), `expected userId issue, got: ${JSON.stringify(paths)}`);
 });
 
-Deno.test("[parseBody] optional field omitted is allowed", async () => {
+test("[parseBody] optional field omitted is allowed", async () => {
   const result = await parseBody(
     bodyRequest({ userId: "u1", side: "SELL", quantity: 1 }),
     ExampleSchema
@@ -81,7 +82,7 @@ Deno.test("[parseBody] optional field omitted is allowed", async () => {
   assertEquals(result.data.strategy, undefined);
 });
 
-Deno.test("[parseQuery] parses and coerces from URL search params", () => {
+test("[parseQuery] parses and coerces from URL search params", () => {
   const schema = z.object({
     symbol: z.string().min(1),
     limit: z.coerce.number().int().positive(),
@@ -94,21 +95,21 @@ Deno.test("[parseQuery] parses and coerces from URL search params", () => {
   assertEquals(result.data.limit, 50);
 });
 
-Deno.test("[parseQuery] missing required param returns 400", () => {
+test("[parseQuery] missing required param returns 400", () => {
   const schema = z.object({ symbol: z.string().min(1) });
   const url = new URL("http://localhost/x");
   const result = parseQuery(url, schema);
   assert(!result.ok);
 });
 
-Deno.test("[primitives] OrderSideSchema accepts BUY/SELL only", () => {
+test("[primitives] OrderSideSchema accepts BUY/SELL only", () => {
   assert(OrderSideSchema.safeParse("BUY").success);
   assert(OrderSideSchema.safeParse("SELL").success);
   assert(!OrderSideSchema.safeParse("buy").success);
   assert(!OrderSideSchema.safeParse("HOLD").success);
 });
 
-Deno.test("[primitives] StrategySchema rejects unknown algos", () => {
+test("[primitives] StrategySchema rejects unknown algos", () => {
   assert(StrategySchema.safeParse("TWAP").success);
   assert(StrategySchema.safeParse("VWAP").success);
   assert(!StrategySchema.safeParse("UNKNOWN").success);

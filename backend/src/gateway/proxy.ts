@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 
 const POST_TIMEOUT_MS = 15_000;
 const GET_PUT_TIMEOUT_MS = 8_000;

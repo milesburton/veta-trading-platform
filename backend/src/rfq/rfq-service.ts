@@ -1,14 +1,13 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Fixed Income RFQ (Request for Quote) Service.
  * See platform/post-trade-rfq for the dealer-driven workflow details.
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
-import { settlementDate } from "@veta/settlement";
+import { CORS_HEADERS, corsOptions, json, jsonError, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer } from "#veta/messaging";
+import { settlementDate } from "#veta/settlement";
 import {
   computeDealerYieldAndPrice,
   isUstBond,
@@ -56,14 +55,14 @@ function nextSsRfqId(): string {
   return `SSRFQ${String(ssRfqSeq++).padStart(6, "0")}`;
 }
 
-const PORT = Number(Deno.env.get("RFQ_SERVICE_PORT")) || 5_029;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.RFQ_SERVICE_PORT) || 5_029;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 /** How long (ms) to collect dealer quotes before auto-executing the best. */
-const QUOTE_WINDOW_MS = Number(Deno.env.get("RFQ_QUOTE_WINDOW_MS")) || 3_000;
+const QUOTE_WINDOW_MS = Number(process.env.RFQ_QUOTE_WINDOW_MS) || 3_000;
 
 /** How long (ms) to keep completed RFQs in memory before pruning. */
-const RFQ_RETENTION_MS = Number(Deno.env.get("RFQ_RETENTION_MS")) || 300_000; // 5 minutes
+const RFQ_RETENTION_MS = Number(process.env.RFQ_RETENTION_MS) || 300_000; // 5 minutes
 
 interface DealerProfile {
   id: string;
@@ -520,7 +519,7 @@ async function publishSsRfqUpdate(rfq: SellSideRfq): Promise<void> {
   await producer?.send("rfq.sellside.update", { ...rfq, ts: Date.now() }).catch(() => {});
 }
 
-Deno.serve({ port: PORT }, async (req) => {
+serveFetch({ port: PORT }, async (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 

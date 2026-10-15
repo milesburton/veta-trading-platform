@@ -1,10 +1,35 @@
-import { Input, Select } from "https://deno.land/x/cliffy@v0.25.4/prompt/mod.ts";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import type { Trade } from "@veta/types/trade";
+import { createInterface } from "node:readline/promises";
 
-const DEFAULT_OMS_URL = Deno.env.get("OMS_URL") || "http://localhost:5002";
-const DEFAULT_TWAP_URL = Deno.env.get("TWAP_ALGO_URL") || "http://localhost:5004";
-const DEFAULT_POV_URL = Deno.env.get("POV_ALGO_URL") || "http://localhost:5005";
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+const Input = {
+  async prompt(options: { message: string; default?: string }): Promise<string> {
+    const suffix = options.default === undefined ? "" : ` (${options.default})`;
+    const answer = (await rl.question(`${options.message}${suffix}: `)).trim();
+    return answer === "" ? (options.default ?? "") : answer;
+  },
+};
+
+const Select = {
+  async prompt(options: {
+    message: string;
+    options: { name: string; value: string }[];
+  }): Promise<string> {
+    console.log(options.message);
+    options.options.forEach((option, index) => console.log(`  ${index + 1}) ${option.name}`));
+    while (true) {
+      const choice = Number((await rl.question("Choice: ")).trim());
+      const selected = options.options[choice - 1];
+      if (selected) return selected.value;
+      console.log("Invalid choice.");
+    }
+  },
+};
+import type { Trade } from "#veta/types/trade";
+
+const DEFAULT_OMS_URL = process.env.OMS_URL || "http://localhost:5002";
+const DEFAULT_TWAP_URL = process.env.TWAP_ALGO_URL || "http://localhost:5004";
+const DEFAULT_POV_URL = process.env.POV_ALGO_URL || "http://localhost:5005";
 
 async function placeTrade() {
   console.log("🚀 Welcome to the Trading CLI! 🎉");
@@ -84,4 +109,4 @@ async function placeTrade() {
   }
 }
 
-placeTrade();
+placeTrade().finally(() => rl.close());

@@ -1,13 +1,12 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { json, serveJsonService } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
-import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
+import "#veta/bootstrap";
+import { json, serveJsonService } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer } from "#veta/messaging";
+import type { Signal, TradeRecommendation } from "#veta/types/intelligence";
 import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 
-const PORT = Number(Deno.env.get("RECOMMENDATION_ENGINE_PORT")) || 5_019;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.RECOMMENDATION_ENGINE_PORT) || 5_019;
+const VERSION = process.env.COMMIT_SHA || "dev";
 const CONFIDENCE_THRESHOLD = 0.6;
 
 const recommendations: TradeRecommendation[] = [];
@@ -65,7 +64,7 @@ const consumer = await createConsumer("recommendation-engine", ["market.signals"
 });
 
 const IDLE_TIMEOUT_MS =
-  Number(Deno.env.get("RECOMMENDATION_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+  Number(process.env.RECOMMENDATION_ENGINE_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "recommendation-engine");
 
 if (consumer) {

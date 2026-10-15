@@ -1,12 +1,11 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { fixArchivePool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer } from "@veta/messaging";
+import "#veta/bootstrap";
+import { fixArchivePool } from "#veta/db";
+import { corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer } from "#veta/messaging";
 
-const PORT = Number(Deno.env.get("FIX_ARCHIVE_PORT")) || 5_012;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.FIX_ARCHIVE_PORT) || 5_012;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 interface ExecReport {
   execId: string;
@@ -168,7 +167,7 @@ function rowToExec(r: SqlRow) {
   };
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 

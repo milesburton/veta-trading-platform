@@ -13,7 +13,6 @@ const outputPath = path.resolve(
 );
 
 const coreLinks = {
-  deno: "https://deno.com/",
   typescript: "https://www.typescriptlang.org/",
   node: "https://nodejs.org/",
   docker: "https://www.docker.com/",
@@ -224,7 +223,7 @@ function generate() {
     "",
     "| Layer | Technology |",
     "|---|---|",
-    `| Backend | [Deno](${coreLinks.deno}) 2.x |`,
+    `| Backend | [Node.js](${coreLinks.node}) 24 · [TypeScript](${coreLinks.typescript}) |`,
     `| Frontend | [Node.js](${coreLinks.node}) 24 · [TypeScript](${coreLinks.typescript}) |`,
     `| Containerisation | [Docker](${coreLinks.docker}) |`,
     "",

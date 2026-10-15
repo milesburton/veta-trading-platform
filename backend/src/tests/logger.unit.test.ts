@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test } from "#veta/test";
 import { runNode } from "#veta/run-node";
 import { assert, assertEquals } from "#veta/test-assert";
 

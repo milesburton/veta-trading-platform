@@ -1,6 +1,7 @@
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 // fallow-ignore-file complexity
 
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   evaluateRecommendationTrigger,
   evaluateScenarioTrigger,
@@ -51,7 +52,7 @@ const lowConvictionSignal: Signal = {
   ts: Date.now(),
 };
 
-Deno.test("[trigger-rules] signal trigger fires for high-conviction with event-driven policy", async () => {
+test("[trigger-rules] signal trigger fires for high-conviction with event-driven policy", async () => {
   const t = await evaluateSignalTrigger(enabledPolicy, highConvictionSignal);
   assert(t);
   assertEquals(t?.symbol, "AAPL");
@@ -61,15 +62,15 @@ Deno.test("[trigger-rules] signal trigger fires for high-conviction with event-d
   assert(t?.contextHash.length > 0);
 });
 
-Deno.test("[trigger-rules] signal trigger blocked when policy disabled", async () => {
+test("[trigger-rules] signal trigger blocked when policy disabled", async () => {
   assertEquals(await evaluateSignalTrigger(disabledPolicy, highConvictionSignal), null);
 });
 
-Deno.test("[trigger-rules] signal trigger blocked for low-conviction signal", async () => {
+test("[trigger-rules] signal trigger blocked for low-conviction signal", async () => {
   assertEquals(await evaluateSignalTrigger(enabledPolicy, lowConvictionSignal), null);
 });
 
-Deno.test("[trigger-rules] signal trigger blocked when triggerMode is on-demand-ui", async () => {
+test("[trigger-rules] signal trigger blocked when triggerMode is on-demand-ui", async () => {
   const policy: LlmPolicy = { ...enabledPolicy, triggerMode: "on-demand-ui" };
   assertEquals(await evaluateSignalTrigger(policy, highConvictionSignal), null);
 });
@@ -86,31 +87,31 @@ const recA: TradeRecommendation = {
 const recASell: TradeRecommendation = { ...recA, action: "sell" };
 const recABig: TradeRecommendation = { ...recA, suggestedQty: 130 };
 
-Deno.test("[trigger-rules] recommendation trigger fires when action changes", async () => {
+test("[trigger-rules] recommendation trigger fires when action changes", async () => {
   const t = await evaluateRecommendationTrigger(enabledPolicy, recASell, recA);
   assert(t);
   assertEquals(t?.triggerReason, AdvisoryTriggerReason.RECOMMENDATION_CHANGED);
 });
 
-Deno.test("[trigger-rules] recommendation trigger fires when qty changes by >20%", async () => {
+test("[trigger-rules] recommendation trigger fires when qty changes by >20%", async () => {
   const t = await evaluateRecommendationTrigger(enabledPolicy, recABig, recA);
   assert(t);
 });
 
-Deno.test("[trigger-rules] recommendation trigger does not fire for <20% qty change", async () => {
+test("[trigger-rules] recommendation trigger does not fire for <20% qty change", async () => {
   const minorBump = { ...recA, suggestedQty: 110 };
   assertEquals(await evaluateRecommendationTrigger(enabledPolicy, minorBump, recA), null);
 });
 
-Deno.test("[trigger-rules] recommendation trigger does not fire when prevRec absent (initial)", async () => {
+test("[trigger-rules] recommendation trigger does not fire when prevRec absent (initial)", async () => {
   assertEquals(await evaluateRecommendationTrigger(enabledPolicy, recA, undefined), null);
 });
 
-Deno.test("[trigger-rules] recommendation trigger blocked when policy disabled", async () => {
+test("[trigger-rules] recommendation trigger blocked when policy disabled", async () => {
   assertEquals(await evaluateRecommendationTrigger(disabledPolicy, recASell, recA), null);
 });
 
-Deno.test("[trigger-rules] UI request trigger fires when policy.enabled (regardless of mode)", async () => {
+test("[trigger-rules] UI request trigger fires when policy.enabled (regardless of mode)", async () => {
   const policy: LlmPolicy = { ...enabledPolicy, triggerMode: "on-demand-ui" };
   const t = await evaluateUiRequestTrigger(policy, "AAPL", "alice");
   assert(t);
@@ -120,11 +121,11 @@ Deno.test("[trigger-rules] UI request trigger fires when policy.enabled (regardl
   assertEquals(t?.requestedBy, "alice");
 });
 
-Deno.test("[trigger-rules] UI request trigger blocked when disabled", async () => {
+test("[trigger-rules] UI request trigger blocked when disabled", async () => {
   assertEquals(await evaluateUiRequestTrigger(disabledPolicy, "AAPL", "alice"), null);
 });
 
-Deno.test("[trigger-rules] scenario trigger fires when enabled and produces stable hash regardless of factor order", async () => {
+test("[trigger-rules] scenario trigger fires when enabled and produces stable hash regardless of factor order", async () => {
   const a = await evaluateScenarioTrigger(enabledPolicy, "AAPL", ["news", "macro"]);
   const b = await evaluateScenarioTrigger(enabledPolicy, "AAPL", ["macro", "news"]);
   assert(a);
@@ -132,28 +133,28 @@ Deno.test("[trigger-rules] scenario trigger fires when enabled and produces stab
   assertEquals(a?.contextHash, b?.contextHash);
 });
 
-Deno.test("[trigger-rules] scenario trigger blocked when disabled", async () => {
+test("[trigger-rules] scenario trigger blocked when disabled", async () => {
   assertEquals(await evaluateScenarioTrigger(disabledPolicy, "AAPL", ["news"]), null);
 });
 
-Deno.test("[trigger-rules] staleness trigger fires when no prior note exists", async () => {
+test("[trigger-rules] staleness trigger fires when no prior note exists", async () => {
   const t = await evaluateStalenessRefreshTrigger(enabledPolicy, "AAPL", null);
   assert(t);
   assertEquals(t?.triggerReason, AdvisoryTriggerReason.STALENESS_REFRESH);
   assertEquals(t?.priority, -1);
 });
 
-Deno.test("[trigger-rules] staleness trigger blocked when latest note is fresh", async () => {
+test("[trigger-rules] staleness trigger blocked when latest note is fresh", async () => {
   const fresh = Date.now() - 1_000;
   assertEquals(await evaluateStalenessRefreshTrigger(enabledPolicy, "AAPL", fresh), null);
 });
 
-Deno.test("[trigger-rules] staleness trigger fires when latest note is older than maxNoteAgeMs", async () => {
+test("[trigger-rules] staleness trigger fires when latest note is older than maxNoteAgeMs", async () => {
   const old = Date.now() - enabledPolicy.maxNoteAgeMs - 10_000;
   const t = await evaluateStalenessRefreshTrigger(enabledPolicy, "AAPL", old);
   assert(t);
 });
 
-Deno.test("[trigger-rules] staleness trigger blocked when policy disabled", async () => {
+test("[trigger-rules] staleness trigger blocked when policy disabled", async () => {
   assertEquals(await evaluateStalenessRefreshTrigger(disabledPolicy, "AAPL", null), null);
 });

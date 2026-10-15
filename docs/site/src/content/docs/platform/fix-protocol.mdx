@@ -206,7 +206,7 @@ Then, for an accepted order:
 1. Waits a randomized 10–50ms to simulate exchange latency.
 2. Reads the current mid-price and volume for the order's symbol from
    `marketClient.getLatest()` — a live WebSocket connection to `market-sim`, the same
-   `@veta/market-client` library every algo strategy and `ems-server.ts` use.
+   `#veta/market-client` library every algo strategy and `ems-server.ts` use.
 3. Synthesizes up to 3 partial fills via `computeFill()` (`backend/src/fix/fill-math.ts`),
    which caps each fill at `tickVolume × EMS_PARTICIPATION_CAP` (default 20%) and applies a
    market-impact price adjustment of `(filledQty / 1000) × EMS_IMPACT_PER_1000_BPS` basis

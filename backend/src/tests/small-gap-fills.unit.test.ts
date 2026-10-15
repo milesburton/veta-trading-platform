@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 
 import { type BondPosition, computeDurationLadder } from "../analytics/duration-ladder.ts";
 import { rateAt } from "../analytics/spread-analysis.ts";
@@ -6,7 +7,7 @@ import type { YieldCurvePoint } from "../analytics/types.ts";
 import { _internalForTests } from "../analytics/yield-curve.ts";
 import { getBond, getBonds } from "../market-sim/bond-universe.ts";
 
-Deno.test("[duration-ladder] cash flow at the 3m boundary attributes entirely to the 3m bucket", () => {
+test("[duration-ladder] cash flow at the 3m boundary attributes entirely to the 3m bucket", () => {
   const bond: BondPosition = {
     faceValue: 1_000,
     couponRate: 0.04,
@@ -25,7 +26,7 @@ Deno.test("[duration-ladder] cash flow at the 3m boundary attributes entirely to
   }
 });
 
-Deno.test("[duration-ladder] 50y bond places its largest bucket weight in 30y (clamps cash flows >30y)", () => {
+test("[duration-ladder] 50y bond places its largest bucket weight in 30y (clamps cash flows >30y)", () => {
   const bond: BondPosition = {
     faceValue: 1_000,
     couponRate: 0.05,
@@ -43,7 +44,7 @@ Deno.test("[duration-ladder] 50y bond places its largest bucket weight in 30y (c
   );
 });
 
-Deno.test("[spread-analysis rateAt] clamps below the lowest tenor to the lowest spot", () => {
+test("[spread-analysis rateAt] clamps below the lowest tenor to the lowest spot", () => {
   const curve: YieldCurvePoint[] = [
     { tenorYears: 1, tenorLabel: "1y", spotRate: 0.03 },
     { tenorYears: 5, tenorLabel: "5y", spotRate: 0.04 },
@@ -52,7 +53,7 @@ Deno.test("[spread-analysis rateAt] clamps below the lowest tenor to the lowest 
   assertEquals(rateAt(curve, 0), 0.03);
 });
 
-Deno.test("[spread-analysis rateAt] clamps above the highest tenor to the highest spot", () => {
+test("[spread-analysis rateAt] clamps above the highest tenor to the highest spot", () => {
   const curve: YieldCurvePoint[] = [
     { tenorYears: 1, tenorLabel: "1y", spotRate: 0.03 },
     { tenorYears: 5, tenorLabel: "5y", spotRate: 0.04 },
@@ -61,17 +62,17 @@ Deno.test("[spread-analysis rateAt] clamps above the highest tenor to the highes
   assertEquals(rateAt(curve, 5), 0.04);
 });
 
-Deno.test("[yield-curve] nelsonSiegel: tau=0 returns beta0 + beta1 (short-circuit branch)", () => {
+test("[yield-curve] nelsonSiegel: tau=0 returns beta0 + beta1 (short-circuit branch)", () => {
   const params = { beta0: 0.05, beta1: -0.02, beta2: 0.01, lambda: 2.5 };
   assertAlmostEquals(_internalForTests.nelsonSiegel(0, params), 0.03, 1e-12);
 });
 
-Deno.test("[yield-curve] nelsonSiegel: tau<0 also returns beta0 + beta1", () => {
+test("[yield-curve] nelsonSiegel: tau<0 also returns beta0 + beta1", () => {
   const params = { beta0: 0.05, beta1: -0.02, beta2: 0.01, lambda: 2.5 };
   assertAlmostEquals(_internalForTests.nelsonSiegel(-1, params), 0.03, 1e-12);
 });
 
-Deno.test("[bondUniverse] getBond returns the matching definition for a known symbol", () => {
+test("[bondUniverse] getBond returns the matching definition for a known symbol", () => {
   const all = getBonds();
   assert(all.length > 0, "BOND_UNIVERSE should be non-empty");
   const known = all[0];
@@ -79,11 +80,11 @@ Deno.test("[bondUniverse] getBond returns the matching definition for a known sy
   assertEquals(b?.symbol, known.symbol);
 });
 
-Deno.test("[bondUniverse] getBond returns undefined for an unknown symbol", () => {
+test("[bondUniverse] getBond returns undefined for an unknown symbol", () => {
   assertEquals(getBond("NOPE-DOES-NOT-EXIST"), undefined);
 });
 
-Deno.test("[bondUniverse] getBonds filters by issuer when provided", () => {
+test("[bondUniverse] getBonds filters by issuer when provided", () => {
   const ust = getBonds({ issuer: "UST" });
   const corp = getBonds({ issuer: "Corp" });
   assert(ust.length > 0, "should have UST bonds");
@@ -92,7 +93,7 @@ Deno.test("[bondUniverse] getBonds filters by issuer when provided", () => {
   for (const b of corp) assertEquals(b.issuer, "Corp");
 });
 
-Deno.test("[bondUniverse] getBonds returns the full universe when no filter is given", () => {
+test("[bondUniverse] getBonds returns the full universe when no filter is given", () => {
   const all = getBonds();
   const explicit = getBonds(undefined);
   const noField = getBonds({});

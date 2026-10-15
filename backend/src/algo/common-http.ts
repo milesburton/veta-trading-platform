@@ -1,6 +1,8 @@
-import { createConsumer } from "@veta/messaging";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
+import { createConsumer } from "#veta/messaging";
+import { spawnDetached } from "../lib/process.ts";
+import { serveFetch } from "#veta/http";
+import { CORS_HEADERS, corsOptions, json } from "#veta/http";
+import { logger } from "#veta/logger";
 import {
   classifyOrder,
   completeHeartbeat,
@@ -13,22 +15,15 @@ const FORCED_KILL_AFTER_MS = 10_000;
 
 export function spawnKillWatchdog(pid: number, afterMs: number): void {
   try {
-    new Deno.Command("sh", {
-      args: ["-c", `sleep ${afterMs / 1000}; kill -9 ${pid}`],
-      stdin: "null",
-      stdout: "null",
-      stderr: "null",
-    })
-      .spawn()
-      .unref();
+    spawnDetached("sh", ["-c", `sleep ${afterMs / 1000}; kill -9 ${pid}`]);
   } catch (err) {
     logger.warn("Could not spawn exit watchdog", { err });
   }
 }
 
 const exitWithWatchdog = (code: number): void => {
-  spawnKillWatchdog(Deno.pid, FORCED_KILL_AFTER_MS);
-  Deno.exit(code);
+  spawnKillWatchdog(process.pid, FORCED_KILL_AFTER_MS);
+  process.exit(code);
 };
 
 export function armAlgoIdleExit(
@@ -63,7 +58,7 @@ export function serveAlgoHealth(
   version: string,
   getActiveOrders: () => number,
 ): void {
-  Deno.serve({ port }, (req) => {
+  serveFetch({ port }, (req) => {
     if (req.method === "OPTIONS") return corsOptions();
 
     const url = new URL(req.url);

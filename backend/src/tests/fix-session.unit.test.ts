@@ -1,5 +1,6 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { FakeTime } from "jsr:@std/testing@0.217/time";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { FakeTime } from "#veta/fake-time";
 import { MsgType, Tag } from "../fix/fix-dictionary.ts";
 import { decode, encode } from "../fix/fix-parser.ts";
 import { FixSession, type SessionConfig, type SessionState } from "../fix/fix-session.ts";
@@ -31,7 +32,7 @@ function logonFrom(senderSeq = 1, heartBtInt = 30): string {
   ]);
 }
 
-Deno.test("[fix-session] acceptor: inbound Logon transitions DISCONNECTED → ACTIVE and echoes Logon back", () => {
+test("[fix-session] acceptor: inbound Logon transitions DISCONNECTED → ACTIVE and echoes Logon back", () => {
   const { session, sent, states } = harness();
   session.handleInbound(logonFrom(1));
   assertEquals(session.sessionState, "ACTIVE");
@@ -42,7 +43,7 @@ Deno.test("[fix-session] acceptor: inbound Logon transitions DISCONNECTED → AC
   session.disconnect();
 });
 
-Deno.test("[fix-session] application messages are forwarded only once session is ACTIVE", () => {
+test("[fix-session] application messages are forwarded only once session is ACTIVE", () => {
   const { session, appMessages } = harness();
 
   const nos = encode([
@@ -66,7 +67,7 @@ Deno.test("[fix-session] application messages are forwarded only once session is
   session.disconnect();
 });
 
-Deno.test("[fix-session] sequence gap triggers a ResendRequest instead of dispatching", () => {
+test("[fix-session] sequence gap triggers a ResendRequest instead of dispatching", () => {
   const { session, sent, appMessages } = harness();
   session.handleInbound(logonFrom(1));
   sent.length = 0;
@@ -87,7 +88,7 @@ Deno.test("[fix-session] sequence gap triggers a ResendRequest instead of dispat
   session.disconnect();
 });
 
-Deno.test("[fix-session] TestRequest gets an immediate Heartbeat echoing TestReqID", () => {
+test("[fix-session] TestRequest gets an immediate Heartbeat echoing TestReqID", () => {
   const { session, sent } = harness();
   session.handleInbound(logonFrom(1));
   sent.length = 0;
@@ -106,7 +107,7 @@ Deno.test("[fix-session] TestRequest gets an immediate Heartbeat echoing TestReq
   session.disconnect();
 });
 
-Deno.test("[fix-session] Logout while active is acknowledged and disconnects", () => {
+test("[fix-session] Logout while active is acknowledged and disconnects", () => {
   const { session, sent, states } = harness();
   session.handleInbound(logonFrom(1));
   sent.length = 0;
@@ -124,7 +125,7 @@ Deno.test("[fix-session] Logout while active is acknowledged and disconnects", (
   assertEquals(decode(sent[0]).get(Tag.MsgType), MsgType.Logout);
 });
 
-Deno.test("[fix-session] sendMessage wraps body tags with SenderCompID/TargetCompID/MsgSeqNum header", () => {
+test("[fix-session] sendMessage wraps body tags with SenderCompID/TargetCompID/MsgSeqNum header", () => {
   const { session, sent } = harness();
   session.handleInbound(logonFrom(1));
   sent.length = 0;
@@ -142,7 +143,7 @@ Deno.test("[fix-session] sendMessage wraps body tags with SenderCompID/TargetCom
   session.disconnect();
 });
 
-Deno.test("[fix-session] a message with an invalid checksum is dropped before dispatch", () => {
+test("[fix-session] a message with an invalid checksum is dropped before dispatch", () => {
   const { session, appMessages } = harness();
   session.handleInbound(logonFrom(1));
 
@@ -157,7 +158,7 @@ Deno.test("[fix-session] a message with an invalid checksum is dropped before di
   session.disconnect();
 });
 
-Deno.test("[fix-session] onLogonRequest rejecting a Logon sends a Logout and stays DISCONNECTED", () => {
+test("[fix-session] onLogonRequest rejecting a Logon sends a Logout and stays DISCONNECTED", () => {
   const { session, sent, states } = harness({ onLogonRequest: () => false });
   session.handleInbound(logonFrom(1));
 
@@ -167,7 +168,7 @@ Deno.test("[fix-session] onLogonRequest rejecting a Logon sends a Logout and sta
   assertEquals(decode(sent[0]).get(Tag.MsgType), MsgType.Logout);
 });
 
-Deno.test("[fix-session] a rejected Logon never reaches onApplicationMessage for a subsequent order", () => {
+test("[fix-session] a rejected Logon never reaches onApplicationMessage for a subsequent order", () => {
   const { session, appMessages } = harness({ onLogonRequest: () => false });
   session.handleInbound(logonFrom(1));
 
@@ -180,7 +181,7 @@ Deno.test("[fix-session] a rejected Logon never reaches onApplicationMessage for
   assertEquals(appMessages.length, 0);
 });
 
-Deno.test("[fix-session] onLogonRequest receives the inbound Logon's tags, including SenderCompID", () => {
+test("[fix-session] onLogonRequest receives the inbound Logon's tags, including SenderCompID", () => {
   const seen: Map<number, string>[] = [];
   const { session } = harness({
     onLogonRequest: (tags) => {
@@ -195,7 +196,7 @@ Deno.test("[fix-session] onLogonRequest receives the inbound Logon's tags, inclu
   session.disconnect();
 });
 
-Deno.test("[fix-session] initiator: sendLogon transitions DISCONNECTED -> LOGON_SENT", () => {
+test("[fix-session] initiator: sendLogon transitions DISCONNECTED -> LOGON_SENT", () => {
   const { session, sent, states } = harness();
   session.sendLogon();
   assertEquals(session.sessionState, "LOGON_SENT");
@@ -203,7 +204,7 @@ Deno.test("[fix-session] initiator: sendLogon transitions DISCONNECTED -> LOGON_
   assertEquals(decode(sent[0]).get(Tag.MsgType), MsgType.Logon);
 });
 
-Deno.test("[fix-session] initiator: receiving Logon back while LOGON_SENT transitions to ACTIVE without re-sending Logon", () => {
+test("[fix-session] initiator: receiving Logon back while LOGON_SENT transitions to ACTIVE without re-sending Logon", () => {
   const { session, sent, states } = harness();
   session.sendLogon();
   const logonReply = encode([
@@ -221,7 +222,7 @@ Deno.test("[fix-session] initiator: receiving Logon back while LOGON_SENT transi
   session.disconnect();
 });
 
-Deno.test("[fix-session] sendLogon(resetSeq: true) resets outbound MsgSeqNum to 1", () => {
+test("[fix-session] sendLogon(resetSeq: true) resets outbound MsgSeqNum to 1", () => {
   const { session, sent } = harness();
   session.handleInbound(logonFrom(1));
   session.sendMessage([[Tag.MsgType, MsgType.NewOrderSingle]]);
@@ -232,7 +233,7 @@ Deno.test("[fix-session] sendLogon(resetSeq: true) resets outbound MsgSeqNum to 
   assertEquals(decode(sent[0]).get(Tag.MsgSeqNum), "1");
 });
 
-Deno.test("[fix-session] sendLogout transitions to LOGOUT_SENT and stops the heartbeat", () => {
+test("[fix-session] sendLogout transitions to LOGOUT_SENT and stops the heartbeat", () => {
   const time = new FakeTime();
   try {
     const { session, sent, states } = harness();
@@ -254,7 +255,7 @@ Deno.test("[fix-session] sendLogout transitions to LOGOUT_SENT and stops the hea
   }
 });
 
-Deno.test("[fix-session] disconnect() stops the heartbeat and resets to DISCONNECTED", () => {
+test("[fix-session] disconnect() stops the heartbeat and resets to DISCONNECTED", () => {
   const time = new FakeTime();
   try {
     const { session, states } = harness();
@@ -269,14 +270,14 @@ Deno.test("[fix-session] disconnect() stops the heartbeat and resets to DISCONNE
   }
 });
 
-Deno.test("[fix-session] setTargetCompID changes the TargetCompID on subsequent outbound messages", () => {
+test("[fix-session] setTargetCompID changes the TargetCompID on subsequent outbound messages", () => {
   const { session, sent } = harness();
   session.setTargetCompID("NEW-TARGET");
   session.sendLogon();
   assertEquals(decode(sent[0]).get(Tag.TargetCompID), "NEW-TARGET");
 });
 
-Deno.test("[fix-session] SequenceReset with a positive NewSeqNo advances the expected inbound sequence", () => {
+test("[fix-session] SequenceReset with a positive NewSeqNo advances the expected inbound sequence", () => {
   const { session, appMessages } = harness();
   session.handleInbound(logonFrom(1));
 
@@ -301,7 +302,7 @@ Deno.test("[fix-session] SequenceReset with a positive NewSeqNo advances the exp
   session.disconnect();
 });
 
-Deno.test("[fix-session] ResendRequest with an explicit EndSeqNo replies with a gap-fill SequenceReset", () => {
+test("[fix-session] ResendRequest with an explicit EndSeqNo replies with a gap-fill SequenceReset", () => {
   const { session, sent } = harness();
   session.handleInbound(logonFrom(1));
   sent.length = 0;
@@ -323,7 +324,7 @@ Deno.test("[fix-session] ResendRequest with an explicit EndSeqNo replies with a 
   session.disconnect();
 });
 
-Deno.test("[fix-session] ResendRequest with EndSeqNo=0 (resend-to-infinity) gap-fills to the current outSeq", () => {
+test("[fix-session] ResendRequest with EndSeqNo=0 (resend-to-infinity) gap-fills to the current outSeq", () => {
   const { session, sent } = harness();
   session.handleInbound(logonFrom(1)); // consumes outSeq 1 for the Logon reply
   sent.length = 0;
@@ -343,7 +344,7 @@ Deno.test("[fix-session] ResendRequest with EndSeqNo=0 (resend-to-infinity) gap-
   session.disconnect();
 });
 
-Deno.test("[fix-session] heartbeat timer sends a TestRequest after the configured interval, then Heartbeat clears it", () => {
+test("[fix-session] heartbeat timer sends a TestRequest after the configured interval, then Heartbeat clears it", () => {
   const time = new FakeTime();
   try {
     const { session, sent } = harness({ heartBtInt: 5 });
@@ -378,7 +379,7 @@ Deno.test("[fix-session] heartbeat timer sends a TestRequest after the configure
   }
 });
 
-Deno.test("[fix-session] an unanswered TestRequest triggers a heartbeat-timeout disconnect on the next interval", () => {
+test("[fix-session] an unanswered TestRequest triggers a heartbeat-timeout disconnect on the next interval", () => {
   const time = new FakeTime();
   try {
     const { session, states } = harness({ heartBtInt: 5 });

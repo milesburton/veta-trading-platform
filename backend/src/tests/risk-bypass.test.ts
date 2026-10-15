@@ -1,6 +1,8 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { walk } from "jsr:@std/fs@1.0.0";
-import { relative } from "jsr:@std/path@1.0.0";
+import { readFile } from "node:fs/promises";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { walk } from "#veta/fs-walk";
+import { relative } from "node:path";
 
 const SRC_ROOT = new URL("../", import.meta.url).pathname;
 
@@ -26,7 +28,7 @@ async function findProducers(topic: string): Promise<Set<string>> {
     skip: [/tests/, /node_modules/, /\.test\.ts$/],
   })) {
     if (!entry.isFile) continue;
-    const text = await Deno.readTextFile(entry.path);
+    const text = await readFile(entry.path, "utf8");
     if (pattern.test(text)) {
       const rel = relative(SRC_ROOT, entry.path);
       found.add(rel);
@@ -35,7 +37,7 @@ async function findProducers(topic: string): Promise<Set<string>> {
   return found;
 }
 
-Deno.test("risk-bypass: every producer of orders.new is on the allowlist", async () => {
+test("risk-bypass: every producer of orders.new is on the allowlist", async () => {
   const found = await findProducers("orders.new");
   const unexpected = [...found].filter((f) => !ORDERS_NEW_PRODUCERS.has(f));
   assertEquals(
@@ -53,7 +55,7 @@ Deno.test("risk-bypass: every producer of orders.new is on the allowlist", async
   }
 });
 
-Deno.test("risk-bypass: only oms/oms-server.ts produces orders.submitted", async () => {
+test("risk-bypass: only oms/oms-server.ts produces orders.submitted", async () => {
   const found = await findProducers("orders.submitted");
   const unexpected = [...found].filter((f) => !ORDERS_SUBMITTED_PRODUCERS.has(f));
   assertEquals(

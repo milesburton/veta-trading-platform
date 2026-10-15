@@ -1,18 +1,18 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createProducer } from "@veta/messaging";
-import type { NewsEvent } from "@veta/types/intelligence";
-import { waitForUrl } from "@veta/wait-for";
+import "#veta/bootstrap";
+import { readFileSync, writeFileSync } from "node:fs";
+import { corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createProducer } from "#veta/messaging";
+import type { NewsEvent } from "#veta/types/intelligence";
+import { waitForUrl } from "#veta/wait-for";
 import { extractTickers, scoreSentiment, slugify } from "./news-analysis.ts";
 
-const PORT = Number(Deno.env.get("NEWS_AGGREGATOR_PORT")) || 5_013;
-const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000";
-const POLL_INTERVAL_MS = Number(Deno.env.get("NEWS_POLL_INTERVAL_MS")) || 120_000;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.NEWS_AGGREGATOR_PORT) || 5_013;
+const MARKET_SIM_URL = process.env.MARKET_SIM_URL || "http://localhost:5000";
+const POLL_INTERVAL_MS = Number(process.env.NEWS_POLL_INTERVAL_MS) || 120_000;
+const VERSION = process.env.COMMIT_SHA || "dev";
 const MAX_ITEMS_PER_SYMBOL = 100;
-const SOURCES_FILE = Deno.env.get("NEWS_SOURCES_FILE") ?? "./news_sources.json";
+const SOURCES_FILE = process.env.NEWS_SOURCES_FILE ?? "./news_sources.json";
 
 logger.info(`Starting, poll=${POLL_INTERVAL_MS}ms`);
 
@@ -50,7 +50,7 @@ const DEFAULT_SOURCES: NewsSource[] = [
 
 function loadSources(): NewsSource[] {
   try {
-    const raw = Deno.readTextFileSync(SOURCES_FILE);
+    const raw = readFileSync(SOURCES_FILE, "utf8");
     return JSON.parse(raw) as NewsSource[];
   } catch {
     return DEFAULT_SOURCES.map((s) => ({ ...s }));
@@ -59,7 +59,7 @@ function loadSources(): NewsSource[] {
 
 function saveSources(): void {
   try {
-    Deno.writeTextFileSync(SOURCES_FILE, JSON.stringify(SOURCES, null, 2));
+    writeFileSync(SOURCES_FILE, JSON.stringify(SOURCES, null, 2));
   } catch (e) {
     logger.warn(`Could not persist sources: ${e}`);
   }
@@ -256,7 +256,7 @@ async function loadSymbols(): Promise<void> {
   }, POLL_INTERVAL_MS);
 })();
 
-Deno.serve({ port: PORT }, async (req) => {
+serveFetch({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") {
     return corsOptions();
   }

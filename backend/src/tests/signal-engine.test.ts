@@ -1,4 +1,5 @@
-import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 import type { FeatureVector } from "../types/intelligence.ts";
@@ -17,7 +18,7 @@ function makeNeutralFv(symbol = "TEST"): FeatureVector {
   };
 }
 
-Deno.test("default weights: all 7 features present, realisedVol is negative, abs-sum = 1.0", () => {
+test("default weights: all 7 features present, realisedVol is negative, abs-sum = 1.0", () => {
   const keys = Object.keys(DEFAULT_WEIGHTS);
   assertEquals(keys.length, 7);
   assertEquals("momentum" in DEFAULT_WEIGHTS, true);
@@ -28,14 +29,14 @@ Deno.test("default weights: all 7 features present, realisedVol is negative, abs
   assertAlmostEquals(absSum, 1.0, 0.001);
 });
 
-Deno.test("scorer: neutral FeatureVector → neutral direction with 7 factors", () => {
+test("scorer: neutral FeatureVector → neutral direction with 7 factors", () => {
   const sig = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
   assertEquals(sig.symbol, "TEST");
   assertEquals(sig.direction, "neutral");
   assertEquals(sig.factors.length, 7);
 });
 
-Deno.test("scorer: strong positive momentum + positive sentiment → long; inverse → short", () => {
+test("scorer: strong positive momentum + positive sentiment → long; inverse → short", () => {
   const fvLong = makeNeutralFv();
   fvLong.momentum = 0.1;
   fvLong.sentimentDelta = 1.0;
@@ -51,7 +52,7 @@ Deno.test("scorer: strong positive momentum + positive sentiment → long; inver
   assertEquals(sigShort.score < -0.2, true);
 });
 
-Deno.test("scorer: score is clamped to [-1, 1] even when all features are maxed", () => {
+test("scorer: score is clamped to [-1, 1] even when all features are maxed", () => {
   const fv = makeNeutralFv();
   fv.momentum = 1.0;
   fv.relativeVolume = 100;
@@ -64,7 +65,7 @@ Deno.test("scorer: score is clamped to [-1, 1] even when all features are maxed"
   assertEquals(sig.score >= -1, true);
 });
 
-Deno.test("scorer: factors array contains all 7 named features", () => {
+test("scorer: factors array contains all 7 named features", () => {
   const sig = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
   const names = new Set(sig.factors.map((f) => f.name));
   for (const name of [
@@ -80,7 +81,7 @@ Deno.test("scorer: factors array contains all 7 named features", () => {
   }
 });
 
-Deno.test("scorer: confidence = abs(score); realisedVol reduces score (negative weight)", () => {
+test("scorer: confidence = abs(score); realisedVol reduces score (negative weight)", () => {
   const fv = makeNeutralFv();
   fv.momentum = 0.05;
   const sig = scoreFeatureVector(fv, DEFAULT_WEIGHTS);
@@ -93,7 +94,7 @@ Deno.test("scorer: confidence = abs(score); realisedVol reduces score (negative 
   assertEquals(sigHigh.score < sigLow.score, true, "high vol lowers score");
 });
 
-Deno.test("scorer: all-zero weights produce zero score for any FeatureVector", () => {
+test("scorer: all-zero weights produce zero score for any FeatureVector", () => {
   const zeroWeights = {
     momentum: 0,
     relativeVolume: 0,

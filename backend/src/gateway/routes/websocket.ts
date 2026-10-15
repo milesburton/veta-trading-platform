@@ -1,6 +1,7 @@
-import { getCookieToken } from "@veta/auth";
-import { logger } from "@veta/logger";
-import { clientIp, RateLimiter } from "@veta/rate-limit";
+import { upgradeWebSocket } from "#veta/http";
+import { getCookieToken } from "#veta/auth";
+import { logger } from "#veta/logger";
+import { clientIp, RateLimiter } from "#veta/rate-limit";
 import { AbuseTracker } from "../abuse-tracker.ts";
 import {
   addAnonymousSocket,
@@ -12,8 +13,8 @@ import {
 import type { AuthResult, GatewayContext } from "../context.ts";
 import { classifyRequestSource } from "../request-source.ts";
 
-const WS_FRAME_CAPACITY = Number(Deno.env.get("WS_FRAME_CAPACITY")) || 100;
-const WS_FRAME_REFILL_PER_SECOND = Number(Deno.env.get("WS_FRAME_REFILL_PER_SECOND")) || 10;
+const WS_FRAME_CAPACITY = Number(process.env.WS_FRAME_CAPACITY) || 100;
+const WS_FRAME_REFILL_PER_SECOND = Number(process.env.WS_FRAME_REFILL_PER_SECOND) || 10;
 
 // docs: /platform/security/
 const abuseTracker = new AbuseTracker();
@@ -70,7 +71,7 @@ export async function handleWebSocketRoute(
   }
 
   // docs: /reference/api-gateway/
-  const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 300 });
+  const { socket, response } = upgradeWebSocket(req, { idleTimeout: 300 });
   let auth: AuthResult | null = pendingAuth;
   let socketUserId: string | null = pendingUserId;
 

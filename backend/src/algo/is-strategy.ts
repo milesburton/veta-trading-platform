@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * IMPLEMENTATION SHORTFALL (IS) order algorithm
  *
@@ -20,23 +20,22 @@ import "@veta/bootstrap";
  * Publishes to:  orders.child, orders.expired, algo.heartbeat
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
 import {
   type FillEvent,
   FillEventSchema,
   type RoutedOrder,
   RoutedOrderSchema,
-} from "@veta/schemas/orders";
+} from "#veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
-const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5026;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.IS_ALGO_PORT) || 5026;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const VERSION = process.env.COMMIT_SHA || "dev";
 const ALGO = "IS" as const;
 
 logger.info(`Starting on port ${PORT}`);
@@ -125,7 +124,7 @@ function buildSliceSchedule(
 }
 // #endregion docs:is-slice-schedule
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("IS_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.IS_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "is-algo");
 
 await createTypedConsumer("is-algo-routed", [

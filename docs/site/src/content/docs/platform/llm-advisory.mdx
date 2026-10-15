@@ -35,7 +35,7 @@ The orchestrator subscribes to `market.signals`, `market.recommendations`, `mark
 
 ## Restart policy
 
-Both `llm-advisory` and `llm-worker` set `restart: unless-stopped` in [`compose.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/compose.yml). Docker restarts the container on any non-zero exit, but respects explicit `docker compose stop` so manual maintenance still works as expected. Without this, the deno-medium x-anchor's default of `restart: no` left the worker offline indefinitely after any panic.
+Both `llm-advisory` and `llm-worker` set `restart: unless-stopped` in [`compose.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/compose.yml). Docker restarts the container on any non-zero exit, but respects explicit `docker compose stop` so manual maintenance still works as expected. Without this, the node-medium x-anchor's default of `restart: no` left the worker offline indefinitely after any panic.
 
 Recovery time end-to-end is typically under 10 seconds: process restart (~3s) plus the worker's startup checks (provider availability, idle-policy load, redpanda producer setup).
 
@@ -49,7 +49,7 @@ All 15 JobStore methods opt in. The retry label is included in log lines so a tr
 
 ## Concurrency-capped staleness refresh
 
-Once a minute the orchestrator scans every tracked symbol to see whether its latest advisory note has gone stale. The naive shape — `Promise.all` over every symbol with two PG queries each — fired 574 concurrent operations against a pool of 12 connections (for ~287 symbols). The deno-postgres driver queued the excess against the same pool that HTTP handlers use, starving `/admin/state` and other endpoints during the scan window.
+Once a minute the orchestrator scans every tracked symbol to see whether its latest advisory note has gone stale. The naive shape — `Promise.all` over every symbol with two PG queries each — fired 574 concurrent operations against a pool of 12 connections (for ~287 symbols). The Postgres driver queued the excess against the same pool that HTTP handlers use, starving `/admin/state` and other endpoints during the scan window.
 
 The scan now runs through a `mapWithConcurrency` helper that caps in-flight symbols at `STALENESS_QUERY_CONCURRENCY = 4`. Each symbol still issues its two PG calls in parallel (8 connections at most), leaving 4 free for HTTP. End-to-end scan time is similar (still gated on DB latency), but `/admin/state` p99 stays in the tens of ms during the scan instead of spiking into the seconds.
 

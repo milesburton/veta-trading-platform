@@ -25,7 +25,7 @@ The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser t
 | `/ws` | Main gateway WebSocket: market updates, order events, auth identity |
 | `/ws/market-sim` | Raw market-sim WebSocket proxy |
 
-`Deno.upgradeWebSocket` defaults to a 30-second `idleTimeout`: if a ping goes unanswered in that window, Deno force-closes the socket (code 1001, "No response from ping frame"), independent of any application-level logic. The gateway's clients don't reliably answer that ping under real network conditions, so every connection, regardless of client type, was being closed roughly every 30 seconds. Both `/ws` (`backend/src/gateway/routes/websocket.ts`) and `/ws/market-sim` (`backend/src/gateway/system-status.ts`) now pass an explicit `idleTimeout: 300` to `Deno.upgradeWebSocket`. Don't remove that option; it isn't dead configuration even though 300 looks arbitrary.
+`upgradeWebSocket` (`backend/src/lib/http.ts`) defaults to a 30-second `idleTimeout`: if a ping goes unanswered in that window, the server terminates the socket (code 1001, "No response from ping frame"), independent of any application-level logic. The gateway's clients don't reliably answer that ping under real network conditions, so every connection, regardless of client type, was being closed roughly every 30 seconds. Both `/ws` (`backend/src/gateway/routes/websocket.ts`) and `/ws/market-sim` (`backend/src/gateway/system-status.ts`) now pass an explicit `idleTimeout: 300` to `upgradeWebSocket`. Don't remove that option; it isn't dead configuration even though 300 looks arbitrary.
 
 ## Market hours
 
@@ -65,13 +65,13 @@ State-changing methods (anything that is not `GET`/`HEAD`/`OPTIONS`) must come f
 
 ## Access-event logging
 
-<Source path="backend/src/gateway/gateway.ts" line={415} label="publishAccessEvent" />
+<Source path="backend/src/gateway/gateway.ts" line={414} label="publishAccessEvent" />
 
 Every gate decision publishes a `user.access` event to Kafka (the audit trail) and, for `auth_failure` / `ws_rate_limited` actions, also emits a WARN-level log line, since Grafana alert rules query Loki, not Kafka. A misconfigured client can produce thousands of identical `auth_failure` events per second; without a cap the stdout log fills the disk within hours. Kafka still receives every event for the audit trail, but stdout WARN emits are throttled per `(action, reason)` pair, and the next emitted line after a throttled run carries a `suppressedSince` count so the signal is not lost, only rate-limited.
 
 ## Market data fallback path
 
-<Source path="backend/src/gateway/gateway.ts" line={463} label="startConsumers" />
+<Source path="backend/src/gateway/gateway.ts" line={462} label="startConsumers" />
 
 The gateway's primary market-data path is a Kafka consumer on `market.ticks`. It also opens a direct WebSocket to `market-sim` as a fallback: if no Kafka tick has arrived in the last 3 seconds, ticks from the fallback WebSocket are broadcast instead. Once Kafka resumes flowing, the fallback WebSocket's messages are silently dropped again. This keeps the dashboard live during a Redpanda outage without the fallback path fighting the primary path for which tick wins.
 
@@ -79,7 +79,7 @@ Order events for a specific user are additionally broadcast to `compliance` and 
 
 ## Health check refresh
 
-<Source path="backend/src/gateway/gateway.ts" line={651} label="HEALTH_REFRESH_MS" />
+<Source path="backend/src/gateway/gateway.ts" line={650} label="HEALTH_REFRESH_MS" />
 
 The gateway polls `/health` on every service in `shared/serviceRegistry.ts`. Fetching health from all of them on every request would mean dozens of concurrent fetches per call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
 
@@ -119,6 +119,6 @@ A small set of proxy routes are reachable without a session cookie: the OAuth fl
 
 <Source path="backend/src/lib/http.ts" label="CORS_HEADERS" />
 
-`@veta/http`'s `CORS_HEADERS` (used by `proxy.ts` and internal services that import the shared helper) does not include `Access-Control-Allow-Origin: *`. The gateway has its own per-request CORS logic reflecting the request's `Origin` when it is in `CORS_ALLOWED_ORIGINS`; internal services sit behind the gateway and are rarely accessed cross-origin directly, so a wildcard origin is unnecessary exposure. If a future internal service genuinely needs direct cross-origin browser access, it should compose headers the same way `gateway.ts` does rather than opening `CORS_HEADERS` up to all origins.
+`#veta/http`'s `CORS_HEADERS` (used by `proxy.ts` and internal services that import the shared helper) does not include `Access-Control-Allow-Origin: *`. The gateway has its own per-request CORS logic reflecting the request's `Origin` when it is in `CORS_ALLOWED_ORIGINS`; internal services sit behind the gateway and are rarely accessed cross-origin directly, so a wildcard origin is unnecessary exposure. If a future internal service genuinely needs direct cross-origin browser access, it should compose headers the same way `gateway.ts` does rather than opening `CORS_HEADERS` up to all origins.
 
 `CORS_ALLOWED_ORIGINS` also gates the gateway's CSRF check (`requireAuth` rejects any state-changing request whose `Origin` isn't in this set) and `user-service`'s equivalent check. It defaults to the local dev origins (`http://localhost:5173,http://localhost:3000`) — **every deployment target must set this explicitly to its real public origin**, or every POST/PUT/DELETE from a real browser fails with 403 `forbidden` even for a fully authenticated user. Set it in the homelab's `.env` (see [veta-auto-pull](../../platform/supporting/veta-auto-pull/)), not in `compose.yml`, which only carries the dev-safe default.

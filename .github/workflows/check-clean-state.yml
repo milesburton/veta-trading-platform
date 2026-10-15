@@ -13,10 +13,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: 2.7.x
-
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
@@ -25,23 +21,12 @@ jobs:
           cache: true
           cache-dependency-path: docs/site/package-lock.json
           run-install: |
+            - cwd: .
+              args: ['--frozen-lockfile']
             - cwd: frontend
               args: ['--frozen-lockfile']
             - cwd: docs/site
               args: ['--frozen-lockfile']
-
-      - name: Cache Deno deps
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/deno
-            ~/.deno
-          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock', 'deno.json') }}
-          restore-keys: |
-            deno-${{ runner.os }}-
-
-      - name: Install backend dependencies
-        run: deno install
 
       - name: Regenerate derived docs files
         working-directory: docs/site
@@ -52,9 +37,7 @@ jobs:
           echo "Checking for uncommitted changes in working directory..."
 
           # Run a quick lint to ensure any generated files are up-to-date
-          deno task lint --fix || true
-          cd frontend && npm run lint:fix || true
-          cd ..
+          npm run lint:fix || true
 
           # Refresh the index first. Without this, `git diff-index` can
           # report a file as changed when only its stat-info (mtime,
@@ -86,8 +69,7 @@ jobs:
             echo ""
             echo "Fix locally with:"
             echo "  cd docs/site && npm run generate"
-            echo "  deno task lint"
-            echo "  cd frontend && npm run lint"
+            echo "  npm run lint:fix"
             echo "  git add -A && git commit -m 'chore(docs): regenerate'"
             echo ""
             echo "Pre-commit hook does this automatically — see .husky/pre-commit."

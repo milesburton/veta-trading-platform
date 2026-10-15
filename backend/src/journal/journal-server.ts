@@ -1,21 +1,20 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { journalPool } from "@veta/db";
-import { applyExprGroup, applySort } from "@veta/grid-query";
-import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
-import type { GridQueryRequest, GridQueryResponse } from "@veta/types/grid-query";
+import "#veta/bootstrap";
+import { journalPool } from "#veta/db";
+import { applyExprGroup, applySort } from "#veta/grid-query";
+import { CORS_HEADERS, corsOptions, json, jsonError, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer } from "#veta/messaging";
+import type { GridQueryRequest, GridQueryResponse } from "#veta/types/grid-query";
 import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
 import { decodeOrderId, summariseFills } from "./order-progress.ts";
 import { reconstructOrdersFromRows } from "./order-reconstruction.ts";
 
-const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
-const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;
+const PORT = Number(process.env.JOURNAL_PORT) || 5_009;
+const RETENTION_DAYS = Number(process.env.JOURNAL_RETENTION_DAYS) || 90;
 const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1_000;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const VERSION = process.env.COMMIT_SHA || "dev";
 const DATA_DEPTH_TTL_MS = 60_000;
 
 const CONSUME_TOPICS = [
@@ -165,7 +164,7 @@ async function pruneOldEvents(): Promise<void> {
   }
 }
 
-const PRUNE_INTERVAL_MS = Number(Deno.env.get("JOURNAL_PRUNE_INTERVAL_MS")) || 60 * 60 * 1_000;
+const PRUNE_INTERVAL_MS = Number(process.env.JOURNAL_PRUNE_INTERVAL_MS) || 60 * 60 * 1_000;
 setTimeout(() => pruneOldEvents().catch(() => {}), 30_000);
 setInterval(() => pruneOldEvents().catch(() => {}), PRUNE_INTERVAL_MS);
 
@@ -196,7 +195,7 @@ function ingest(topic: string, value: KafkaEventValue) {
   ]);
 }
 
-const FIX_ARCHIVE_URL = `http://${Deno.env.get("FIX_ARCHIVE_HOST") ?? "localhost"}:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`;
+const FIX_ARCHIVE_URL = `http://${process.env.FIX_ARCHIVE_HOST ?? "localhost"}:${process.env.FIX_ARCHIVE_PORT ?? "5012"}`;
 
 async function reconcileFillsFromArchive(): Promise<void> {
   try {
@@ -674,4 +673,4 @@ async function _reconstructOrders(lookbackMs: number): Promise<Record<string, un
   }
 }
 
-Deno.serve({ port: PORT }, handle);
+serveFetch({ port: PORT }, handle);

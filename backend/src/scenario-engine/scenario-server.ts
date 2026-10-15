@@ -1,17 +1,16 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { json, serveJsonService } from "@veta/http";
-import { logger } from "@veta/logger";
-import type { FeatureVector, ScenarioShock, Signal } from "@veta/types/intelligence";
+import "#veta/bootstrap";
+import { json, serveJsonService } from "#veta/http";
+import { logger } from "#veta/logger";
+import type { FeatureVector, ScenarioShock, Signal } from "#veta/types/intelligence";
 import { armIdleExit } from "../shared/idle-exit.ts";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 import { applyShocks } from "./apply-shocks.ts";
 
-const PORT = Number(Deno.env.get("SCENARIO_ENGINE_PORT")) || 5_020;
-const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
-const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.SCENARIO_ENGINE_PORT) || 5_020;
+const FEATURE_ENGINE_URL = process.env.FEATURE_ENGINE_URL || "http://localhost:5017";
+const SIGNAL_ENGINE_URL = process.env.SIGNAL_ENGINE_URL || "http://localhost:5018";
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 interface ScenarioRequest {
   symbol: string;
@@ -26,7 +25,7 @@ interface ScenarioResult {
   shocksApplied: ScenarioShock[];
 }
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("SCENARIO_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.SCENARIO_ENGINE_IDLE_TIMEOUT_SECONDS ?? "600") * 1_000;
 const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
 
 serveJsonService({

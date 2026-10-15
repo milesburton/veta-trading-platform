@@ -1,8 +1,9 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
-import { FakeTime } from "jsr:@std/testing@0.217/time";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
+import { FakeTime } from "#veta/fake-time";
 import { armConsumerIdleExit, armIdleExit } from "../shared/idle-exit.ts";
 
-Deno.test("[armIdleExit] exits after timeoutMs with no touch()", () => {
+test("[armIdleExit] exits after timeoutMs with no touch()", () => {
   const time = new FakeTime();
   try {
     const exitCodes: number[] = [];
@@ -16,7 +17,7 @@ Deno.test("[armIdleExit] exits after timeoutMs with no touch()", () => {
   }
 });
 
-Deno.test("[armIdleExit] touch() resets the timer", () => {
+test("[armIdleExit] touch() resets the timer", () => {
   const time = new FakeTime();
   try {
     const exitCodes: number[] = [];
@@ -32,7 +33,7 @@ Deno.test("[armIdleExit] touch() resets the timer", () => {
   }
 });
 
-Deno.test("[armIdleExit] awaits onExit before exiting", async () => {
+test("[armIdleExit] awaits onExit before exiting", async () => {
   const time = new FakeTime();
   try {
     const order: string[] = [];
@@ -58,7 +59,7 @@ Deno.test("[armIdleExit] awaits onExit before exiting", async () => {
   }
 });
 
-Deno.test("[armIdleExit] still exits when onExit rejects", async () => {
+test("[armIdleExit] still exits when onExit rejects", async () => {
   const time = new FakeTime();
   try {
     const exitCodes: number[] = [];
@@ -74,7 +75,7 @@ Deno.test("[armIdleExit] still exits when onExit rejects", async () => {
   }
 });
 
-Deno.test("[armConsumerIdleExit] exits after timeoutMs with no touch()", () => {
+test("[armConsumerIdleExit] exits after timeoutMs with no touch()", () => {
   const time = new FakeTime();
   try {
     const exitCodes: number[] = [];
@@ -86,7 +87,7 @@ Deno.test("[armConsumerIdleExit] exits after timeoutMs with no touch()", () => {
   }
 });
 
-Deno.test("[armConsumerIdleExit] touch() resets the timer", () => {
+test("[armConsumerIdleExit] touch() resets the timer", () => {
   const time = new FakeTime();
   try {
     const exitCodes: number[] = [];

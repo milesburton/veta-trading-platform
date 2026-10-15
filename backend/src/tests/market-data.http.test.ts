@@ -1,6 +1,7 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 
-const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
+const BASE = process.env.VETA_BASE_URL ?? "http://localhost";
 function svcUrl(localPort: number, prodPath: string): string {
   if (BASE === "http://localhost") return `${BASE}:${localPort}`;
   return `${BASE}${prodPath}`;
@@ -11,7 +12,7 @@ function t(ms = 8_000) {
   return AbortSignal.timeout(ms);
 }
 
-Deno.test("[market-data/http] GET /health returns ok with override count", async () => {
+test("[market-data/http] GET /health returns ok with override count", async () => {
   const res = await fetch(`${MDS_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
   const body = (await res.json()) as {
@@ -24,7 +25,7 @@ Deno.test("[market-data/http] GET /health returns ok with override count", async
   assert(typeof body.alphaVantageConfigured === "boolean");
 });
 
-Deno.test("[market-data/http] GET /sources returns non-empty array with id, label, enabled", async () => {
+test("[market-data/http] GET /sources returns non-empty array with id, label, enabled", async () => {
   const res = await fetch(`${MDS_URL}/sources`, { signal: t() });
   assertEquals(res.status, 200);
   const body = (await res.json()) as {
@@ -39,7 +40,7 @@ Deno.test("[market-data/http] GET /sources returns non-empty array with id, labe
   assert(typeof synthetic.label === "string" && synthetic.label.length > 0);
 });
 
-Deno.test("[market-data/http] GET /overrides returns overrides object", async () => {
+test("[market-data/http] GET /overrides returns overrides object", async () => {
   const res = await fetch(`${MDS_URL}/overrides`, { signal: t() });
   assertEquals(res.status, 200);
   const body = (await res.json()) as { overrides: Record<string, string> };
@@ -47,7 +48,7 @@ Deno.test("[market-data/http] GET /overrides returns overrides object", async ()
   assert(typeof body.overrides === "object");
 });
 
-Deno.test("[market-data/http] PUT /overrides sets and retrieves an override", async () => {
+test("[market-data/http] PUT /overrides sets and retrieves an override", async () => {
   const putRes = await fetch(`${MDS_URL}/overrides`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -63,7 +64,7 @@ Deno.test("[market-data/http] PUT /overrides sets and retrieves an override", as
   assert(typeof body.overrides === "object");
 });
 
-Deno.test("[market-data/http] PUT /overrides with unknown source returns 400", async () => {
+test("[market-data/http] PUT /overrides with unknown source returns 400", async () => {
   const res = await fetch(`${MDS_URL}/overrides`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -78,7 +79,7 @@ Deno.test("[market-data/http] PUT /overrides with unknown source returns 400", a
   );
 });
 
-Deno.test("[market-data/http] PUT /overrides with invalid JSON returns 400", async () => {
+test("[market-data/http] PUT /overrides with invalid JSON returns 400", async () => {
   const res = await fetch(`${MDS_URL}/overrides`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -89,7 +90,7 @@ Deno.test("[market-data/http] PUT /overrides with invalid JSON returns 400", asy
   res.body?.cancel();
 });
 
-Deno.test("[market-data/http] PUT /overrides missing overrides key returns 400", async () => {
+test("[market-data/http] PUT /overrides missing overrides key returns 400", async () => {
   const res = await fetch(`${MDS_URL}/overrides`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -100,7 +101,7 @@ Deno.test("[market-data/http] PUT /overrides missing overrides key returns 400",
   res.body?.cancel();
 });
 
-Deno.test("[market-data/http] PUT /overrides synthetic override is idempotent", async () => {
+test("[market-data/http] PUT /overrides synthetic override is idempotent", async () => {
   const res1 = await fetch(`${MDS_URL}/overrides`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -117,7 +118,7 @@ Deno.test("[market-data/http] PUT /overrides synthetic override is idempotent", 
   assert(typeof body.overrides === "object");
 });
 
-Deno.test("[market-data/http] POST /sources/alpha-vantage/toggle returns updated sources", async () => {
+test("[market-data/http] POST /sources/alpha-vantage/toggle returns updated sources", async () => {
   const before = await fetch(`${MDS_URL}/sources`, { signal: t() })
     .then((r) => r.json() as Promise<{ id: string; active: boolean }[]>)
     .then((s) => s.find((src) => src.id === "alpha-vantage")?.active);
@@ -141,7 +142,7 @@ Deno.test("[market-data/http] POST /sources/alpha-vantage/toggle returns updated
   await restoreRes.body?.cancel();
 });
 
-Deno.test("[market-data/http] POST /sources/unknown-source/toggle returns 400", async () => {
+test("[market-data/http] POST /sources/unknown-source/toggle returns 400", async () => {
   const res = await fetch(`${MDS_URL}/sources/bloomberg/toggle`, {
     method: "POST",
     signal: t(),
@@ -150,7 +151,7 @@ Deno.test("[market-data/http] POST /sources/unknown-source/toggle returns 400", 
   res.body?.cancel();
 });
 
-Deno.test("[market-data/http] GET /cache returns object (debug endpoint)", async () => {
+test("[market-data/http] GET /cache returns object (debug endpoint)", async () => {
   const res = await fetch(`${MDS_URL}/cache`, { signal: t() });
   assertEquals(res.status, 200);
   const body = (await res.json()) as unknown;

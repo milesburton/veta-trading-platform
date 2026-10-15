@@ -30,7 +30,6 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
    - the `docker-services` matrix in `.github/workflows/ci.yml` (see [CI/CD](/veta-trading-platform/development/ci-cd/#docker-services-3-to-5-minutes-per-image-parallel))
    - `compose.observability.yml`, for its `OTEL_SERVICE_NAME`
    - `<UPPER>_ALGO_PORT` and `<UPPER>_ALGO_HOST` in the `gateway` service env block so `SVC_PROXY` can route to it
-   - the `check` task entry points in `deno.json`
    - the service descriptions in `docs/site/scripts/generate-service-map.mjs`
 3. **Update the params type** in `frontend/src/types.ts`. Add a `<Name>Params` interface and union member in `AlgoParams`.
 4. **Add the strategy name** to the shared strategy list in `shared/primitives.ts` and to the frontend lists in `domain/market/venueCapabilities.ts`, `domain/market/marketSession.ts` and `domain/ticket/fieldDefinitions.ts`. Add a colour for it in `frontend/src/tokens.ts` (see the [style guide](/veta-trading-platform/development/style-guide/)), an entry in `StartupOverlay/serviceCatalog.ts`, and a `/api/<name>` proxy rewrite in `frontend/vite.config.ts`.
@@ -41,10 +40,10 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
 
 ```bash
 # Unit tests for the new strategy
-deno test --allow-all backend/src/tests/algo.unit.test.ts
+npx vp test run backend/src/tests/algo.unit.test.ts
 
 # Testcontainers integration (starts the algo and submits a parent order)
-deno task test:testcontainers
+npm run test:testcontainers
 
 # Frontend tests covering the new strategy in OrderTicket
 cd frontend && ./node_modules/.bin/vitest run src/components/OrderTicket/
@@ -57,7 +56,7 @@ cd docs/site && npm run generate
 
 - **Forgetting the heartbeat**: the algo feed indicator in the status bar only turns live when `algo.heartbeat` events arrive. The helpers in `common-http.ts` and `fill-progress.ts` build the heartbeat payloads; use them.
 - **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](/veta-trading-platform/platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
-- **Missing entry points in the `deno.json` `check` task**: `deno task check` type-checks an explicit list of files, so a new strategy file is not type-checked until it is added. Test files need no registration, because `test:unit` discovers them by glob.
+- **Registration**: `npm run check` type-checks the whole `backend/` tree and the unit tests are discovered by glob, so a new strategy file and its tests need no registration.
 - **Docs auto-gen swallows your description** — the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.
 
 ## Execution mechanics reference

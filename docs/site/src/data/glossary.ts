@@ -665,7 +665,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "OpenTelemetry",
     category: "telemetry",
     short:
-      "Vendor-neutral standard for metrics, traces and logs. Deno 2.x ships built-in auto-instrumentation enabled with OTEL_DENO=true.",
+      "Vendor-neutral standard for metrics, traces and logs. the platform registers the OpenTelemetry Node SDK, which provides auto-instrumentation enabled with OTEL_ENABLED=true.",
     seeAlso: ["traceparent", "lgtm"],
   },
   {

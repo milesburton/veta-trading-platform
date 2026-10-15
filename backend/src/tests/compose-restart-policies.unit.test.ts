@@ -1,4 +1,6 @@
-import { assert } from "jsr:@std/assert@0.217";
+import { runCommand } from "../lib/process.ts";
+import { test } from "#veta/test";
+import { assert } from "#veta/test-assert";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 
@@ -69,28 +71,24 @@ async function dockerComposeConfig(
   for (const f of files) args.push("-f", `${REPO_ROOT}${f}`);
   for (const p of profiles) args.push("--profile", p);
   args.push("config", "--format", "json");
-  const cmd = new Deno.Command("docker", {
-    args,
-    stdout: "piped",
-    stderr: "piped",
-    env: { ...Deno.env.toObject(), ...env },
+  const { stdout, stderr, code } = await runCommand("docker", args, {
+    env: { ...process.env, ...env },
   });
-  const { stdout, stderr, code } = await cmd.output();
   if (code !== 0) {
-    const errText = new TextDecoder().decode(stderr);
+    const errText = stderr;
     if (errText.includes("docker: command not found") || errText.includes("not found")) {
       return null;
     }
     throw new Error(`docker compose config failed: ${errText.slice(0, 500)}`);
   }
-  return JSON.parse(new TextDecoder().decode(stdout)) as ComposeConfig;
+  return JSON.parse(stdout) as ComposeConfig;
 }
 
 function autoRestarts(restart: string | undefined): boolean {
   return restart === "unless-stopped" || restart === "always" || restart === "on-failure";
 }
 
-Deno.test("every long-running service has an auto-restart policy", async () => {
+test("every long-running service has an auto-restart policy", async () => {
   let dockerAvailable = true;
   const offenders: string[] = [];
   for (const scenario of SCENARIOS) {

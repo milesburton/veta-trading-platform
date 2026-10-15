@@ -1,5 +1,5 @@
-import { US_EQUITY_CALENDAR } from "@veta/market-calendars";
-import { resolveCurrentSession } from "@veta/trading-calendar";
+import { US_EQUITY_CALENDAR } from "#veta/market-calendars";
+import { resolveCurrentSession } from "#veta/trading-calendar";
 
 const NEW_YORK_CLOCK = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/New_York",
@@ -9,7 +9,7 @@ const NEW_YORK_CLOCK = new Intl.DateTimeFormat("en-US", {
   hourCycle: "h23",
 });
 
-// Delegates to the shared, holiday-aware @veta/trading-calendar rather than
+// Delegates to the shared, holiday-aware #veta/trading-calendar rather than
 // a hand-rolled weekday/09:30-16:00 check, so this stays in sync with the
 // same calendar desk-calendar.ts (synthetic-trader) already uses.
 export function isUsEquityRegularSession(now = new Date()): boolean {

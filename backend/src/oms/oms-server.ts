@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Order Management System (OMS)
  *
@@ -18,12 +18,11 @@ import "@veta/bootstrap";
  * HTTP surface: GET /health
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { SERVICE_TOKEN_HEADER } from "@veta/auth";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
-import type { Desk } from "@veta/primitives";
+import { SERVICE_TOKEN_HEADER } from "#veta/auth";
+import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer } from "#veta/messaging";
+import type { Desk } from "#veta/primitives";
 import {
   type OrderKillCommand,
   OrderKillCommandSchema,
@@ -31,8 +30,8 @@ import {
   OrderNewSchema,
   type OrderResumeCommand,
   OrderResumeCommandSchema,
-} from "@veta/schemas/orders";
-import { waitForUrl } from "@veta/wait-for";
+} from "#veta/schemas/orders";
+import { waitForUrl } from "#veta/wait-for";
 import {
   createDailyNotionalLedger,
   createMarketPriceSource,
@@ -40,21 +39,21 @@ import {
   tradingDayKey,
 } from "./daily-notional.ts";
 
-const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
+const PORT = Number(process.env.OMS_PORT) || 5_002;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const RISK_ENGINE_URL = `http://${process.env.RISK_ENGINE_HOST ?? "localhost"}:${process.env.RISK_ENGINE_PORT ?? "5032"}`;
 const RISK_ENGINE_ENABLED =
-  (Deno.env.get("RISK_ENGINE_ENABLED") ?? "true").toLowerCase() !== "false";
-const INTERNAL_SERVICE_TOKEN = Deno.env.get("INTERNAL_SERVICE_TOKEN");
+  (process.env.RISK_ENGINE_ENABLED ?? "true").toLowerCase() !== "false";
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 const USER_SERVICE_URL = `http://${
-  Deno.env.get("USER_SERVICE_HOST") ?? "localhost"
-}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
-  Deno.env.get("JOURNAL_PORT") ?? "5009"
+  process.env.USER_SERVICE_HOST ?? "localhost"
+}:${process.env.USER_SERVICE_PORT ?? "5008"}`;
+const JOURNAL_URL = `http://${process.env.JOURNAL_HOST ?? "localhost"}:${
+  process.env.JOURNAL_PORT ?? "5009"
 }`;
 
 /** Minimum block size for dark pool routing (shares). */
-const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK") ?? "10000");
+const DARK_POOL_MIN_BLOCK = Number(process.env.DARK_POOL_MIN_BLOCK ?? "10000");
 
 const KNOWN_STRATEGIES = new Set([
   "LIMIT",
@@ -97,8 +96,8 @@ const DEFAULT_LIMITS: TradingLimits = {
 };
 
 const MARKET_SIM_URL = `http://${
-  Deno.env.get("MARKET_SIM_HOST") ?? "localhost"
-}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+  process.env.MARKET_SIM_HOST ?? "localhost"
+}:${process.env.MARKET_SIM_PORT ?? "5000"}`;
 
 const dailyNotional = createDailyNotionalLedger();
 const marketPrices = createMarketPriceSource(MARKET_SIM_URL);
@@ -756,7 +755,7 @@ async function expireOrphanedOrders() {
   }, 15_000);
 })();
 
-Deno.serve({ port: PORT }, (req) => {
+serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return corsOptions();
   if (url.pathname === "/health" && req.method === "GET") {

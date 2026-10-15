@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { ALL_VENUES, type RouteRequest, routeToBestVenue } from "../ems/venue-router.ts";
 import type { OrderBookSnapshot } from "../lib/market-sim-client.ts";
 
@@ -23,7 +24,7 @@ function request(overrides: Partial<RouteRequest> = {}): RouteRequest {
   };
 }
 
-Deno.test("[venue-router] returns null when no candidate venue has a book", () => {
+test("[venue-router] returns null when no candidate venue has a book", () => {
   assertEquals(routeToBestVenue(request()), null);
   assertEquals(routeToBestVenue(request({ venueBooks: undefined })), null);
   assertEquals(
@@ -32,7 +33,7 @@ Deno.test("[venue-router] returns null when no candidate venue has a book", () =
   );
 });
 
-Deno.test("[venue-router] routes a buy to the venue that fills the most quantity", () => {
+test("[venue-router] routes a buy to the venue that fills the most quantity", () => {
   const route = routeToBestVenue(request({
     venueBooks: {
       XNAS: { AAPL: book([{ price: 100.1, size: 40 }]) },
@@ -43,7 +44,7 @@ Deno.test("[venue-router] routes a buy to the venue that fills the most quantity
   assertEquals(route?.match.filledQty, 100);
 });
 
-Deno.test("[venue-router] breaks a quantity tie on the cheaper buy price", () => {
+test("[venue-router] breaks a quantity tie on the cheaper buy price", () => {
   const route = routeToBestVenue(request({
     venueBooks: {
       XNAS: { AAPL: book([{ price: 100.2, size: 100 }]) },
@@ -54,7 +55,7 @@ Deno.test("[venue-router] breaks a quantity tie on the cheaper buy price", () =>
   assertEquals(route?.match.avgFillPrice, 100.1);
 });
 
-Deno.test("[venue-router] breaks a quantity tie on the higher sell price", () => {
+test("[venue-router] breaks a quantity tie on the higher sell price", () => {
   const route = routeToBestVenue(request({
     side: "SELL",
     limitPrice: 99,
@@ -66,7 +67,7 @@ Deno.test("[venue-router] breaks a quantity tie on the higher sell price", () =>
   assertEquals(route?.venue, "IEX");
 });
 
-Deno.test("[venue-router] keeps venue-table order when fill and price are equal", () => {
+test("[venue-router] keeps venue-table order when fill and price are equal", () => {
   const same = book([{ price: 100.1, size: 100 }]);
   const route = routeToBestVenue(request({
     venueBooks: { MEMX: { AAPL: same }, XNYS: { AAPL: same }, BATS: { AAPL: same } },
@@ -74,7 +75,7 @@ Deno.test("[venue-router] keeps venue-table order when fill and price are equal"
   assertEquals(route?.venue, "XNYS");
 });
 
-Deno.test("[venue-router] honours the limit price when choosing a venue", () => {
+test("[venue-router] honours the limit price when choosing a venue", () => {
   const route = routeToBestVenue(request({
     limitPrice: 100.15,
     venueBooks: {
@@ -86,7 +87,7 @@ Deno.test("[venue-router] honours the limit price when choosing a venue", () => 
   assertEquals(route?.match.filledQty, 30);
 });
 
-Deno.test("[venue-router] still returns a venue when no book crosses, so the child is reported unfilled there", () => {
+test("[venue-router] still returns a venue when no book crosses, so the child is reported unfilled there", () => {
   const route = routeToBestVenue(request({
     limitPrice: 99,
     venueBooks: { ARCX: { AAPL: book([{ price: 100.1, size: 100 }]) } },
@@ -95,7 +96,7 @@ Deno.test("[venue-router] still returns a venue when no book crosses, so the chi
   assertEquals(route?.match.filledQty, 0);
 });
 
-Deno.test("[venue-router] only considers the given candidates for a directed child", () => {
+test("[venue-router] only considers the given candidates for a directed child", () => {
   const route = routeToBestVenue(request({
     candidates: ["EDGX"],
     venueBooks: {

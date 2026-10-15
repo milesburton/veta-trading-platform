@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test } from "#veta/test";
 import { runNode } from "#veta/run-node";
 import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 
@@ -211,7 +211,7 @@ test("[telemetry] import-time setup derives OTEL service name in a subprocess", 
   const moduleUrl = new URL("../lib/telemetry.ts", import.meta.url).href;
   const { code, stdout } = await runNode(
     `await import("${moduleUrl}"); console.log(process.env["OTEL_SERVICE_NAME"] ?? "");`,
-    { OTEL_DENO: "true", HOSTNAME: "veta-gateway-7" }
+    { OTEL_ENABLED: "true", HOSTNAME: "veta-gateway-7" }
   );
   const lines = stdout.trim().split("\n");
   assertEquals(code, 0);
@@ -221,7 +221,7 @@ test("[telemetry] import-time setup derives OTEL service name in a subprocess", 
 test("[telemetry] disabled-path helpers are no-ops or passthroughs", async () => {
   await withEnv(
     {
-      OTEL_DENO: undefined,
+      OTEL_ENABLED: undefined,
       OTEL_SERVICE_NAME: undefined,
     },
     async () => {
@@ -249,7 +249,7 @@ test("[telemetry] enabled recordGauge caches gauges and preserves attributes", a
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -284,7 +284,7 @@ test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, an
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -302,6 +302,7 @@ test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, an
         "process_runtime_deno_memory_heap_total_bytes",
         "process_runtime_deno_memory_heap_used_bytes",
         "process_uptime_seconds",
+        "v8js.memory.heap.size",
       ]);
 
       for (const state of fake.observableGauges.values()) {
@@ -328,7 +329,7 @@ test("[telemetry] withSpan sets attributes, returns values, and records Error ex
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -374,7 +375,7 @@ test("[telemetry] injectTraceContext stringifies setter values when OTEL is enab
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -398,7 +399,7 @@ test("[telemetry] withExtractedContext coerces carrier values and runs inside ex
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -439,7 +440,7 @@ test("[telemetry] withExtractedContext coerces carrier values and runs inside ex
 test("[telemetry] OTEL loader failures gracefully fall back to no-op behavior", async () => {
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {

@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import { resetPriceEngine } from "./price-engine.ts";
 import { currentSeed, seedRng } from "./rng.ts";
 

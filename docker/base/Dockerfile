@@ -1,66 +1,26 @@
 # ── Shared base image ─────────────────────────────────────────────────────────
-# All per-service images FROM this. Contains the full Deno runtime, the entire
-# repo source tree, and pre-warmed module cache. Service images add only CMD.
-# Build context: repo root (required — COPY . . copies backend/, observability/, etc.)
-FROM denoland/deno:2.7.1
+# All per-service images FROM this. Contains the Node runtime, the production
+# dependencies and the entire repo source tree. Service images add only CMD.
+# Build context: repo root (required: COPY . . copies backend/, observability/, etc.)
+FROM node:24-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV DENO_DIR=/deno-cache
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--import=/app/backend/src/lib/otel-register.ts"
 
-# Install curl (health checks) and ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy dependency manifests first for layer caching
-COPY deno.json deno.lock* ./
-# Copy package.json for npm: imports (kafkajs etc.)
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
-# Install npm deps into DENO_DIR (populates npm compat layer for kafkajs)
-RUN deno install
-
-# Copy full source tree
 COPY . .
 
-# Pre-cache all service entrypoints — this is the expensive layer, shared by all
-# service images via the layer cache. Re-runs only when source files change.
-RUN deno cache \
-    backend/db/migrate.ts \
-    backend/src/lib/messaging.ts \
-    backend/src/market-sim/market-sim.ts \
-    backend/src/ems/ems-server.ts \
-    backend/src/oms/oms-server.ts \
-    backend/src/algo/limit-strategy.ts \
-    backend/src/algo/twap-strategy.ts \
-    backend/src/algo/pov-strategy.ts \
-    backend/src/algo/vwap-strategy.ts \
-    backend/src/algo/iceberg-strategy.ts \
-    backend/src/algo/sniper-strategy.ts \
-    backend/src/algo/arrival-price-strategy.ts \
-    backend/src/algo/momentum-strategy.ts \
-    backend/src/algo/is-strategy.ts \
-    backend/src/user-service/user-service.ts \
-    backend/src/journal/journal-server.ts \
-    backend/src/fix/fix-exchange.ts \
-    backend/src/fix/fix-gateway.ts \
-    backend/src/fix/fix-archive.ts \
-    backend/src/analytics/analytics-server.ts \
-    backend/src/market-data/market-data-service.ts \
-    backend/src/market-data-adapters/adapter-server.ts \
-    backend/src/news/news-aggregator.ts \
-    backend/src/feature-engine/feature-engine.ts \
-    backend/src/signal-engine/signal-engine.ts \
-    backend/src/recommendation-engine/recommendation-server.ts \
-    backend/src/scenario-engine/scenario-server.ts \
-    backend/src/gateway/gateway.ts \
-    backend/src/llm-advisory/orchestrator.ts \
-    backend/src/llm-advisory/worker.ts \
-    observability/kafka-relay.ts
-
-# Drop privileges. The denoland/deno:2.7.1 image ships a deno user (UID/GID 1993).
-# Anything mounted writable at runtime must be chown-ed to 1993:1993 on the host.
-RUN chown -R deno:deno /app /deno-cache
-USER deno:deno
+# Drop privileges. UID/GID 1993 is kept from the previous runtime image so that
+# anything mounted writable at runtime keeps the same host ownership (chown to 1993:1993).
+RUN groupadd --gid 1993 veta && useradd --uid 1993 --gid 1993 --no-create-home --shell /usr/sbin/nologin veta \
+    && chown -R veta:veta /app
+USER veta:veta

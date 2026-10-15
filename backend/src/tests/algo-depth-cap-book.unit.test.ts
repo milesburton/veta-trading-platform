@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { capToDepth } from "../algo/depth-cap.ts";
 import { matchAgainstSnapshot } from "../ems/matching-engine.ts";
 
@@ -46,12 +47,12 @@ const scenarios: ReadonlyArray<readonly [string, number, number]> = [
 ];
 
 for (const [name, dailyVolume, requested] of scenarios) {
-  Deno.test(`depth cap against the book: ${name} fills fully once capped`, () => {
+  test(`depth cap against the book: ${name} fills fully once capped`, () => {
     assertEquals(fillRatio(dailyVolume, requested), 1);
   });
 }
 
-Deno.test("depth cap against the book: uncapped oversized child is only partly filled", () => {
+test("depth cap against the book: uncapped oversized child is only partly filled", () => {
   const result = matchAgainstSnapshot(
     "c",
     "X",
@@ -64,25 +65,25 @@ Deno.test("depth cap against the book: uncapped oversized child is only partly f
   assert(result.filledQty / 2_000 < 1);
 });
 
-Deno.test("unfilled impact: a child that exhausts the book reports extra estimated impact", () => {
+test("unfilled impact: a child that exhausts the book reports extra estimated impact", () => {
   const result = matchAgainstSnapshot("c", "X", "BUY", 2_000, 1e9, snapshot(500_000), 0);
   assert(result.remainingQty > 0);
   assert(result.unfilledImpactBps > 0);
 });
 
-Deno.test("unfilled impact: fills and average price are unchanged by the estimate", () => {
+test("unfilled impact: fills and average price are unchanged by the estimate", () => {
   const result = matchAgainstSnapshot("c", "X", "BUY", 2_000, 1e9, snapshot(500_000), 0);
   assertEquals(result.filledQty + result.remainingQty, 2_000);
   assert(result.impactBps > 0);
 });
 
-Deno.test("unfilled impact: a child that fills fully reports none", () => {
+test("unfilled impact: a child that fills fully reports none", () => {
   const result = matchAgainstSnapshot("c", "X", "BUY", 100, 1e9, snapshot(500_000), 0);
   assertEquals(result.remainingQty, 0);
   assertEquals(result.unfilledImpactBps, 0);
 });
 
-Deno.test("unfilled impact: a limit price that stops the match is not extrapolated", () => {
+test("unfilled impact: a limit price that stops the match is not extrapolated", () => {
   const result = matchAgainstSnapshot("c", "X", "BUY", 2_000, MID, snapshot(500_000), 0);
   assert(result.remainingQty > 0);
   assertEquals(result.unfilledImpactBps, 0);

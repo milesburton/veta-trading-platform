@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 
 import {
   interpretOrderEvent,
@@ -6,34 +7,34 @@ import {
   PricesSchema,
 } from "../synthetic-trader/payloads.ts";
 
-Deno.test("[synthetic-trader-payloads] prices schema accepts a symbol to price map", () => {
+test("[synthetic-trader-payloads] prices schema accepts a symbol to price map", () => {
   const result = PricesSchema.safeParse({ AAPL: 192.5, MSFT: 410.1 });
   assert(result.success);
   assertEquals(result.data, { AAPL: 192.5, MSFT: 410.1 });
 });
 
-Deno.test("[synthetic-trader-payloads] prices schema accepts an empty map", () => {
+test("[synthetic-trader-payloads] prices schema accepts an empty map", () => {
   assert(PricesSchema.safeParse({}).success);
 });
 
-Deno.test("[synthetic-trader-payloads] prices schema rejects non-numeric prices", () => {
+test("[synthetic-trader-payloads] prices schema rejects non-numeric prices", () => {
   assertEquals(PricesSchema.safeParse({ AAPL: "192.5" }).success, false);
   assertEquals(PricesSchema.safeParse({ AAPL: null }).success, false);
   assertEquals(PricesSchema.safeParse({ AAPL: { last: 1 } }).success, false);
 });
 
-Deno.test("[synthetic-trader-payloads] prices schema rejects non-object payloads", () => {
+test("[synthetic-trader-payloads] prices schema rejects non-object payloads", () => {
   assertEquals(PricesSchema.safeParse([192.5]).success, false);
   assertEquals(PricesSchema.safeParse("oops").success, false);
   assertEquals(PricesSchema.safeParse(null).success, false);
 });
 
-Deno.test("[synthetic-trader-payloads] order event schema allows missing optional fields", () => {
+test("[synthetic-trader-payloads] order event schema allows missing optional fields", () => {
   assert(OrderEventDataSchema.safeParse({}).success);
   assert(OrderEventDataSchema.safeParse({ clientOrderId: null }).success);
 });
 
-Deno.test("[synthetic-trader-payloads] a fill with no remaining quantity is terminal", () => {
+test("[synthetic-trader-payloads] a fill with no remaining quantity is terminal", () => {
   assertEquals(interpretOrderEvent("orders.filled", { clientOrderId: "c1" }), {
     kind: "filled",
     clientOrderId: "c1",
@@ -41,7 +42,7 @@ Deno.test("[synthetic-trader-payloads] a fill with no remaining quantity is term
   });
 });
 
-Deno.test("[synthetic-trader-payloads] a fill with zero remaining quantity is terminal", () => {
+test("[synthetic-trader-payloads] a fill with zero remaining quantity is terminal", () => {
   assertEquals(interpretOrderEvent("orders.filled", { clientOrderId: "c1", remainingQty: 0 }), {
     kind: "filled",
     clientOrderId: "c1",
@@ -49,7 +50,7 @@ Deno.test("[synthetic-trader-payloads] a fill with zero remaining quantity is te
   });
 });
 
-Deno.test("[synthetic-trader-payloads] a partial fill is not terminal", () => {
+test("[synthetic-trader-payloads] a partial fill is not terminal", () => {
   assertEquals(interpretOrderEvent("orders.filled", { clientOrderId: "c1", remainingQty: 40 }), {
     kind: "filled",
     clientOrderId: "c1",
@@ -57,7 +58,7 @@ Deno.test("[synthetic-trader-payloads] a partial fill is not terminal", () => {
   });
 });
 
-Deno.test("[synthetic-trader-payloads] cancelled and expired events terminate the order", () => {
+test("[synthetic-trader-payloads] cancelled and expired events terminate the order", () => {
   for (const topic of ["orders.cancelled", "orders.expired"]) {
     assertEquals(interpretOrderEvent(topic, { clientOrderId: "c2" }), {
       kind: "terminated",
@@ -66,17 +67,17 @@ Deno.test("[synthetic-trader-payloads] cancelled and expired events terminate th
   }
 });
 
-Deno.test("[synthetic-trader-payloads] unrelated topics are ignored even with malformed data", () => {
+test("[synthetic-trader-payloads] unrelated topics are ignored even with malformed data", () => {
   assertEquals(interpretOrderEvent("orders.routed", { clientOrderId: 7 }), { kind: "ignored" });
   assertEquals(interpretOrderEvent("", {}), { kind: "ignored" });
 });
 
-Deno.test("[synthetic-trader-payloads] a non-string clientOrderId is malformed", () => {
+test("[synthetic-trader-payloads] a non-string clientOrderId is malformed", () => {
   const result = interpretOrderEvent("orders.cancelled", { clientOrderId: 42 });
   assertEquals(result.kind, "malformed");
 });
 
-Deno.test("[synthetic-trader-payloads] a non-numeric remainingQty is malformed, not terminal", () => {
+test("[synthetic-trader-payloads] a non-numeric remainingQty is malformed, not terminal", () => {
   const result = interpretOrderEvent("orders.filled", {
     clientOrderId: "c1",
     remainingQty: "0",
@@ -84,7 +85,7 @@ Deno.test("[synthetic-trader-payloads] a non-numeric remainingQty is malformed, 
   assertEquals(result.kind, "malformed");
 });
 
-Deno.test("[synthetic-trader-payloads] non-object event data is malformed", () => {
+test("[synthetic-trader-payloads] non-object event data is malformed", () => {
   assertEquals(interpretOrderEvent("orders.filled", null).kind, "malformed");
   assertEquals(interpretOrderEvent("orders.expired", "x").kind, "malformed");
 });

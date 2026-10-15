@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * MOMENTUM order algorithm
  *
@@ -22,23 +22,22 @@ import "@veta/bootstrap";
  * Publishes to:  orders.child, orders.expired, algo.heartbeat
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
 import {
   type FillEvent,
   FillEventSchema,
   type RoutedOrder,
   RoutedOrderSchema,
-} from "@veta/schemas/orders";
+} from "#veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
-const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5025;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.MOMENTUM_ALGO_PORT) || 5025;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const ALGO = "MOMENTUM" as const;
 
@@ -85,7 +84,7 @@ interface ActiveMomentum {
 /** Active momentum orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveMomentum>();
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("MOMENTUM_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.MOMENTUM_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "momentum-algo");
 
 await createTypedConsumer("momentum-algo-routed", [

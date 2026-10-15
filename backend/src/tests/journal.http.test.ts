@@ -1,7 +1,8 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { JOURNAL_URL, timeout as t } from "./test-helpers.ts";
 
-Deno.test("[journal/http] GET /health returns ok with retentionDays", async () => {
+test("[journal/http] GET /health returns ok with retentionDays", async () => {
   const res = await fetch(`${JOURNAL_URL}/health`, { signal: t(5_000) });
   assertEquals(res.status, 200);
   const body = (await res.json()) as {
@@ -14,14 +15,14 @@ Deno.test("[journal/http] GET /health returns ok with retentionDays", async () =
   assertExists(body.version);
 });
 
-Deno.test("[journal/http] GET /candles requires instrument param", async () => {
+test("[journal/http] GET /candles requires instrument param", async () => {
   const res = await fetch(`${JOURNAL_URL}/candles`, { signal: t(5_000) });
   assertEquals(res.status, 400);
   const body = (await res.json()) as { error: string };
   assert(body.error.includes("instrument"));
 });
 
-Deno.test("[journal/http] GET /candles?instrument=AAPL&interval=1m returns array", async () => {
+test("[journal/http] GET /candles?instrument=AAPL&interval=1m returns array", async () => {
   const res = await fetch(`${JOURNAL_URL}/candles?instrument=AAPL&interval=1m&limit=10`, {
     signal: t(8_000),
   });
@@ -30,7 +31,7 @@ Deno.test("[journal/http] GET /candles?instrument=AAPL&interval=1m returns array
   assert(Array.isArray(body));
 });
 
-Deno.test("[journal/http] GET /candles?interval=invalid returns 400", async () => {
+test("[journal/http] GET /candles?interval=invalid returns 400", async () => {
   const res = await fetch(`${JOURNAL_URL}/candles?instrument=AAPL&interval=2h`, {
     signal: t(5_000),
   });
@@ -38,7 +39,7 @@ Deno.test("[journal/http] GET /candles?interval=invalid returns 400", async () =
   res.body?.cancel();
 });
 
-Deno.test("[journal/http] GET /candles candle shape has required OHLCV fields", async () => {
+test("[journal/http] GET /candles candle shape has required OHLCV fields", async () => {
   const res = await fetch(`${JOURNAL_URL}/candles?instrument=AAPL&interval=1m&limit=5`, {
     signal: t(8_000),
   });
@@ -51,7 +52,7 @@ Deno.test("[journal/http] GET /candles candle shape has required OHLCV fields", 
   }
 });
 
-Deno.test("[journal/http] GET /orders returns array with required fields", async () => {
+test("[journal/http] GET /orders returns array with required fields", async () => {
   const res = await fetch(`${JOURNAL_URL}/orders?limit=10`, {
     signal: t(8_000),
   });
@@ -65,7 +66,7 @@ Deno.test("[journal/http] GET /orders returns array with required fields", async
   }
 });
 
-Deno.test("[journal/http] POST /grid/query orderBlotter returns rows + total + evalMs", async () => {
+test("[journal/http] POST /grid/query orderBlotter returns rows + total + evalMs", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -90,7 +91,7 @@ Deno.test("[journal/http] POST /grid/query orderBlotter returns rows + total + e
   assert(typeof body.evalMs === "number" && body.evalMs >= 0);
 });
 
-Deno.test("[journal/http] POST /grid/query executions grid returns child-level rows", async () => {
+test("[journal/http] POST /grid/query executions grid returns child-level rows", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -110,7 +111,7 @@ Deno.test("[journal/http] POST /grid/query executions grid returns child-level r
   assert(typeof body.total === "number");
 });
 
-Deno.test("[journal/http] POST /grid/query filter by asset returns matching rows only", async () => {
+test("[journal/http] POST /grid/query filter by asset returns matching rows only", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -144,7 +145,7 @@ Deno.test("[journal/http] POST /grid/query filter by asset returns matching rows
   }
 });
 
-Deno.test("[journal/http] POST /grid/query sort by quantity desc: first row ≥ last row", async () => {
+test("[journal/http] POST /grid/query sort by quantity desc: first row ≥ last row", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -169,7 +170,7 @@ Deno.test("[journal/http] POST /grid/query sort by quantity desc: first row ≥ 
   );
 });
 
-Deno.test("[journal/http] POST /grid/query missing gridId returns 400", async () => {
+test("[journal/http] POST /grid/query missing gridId returns 400", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -182,7 +183,7 @@ Deno.test("[journal/http] POST /grid/query missing gridId returns 400", async ()
   res.body?.cancel();
 });
 
-Deno.test("[journal/http] POST /grid/query invalid JSON returns 400", async () => {
+test("[journal/http] POST /grid/query invalid JSON returns 400", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -193,7 +194,7 @@ Deno.test("[journal/http] POST /grid/query invalid JSON returns 400", async () =
   res.body?.cancel();
 });
 
-Deno.test("[journal/http] POST /grid/query pagination: offset advances cursor", async () => {
+test("[journal/http] POST /grid/query pagination: offset advances cursor", async () => {
   const fetchPage = (offset: number) =>
     fetch(`${JOURNAL_URL}/grid/query`, {
       method: "POST",

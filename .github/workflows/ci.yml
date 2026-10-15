@@ -89,8 +89,8 @@ jobs:
                 - 'frontend/package.json'
                 - 'frontend/package-lock.json'
                 - 'shared/**'
-                - 'deno.json'
-                - 'deno.lock'
+                - 'package.json'
+                - 'package-lock.json'
                 - '.github/workflows/ci.yml'
               electron:
                 - 'frontend/**'
@@ -128,32 +128,26 @@ jobs:
       - name: No internal network details in tracked files
         run: scripts/check-private-network-details.sh all
 
-      - uses: denoland/setup-deno@v2
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
-          deno-version: 2.7.x
-
-      - name: Cache Deno deps
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/deno
-            ~/.deno
-          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock', 'deno.json') }}
-          restore-keys: |
-            deno-${{ runner.os }}-
-
-      - name: Install backend dependencies
-        run: deno install
+          version: "1.2.0"
+          node-version: "24"
+          cache: true
+          cache-dependency-path: package-lock.json
+          run-install: |
+            - cwd: .
+              args: ['--frozen-lockfile']
 
       - name: Lint
-        run: deno task lint
+        run: npm run lint:backend
 
       - name: Type check
-        run: deno task check
+        run: npm run check
 
       - name: Unit tests with coverage
         run: |
-          deno task test:coverage 2>&1 | tee /tmp/backend-test-output.txt
+          npm run test:coverage 2>&1 | tee /tmp/backend-test-output.txt
           PASSED=$(grep -oP '\d+(?= passed)' /tmp/backend-test-output.txt | tail -1 || echo 0)
           echo "BACKEND_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
 
@@ -603,22 +597,16 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
-      - uses: denoland/setup-deno@v2
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
-          deno-version: 2.7.x
-
-      - name: Cache Deno deps
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/deno
-            ~/.deno
-          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock', 'deno.json') }}
-          restore-keys: |
-            deno-${{ runner.os }}-
-
-      - name: Install backend dependencies
-        run: deno install
+          version: "1.2.0"
+          node-version: "24"
+          cache: true
+          cache-dependency-path: package-lock.json
+          run-install: |
+            - cwd: .
+              args: ['--frozen-lockfile']
 
       - name: Testcontainers integration suite (with coverage)
         # Retried because the suite stands up an ephemeral Redpanda/Postgres
@@ -634,7 +622,7 @@ jobs:
           attempts=3
           for i in $(seq 1 "$attempts"); do
             echo "::group::Testcontainers attempt $i/$attempts"
-            if deno task test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt; then
+            if npm run test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt; then
               echo "::endgroup::"
               exit 0
             fi
@@ -650,14 +638,14 @@ jobs:
         env:
           # The homelab box also runs the full production VETA stack around
           # the clock (load average ~14 on 8 cores), so cold-starting the
-          # 15-30 Deno subprocesses smoke.full.tc.test.ts boots per group
+          # 15-30 Node subprocesses smoke.full.tc.test.ts boots per group
           # takes longer than on an otherwise-idle hosted runner. Scales
           # that file's startup/test timeouts; see TC_TIMEOUT_SCALE in
           # smoke.full.tc.test.ts.
           TC_TIMEOUT_SCALE: "3"
 
       - name: Generate TC coverage lcov
-        run: deno coverage coverage --lcov --exclude='backend/src/tests/' > coverage-tc.lcov || echo "(no TC coverage produced)"
+        run: test -f coverage-tc.lcov || echo "(no TC coverage produced)"
 
       - name: Upload TC coverage
         if: github.ref == 'refs/heads/main'

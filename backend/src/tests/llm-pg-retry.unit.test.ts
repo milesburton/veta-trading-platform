@@ -1,7 +1,8 @@
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 import { isTransientPgError, withPgRetry } from "../llm-advisory/job-store.ts";
 
-Deno.test("isTransientPgError — matches ConnectionReset variants", () => {
+test("isTransientPgError — matches ConnectionReset variants", () => {
   assert(isTransientPgError(new Error("Connection reset by peer (os error 104)")));
   assert(isTransientPgError(Object.assign(new Error("x"), { name: "ConnectionReset" })));
   assert(isTransientPgError(new Error("ECONNRESET")));
@@ -12,7 +13,7 @@ Deno.test("isTransientPgError — matches ConnectionReset variants", () => {
   assert(isTransientPgError(new Error("server closed the connection unexpectedly")));
 });
 
-Deno.test("isTransientPgError — does not match non-transient errors", () => {
+test("isTransientPgError — does not match non-transient errors", () => {
   assert(!isTransientPgError(new Error("unique constraint violation")));
   assert(!isTransientPgError(new Error('syntax error at or near "FROM"')));
   assert(!isTransientPgError(new Error("permission denied for table jobs")));
@@ -21,7 +22,7 @@ Deno.test("isTransientPgError — does not match non-transient errors", () => {
   assert(!isTransientPgError(undefined));
 });
 
-Deno.test("withPgRetry — returns immediately on success", async () => {
+test("withPgRetry — returns immediately on success", async () => {
   let calls = 0;
   const result = await withPgRetry(
     () => {
@@ -34,7 +35,7 @@ Deno.test("withPgRetry — returns immediately on success", async () => {
   assertEquals(calls, 1);
 });
 
-Deno.test("withPgRetry — retries on transient error and succeeds", async () => {
+test("withPgRetry — retries on transient error and succeeds", async () => {
   let calls = 0;
   const result = await withPgRetry(
     () => {
@@ -48,7 +49,7 @@ Deno.test("withPgRetry — retries on transient error and succeeds", async () =>
   assertEquals(calls, 3);
 });
 
-Deno.test("withPgRetry — does not retry non-transient errors", async () => {
+test("withPgRetry — does not retry non-transient errors", async () => {
   let calls = 0;
   await assertRejects(
     () =>
@@ -65,7 +66,7 @@ Deno.test("withPgRetry — does not retry non-transient errors", async () => {
   assertEquals(calls, 1);
 });
 
-Deno.test("withPgRetry — gives up after maxAttempts on persistent transient errors", async () => {
+test("withPgRetry — gives up after maxAttempts on persistent transient errors", async () => {
   let calls = 0;
   await assertRejects(
     () =>

@@ -23,7 +23,7 @@ direct service ports when checking from outside containers.
 ### 1. Fleet is up
 
 ```bash
-deno run --allow-run --allow-env scripts/status.ts --once
+node scripts/status.ts --once
 ```
 
 Every core service (gateway, market-sim, ems, oms, journal, user-service, frontend,
@@ -86,7 +86,7 @@ Identify unhealthy services first, then tail the ones the change touched, lookin
 loops, unhandled rejections, or repeated reconnects:
 
 ```bash
-deno run --allow-run --allow-env scripts/status.ts --once
+node scripts/status.ts --once
 docker compose logs --tail=50 <service>
 ```
 

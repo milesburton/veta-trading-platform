@@ -1,27 +1,28 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleTicketAttachmentsRoute } from "../gateway/routes/ticket-attachments.ts";
 import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
 
 const ENV_KEYS = ["MINIO_ENDPOINT", "MINIO_PUBLIC_URL", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD"];
-const saved = new Map(ENV_KEYS.map((k) => [k, Deno.env.get(k)]));
+const saved = new Map(ENV_KEYS.map((k) => [k, process.env[k]]));
 
 function setConfiguredEnv() {
-  Deno.env.set("MINIO_ENDPOINT", "http://minio:9000");
-  Deno.env.set("MINIO_PUBLIC_URL", "http://localhost:3000/attachments");
-  Deno.env.set("MINIO_ROOT_USER", "veta");
-  Deno.env.set("MINIO_ROOT_PASSWORD", "test-password-not-real");
+  process.env["MINIO_ENDPOINT"] = "http://minio:9000";
+  process.env["MINIO_PUBLIC_URL"] = "http://localhost:3000/attachments";
+  process.env["MINIO_ROOT_USER"] = "veta";
+  process.env["MINIO_ROOT_PASSWORD"] = "test-password-not-real";
 }
 
 function clearEnv() {
-  for (const k of ENV_KEYS) Deno.env.delete(k);
+  for (const k of ENV_KEYS) delete process.env[k];
 }
 
 function restoreEnv() {
   for (const k of ENV_KEYS) {
     const v = saved.get(k);
-    if (v === undefined) Deno.env.delete(k);
-    else Deno.env.set(k, v);
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
   }
 }
 
@@ -40,7 +41,7 @@ function req(body: unknown): Request {
   });
 }
 
-Deno.test("ignores paths other than /ticket-attachments/presign", async () => {
+test("ignores paths other than /ticket-attachments/presign", async () => {
   const res = await handleTicketAttachmentsRoute(
     new Request("http://localhost/other", { method: "POST" }),
     "/other",
@@ -49,7 +50,7 @@ Deno.test("ignores paths other than /ticket-attachments/presign", async () => {
   assertEquals(res, null);
 });
 
-Deno.test("ignores non-POST methods", async () => {
+test("ignores non-POST methods", async () => {
   const res = await handleTicketAttachmentsRoute(
     new Request("http://localhost/ticket-attachments/presign", { method: "GET" }),
     "/ticket-attachments/presign",
@@ -58,7 +59,7 @@ Deno.test("ignores non-POST methods", async () => {
   assertEquals(res, null);
 });
 
-Deno.test("requires authentication", async () => {
+test("requires authentication", async () => {
   const res = await handleTicketAttachmentsRoute(
     req({ fileName: "a.png", contentType: "image/png", sizeBytes: 100 }),
     "/ticket-attachments/presign",
@@ -67,7 +68,7 @@ Deno.test("requires authentication", async () => {
   assertEquals(res?.status, 401);
 });
 
-Deno.test("returns 503 when MinIO is not configured", async () => {
+test("returns 503 when MinIO is not configured", async () => {
   clearEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -81,7 +82,7 @@ Deno.test("returns 503 when MinIO is not configured", async () => {
   }
 });
 
-Deno.test("rejects an oversized file", async () => {
+test("rejects an oversized file", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -96,7 +97,7 @@ Deno.test("rejects an oversized file", async () => {
 });
 
 for (const contentType of ["image/svg+xml", "text/html", "video/x-unknown"]) {
-  Deno.test(`rejects ${contentType} attachments`, async () => {
+  test(`rejects ${contentType} attachments`, async () => {
     setConfiguredEnv();
     try {
       const res = await handleTicketAttachmentsRoute(
@@ -111,7 +112,7 @@ for (const contentType of ["image/svg+xml", "text/html", "video/x-unknown"]) {
   });
 }
 
-Deno.test("accepts an allowlisted content type regardless of case", async () => {
+test("accepts an allowlisted content type regardless of case", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -125,7 +126,7 @@ Deno.test("accepts an allowlisted content type regardless of case", async () => 
   }
 });
 
-Deno.test("rejects a disallowed content type", async () => {
+test("rejects a disallowed content type", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -139,7 +140,7 @@ Deno.test("rejects a disallowed content type", async () => {
   }
 });
 
-Deno.test("rejects malformed request bodies", async () => {
+test("rejects malformed request bodies", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -153,7 +154,7 @@ Deno.test("rejects malformed request bodies", async () => {
   }
 });
 
-Deno.test("returns a well-formed presigned POST for a valid request", async () => {
+test("returns a well-formed presigned POST for a valid request", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -182,7 +183,7 @@ Deno.test("returns a well-formed presigned POST for a valid request", async () =
   }
 });
 
-Deno.test("the signed policy pins the object key to an exact match, not a prefix", async () => {
+test("the signed policy pins the object key to an exact match, not a prefix", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(
@@ -205,7 +206,7 @@ Deno.test("the signed policy pins the object key to an exact match, not a prefix
   }
 });
 
-Deno.test("sanitises unsafe characters out of the file name", async () => {
+test("sanitises unsafe characters out of the file name", async () => {
   setConfiguredEnv();
   try {
     const res = await handleTicketAttachmentsRoute(

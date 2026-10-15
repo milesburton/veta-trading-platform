@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 //
 // Pipeline test for the bug-report + alert fan-out paths. Confirms:
@@ -20,7 +22,6 @@
 // Written after the 2026-05-20 postmortem to keep the bug/alert
 // pipeline shape pinned by an automated test rather than a runbook.
 
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
 import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
@@ -120,19 +121,19 @@ function makeContext(): GatewayContext {
 function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
   const prev: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(values)) {
-    prev[k] = Deno.env.get(k);
-    if (v === undefined) Deno.env.delete(k);
-    else Deno.env.set(k, v);
+    prev[k] = process.env[k];
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
   }
   return fn().finally(() => {
     for (const [k, v] of Object.entries(prev)) {
-      if (v === undefined) Deno.env.delete(k);
-      else Deno.env.set(k, v);
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
     }
   });
 }
 
-Deno.test("pipeline: POST /bug-report reaches Discord and creates a user ticket", async () => {
+test("pipeline: POST /bug-report reaches Discord and creates a user ticket", async () => {
   await withEnv(
     {
       DISCORD_BUG_WEBHOOK_URL: "https://discord.com/api/webhooks/1/bug-channel",
@@ -188,7 +189,7 @@ Deno.test("pipeline: POST /bug-report reaches Discord and creates a user ticket"
   );
 });
 
-Deno.test("pipeline: POST /alerts with severity=CRITICAL fans out to Discord AND GitHub", async () => {
+test("pipeline: POST /alerts with severity=CRITICAL fans out to Discord AND GitHub", async () => {
   await withEnv(
     {
       DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/2/alert-channel",
@@ -263,7 +264,7 @@ Deno.test("pipeline: POST /alerts with severity=CRITICAL fans out to Discord AND
   );
 });
 
-Deno.test("pipeline: POST /alerts with severity=WARNING reaches Discord but NOT GitHub", async () => {
+test("pipeline: POST /alerts with severity=WARNING reaches Discord but NOT GitHub", async () => {
   await withEnv(
     {
       DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/2/alert-channel",
@@ -304,7 +305,7 @@ Deno.test("pipeline: POST /alerts with severity=WARNING reaches Discord but NOT 
   );
 });
 
-Deno.test("pipeline: bug-report responds 202 when no external ticket sink is configured", async () => {
+test("pipeline: bug-report responds 202 when no external ticket sink is configured", async () => {
   // Mirrors the production fallback: if no webhook or GitHub token is
   // set, the report is accepted by the gateway but has no durable
   // external sink. The caller gets a 202 so the UI can surface that.

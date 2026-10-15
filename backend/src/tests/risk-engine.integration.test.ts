@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 
 import { timeout } from "./test-helpers.ts";
 
@@ -30,7 +31,7 @@ async function setConfig(cfg: Record<string, unknown>): Promise<void> {
   await res.body?.cancel();
 }
 
-Deno.test("[risk-engine] health reports ok with config", async () => {
+test("[risk-engine] health reports ok with config", async () => {
   const res = await fetch(`${BASE}/health`, { signal: timeout() });
   assertEquals(res.status, 200);
   const body = await res.json();
@@ -41,7 +42,7 @@ Deno.test("[risk-engine] health reports ok with config", async () => {
   assert(typeof body.config.duplicateWindowMs === "number");
 });
 
-Deno.test("[risk-engine] GET /config returns current limits", async () => {
+test("[risk-engine] GET /config returns current limits", async () => {
   const res = await fetch(`${BASE}/config`, { signal: timeout() });
   assertEquals(res.status, 200);
   const cfg = await res.json();
@@ -50,7 +51,7 @@ Deno.test("[risk-engine] GET /config returns current limits", async () => {
   assert(cfg.duplicateWindowMs > 0);
 });
 
-Deno.test("[risk-engine] PUT /config updates limits", async () => {
+test("[risk-engine] PUT /config updates limits", async () => {
   await setConfig({ fatFingerPct: 3.0, maxOpenOrders: 25, duplicateWindowMs: 200 });
   const res = await fetch(`${BASE}/config`, { signal: timeout() });
   const cfg = await res.json();
@@ -61,7 +62,7 @@ Deno.test("[risk-engine] PUT /config updates limits", async () => {
   await setConfig({ fatFingerPct: 5.0, maxOpenOrders: 50, duplicateWindowMs: 500 });
 });
 
-Deno.test("[risk-engine] fat-finger: order near mid passes", async () => {
+test("[risk-engine] fat-finger: order near mid passes", async () => {
   const result = await check({
     userId: "test-user",
     symbol: "AAPL",
@@ -73,7 +74,7 @@ Deno.test("[risk-engine] fat-finger: order near mid passes", async () => {
   assertEquals(fatFinger, undefined, "expected no fat-finger rejection near mid");
 });
 
-Deno.test("[risk-engine] fat-finger: order far from mid is rejected", async () => {
+test("[risk-engine] fat-finger: order far from mid is rejected", async () => {
   await setConfig({ fatFingerPct: 2.0 });
 
   const result = await check({
@@ -91,7 +92,7 @@ Deno.test("[risk-engine] fat-finger: order far from mid is rejected", async () =
   assertEquals(result.allowed, false);
 });
 
-Deno.test("[risk-engine] duplicate: identical order within window is rejected", async () => {
+test("[risk-engine] duplicate: identical order within window is rejected", async () => {
   const order = {
     userId: "test-dup",
     symbol: "MSFT",
@@ -110,7 +111,7 @@ Deno.test("[risk-engine] duplicate: identical order within window is rejected", 
   assertEquals(second.allowed, false);
 });
 
-Deno.test("[risk-engine] duplicate: different symbol is not a duplicate", async () => {
+test("[risk-engine] duplicate: different symbol is not a duplicate", async () => {
   const result = await check({
     userId: "test-dup-diff",
     symbol: "NVDA",
@@ -122,7 +123,7 @@ Deno.test("[risk-engine] duplicate: different symbol is not a duplicate", async 
   assertEquals(dup, undefined);
 });
 
-Deno.test("[risk-engine] max open orders: rejects when at limit", async () => {
+test("[risk-engine] max open orders: rejects when at limit", async () => {
   await setConfig({ maxOpenOrders: 2 });
 
   const result = await check({
@@ -142,7 +143,7 @@ Deno.test("[risk-engine] max open orders: rejects when at limit", async () => {
   );
 });
 
-Deno.test("[risk-engine] self-cross: BUY is allowed when no opposite working order exists", async () => {
+test("[risk-engine] self-cross: BUY is allowed when no opposite working order exists", async () => {
   const result = await check({
     userId: "test-selfcross-1",
     symbol: "TSLA",
@@ -154,7 +155,7 @@ Deno.test("[risk-engine] self-cross: BUY is allowed when no opposite working ord
   assertEquals(sc, undefined, "should not trigger self-cross with no prior order");
 });
 
-Deno.test("[risk-engine] rate-limit: rapid burst exceeding limit is rejected", async () => {
+test("[risk-engine] rate-limit: rapid burst exceeding limit is rejected", async () => {
   await setConfig({ maxOrdersPerSecond: 3 });
 
   const results: boolean[] = [];
@@ -175,7 +176,7 @@ Deno.test("[risk-engine] rate-limit: rapid burst exceeding limit is rejected", a
   assert(rejected.length > 0, "at least one order in rapid burst should be rate-limited");
 });
 
-Deno.test("[risk-engine] ADV: small order passes ADV check", async () => {
+test("[risk-engine] ADV: small order passes ADV check", async () => {
   const result = await check({
     userId: "test-adv-ok",
     symbol: "AAPL",
@@ -187,7 +188,7 @@ Deno.test("[risk-engine] ADV: small order passes ADV check", async () => {
   assertEquals(adv, undefined, "10 shares of AAPL should not exceed ADV limit");
 });
 
-Deno.test("[risk-engine] ADV: oversized order is rejected", async () => {
+test("[risk-engine] ADV: oversized order is rejected", async () => {
   await setConfig({ maxAdvPct: 0.001 });
 
   const result = await check({
@@ -205,7 +206,7 @@ Deno.test("[risk-engine] ADV: oversized order is rejected", async () => {
   assertEquals(result.allowed, false);
 });
 
-Deno.test("[risk-engine] config includes new fields maxOrdersPerSecond and maxAdvPct", async () => {
+test("[risk-engine] config includes new fields maxOrdersPerSecond and maxAdvPct", async () => {
   const res = await fetch(`${BASE}/config`, { signal: timeout() });
   const cfg = await res.json();
   assert(typeof cfg.maxOrdersPerSecond === "number");
@@ -218,7 +219,7 @@ Deno.test("[risk-engine] config includes new fields maxOrdersPerSecond and maxAd
   assert(typeof cfg.breakersEnabled === "boolean");
 });
 
-Deno.test("[risk-engine] GET /positions/:userId returns empty for unknown user", async () => {
+test("[risk-engine] GET /positions/:userId returns empty for unknown user", async () => {
   const res = await fetch(`${BASE}/positions/nobody`, { signal: timeout() });
   assertEquals(res.status, 200);
   const body = await res.json();
@@ -226,14 +227,14 @@ Deno.test("[risk-engine] GET /positions/:userId returns empty for unknown user",
   assertEquals(body.positions.length, 0);
 });
 
-Deno.test("[risk-engine] GET /positions returns all tracked positions", async () => {
+test("[risk-engine] GET /positions returns all tracked positions", async () => {
   const res = await fetch(`${BASE}/positions`, { signal: timeout() });
   assertEquals(res.status, 200);
   const body = await res.json();
   assert(typeof body.positions === "object");
 });
 
-Deno.test("[risk-engine] missing fields returns 400", async () => {
+test("[risk-engine] missing fields returns 400", async () => {
   const res = await fetch(`${BASE}/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -301,7 +302,7 @@ async function getBreakers(): Promise<{
   return await res.json();
 }
 
-Deno.test("[risk-engine] PUT /config accepts the 6 new fields", async () => {
+test("[risk-engine] PUT /config accepts the 6 new fields", async () => {
   await setConfig({
     maxGrossNotional: 3_000_000,
     maxDailyLoss: -25_000,
@@ -329,7 +330,7 @@ Deno.test("[risk-engine] PUT /config accepts the 6 new fields", async () => {
   });
 });
 
-Deno.test("[risk-engine] PUT /config rejects maxDailyLoss >= 0 with 400", async () => {
+test("[risk-engine] PUT /config rejects maxDailyLoss >= 0 with 400", async () => {
   const before = await (await fetch(`${BASE}/config`, { signal: timeout() })).json();
   const res = await fetch(`${BASE}/config`, {
     method: "PUT",
@@ -344,7 +345,7 @@ Deno.test("[risk-engine] PUT /config rejects maxDailyLoss >= 0 with 400", async 
   assertEquals(after.maxDailyLoss, before.maxDailyLoss);
 });
 
-Deno.test("[risk-engine] position notional: allow under limit", async () => {
+test("[risk-engine] position notional: allow under limit", async () => {
   await resetTestState();
   await setConfig({ maxGrossNotional: 5_000_000 });
   const result = await check({
@@ -358,7 +359,7 @@ Deno.test("[risk-engine] position notional: allow under limit", async () => {
   assertEquals(r, undefined);
 });
 
-Deno.test("[risk-engine] position notional: reject when post-trade > limit", async () => {
+test("[risk-engine] position notional: reject when post-trade > limit", async () => {
   await resetTestState();
   await setConfig({ maxGrossNotional: 10_000 });
   const result = await check({
@@ -374,7 +375,7 @@ Deno.test("[risk-engine] position notional: reject when post-trade > limit", asy
   assertEquals(result.allowed, false);
 });
 
-Deno.test("[risk-engine] position notional: at limit is allowed (strict >)", async () => {
+test("[risk-engine] position notional: at limit is allowed (strict >)", async () => {
   await resetTestState();
   await setConfig({ maxGrossNotional: 10_000 });
   const result = await check({
@@ -389,7 +390,7 @@ Deno.test("[risk-engine] position notional: at limit is allowed (strict >)", asy
   assertEquals(r, undefined, "10_000 exactly should pass (strict >)");
 });
 
-Deno.test("[risk-engine] P&L stop: allow for user with no positions", async () => {
+test("[risk-engine] P&L stop: allow for user with no positions", async () => {
   await resetTestState();
   const result = await check({
     userId: "test-pnl-empty",
@@ -402,7 +403,7 @@ Deno.test("[risk-engine] P&L stop: allow for user with no positions", async () =
   assertEquals(r, undefined);
 });
 
-Deno.test("[risk-engine] P&L stop: reject when total P&L at/below threshold", async () => {
+test("[risk-engine] P&L stop: reject when total P&L at/below threshold", async () => {
   await resetTestState();
   await setConfig({ maxDailyLoss: -10_000, breakerCooldownMs: 60_000 });
   await seedPosition({
@@ -425,7 +426,7 @@ Deno.test("[risk-engine] P&L stop: reject when total P&L at/below threshold", as
   assertEquals(result.allowed, false);
 });
 
-Deno.test("[risk-engine] concentration: allow diverse book", async () => {
+test("[risk-engine] concentration: allow diverse book", async () => {
   await resetTestState();
   await setConfig({ maxConcentrationPct: 25 });
   await seedPosition({ userId: "test-conc-ok", symbol: "MSFT", netQty: 1000, avgPrice: 300 });
@@ -442,7 +443,7 @@ Deno.test("[risk-engine] concentration: allow diverse book", async () => {
   assertEquals(r, undefined);
 });
 
-Deno.test("[risk-engine] concentration: reject when single symbol > pct", async () => {
+test("[risk-engine] concentration: reject when single symbol > pct", async () => {
   await resetTestState();
   await setConfig({ maxConcentrationPct: 25, maxGrossNotional: 5_000_000 });
   await seedPosition({ userId: "test-conc-fail", symbol: "MSFT", netQty: 10, avgPrice: 10 });
@@ -459,7 +460,7 @@ Deno.test("[risk-engine] concentration: reject when single symbol > pct", async 
   assertEquals(result.allowed, false);
 });
 
-Deno.test("[risk-engine] market-move breaker fires on >haltMovePercent move", async () => {
+test("[risk-engine] market-move breaker fires on >haltMovePercent move", async () => {
   await resetTestState();
   await setConfig({ haltMovePercent: 10, breakerCooldownMs: 60_000, breakersEnabled: true });
   const before = (await getBreakers()).fireCount;
@@ -472,7 +473,7 @@ Deno.test("[risk-engine] market-move breaker fires on >haltMovePercent move", as
   assert(h.observedValue >= 15, "observedValue should be ~15%");
 });
 
-Deno.test("[risk-engine] breaker cooldown prevents double-fire within window", async () => {
+test("[risk-engine] breaker cooldown prevents double-fire within window", async () => {
   await resetTestState();
   await setConfig({ haltMovePercent: 10, breakerCooldownMs: 60_000, breakersEnabled: true });
   await sendTick({ openPrices: { ZZZB: 100 }, prices: { ZZZB: 115 } });
@@ -482,7 +483,7 @@ Deno.test("[risk-engine] breaker cooldown prevents double-fire within window", a
   assertEquals(second, first, "second fire within cooldown should be suppressed");
 });
 
-Deno.test("[risk-engine] breaker cooldown allows refire after window", async () => {
+test("[risk-engine] breaker cooldown allows refire after window", async () => {
   await resetTestState();
   await setConfig({ haltMovePercent: 10, breakerCooldownMs: 1_000, breakersEnabled: true });
   await sendTick({ openPrices: { ZZZC: 100 }, prices: { ZZZC: 115 } });
@@ -494,7 +495,7 @@ Deno.test("[risk-engine] breaker cooldown allows refire after window", async () 
   assert(second > first, "refire after cooldown expiry should succeed");
 });
 
-Deno.test("[risk-engine] restore defaults", async () => {
+test("[risk-engine] restore defaults", async () => {
   await resetTestState();
   await setConfig({
     fatFingerPct: 5,

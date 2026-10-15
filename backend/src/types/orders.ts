@@ -1,4 +1,4 @@
-export type { LiquidityFlag, OrderSide, Strategy } from "@veta/primitives";
+export type { LiquidityFlag, OrderSide, Strategy } from "#veta/primitives";
 export type {
   FillEvent,
   OrderCancelled,
@@ -15,4 +15,4 @@ export type {
   OrderResumed,
   OrderSubmitted,
   RoutedOrder,
-} from "@veta/schemas/orders";
+} from "#veta/schemas/orders";

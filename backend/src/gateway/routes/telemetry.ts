@@ -1,6 +1,6 @@
 // fallow-ignore-file unused-file
-import { CORS_HEADERS } from "@veta/http";
-import { recordGauge } from "@veta/telemetry";
+import { CORS_HEADERS } from "#veta/http";
+import { recordGauge } from "#veta/telemetry";
 import { type GatewayContext, isResponse } from "../context.ts";
 
 interface FrontendMemorySample {

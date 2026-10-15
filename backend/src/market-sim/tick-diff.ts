@@ -1,4 +1,4 @@
-import type { MarketFeed, OrderBookSnapshot } from "@veta/market-client";
+import type { MarketFeed, OrderBookSnapshot } from "#veta/market-client";
 
 export type SessionPhase =
   | "PRE_OPEN"

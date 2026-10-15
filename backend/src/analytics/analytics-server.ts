@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Analytics Service — port 5014
  *
@@ -17,9 +17,8 @@ import "@veta/bootstrap";
  *   GET  /health
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { decodePathSegment, json, serveJsonService } from "@veta/http";
-import { logger } from "@veta/logger";
+import { decodePathSegment, json, serveJsonService } from "#veta/http";
+import { logger } from "#veta/logger";
 import { armIdleExit } from "../shared/idle-exit.ts";
 import { blackScholes } from "./black-scholes.ts";
 import { priceBond } from "./bond-pricing.ts";
@@ -56,14 +55,14 @@ import { buildVolSurface } from "./vol-surface.ts";
 import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
 import { buildYieldCurveResponse } from "./yield-curve.ts";
 
-const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
-  Deno.env.get("JOURNAL_PORT") ?? "5009"
+const PORT = Number(process.env.ANALYTICS_PORT) || 5_014;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const JOURNAL_URL = `http://${process.env.JOURNAL_HOST ?? "localhost"}:${
+  process.env.JOURNAL_PORT ?? "5009"
 }`;
 const MARKET_SIM_URL = `http://${
-  Deno.env.get("MARKET_SIM_HOST") ?? "localhost"
-}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+  process.env.MARKET_SIM_HOST ?? "localhost"
+}:${process.env.MARKET_SIM_PORT ?? "5000"}`;
 
 function err(message: string, status = 400): Response {
   return json({ error: message }, status);
@@ -97,7 +96,7 @@ async function resolveSpot(symbol: string): Promise<number | null> {
   return null;
 }
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("ANALYTICS_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.ANALYTICS_IDLE_TIMEOUT_SECONDS ?? "600") * 1_000;
 const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
 
 serveJsonService({

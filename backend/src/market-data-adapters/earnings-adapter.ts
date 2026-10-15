@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import type { MarketAdapterEvent } from "@veta/types/intelligence";
+import { logger } from "#veta/logger";
+import type { MarketAdapterEvent } from "#veta/types/intelligence";
 
 const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = ["high", "medium", "medium", "low"];
 
@@ -88,7 +88,7 @@ function syntheticEarningsEvents(symbols: string[]): MarketAdapterEvent[] {
 }
 
 export async function seedEarningsEvents(symbols: string[]): Promise<MarketAdapterEvent[]> {
-  const apiKey = Deno.env.get("FINNHUB_KEY");
+  const apiKey = process.env.FINNHUB_KEY;
 
   if (apiKey) {
     const bySymbol = await fetchFinnhubEarnings(apiKey, symbols);

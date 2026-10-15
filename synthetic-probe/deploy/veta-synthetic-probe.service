@@ -12,7 +12,7 @@ WorkingDirectory=/opt/veta-probe
 EnvironmentFile=-/etc/veta-probe.env
 Environment=PROBE_BASE_URL=https://veta.mnetcs.com
 Environment=PROBE_TIMEOUT_MS=10000
-ExecStart=/usr/local/bin/deno run --allow-net --allow-env /opt/veta-probe/probe.ts
+ExecStart=/usr/bin/node /opt/veta-probe/probe.ts
 # On success, clear any consecutive-failure counter and emit a recovery alert if needed.
 ExecStartPost=/opt/veta-probe/alert.sh recovery
 StandardOutput=journal

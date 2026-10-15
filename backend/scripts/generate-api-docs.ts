@@ -1,4 +1,5 @@
-import { join } from "https://deno.land/std@0.210.0/path/mod.ts";
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const ROUTES_DIR = "./backend/src/gateway/routes";
 const OUTPUT_FILE = "./docs/api-endpoints.md";
@@ -120,7 +121,7 @@ const parseEndpoints = (content: string): Endpoint[] => {
 
 const extractEndpointsFromRoute = async (routeFile: string): Promise<Endpoint[]> => {
   try {
-    return parseEndpoints(await Deno.readTextFile(routeFile));
+    return parseEndpoints(await readFile(routeFile, "utf8"));
   } catch (error) {
     console.error(`Error reading ${routeFile}:`, error);
     return [];
@@ -129,8 +130,8 @@ const extractEndpointsFromRoute = async (routeFile: string): Promise<Endpoint[]>
 
 const extractAllEndpoints = async (): Promise<Endpoint[]> => {
   try {
-    const names = (await Array.fromAsync(Deno.readDir(ROUTES_DIR)))
-      .filter((file) => file.isFile && file.name.endsWith(".ts"))
+    const names = (await readdir(ROUTES_DIR, { withFileTypes: true }))
+      .filter((file) => file.isFile() && file.name.endsWith(".ts"))
       .map((file) => file.name)
       .sort();
     const perFile = await Promise.all(
@@ -185,7 +186,7 @@ const renderDocument = (grouped: Record<string, Endpoint[]>): string => {
 
 const generateDocumentation = async (): Promise<void> => {
   const grouped = groupByService(await extractAllEndpoints());
-  await Deno.writeTextFile(OUTPUT_FILE, renderDocument(grouped));
+  await writeFile(OUTPUT_FILE, renderDocument(grouped));
   console.log(`Documentation generated successfully at ${OUTPUT_FILE}`);
 };
 

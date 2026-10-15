@@ -1,6 +1,6 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
-import { test } from "vitest";
+import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import { z } from "zod";
 import { CORS_HEADERS, corsOptions, decodePathSegment, json, jsonError, parseBody, parseQuery, serveJsonService } from "../lib/http.ts";

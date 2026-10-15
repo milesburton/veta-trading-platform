@@ -1,4 +1,5 @@
-import { assert } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert } from "#veta/test-assert";
 
 import {
   BreakerFireSchema,
@@ -10,7 +11,7 @@ import {
   TestTickSchema,
 } from "../schemas/risk.ts";
 
-Deno.test("[risk-schema] CheckRequestSchema accepts full request", () => {
+test("[risk-schema] CheckRequestSchema accepts full request", () => {
   const ok = CheckRequestSchema.safeParse({
     orderId: "o1",
     userId: "user-1",
@@ -25,7 +26,7 @@ Deno.test("[risk-schema] CheckRequestSchema accepts full request", () => {
   assert(ok.success, JSON.stringify(ok));
 });
 
-Deno.test("[risk-schema] CheckRequestSchema accepts minimal request", () => {
+test("[risk-schema] CheckRequestSchema accepts minimal request", () => {
   assert(
     CheckRequestSchema.safeParse({
       userId: "user-1",
@@ -37,7 +38,7 @@ Deno.test("[risk-schema] CheckRequestSchema accepts minimal request", () => {
   );
 });
 
-Deno.test("[risk-schema] CheckRequestSchema rejects missing required fields", () => {
+test("[risk-schema] CheckRequestSchema rejects missing required fields", () => {
   for (const missing of ["userId", "symbol", "side", "quantity", "limitPrice"]) {
     const body: Record<string, unknown> = {
       userId: "u",
@@ -56,7 +57,7 @@ Deno.test("[risk-schema] CheckRequestSchema rejects missing required fields", ()
   }
 });
 
-Deno.test("[risk-schema] CheckRequestSchema rejects zero quantity/limitPrice", () => {
+test("[risk-schema] CheckRequestSchema rejects zero quantity/limitPrice", () => {
   assert(
     !CheckRequestSchema.safeParse({
       userId: "u",
@@ -77,7 +78,7 @@ Deno.test("[risk-schema] CheckRequestSchema rejects zero quantity/limitPrice", (
   );
 });
 
-Deno.test("[risk-schema] CheckRequestSchema rejects bad side", () => {
+test("[risk-schema] CheckRequestSchema rejects bad side", () => {
   assert(
     !CheckRequestSchema.safeParse({
       userId: "u",
@@ -89,7 +90,7 @@ Deno.test("[risk-schema] CheckRequestSchema rejects bad side", () => {
   );
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema accepts all fields", () => {
+test("[risk-schema] RiskConfigUpdateSchema accepts all fields", () => {
   const ok = RiskConfigUpdateSchema.safeParse({
     fatFingerPct: 5,
     maxOpenOrders: 50,
@@ -107,38 +108,38 @@ Deno.test("[risk-schema] RiskConfigUpdateSchema accepts all fields", () => {
   assert(ok.success, JSON.stringify(ok));
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema accepts empty body (all optional)", () => {
+test("[risk-schema] RiskConfigUpdateSchema accepts empty body (all optional)", () => {
   assert(RiskConfigUpdateSchema.safeParse({}).success);
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema accepts partial body", () => {
+test("[risk-schema] RiskConfigUpdateSchema accepts partial body", () => {
   assert(RiskConfigUpdateSchema.safeParse({ fatFingerPct: 3, maxOpenOrders: 25 }).success);
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema rejects non-number fatFingerPct", () => {
+test("[risk-schema] RiskConfigUpdateSchema rejects non-number fatFingerPct", () => {
   assert(!RiskConfigUpdateSchema.safeParse({ fatFingerPct: "high" }).success);
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema rejects non-integer maxOpenOrders", () => {
+test("[risk-schema] RiskConfigUpdateSchema rejects non-integer maxOpenOrders", () => {
   assert(!RiskConfigUpdateSchema.safeParse({ maxOpenOrders: 5.5 }).success);
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema rejects non-boolean breakersEnabled", () => {
+test("[risk-schema] RiskConfigUpdateSchema rejects non-boolean breakersEnabled", () => {
   assert(!RiskConfigUpdateSchema.safeParse({ breakersEnabled: "true" }).success);
 });
 
-Deno.test("[risk-schema] RiskConfigUpdateSchema allows maxDailyLoss at any sign (business rule handled in handler)", () => {
+test("[risk-schema] RiskConfigUpdateSchema allows maxDailyLoss at any sign (business rule handled in handler)", () => {
   assert(RiskConfigUpdateSchema.safeParse({ maxDailyLoss: 0 }).success);
   assert(RiskConfigUpdateSchema.safeParse({ maxDailyLoss: 5_000 }).success);
   assert(RiskConfigUpdateSchema.safeParse({ maxDailyLoss: -100_000 }).success);
 });
 
-Deno.test("[risk-schema] RiskConfigSchema requires every field", () => {
+test("[risk-schema] RiskConfigSchema requires every field", () => {
   assert(!RiskConfigSchema.safeParse({}).success);
   assert(!RiskConfigSchema.safeParse({ fatFingerPct: 5 }).success);
 });
 
-Deno.test("[risk-schema] RiskConfigSchema defaults marketHoursEnforced to true when omitted", () => {
+test("[risk-schema] RiskConfigSchema defaults marketHoursEnforced to true when omitted", () => {
   const base = {
     fatFingerPct: 5,
     maxOpenOrders: 50,
@@ -161,7 +162,7 @@ Deno.test("[risk-schema] RiskConfigSchema defaults marketHoursEnforced to true w
   if (explicit.success) assert(explicit.data.marketHoursEnforced === false);
 });
 
-Deno.test("[risk-schema] CheckResultSchema shape", () => {
+test("[risk-schema] CheckResultSchema shape", () => {
   const ok = CheckResultSchema.safeParse({
     allowed: true,
     reasons: [],
@@ -171,7 +172,7 @@ Deno.test("[risk-schema] CheckResultSchema shape", () => {
   assert(!CheckResultSchema.safeParse({ allowed: true, reasons: [], warnings: "none" }).success);
 });
 
-Deno.test("[risk-schema] BreakerFireSchema accepts both breaker types", () => {
+test("[risk-schema] BreakerFireSchema accepts both breaker types", () => {
   assert(
     BreakerFireSchema.safeParse({
       type: "market-move",
@@ -194,7 +195,7 @@ Deno.test("[risk-schema] BreakerFireSchema accepts both breaker types", () => {
   );
 });
 
-Deno.test("[risk-schema] BreakerFireSchema rejects unknown type", () => {
+test("[risk-schema] BreakerFireSchema rejects unknown type", () => {
   assert(
     !BreakerFireSchema.safeParse({
       type: "unknown",
@@ -207,7 +208,7 @@ Deno.test("[risk-schema] BreakerFireSchema rejects unknown type", () => {
   );
 });
 
-Deno.test("[risk-schema] TestPositionSchema requires core fields", () => {
+test("[risk-schema] TestPositionSchema requires core fields", () => {
   assert(
     TestPositionSchema.safeParse({
       userId: "user-1",
@@ -234,11 +235,11 @@ Deno.test("[risk-schema] TestPositionSchema requires core fields", () => {
   );
 });
 
-Deno.test("[risk-schema] TestTickSchema accepts empty body", () => {
+test("[risk-schema] TestTickSchema accepts empty body", () => {
   assert(TestTickSchema.safeParse({}).success);
 });
 
-Deno.test("[risk-schema] TestTickSchema accepts prices and openPrices", () => {
+test("[risk-schema] TestTickSchema accepts prices and openPrices", () => {
   assert(
     TestTickSchema.safeParse({
       prices: { AAPL: 192, MSFT: 420 },

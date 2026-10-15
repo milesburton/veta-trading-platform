@@ -1,7 +1,7 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import type { ILlmProvider } from "@veta/types/llm-advisory";
+import "#veta/bootstrap";
+import { serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import type { ILlmProvider } from "#veta/types/llm-advisory";
 import {
   isBugReportValid,
   notifyDiscordBug,
@@ -11,23 +11,23 @@ import { createTicketForUserReport } from "../gateway/ticketing.ts";
 import { createAnthropicProvider } from "../llm-advisory/providers/anthropic.ts";
 import { createOllamaProvider } from "../llm-advisory/providers/ollama.ts";
 
-const PORT = Number(Deno.env.get("DISCORD_BOT_PORT")) || 5_034;
-const BOT_TOKEN = Deno.env.get("DISCORD_BOT_TOKEN") ?? "";
-const WELCOME_CHANNEL_ID = Deno.env.get("DISCORD_WELCOME_CHANNEL_ID") ?? "";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const TRIAGE_ENABLED = Deno.env.get("DISCORD_TRIAGE_ENABLED") !== "false";
-const LLM_PROVIDER = Deno.env.get("LLM_PROVIDER") ?? "mock";
-const LLM_MODEL_ID = Deno.env.get("LLM_MODEL_ID") ?? "mock-v1";
-const LLM_OLLAMA_BASE_URL = Deno.env.get("LLM_OLLAMA_BASE_URL") ?? "http://localhost:11434";
-const MOTD_ENABLED = Deno.env.get("DISCORD_MOTD_ENABLED") !== "false";
+const PORT = Number(process.env.DISCORD_BOT_PORT) || 5_034;
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? "";
+const WELCOME_CHANNEL_ID = process.env.DISCORD_WELCOME_CHANNEL_ID ?? "";
+const VERSION = process.env.COMMIT_SHA || "dev";
+const TRIAGE_ENABLED = process.env.DISCORD_TRIAGE_ENABLED !== "false";
+const LLM_PROVIDER = process.env.LLM_PROVIDER ?? "mock";
+const LLM_MODEL_ID = process.env.LLM_MODEL_ID ?? "mock-v1";
+const LLM_OLLAMA_BASE_URL = process.env.LLM_OLLAMA_BASE_URL ?? "http://localhost:11434";
+const MOTD_ENABLED = process.env.DISCORD_MOTD_ENABLED !== "false";
 const DEFAULT_MOTD_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MOTD_INTERVAL_MS = (() => {
-  const parsed = Number(Deno.env.get("DISCORD_MOTD_INTERVAL_MS"));
+  const parsed = Number(process.env.DISCORD_MOTD_INTERVAL_MS);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MOTD_INTERVAL_MS;
 })();
 const DOCS_URL =
-  Deno.env.get("VETA_DOCS_URL") ?? "https://milesburton.github.io/veta-trading-platform/";
-const PLATFORM_URL = Deno.env.get("VETA_PLATFORM_URL") ?? "https://veta.mnetcs.com";
+  process.env.VETA_DOCS_URL ?? "https://milesburton.github.io/veta-trading-platform/";
+const PLATFORM_URL = process.env.VETA_PLATFORM_URL ?? "https://veta.mnetcs.com";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const GATEWAY_INTENT_GUILD_MEMBERS = 1 << 1;
@@ -328,7 +328,7 @@ export class TimeoutError extends Error {
 }
 
 export function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
-  let timer: number | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new TimeoutError(ms)), ms);
   });
@@ -630,7 +630,7 @@ if (import.meta.main) {
   triageHealthProbe.refresh();
   setInterval(() => triageHealthProbe.refresh(), TRIAGE_HEALTH_REFRESH_MS);
 
-  Deno.serve({ port: PORT }, (req: Request): Response => {
+  serveFetch({ port: PORT }, (req: Request): Response => {
     const url = new URL(req.url);
     if (url.pathname === "/health") {
       return new Response(

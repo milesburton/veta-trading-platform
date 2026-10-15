@@ -1,4 +1,5 @@
-import { join } from "https://deno.land/std@0.210.0/path/mod.ts";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export interface Violation {
   file: string;
@@ -79,18 +80,18 @@ export function scanSql(file: string, sql: string): Violation[] {
 
 async function migrationFiles(dir: string): Promise<string[]> {
   const files: string[] = [];
-  for await (const entry of Deno.readDir(dir)) {
-    if (entry.isFile && entry.name.endsWith(".sql")) files.push(entry.name);
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith(".sql")) files.push(entry.name);
   }
   return files.sort();
 }
 
 async function main(): Promise<void> {
-  const args = Deno.args;
+  const args = process.argv.slice(2);
   const dirname = import.meta.dirname;
   if (!dirname) {
     console.error("checkMigrationsSafe requires import.meta.dirname");
-    Deno.exit(2);
+    process.exit(2);
   }
   const dir = join(dirname, "migrations");
 
@@ -103,7 +104,7 @@ async function main(): Promise<void> {
     const abs = path.endsWith(".sql") && !path.includes("/") ? join(dir, path) : path;
     let sql: string;
     try {
-      sql = await Deno.readTextFile(abs);
+      sql = await readFile(abs, "utf8");
     } catch {
       continue;
     }
@@ -125,7 +126,7 @@ async function main(): Promise<void> {
   console.error("Migrations must be expand/contract: additive and backward-compatible so a");
   console.error("still-running previous version keeps working. Split a destructive change");
   console.error("into an additive migration now and a contract migration a release later.");
-  Deno.exit(1);
+  process.exit(1);
 }
 
 if (import.meta.main) {

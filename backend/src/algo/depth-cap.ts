@@ -1,9 +1,9 @@
-import type { MarketTick } from "@veta/market-client";
+import type { MarketTick } from "#veta/market-client";
 
 export const TICK_VOLUME_TO_DEPTH_RATIO = 0.5;
 
 export const DEPTH_PARTICIPATION =
-  Number(Deno.env.get("ALGO_DEPTH_PARTICIPATION")) || 0.5;
+  Number(process.env.ALGO_DEPTH_PARTICIPATION) || 0.5;
 
 export function estimatedDepth(
   tick: Pick<MarketTick, "volumes">,

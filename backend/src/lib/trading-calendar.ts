@@ -1,4 +1,4 @@
-import type { Strategy } from "@veta/primitives";
+import type { Strategy } from "#veta/primitives";
 
 export type MarketPhase =
   | "PRE_OPEN"

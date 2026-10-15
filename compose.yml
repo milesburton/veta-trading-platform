@@ -31,7 +31,7 @@ x-logging: &logging
     max-size: "100m"
     max-file: "3"
 
-x-deno-service: &deno-service
+x-node-service: &node-service
   init: true
   build:
     context: .
@@ -49,7 +49,7 @@ x-deno-service: &deno-service
     - /tmp
   logging: *logging
 
-x-deno-medium: &deno-medium
+x-node-medium: &node-medium
   init: true
   build:
     context: .
@@ -489,13 +489,11 @@ services:
 
   market-sim:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     mem_limit: 1536m
     cpus: 1
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/market-sim/market-sim.ts",
     ]
     depends_on:
@@ -529,11 +527,9 @@ services:
 
   ems:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/ems/ems-server.ts",
     ]
     depends_on:
@@ -565,11 +561,9 @@ services:
 
   oms:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/oms/oms-server.ts",
     ]
     depends_on:
@@ -616,12 +610,10 @@ services:
 
   limit-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/limit-strategy.ts",
     ]
     depends_on:
@@ -657,12 +649,10 @@ services:
 
   twap-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/twap-strategy.ts",
     ]
     depends_on:
@@ -699,12 +689,10 @@ services:
 
   pov-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/pov-strategy.ts",
     ]
     depends_on:
@@ -743,12 +731,10 @@ services:
 
   vwap-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/vwap-strategy.ts",
     ]
     depends_on:
@@ -785,12 +771,10 @@ services:
 
   iceberg-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/iceberg-strategy.ts",
     ]
     depends_on:
@@ -824,12 +808,10 @@ services:
 
   sniper-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/sniper-strategy.ts",
     ]
     depends_on:
@@ -863,12 +845,10 @@ services:
 
   arrival-price-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/arrival-price-strategy.ts",
     ]
     depends_on:
@@ -902,12 +882,10 @@ services:
 
   momentum-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/momentum-strategy.ts",
     ]
     depends_on:
@@ -941,12 +919,10 @@ services:
 
   is-algo:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/algo/is-strategy.ts",
     ]
     depends_on:
@@ -980,12 +956,10 @@ services:
 
   rfq-service:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/rfq/rfq-service.ts",
     ]
     depends_on:
@@ -1012,12 +986,10 @@ services:
 
   ccp-service:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/ccp/ccp-service.ts",
     ]
     depends_on:
@@ -1049,12 +1021,10 @@ services:
 
   product-service:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/product-service/product-service.ts",
     ]
     depends_on:
@@ -1080,12 +1050,10 @@ services:
 
   replay-service:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/replay/replay-service.ts",
     ]
     depends_on:
@@ -1114,11 +1082,9 @@ services:
 
   risk-engine:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/risk-engine/risk-engine.ts",
     ]
     depends_on:
@@ -1152,12 +1118,10 @@ services:
 
   dark-pool:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/dark-pool/dark-pool-server.ts",
     ]
     depends_on:
@@ -1191,9 +1155,9 @@ services:
 
   kafka-relay:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
-    command: ["deno", "run", "--allow-all", "/app/observability/kafka-relay.ts"]
+    command: ["node", "/app/observability/kafka-relay.ts"]
     depends_on:
       redpanda:
         condition: service_healthy
@@ -1217,11 +1181,9 @@ services:
 
   user-service:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/user-service/user-service.ts",
     ]
     depends_on:
@@ -1258,12 +1220,10 @@ services:
 
   journal:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     mem_limit: 512m
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/journal/journal-server.ts",
     ]
     depends_on:
@@ -1295,11 +1255,9 @@ services:
 
   fix-exchange:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/fix/fix-exchange.ts",
     ]
     depends_on:
@@ -1329,12 +1287,10 @@ services:
 
   fix-gateway:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/fix/fix-gateway.ts",
     ]
     depends_on:
@@ -1360,12 +1316,10 @@ services:
 
   fix-archive:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/fix/fix-archive.ts",
     ]
     depends_on:
@@ -1394,12 +1348,10 @@ services:
 
   analytics:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/analytics/analytics-server.ts",
     ]
     depends_on:
@@ -1431,7 +1383,7 @@ services:
 
   market-data:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     # Needs egress-net in addition to the anchor's trading-net: fetches from
     # Alpha Vantage, Polygon, and Tiingo public APIs.
@@ -1439,9 +1391,7 @@ services:
       - trading-net
       - egress-net
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/market-data/market-data-service.ts",
     ]
     working_dir: /app/data
@@ -1474,12 +1424,10 @@ services:
 
   market-data-adapters:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/market-data-adapters/adapter-server.ts",
     ]
     depends_on:
@@ -1509,14 +1457,12 @@ services:
 
   feature-engine:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     mem_limit: 2560m
     cpus: 1
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "--v8-flags=--max-old-space-size=2048",
       "/app/backend/src/feature-engine/feature-engine.ts",
     ]
@@ -1554,13 +1500,11 @@ services:
 
   signal-engine:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     cpus: 0.75
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/signal-engine/signal-engine.ts",
     ]
     depends_on:
@@ -1592,12 +1536,10 @@ services:
 
   recommendation-engine:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/recommendation-engine/recommendation-server.ts",
     ]
     depends_on:
@@ -1623,12 +1565,10 @@ services:
 
   scenario-engine:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/scenario-engine/scenario-server.ts",
     ]
     depends_on:
@@ -1657,12 +1597,10 @@ services:
 
   news-aggregator:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/news/news-aggregator.ts",
     ]
     depends_on:
@@ -1685,7 +1623,7 @@ services:
 
   discord-bot:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [trading, on-demand]
     # Needs egress-net in addition to the anchor's trading-net: connects
     # directly to the Discord gateway (bot API), not just an outbound webhook.
@@ -1693,9 +1631,7 @@ services:
       - trading-net
       - egress-net
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/discord-bot/discord-bot.ts",
     ]
     environment:
@@ -1722,13 +1658,11 @@ services:
 
   llm-advisory:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     restart: unless-stopped
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/llm-advisory/orchestrator.ts",
     ]
     depends_on:
@@ -1772,13 +1706,11 @@ services:
 
   llm-worker:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     profiles: [trading, on-demand]
     restart: unless-stopped
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/llm-advisory/worker.ts",
     ]
     depends_on:
@@ -1814,7 +1746,7 @@ services:
 
   gateway:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-medium
+    <<: *node-medium
     # Needs egress-net in addition to the anchor's trading-net: the Discord
     # webhook notifier (discord-notifier.ts) runs inside this service.
     networks:
@@ -1822,9 +1754,7 @@ services:
       - egress-net
     cpus: 1
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/gateway/gateway.ts",
     ]
     depends_on:
@@ -1989,12 +1919,10 @@ services:
   # port, and enable/dry-run gate so desks can be turned on independently.
   synthetic-trader-equity-high-touch:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2027,12 +1955,10 @@ services:
 
   synthetic-trader-equity-low-touch:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2065,12 +1991,10 @@ services:
 
   synthetic-trader-fx-electronic:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2103,12 +2027,10 @@ services:
 
   synthetic-trader-fx-high-touch:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2141,12 +2063,10 @@ services:
 
   synthetic-trader-fi-voice:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2179,12 +2099,10 @@ services:
 
   synthetic-trader-derivatives-high-touch:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2217,12 +2135,10 @@ services:
 
   synthetic-trader-derivatives-low-touch:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:
@@ -2255,12 +2171,10 @@ services:
 
   synthetic-trader-commodities-voice:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
-    <<: *deno-service
+    <<: *node-service
     profiles: [on-demand]
     command: [
-      "deno",
-      "run",
-      "--allow-all",
+      "node",
       "/app/backend/src/synthetic-trader/synthetic-trader.ts",
     ]
     depends_on:

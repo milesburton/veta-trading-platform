@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import {
   computeBookImpactBps,
   computeFees,
@@ -16,58 +17,58 @@ import {
 
 // ── Venue fill capacity ───────────────────────────────────────────────────────
 
-Deno.test("[ems/fill] filled qty capped at participation cap × tick volume", () => {
+test("[ems/fill] filled qty capped at participation cap × tick volume", () => {
   const { filledQty } = computeFill(10_000, 1000, "XNAS");
   assertEquals(filledQty, Math.floor(1000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT.XNAS));
 });
 
-Deno.test("[ems/fill] filled qty never exceeds requested qty", () => {
+test("[ems/fill] filled qty never exceeds requested qty", () => {
   const { filledQty } = computeFill(5, 1_000_000, "XNAS");
   assertEquals(filledQty, 5);
 });
 
-Deno.test("[ems/fill] remaining qty is requested minus filled", () => {
+test("[ems/fill] remaining qty is requested minus filled", () => {
   const qty = 200;
   const { filledQty, remainingQty } = computeFill(qty, 500, "XNAS");
   assertEquals(filledQty + remainingQty, qty);
 });
 
-Deno.test("[ems/fill] MEMX (depth=0.65) fills less than XNYS (depth=1.20) at same volume", () => {
+test("[ems/fill] MEMX (depth=0.65) fills less than XNYS (depth=1.20) at same volume", () => {
   const vol = 1_000;
   const { filledQty: memx } = computeFill(10_000, vol, "MEMX");
   const { filledQty: xnys } = computeFill(10_000, vol, "XNYS");
   assert(xnys > memx, `XNYS (depth 1.20) should fill more than MEMX (depth 0.65)`);
 });
 
-Deno.test("[ems/fill] zero tick volume → zero fill", () => {
+test("[ems/fill] zero tick volume → zero fill", () => {
   const { filledQty } = computeFill(500, 0, "XNAS");
   assertEquals(filledQty, 0);
 });
 
 // ── Market impact ─────────────────────────────────────────────────────────────
 
-Deno.test("[ems/impact] BUY impact moves price above mid", () => {
+test("[ems/impact] BUY impact moves price above mid", () => {
   const fill = computeImpact(1_000, "XNAS", "BUY", 100);
   assert(fill > 100, `BUY fill price ${fill} should exceed mid 100`);
 });
 
-Deno.test("[ems/impact] SELL impact moves price below mid", () => {
+test("[ems/impact] SELL impact moves price below mid", () => {
   const fill = computeImpact(1_000, "XNAS", "SELL", 100);
   assert(fill < 100, `SELL fill price ${fill} should be below mid 100`);
 });
 
-Deno.test("[ems/impact] small qty (1 share) has negligible impact", () => {
+test("[ems/impact] small qty (1 share) has negligible impact", () => {
   const fill = computeImpact(1, "XNAS", "BUY", 100);
   assertAlmostEquals(fill, 100, 0.001);
 });
 
-Deno.test("[ems/impact] ARCX (spread=1.08) has greater impact than BATS (spread=0.95)", () => {
+test("[ems/impact] ARCX (spread=1.08) has greater impact than BATS (spread=0.95)", () => {
   const arcx = computeImpact(500, "ARCX", "BUY", 100);
   const bats = computeImpact(500, "BATS", "BUY", 100);
   assert(arcx > bats, `ARCX impact price ${arcx} should exceed BATS ${bats}`);
 });
 
-Deno.test("[ems/impact] impact is proportional to qty (2× qty ≈ 2× impact bps)", () => {
+test("[ems/impact] impact is proportional to qty (2× qty ≈ 2× impact bps)", () => {
   const mid = 100;
   const p1 = computeImpact(500, "XNAS", "BUY", mid);
   const p2 = computeImpact(1_000, "XNAS", "BUY", mid);
@@ -76,73 +77,73 @@ Deno.test("[ems/impact] impact is proportional to qty (2× qty ≈ 2× impact bp
   assertAlmostEquals(bps2 / bps1, 2, 0.01);
 });
 
-Deno.test("[ems/impact] book impact is the BUY fill price above the touch in bps", () => {
+test("[ems/impact] book impact is the BUY fill price above the touch in bps", () => {
   assertEquals(computeBookImpactBps("BUY", 100, 100.05), 5);
 });
 
-Deno.test("[ems/impact] book impact is the SELL fill price below the touch in bps", () => {
+test("[ems/impact] book impact is the SELL fill price below the touch in bps", () => {
   assertEquals(computeBookImpactBps("SELL", 100, 99.9), 10);
 });
 
-Deno.test("[ems/impact] book impact never goes negative on price improvement", () => {
+test("[ems/impact] book impact never goes negative on price improvement", () => {
   assertEquals(computeBookImpactBps("BUY", 100, 99.95), 0);
   assertEquals(computeBookImpactBps("SELL", 100, 100.05), 0);
 });
 
-Deno.test("[ems/impact] book impact is zero without a touch or a fill price", () => {
+test("[ems/impact] book impact is zero without a touch or a fill price", () => {
   assertEquals(computeBookImpactBps("BUY", undefined, 100), 0);
   assertEquals(computeBookImpactBps("BUY", 100, undefined), 0);
   assertEquals(computeBookImpactBps("BUY", 0, 100), 0);
 });
 
-Deno.test("[ems/impact] unfilled impact follows a square root of remaining over filled", () => {
+test("[ems/impact] unfilled impact follows a square root of remaining over filled", () => {
   assertEquals(computeUnfilledImpactBps(100, 100, 10), 10);
   assertEquals(computeUnfilledImpactBps(100, 400, 10), 20);
 });
 
-Deno.test("[ems/impact] unfilled impact is zero without a fill to anchor on or a remainder", () => {
+test("[ems/impact] unfilled impact is zero without a fill to anchor on or a remainder", () => {
   assertEquals(computeUnfilledImpactBps(0, 100), 0);
   assertEquals(computeUnfilledImpactBps(100, 0), 0);
 });
 
 // ── Fee calculation ───────────────────────────────────────────────────────────
 
-Deno.test("[ems/fees] BUY order: SEC fee and FINRA TAF are zero", () => {
+test("[ems/fees] BUY order: SEC fee and FINRA TAF are zero", () => {
   const fees = computeFees(100, 150, "BUY", "TAKER");
   assertEquals(fees.secFeeUSD, 0);
   assertEquals(fees.finraTafUSD, 0);
 });
 
-Deno.test("[ems/fees] SELL order: SEC fee applied on notional", () => {
+test("[ems/fees] SELL order: SEC fee applied on notional", () => {
   const qty = 100;
   const price = 150;
   const fees = computeFees(qty, price, "SELL", "TAKER");
   assertAlmostEquals(fees.secFeeUSD, qty * price * SEC_FEE_RATE, 1e-6);
 });
 
-Deno.test("[ems/fees] SELL order: FINRA TAF applied per share", () => {
+test("[ems/fees] SELL order: FINRA TAF applied per share", () => {
   const qty = 100;
   const fees = computeFees(qty, 150, "SELL", "TAKER");
   const expected = Math.min(qty * FINRA_TAF_PER_SHARE, 5.95);
   assertAlmostEquals(fees.finraTafUSD, expected, 1e-4);
 });
 
-Deno.test("[ems/fees] FINRA TAF capped at $5.95 for very large fills", () => {
+test("[ems/fees] FINRA TAF capped at $5.95 for very large fills", () => {
   const fees = computeFees(1_000_000, 100, "SELL", "TAKER");
   assertEquals(fees.finraTafUSD, 5.95);
 });
 
-Deno.test("[ems/fees] MAKER liquidity flag earns rebate (negative commission)", () => {
+test("[ems/fees] MAKER liquidity flag earns rebate (negative commission)", () => {
   const fees = computeFees(100, 150, "BUY", "MAKER");
   assert(fees.commissionUSD < 0, `MAKER should earn rebate, got ${fees.commissionUSD}`);
 });
 
-Deno.test("[ems/fees] TAKER commission is positive", () => {
+test("[ems/fees] TAKER commission is positive", () => {
   const fees = computeFees(100, 150, "BUY", "TAKER");
   assert(fees.commissionUSD > 0, `TAKER commission should be positive`);
 });
 
-Deno.test("[ems/fees] totalFeeUSD equals sum of components", () => {
+test("[ems/fees] totalFeeUSD equals sum of components", () => {
   const fees = computeFees(200, 100, "SELL", "TAKER");
   assertAlmostEquals(
     fees.totalFeeUSD,
@@ -153,7 +154,7 @@ Deno.test("[ems/fees] totalFeeUSD equals sum of components", () => {
 
 // ── Weighted venue selection ──────────────────────────────────────────────────
 
-Deno.test("[ems/venue] all valid MICs can be selected", () => {
+test("[ems/venue] all valid MICs can be selected", () => {
   const seen = new Set<string>();
   for (let i = 0; i < 1_000; i++) {
     seen.add(pickWeightedVenue(Math.random()));
@@ -163,7 +164,7 @@ Deno.test("[ems/venue] all valid MICs can be selected", () => {
   }
 });
 
-Deno.test("[ems/venue] XNAS selected more often than MEMX (30 vs 4 weight)", () => {
+test("[ems/venue] XNAS selected more often than MEMX (30 vs 4 weight)", () => {
   let xnas = 0,
     memx = 0;
   const N = 10_000;
@@ -175,19 +176,19 @@ Deno.test("[ems/venue] XNAS selected more often than MEMX (30 vs 4 weight)", () 
   assert(xnas > memx * 3, `XNAS (${xnas}) should be selected far more than MEMX (${memx})`);
 });
 
-Deno.test("[ems/venue] deterministic at boundary: rand=0 selects first venue after weight depletion", () => {
+test("[ems/venue] deterministic at boundary: rand=0 selects first venue after weight depletion", () => {
   const v = pickWeightedVenue(0);
   assertEquals(v, "XNAS");
 });
 
 // ── exec ID sequencing ────────────────────────────────────────────────────────
 
-Deno.test("[ems/execId] format is EX followed by 8 zero-padded digits", () => {
+test("[ems/execId] format is EX followed by 8 zero-padded digits", () => {
   assertEquals(execId(1), "EX00000001");
   assertEquals(execId(99_999_999), "EX99999999");
 });
 
-Deno.test("[ems/execId] sequential IDs are unique and increasing", () => {
+test("[ems/execId] sequential IDs are unique and increasing", () => {
   const ids = [1, 2, 3, 100, 999].map(execId);
   const unique = new Set(ids);
   assertEquals(unique.size, ids.length);

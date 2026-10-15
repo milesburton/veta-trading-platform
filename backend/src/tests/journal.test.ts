@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 
 interface OrderRecord {
   id: string;
@@ -100,7 +101,7 @@ const BASE_ORDER = {
   },
 };
 
-Deno.test("[journal] reconstructs queued order from orders.submitted", () => {
+test("[journal] reconstructs queued order from orders.submitted", () => {
   const orders = reconstructOrders([
     {
       ...BASE_ORDER,
@@ -114,7 +115,7 @@ Deno.test("[journal] reconstructs queued order from orders.submitted", () => {
   assertEquals(orders[0].filled, 0);
 });
 
-Deno.test("[journal] transitions to executing after first partial fill", () => {
+test("[journal] transitions to executing after first partial fill", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
     {
@@ -127,7 +128,7 @@ Deno.test("[journal] transitions to executing after first partial fill", () => {
   assertEquals(orders[0].filled, 25);
 });
 
-Deno.test("[journal] accumulates fills across multiple child orders", () => {
+test("[journal] accumulates fills across multiple child orders", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
     { ...BASE_ORDER, eventType: "orders.filled", raw: { filledQty: 25 } },
@@ -139,7 +140,7 @@ Deno.test("[journal] accumulates fills across multiple child orders", () => {
   assertEquals(orders[0].status, "filled");
 });
 
-Deno.test("[journal] transitions to filled when filled >= quantity", () => {
+test("[journal] transitions to filled when filled >= quantity", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
     { ...BASE_ORDER, eventType: "orders.filled", raw: { filledQty: 100 } },
@@ -147,7 +148,7 @@ Deno.test("[journal] transitions to filled when filled >= quantity", () => {
   assertEquals(orders[0].status, "filled");
 });
 
-Deno.test("[journal] marks order as expired", () => {
+test("[journal] marks order as expired", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
     { ...BASE_ORDER, eventType: "orders.filled", raw: { filledQty: 50 } },
@@ -157,7 +158,7 @@ Deno.test("[journal] marks order as expired", () => {
   assertEquals(orders[0].filled, 50);
 });
 
-Deno.test("[journal] marks OMS-rejected order as rejected (after submission)", () => {
+test("[journal] marks OMS-rejected order as rejected (after submission)", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
     {
@@ -170,7 +171,7 @@ Deno.test("[journal] marks OMS-rejected order as rejected (after submission)", (
   assertEquals(orders[0].rejectReason, "Limit exceeded");
 });
 
-Deno.test("[journal] creates stub for gateway-rejected order (no prior submission)", () => {
+test("[journal] creates stub for gateway-rejected order (no prior submission)", () => {
   const orders = reconstructOrders([
     {
       orderId: "ord-gw",
@@ -190,7 +191,7 @@ Deno.test("[journal] creates stub for gateway-rejected order (no prior submissio
   assertEquals(orders[0].rejectReason, "Session expired");
 });
 
-Deno.test("[journal] appends child orders", () => {
+test("[journal] appends child orders", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
     {
@@ -202,7 +203,7 @@ Deno.test("[journal] appends child orders", () => {
   assertEquals(orders[0].children.length, 1);
 });
 
-Deno.test("[journal] handles multiple independent orders", () => {
+test("[journal] handles multiple independent orders", () => {
   const orders = reconstructOrders([
     {
       orderId: "ord-A",
@@ -243,7 +244,7 @@ Deno.test("[journal] handles multiple independent orders", () => {
   assertEquals(b.status, "queued");
 });
 
-Deno.test("[journal] ignores events for unknown orderId", () => {
+test("[journal] ignores events for unknown orderId", () => {
   const orders = reconstructOrders([
     {
       orderId: "ord-1",

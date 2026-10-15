@@ -13,7 +13,7 @@ export interface RenderOptions {
 }
 
 function getBaseUrl(): string {
-  return Deno.env.get("GRAFANA_INTERNAL_URL") ?? DEFAULT_GRAFANA_URL;
+  return process.env.GRAFANA_INTERNAL_URL ?? DEFAULT_GRAFANA_URL;
 }
 
 function buildRenderUrl(opts: RenderOptions): string {
@@ -31,7 +31,7 @@ function buildRenderUrl(opts: RenderOptions): string {
 }
 
 export async function renderGrafanaPanel(opts: RenderOptions): Promise<Uint8Array | null> {
-  if (Deno.env.get("DISCORD_ATTACH_GRAFANA_PANELS") === "false") return null;
+  if (process.env.DISCORD_ATTACH_GRAFANA_PANELS === "false") return null;
   const url = buildRenderUrl(opts);
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(RENDER_TIMEOUT_MS) });

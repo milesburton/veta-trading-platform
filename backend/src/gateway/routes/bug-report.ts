@@ -1,5 +1,5 @@
 // fallow-ignore-file unused-file
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import {
   isBugReportValid,
@@ -23,7 +23,7 @@ function jsonResponse(body: unknown, status: number): Response {
 
 function parseAttachments(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
-  const publicBaseUrl = Deno.env.get("MINIO_PUBLIC_URL");
+  const publicBaseUrl = process.env.MINIO_PUBLIC_URL;
   if (!publicBaseUrl) return undefined;
 
   let base: URL;

@@ -1,4 +1,5 @@
-import { Kafka } from "npm:kafkajs@2.2.4";
+import { type AddressInfo, createServer } from "node:net";
+import { Kafka } from "kafkajs";
 import { GenericContainer, Wait } from "testcontainers";
 import type { ManagedRedpanda } from "./types.ts";
 
@@ -15,11 +16,15 @@ export interface RedpandaOptions {
   startupTimeoutMs?: number;
 }
 
-function pickFreePort(): number {
-  const listener = Deno.listen({ port: 0 });
-  const addr = listener.addr as Deno.NetAddr;
-  listener.close();
-  return addr.port;
+function pickFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(0, () => {
+      const { port } = probe.address() as AddressInfo;
+      probe.close(() => resolve(port));
+    });
+  });
 }
 
 const CLUSTER_STABLE_PROBE_TOPIC = "__cluster_stable_probe";
@@ -111,8 +116,8 @@ async function waitForClusterStable(brokers: string): Promise<void> {
 }
 
 export async function startEphemeralRedpanda(opts: RedpandaOptions = {}): Promise<ManagedRedpanda> {
-  const hostPort = pickFreePort();
-  const host = Deno.env.get("TESTCONTAINERS_HOST_OVERRIDE") ?? "127.0.0.1";
+  const hostPort = await pickFreePort();
+  const host = process.env.TESTCONTAINERS_HOST_OVERRIDE ?? "127.0.0.1";
 
   const container = await new GenericContainer(IMAGE)
     .withExposedPorts({ container: INTERNAL_KAFKA_PORT, host: hostPort }, INTERNAL_ADMIN_PORT)

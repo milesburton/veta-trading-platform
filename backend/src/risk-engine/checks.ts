@@ -1,6 +1,6 @@
-import type { CheckRequest, CheckResult, RiskConfig } from "@veta/schemas/risk";
-import { calendarForOrder } from "@veta/market-calendars";
-import { buildSessionSchedule, resolvePhaseFromMinute, resolveSession } from "@veta/trading-calendar";
+import type { CheckRequest, CheckResult, RiskConfig } from "#veta/schemas/risk";
+import { calendarForOrder } from "#veta/market-calendars";
+import { buildSessionSchedule, resolvePhaseFromMinute, resolveSession } from "#veta/trading-calendar";
 
 export interface Position {
   symbol: string;

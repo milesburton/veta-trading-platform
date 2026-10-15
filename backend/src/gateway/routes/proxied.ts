@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import { proxyGet, proxyPost, proxyPut } from "../proxy.ts";
 

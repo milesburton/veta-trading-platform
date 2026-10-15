@@ -1,4 +1,4 @@
-import type { FeatureVector, ScenarioShock } from "@veta/types/intelligence";
+import type { FeatureVector, ScenarioShock } from "#veta/types/intelligence";
 
 /**
  * Applies a set of scenario shocks to a feature vector, returning a new

@@ -1,23 +1,22 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * SNIPER order algorithm
  * Multi-venue smart routing strategy. Picks the best-price venues from the EMS venue set on each price trigger and splits an aggression-controlled share of remaining quantity across them. See platform/smart-order-router for the full routing model.
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import type { MarketTick } from "@veta/market-client";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
-import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
+import { logger } from "#veta/logger";
+import type { MarketTick } from "#veta/market-client";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
+import type { FillEvent, RoutedOrder } from "#veta/schemas/orders";
+import { FillEventSchema, RoutedOrderSchema } from "#veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import { availableSniperQty } from "./sniper-math.ts";
 
-const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5022;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.SNIPER_ALGO_PORT) || 5022;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const ALGO = "SNIPER" as const;
 const COOLDOWN_MS = 2_000;
@@ -67,7 +66,7 @@ interface ActiveSniper {
 /** Active sniper orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveSniper>();
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("SNIPER_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.SNIPER_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "sniper-algo");
 
 await createTypedConsumer("sniper-algo-routed", [

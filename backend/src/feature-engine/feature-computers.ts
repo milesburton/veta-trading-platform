@@ -1,4 +1,4 @@
-import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
+import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "#veta/types/intelligence";
 
 export function buildSectorPeers(symbolSectors: Map<string, string>): Map<string, string[]> {
   const sectorPeers = new Map<string, string[]>();

@@ -1,4 +1,4 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 
 export interface RiskCheckRequest {
   orderId: string;

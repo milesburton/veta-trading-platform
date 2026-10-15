@@ -3,4 +3,4 @@ FROM ghcr.io/milesburton/veta-trading-platform/base:${BASE_TAG}
 ARG COMMIT_SHA=dev
 ENV COMMIT_SHA=${COMMIT_SHA}
 EXPOSE 5015
-CMD ["deno", "run", "--allow-all", "/app/backend/src/market-data/market-data-service.ts"]
+CMD ["node", "/app/backend/src/market-data/market-data-service.ts"]

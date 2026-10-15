@@ -1,7 +1,7 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 
-const LOKI_URL = Deno.env.get("LOKI_URL") ?? "";
+const LOKI_URL = process.env.LOKI_URL ?? "";
 
 interface LogLine {
   ts: number;

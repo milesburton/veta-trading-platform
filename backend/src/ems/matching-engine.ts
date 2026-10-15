@@ -1,4 +1,4 @@
-import type { OrderBookSnapshot } from "@veta/market-client";
+import type { OrderBookSnapshot } from "#veta/market-client";
 import { computeBookImpactBps, computeUnfilledImpactBps } from "./fill-math.ts";
 import {
   addOrder,

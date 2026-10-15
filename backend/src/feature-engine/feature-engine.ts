@@ -1,11 +1,10 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { intelligencePool } from "@veta/db";
-import { decodePathSegment, json, serveJsonService } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer, sendInChunks } from "@veta/messaging";
-import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
-import { waitForUrl } from "@veta/wait-for";
+import "#veta/bootstrap";
+import { intelligencePool } from "#veta/db";
+import { decodePathSegment, json, serveJsonService } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer, sendInChunks } from "#veta/messaging";
+import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "#veta/types/intelligence";
+import { waitForUrl } from "#veta/wait-for";
 import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import {
   backoffDelayMs,
@@ -21,11 +20,11 @@ import {
 } from "./feature-computers.ts";
 import { createFeatureStore } from "./feature-store.ts";
 
-const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
-const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.FEATURE_ENGINE_PORT) || 5_017;
+const JOURNAL_URL = process.env.JOURNAL_URL || "http://localhost:5009";
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const priceHistory = new Map<string, number[]>();
 const volumeHistory = new Map<string, number[]>();
@@ -215,7 +214,7 @@ const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks
   return null;
 });
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("FEATURE_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.FEATURE_ENGINE_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "feature-engine");
 
 if (tickConsumer) {

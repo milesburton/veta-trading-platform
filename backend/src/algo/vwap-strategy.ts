@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * VWAP (Volume-Weighted Average Price) algorithm
  *
@@ -8,12 +8,11 @@ import "@veta/bootstrap";
  * Publishes "orders.child" to the bus; EMS subscribes and executes.
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient, type MarketTick } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import type { RoutedOrder } from "@veta/schemas/orders";
-import { RoutedOrderSchema } from "@veta/schemas/orders";
+import { logger } from "#veta/logger";
+import { createMarketSimClient, type MarketTick } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
+import type { RoutedOrder } from "#veta/schemas/orders";
+import { RoutedOrderSchema } from "#veta/schemas/orders";
 import {
   armAlgoIdleExit,
   serveAlgoHealth,
@@ -29,11 +28,11 @@ import {
   type TrackedOrder,
 } from "./fill-progress.ts";
 
-const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const VWAP_WINDOW = Number(Deno.env.get("VWAP_WINDOW_TICKS")) || 20;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.VWAP_ALGO_PORT) || 5_006;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const VWAP_WINDOW = Number(process.env.VWAP_WINDOW_TICKS) || 20;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 logger.info(`Starting, window=${VWAP_WINDOW} ticks`);
 
@@ -134,7 +133,7 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
   setInFlight(order.id, { childId, quantity: sliceQty, sentAt: now });
 }
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("VWAP_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.VWAP_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "vwap-algo");
 
 await createTypedConsumer("vwap-algo-routed", [

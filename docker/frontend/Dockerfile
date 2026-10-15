@@ -18,20 +18,21 @@ COPY package.json /src/package.json
 RUN npm ci --silent
 RUN npm run build
 
-# ── Stage 2: Serve static assets via Deno file-server ─────────────────────────
-FROM denoland/deno:2.7.1
-ENV DENO_DIR=/deno-cache
+# ── Stage 2: Serve static assets with the Node static file server ─────────────
+FROM node:24-slim
+ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Cache file-server module before copying dist (improves layer cache hits)
-RUN deno cache jsr:@std/http/file-server jsr:@std/crypto jsr:@std/encoding/hex
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 COPY frontend-server.ts ./
+COPY backend/src/lib/http.ts backend/src/lib/static-files.ts ./backend/src/lib/
 COPY --from=builder /src/frontend/dist ./frontend/dist
 
 EXPOSE 3000
-CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-env", "/app/frontend-server.ts"]
+CMD ["node", "/app/frontend-server.ts"]

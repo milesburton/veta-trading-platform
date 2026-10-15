@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import { setupProcessMetrics } from "../lib/telemetry.ts";
 
@@ -7,14 +7,14 @@ function denoMemorySnapshot() {
   return { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal };
 }
 
-test("setupProcessMetrics is a no-op when OTEL_DENO is unset", async () => {
-  const prev = process.env["OTEL_DENO"];
-  delete process.env["OTEL_DENO"];
+test("setupProcessMetrics is a no-op when OTEL_ENABLED is unset", async () => {
+  const prev = process.env["OTEL_ENABLED"];
+  delete process.env["OTEL_ENABLED"];
   try {
     const handle = await setupProcessMetrics();
     assertEquals(handle, null);
   } finally {
-    if (prev !== undefined) process.env["OTEL_DENO"] = prev;
+    if (prev !== undefined) process.env["OTEL_ENABLED"] = prev;
   }
 });
 

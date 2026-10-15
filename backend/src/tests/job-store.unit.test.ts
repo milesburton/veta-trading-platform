@@ -1,7 +1,8 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertGreater } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 // fallow-ignore-file complexity
 
-import { assert, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
 import type {
   AdvisoryNote,
   AdvisoryTriggerReason,
@@ -9,7 +10,7 @@ import type {
   LlmPromptAudit,
   LlmResponseAudit,
   LlmWorkerSession,
-} from "@veta/types/llm-advisory";
+} from "#veta/types/llm-advisory";
 import { createJobStore } from "../llm-advisory/job-store.ts";
 import { makeAsyncConnect } from "./test-helpers.ts";
 
@@ -404,7 +405,7 @@ function makeFakePool(): FakePool {
   };
 }
 
-Deno.test("[job-store] CRUD helpers work against a fake pool", async () => {
+test("[job-store] CRUD helpers work against a fake pool", async () => {
   const pool = makeFakePool();
   const store = createJobStore(pool as unknown as Parameters<typeof createJobStore>[0]);
 
@@ -446,7 +447,7 @@ Deno.test("[job-store] CRUD helpers work against a fake pool", async () => {
   assertEquals((await store.getJob(thirdId))?.status, "cancelled");
 });
 
-Deno.test("[job-store] note, audit, worker session and pruning helpers work", async () => {
+test("[job-store] note, audit, worker session and pruning helpers work", async () => {
   const pool = makeFakePool();
   const store = createJobStore(pool as unknown as Parameters<typeof createJobStore>[0]);
 

@@ -1,4 +1,4 @@
-import type { OrderBookSnapshot } from "@veta/market-client";
+import type { OrderBookSnapshot } from "#veta/market-client";
 import { VENUES, type VenueMIC } from "./fill-math.ts";
 import { type MatchAgainstSnapshotResult, matchAgainstSnapshot } from "./matching-engine.ts";
 

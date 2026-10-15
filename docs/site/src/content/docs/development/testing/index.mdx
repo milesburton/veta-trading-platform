@@ -30,7 +30,7 @@ The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-tra
 
 ```mermaid
 graph TD
-    UNIT["Unit<br/>(Deno, Vitest)<br/>pure functions, no I/O"]:::fast
+    UNIT["Unit<br/>(Vitest)<br/>pure functions, no I/O"]:::fast
     INT["Integration<br/>(.tc.test.ts)<br/>real Postgres and Redpanda<br/>per test, via Testcontainers"]:::mid
     SMOKE["Smoke<br/>(.tc.test.ts)<br/>HTTP health and pipeline checks<br/>against an ephemeral stack"]:::mid
     PW["Playwright E2E<br/>real browser, real frontend,<br/>mocked or real backend"]:::mid
@@ -110,7 +110,7 @@ Each suite has a defined trigger. The pre-commit hook is the first line; integra
   <LinkCard
     title="Backend unit tests"
     href="./unit/"
-    description={`${testInventory.backend.unit.files} files, ${testInventory.backend.unit.cases} Deno.test cases covering algos, OMS, EMS, schemas, and analytics.`}
+    description={`${testInventory.backend.unit.files} files, ${testInventory.backend.unit.cases} test cases covering algos, OMS, EMS, schemas, and analytics.`}
   />
   <LinkCard
     title="Frontend unit tests"
@@ -129,14 +129,14 @@ Each suite has a defined trigger. The pre-commit hook is the first line; integra
 Coverage is generated on every push to `main` and surfaced as badges in the README:
 
 - **Frontend**: V8 provider via Vitest. Reports `text-summary`, `lcov`, and `json-summary`. Thresholds: 80% statements, branches, functions, lines, enforced by [vitest.config.ts](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/vitest.config.ts).
-- **Backend**: Deno's native `--coverage` flag. Exported as lcov via `deno coverage --lcov > coverage.lcov`.
+- **Backend**: Vitest v8 provider, exported as lcov to `coverage.lcov` by `npm run test:coverage`.
 - **Badges**: `docs/badges/backend-coverage.json`, `frontend-coverage.json`, `combined-coverage.json` and `overall-coverage.json` are auto-committed by the `coverage-badges` job on `main`.
 
 To run coverage locally:
 
 ```sh
 # backend
-deno task test:coverage
+npm run test:coverage
 
 # frontend
 cd frontend && npm run test:coverage

@@ -1,5 +1,6 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { FakeTime } from "jsr:@std/testing@0.217/time";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { FakeTime } from "#veta/fake-time";
 import type { GatewayContext } from "../gateway/context.ts";
 import { LoadAgent } from "../gateway/load-agent.ts";
 import { handleAdminRoute } from "../gateway/routes/admin.ts";
@@ -8,12 +9,12 @@ type SentOrder = Record<string, unknown>;
 
 const realFetch = globalThis.fetch;
 const ENV_KEYS = ["LOAD_TEST_USER_IDS", "LOAD_TEST_MAX_ORDERS", "LOAD_TEST_ORDERS_PER_SEC_PER_USER"];
-const realEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, Deno.env.get(k)]));
+const realEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
 
 function setEnv(values: Record<string, string | undefined>) {
   for (const [key, value] of Object.entries(values)) {
-    if (value === undefined) Deno.env.delete(key);
-    else Deno.env.set(key, value);
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
   }
 }
 
@@ -79,7 +80,7 @@ async function waitFor(condition: () => boolean, timeoutMs = 2_000): Promise<voi
   }
 }
 
-Deno.test("/load-test rejects unauthenticated, non-admin and bus-down requests", async () => {
+test("/load-test rejects unauthenticated, non-admin and bus-down requests", async () => {
   try {
     assertEquals((await call(post("/load-test", {}), "/load-test", unauthenticated())).status, 401);
     assertEquals((await call(post("/load-test", {}), "/load-test", makeContext("trader").ctx)).status, 403);
@@ -92,7 +93,7 @@ Deno.test("/load-test rejects unauthenticated, non-admin and bus-down requests",
   }
 });
 
-Deno.test("/load-test rejects an invalid JSON body and bad quantity ranges", async () => {
+test("/load-test rejects an invalid JSON body and bad quantity ranges", async () => {
   try {
     const { ctx } = makeContext();
     assertEquals((await call(post("/load-test", undefined, "{not json"), "/load-test", ctx)).status, 400);
@@ -108,7 +109,7 @@ Deno.test("/load-test rejects an invalid JSON body and bad quantity ranges", asy
   }
 });
 
-Deno.test("/load-test returns 500 when LOAD_TEST_USER_IDS is not configured", async () => {
+test("/load-test returns 500 when LOAD_TEST_USER_IDS is not configured", async () => {
   setEnv({ LOAD_TEST_USER_IDS: undefined });
   try {
     const res = await call(post("/load-test", {}), "/load-test", makeContext().ctx);
@@ -119,7 +120,7 @@ Deno.test("/load-test returns 500 when LOAD_TEST_USER_IDS is not configured", as
   }
 });
 
-Deno.test("/load-test submits attributed orders, caps the count and uses live reference prices", async () => {
+test("/load-test submits attributed orders, caps the count and uses live reference prices", async () => {
   setEnv({
     LOAD_TEST_USER_IDS: " u-1, u-2 ",
     LOAD_TEST_MAX_ORDERS: "4",
@@ -165,7 +166,7 @@ Deno.test("/load-test submits attributed orders, caps the count and uses live re
   }
 });
 
-Deno.test("/load-test falls back to default reference prices when market-sim is unreachable", async () => {
+test("/load-test falls back to default reference prices when market-sim is unreachable", async () => {
   setEnv({ LOAD_TEST_USER_IDS: "u-1", LOAD_TEST_MAX_ORDERS: "2", LOAD_TEST_ORDERS_PER_SEC_PER_USER: "1000000" });
   globalThis.fetch = (() => Promise.reject(new TypeError("connection refused"))) as typeof fetch;
   try {
@@ -183,7 +184,7 @@ Deno.test("/load-test falls back to default reference prices when market-sim is 
   }
 });
 
-Deno.test("/demo-day rejects unauthenticated, wrong-role and bus-down requests and a missing trader list", async () => {
+test("/demo-day rejects unauthenticated, wrong-role and bus-down requests and a missing trader list", async () => {
   setEnv({ LOAD_TEST_USER_IDS: "u-1" });
   try {
     assertEquals((await call(post("/demo-day", {}), "/demo-day", unauthenticated())).status, 401);
@@ -214,7 +215,7 @@ const SCENARIOS: Array<{ scenario: string | undefined; label: string; total: num
 ];
 
 for (const { scenario, label, total, strategies } of SCENARIOS) {
-  Deno.test(`/demo-day scenario ${scenario ?? "(default)"} schedules ${total} attributed orders`, async () => {
+  test(`/demo-day scenario ${scenario ?? "(default)"} schedules ${total} attributed orders`, async () => {
     setEnv({ LOAD_TEST_USER_IDS: "u-1,u-2" });
     stubFetch(() => new Response(JSON.stringify([{ symbol: "AAPL", price: 1_000 }]), { status: 200 }));
     const time = new FakeTime();
@@ -250,7 +251,7 @@ for (const { scenario, label, total, strategies } of SCENARIOS) {
   });
 }
 
-Deno.test("/demo-day falls back to default prices when the asset feed fails or returns an error", async () => {
+test("/demo-day falls back to default prices when the asset feed fails or returns an error", async () => {
   setEnv({ LOAD_TEST_USER_IDS: "u-1" });
   const time = new FakeTime();
   try {
@@ -275,7 +276,7 @@ Deno.test("/demo-day falls back to default prices when the asset feed fails or r
   }
 });
 
-Deno.test("/demo-day treats an invalid JSON body as the standard scenario", async () => {
+test("/demo-day treats an invalid JSON body as the standard scenario", async () => {
   setEnv({ LOAD_TEST_USER_IDS: "u-1" });
   stubFetch(() => new Response("[]", { status: 200 }));
   const time = new FakeTime();
@@ -292,7 +293,7 @@ Deno.test("/demo-day treats an invalid JSON body as the standard scenario", asyn
   }
 });
 
-Deno.test("/load-gen endpoints reject a bus outage and unauthorised roles", async () => {
+test("/load-gen endpoints reject a bus outage and unauthorised roles", async () => {
   try {
     assertEquals((await call(post("/load-gen/start", {}), "/load-gen/start", makeContext("admin", { ready: false }).ctx)).status, 503);
     assertEquals((await call(post("/load-gen/start", {}), "/load-gen/start", unauthenticated())).status, 401);
@@ -309,7 +310,7 @@ Deno.test("/load-gen endpoints reject a bus outage and unauthorised roles", asyn
   }
 });
 
-Deno.test("/load-gen/start tolerates an empty body and /load-gen/stop reports the stopped state", async () => {
+test("/load-gen/start tolerates an empty body and /load-gen/stop reports the stopped state", async () => {
   try {
     const { ctx } = makeContext("oncall");
     const started = await call(post("/load-gen/start", undefined, "not json"), "/load-gen/start", ctx);
@@ -324,7 +325,7 @@ Deno.test("/load-gen/start tolerates an empty body and /load-gen/stop reports th
   }
 });
 
-Deno.test("/admin/market-hours PUT forwards the upstream status and body", async () => {
+test("/admin/market-hours PUT forwards the upstream status and body", async () => {
   stubFetch(() => new Response(JSON.stringify({ equity: true }), { status: 200 }));
   try {
     const req = new Request("http://localhost/admin/market-hours", {

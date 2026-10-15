@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals, assertGreater } from "#veta/test-assert";
 import {
   _internalForTests,
   computeVol,
@@ -46,7 +47,7 @@ function timestamps(length: number): number[] {
   return Array.from({ length }, (_, index) => BASE_TS + index * 60_000);
 }
 
-Deno.test("[volatility-estimator] computeVol clamps flat series to floor", () => {
+test("[volatility-estimator] computeVol clamps flat series to floor", () => {
   const closes = Array(50).fill(100);
   const result = computeVol(closes, timestamps(closes.length));
 
@@ -55,7 +56,7 @@ Deno.test("[volatility-estimator] computeVol clamps flat series to floor", () =>
   assertEquals(result.ewmaSeries.length, closes.length - 1);
 });
 
-Deno.test("[volatility-estimator] computeVol clamps extreme series to ceiling", () => {
+test("[volatility-estimator] computeVol clamps extreme series to ceiling", () => {
   const closes = Array.from({ length: 30 }, (_, index) => (index % 2 === 0 ? 100 : 1));
   const result = computeVol(closes, timestamps(closes.length));
 
@@ -63,7 +64,7 @@ Deno.test("[volatility-estimator] computeVol clamps extreme series to ceiling", 
   assertEquals(result.rollingVol, 5.0);
 });
 
-Deno.test("[volatility-estimator] computeVol preserves timestamps and final sample", () => {
+test("[volatility-estimator] computeVol preserves timestamps and final sample", () => {
   const closes = [100, 101, 99, 102, 98, 103, 97];
   const ts = timestamps(closes.length);
   const result = computeVol(closes, ts);
@@ -75,7 +76,7 @@ Deno.test("[volatility-estimator] computeVol preserves timestamps and final samp
   assertAlmostEquals(result.ewmaVol, lastSample.vol, 1e-12);
 });
 
-Deno.test("[volatility-estimator] computeVol responds to noisier price paths", () => {
+test("[volatility-estimator] computeVol responds to noisier price paths", () => {
   const calm = [100, 100.1, 99.9, 100.05, 99.95, 100.1, 100];
   const noisy = [100, 102, 98, 101, 99, 103, 97];
 
@@ -112,7 +113,7 @@ for (const testCase of [
     expected: 0.5,
   },
 ] as const) {
-  Deno.test(`[volatility-estimator] ${testCase.label}`, async () => {
+  test(`[volatility-estimator] ${testCase.label}`, async () => {
     _internalForTests.resetVolCache();
     const script = installFetchScript(testCase.responses);
     try {
@@ -123,7 +124,7 @@ for (const testCase of [
   });
 }
 
-Deno.test("[volatility-estimator] estimateVol computes and caches values", async () => {
+test("[volatility-estimator] estimateVol computes and caches values", async () => {
   _internalForTests.resetVolCache();
   const closes = Array.from({ length: 30 }, (_, index) => 100 + Math.sin(index / 3));
   const script = installFetchScript([
@@ -166,7 +167,7 @@ for (const testCase of [
     },
   },
 ] as const) {
-  Deno.test(`[volatility-estimator] ${testCase.label}`, async () => {
+  test(`[volatility-estimator] ${testCase.label}`, async () => {
     _internalForTests.resetVolCache();
     const script = installFetchScript(testCase.responses);
     try {
@@ -181,7 +182,7 @@ for (const testCase of [
   });
 }
 
-Deno.test("[volatility-estimator] estimateVolProfile computes and caches the full profile", async () => {
+test("[volatility-estimator] estimateVolProfile computes and caches the full profile", async () => {
   _internalForTests.resetVolCache();
   const closes = Array.from({ length: 30 }, (_, index) => 100 + Math.cos(index / 4));
   const script = installFetchScript([
@@ -232,7 +233,7 @@ for (const testCase of [
     expected: null,
   },
 ] as const) {
-  Deno.test(`[volatility-estimator] ${testCase.label}`, async () => {
+  test(`[volatility-estimator] ${testCase.label}`, async () => {
     const script = installFetchScript(testCase.responses);
     try {
       assertEquals(await fetchSpotPrice("http://journal", "AAPL"), testCase.expected);

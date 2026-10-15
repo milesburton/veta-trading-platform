@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 
 export interface NodeRun {
   code: number | null;
+  signal: NodeJS.Signals | null;
   stdout: string;
   stderr: string;
 }
@@ -17,6 +18,6 @@ export function runNode(script: string, env: Record<string, string> = {}): Promi
     child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
     child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
     child.on("error", reject);
-    child.on("close", (code) => resolve({ code, stdout, stderr }));
+    child.on("close", (code, signal) => resolve({ code, signal, stdout, stderr }));
   });
 }

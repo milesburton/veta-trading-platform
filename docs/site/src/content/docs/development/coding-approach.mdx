@@ -13,7 +13,7 @@ VETA runs the entire platform inside a Docker-based Dev Container so every devel
 
 The repository ships a `.devcontainer/devcontainer.json` that configures VS Code (or JetBrains) to build and run the full platform inside a container. This includes:
 
-- **Deno 2.7** for all backend services
+- **Node.js 24** for all backend services (native TypeScript, no build step)
 - **Node 24** for the React frontend
 - **PostgreSQL 16** for journal, user, and replay data
 - **Redpanda** (Kafka-compatible) for the message bus
@@ -32,9 +32,9 @@ The project enforces testing at four levels, each catching different classes of 
 
 ### Unit tests (fast, isolated)
 
-- **Backend**: {testInventory.backend.unit.cases} tests across {testInventory.backend.unit.files} files via `deno task test`. Pure function tests for OMS validation, algo slicing, FIX parsing, analytics maths, grid filtering.
+- **Backend**: {testInventory.backend.unit.cases} tests across {testInventory.backend.unit.files} files via `npm run test:backend`. Pure function tests for OMS validation, algo slicing, FIX parsing, analytics maths, grid filtering.
 - **Frontend**: {testInventory.frontend.unit.cases} tests across {testInventory.frontend.unit.files} files via Vitest. Redux slices, React components, panel registry, layout models, ticket resolution rules, hooks.
-- **Coverage**: v8 provider via Vitest; backend via Deno `--coverage`. Coverage badge auto-updated on every push to main.
+- **Coverage**: v8 provider via Vitest; backend via the same v8 provider. Coverage badge auto-updated on every push to main.
 
 See [Testing](/veta-trading-platform/development/testing/) for the full breakdown and current counts.
 
@@ -69,9 +69,9 @@ See [Testing](/veta-trading-platform/development/testing/) for the full breakdow
 The pre-commit hook runs 16 steps. You cannot commit until all pass:
 
 1. Clean working directory check
-2. `deno lint`: backend linting
-3. `deno task check`: backend type-checking
-4. `deno task test`: backend unit tests
+2. `npm run lint:backend`: backend linting (Oxlint)
+3. `npm run check`: backend type-checking
+4. `npm run test:backend`: backend unit tests
 5. Frontend linting and formatting (Oxlint, Oxfmt)
 6. Frontend type-checking (`tsc --noEmit`)
 7. Frontend unit tests (Vitest)
@@ -82,9 +82,9 @@ See [Contributing](/veta-trading-platform/development/contributing/#pre-commit-h
 
 ## Code conventions
 
-- **TypeScript everywhere**: Deno for backend, Vite + React for frontend
+- **TypeScript everywhere**: Node for backend, Vite + React for frontend
 - **No comments**: code should be self-documenting
 - **Functional where possible**: pure functions over mutable module state
 - **Single source of truth**: shared types in `@veta/types/*`, shared utilities in `@veta/*`
-- **Import map aliases**: `@veta/http` not `../lib/http.ts`
+- **Import map aliases**: `#veta/http` not `../lib/http.ts`
 - **Conventional commits**: `feat(risk):`, `fix(ci):`, `refactor:`, `docs:`

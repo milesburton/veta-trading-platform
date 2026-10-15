@@ -1,9 +1,10 @@
+import { writeFile } from "node:fs/promises";
 // Generates synthetic RawAsset/BondDef seeds to expand the simulated
 // instrument universe from 287 hand-authored instruments to ~2200. The
 // existing 287 (S&P 500 equities, FX majors, commodity futures, curated
 // bonds) are untouched; this script only appends new synthetic records.
 //
-// Run: deno run --allow-read --allow-write backend/scripts/generate-instrument-universe.ts
+// Run: node backend/scripts/generate-instrument-universe.ts
 
 // Import only the hand-curated seed arrays (not the merged SP500_ASSETS/
 // FX_ASSETS/etc. exports) so re-running this script treats a prior run's
@@ -533,7 +534,7 @@ async function writeEquities(): Promise<void> {
     "];",
     "",
   ];
-  await Deno.writeTextFile(path, lines.join("\n"));
+  await writeFile(path, lines.join("\n"));
   console.log(`Wrote ${seeds.length} generated equities to ${path.pathname}`);
 }
 
@@ -558,7 +559,7 @@ async function writeFx(): Promise<void> {
     "];",
     "",
   ];
-  await Deno.writeTextFile(path, lines.join("\n"));
+  await writeFile(path, lines.join("\n"));
   console.log(`Wrote ${seeds.length} generated FX pairs to ${path.pathname}`);
 }
 
@@ -583,7 +584,7 @@ async function writeCommodities(): Promise<void> {
     "];",
     "",
   ];
-  await Deno.writeTextFile(path, lines.join("\n"));
+  await writeFile(path, lines.join("\n"));
   console.log(`Wrote ${seeds.length} generated commodities to ${path.pathname}`);
 }
 
@@ -601,7 +602,7 @@ async function writeBonds(): Promise<void> {
     "export const GENERATED_BONDS: BondDef[] = " + tsLiteral(seeds) + ";",
     "",
   ];
-  await Deno.writeTextFile(path, lines.join("\n"));
+  await writeFile(path, lines.join("\n"));
   console.log(`Wrote ${seeds.length} generated bonds to ${path.pathname}`);
 }
 

@@ -1,17 +1,16 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { intelligencePool } from "@veta/db";
-import { corsOptions, decodePathSegment, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
-import type { FeatureVector, Signal } from "@veta/types/intelligence";
+import "#veta/bootstrap";
+import { intelligencePool } from "#veta/db";
+import { corsOptions, decodePathSegment, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer } from "#veta/messaging";
+import type { FeatureVector, Signal } from "#veta/types/intelligence";
 import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import { runReplay } from "./replay-server.ts";
 import { scoreFeatureVector } from "./scorer.ts";
 import { createWeightStore } from "./weight-store.ts";
 
-const PORT = Number(Deno.env.get("SIGNAL_ENGINE_PORT")) || 5_018;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.SIGNAL_ENGINE_PORT) || 5_018;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const weightStore = await createWeightStore(intelligencePool);
 const latestSignals = new Map<string, Signal>();
@@ -26,7 +25,7 @@ const consumer = await createConsumer("signal-engine", ["market.features"]).catc
   return null;
 });
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("SIGNAL_ENGINE_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.SIGNAL_ENGINE_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armConsumerIdleExit(IDLE_TIMEOUT_MS, "signal-engine");
 
 if (consumer) {
@@ -46,7 +45,7 @@ if (consumer) {
   });
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 

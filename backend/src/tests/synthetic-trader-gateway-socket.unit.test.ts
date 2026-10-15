@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { GatewaySocket } from "../synthetic-trader/gateway-socket.ts";
 
 class FakeWebSocket {
@@ -9,7 +10,10 @@ class FakeWebSocket {
   onclose: (() => void) | null = null;
   onerror: (() => void) | null = null;
 
-  constructor(readonly url: string) {
+  readonly url: string;
+
+  constructor(url: string) {
+    this.url = url;
     FakeWebSocket.instances.push(this);
   }
 
@@ -49,7 +53,7 @@ function withFakeSocket(fn: () => void): void {
 const authFrames = (socket: FakeWebSocket) =>
   socket.sent.map((raw) => JSON.parse(raw)).filter((msg) => msg.type === "authenticate");
 
-Deno.test("[synthetic-trader-gateway-socket] token that arrives before the socket opens is sent on open", () => {
+test("[synthetic-trader-gateway-socket] token that arrives before the socket opens is sent on open", () => {
   withFakeSocket(() => {
     const gateway = new GatewaySocket("ws://gateway/ws/gateway", {});
     gateway.connect();
@@ -63,7 +67,7 @@ Deno.test("[synthetic-trader-gateway-socket] token that arrives before the socke
   });
 });
 
-Deno.test("[synthetic-trader-gateway-socket] token that arrives after the socket opens is sent once", () => {
+test("[synthetic-trader-gateway-socket] token that arrives after the socket opens is sent once", () => {
   withFakeSocket(() => {
     const gateway = new GatewaySocket("ws://gateway/ws/gateway", {});
     gateway.connect();
@@ -76,7 +80,7 @@ Deno.test("[synthetic-trader-gateway-socket] token that arrives after the socket
   });
 });
 
-Deno.test("[synthetic-trader-gateway-socket] reconnect re-authenticates with the latest token", () => {
+test("[synthetic-trader-gateway-socket] reconnect re-authenticates with the latest token", () => {
   withFakeSocket(() => {
     const gateway = new GatewaySocket("ws://gateway/ws/gateway", {});
     gateway.connect();
@@ -93,7 +97,7 @@ Deno.test("[synthetic-trader-gateway-socket] reconnect re-authenticates with the
   });
 });
 
-Deno.test("[synthetic-trader-gateway-socket] opening without a token sends no authenticate frame", () => {
+test("[synthetic-trader-gateway-socket] opening without a token sends no authenticate frame", () => {
   withFakeSocket(() => {
     const gateway = new GatewaySocket("ws://gateway/ws/gateway", {});
     gateway.connect();

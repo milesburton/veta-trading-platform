@@ -1,10 +1,11 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 
 import { intradayVolumeFactor, TRADING_DAY_MINUTES } from "../lib/time-scale.ts";
 import { generatePrice, marketData } from "../market-sim/price-engine.ts";
 import { ASSET_MAP, SP500_ASSETS } from "../market-sim/sp500-assets.ts";
 
-Deno.test("[timeScale] intradayVolumeFactor is in [0.3, 1.0] for all minutes", () => {
+test("[timeScale] intradayVolumeFactor is in [0.3, 1.0] for all minutes", () => {
   for (let m = 0; m < TRADING_DAY_MINUTES; m++) {
     const v = intradayVolumeFactor(m);
     assert(v >= 0.3, `minute ${m}: factor ${v} below 0.3`);
@@ -12,19 +13,19 @@ Deno.test("[timeScale] intradayVolumeFactor is in [0.3, 1.0] for all minutes", (
   }
 });
 
-Deno.test("[timeScale] intradayVolumeFactor peaks at open (minute 0)", () => {
+test("[timeScale] intradayVolumeFactor peaks at open (minute 0)", () => {
   const atOpen = intradayVolumeFactor(0);
   const atMidday = intradayVolumeFactor(195);
   assert(atOpen > atMidday, `open (${atOpen}) should exceed midday (${atMidday})`);
 });
 
-Deno.test("[timeScale] intradayVolumeFactor peaks at close (minute 389)", () => {
+test("[timeScale] intradayVolumeFactor peaks at close (minute 389)", () => {
   const atClose = intradayVolumeFactor(389);
   const atMidday = intradayVolumeFactor(195);
   assert(atClose > atMidday, `close (${atClose}) should exceed midday (${atMidday})`);
 });
 
-Deno.test("[timeScale] intradayVolumeFactor open and close are both higher than midday", () => {
+test("[timeScale] intradayVolumeFactor open and close are both higher than midday", () => {
   const atOpen = intradayVolumeFactor(0);
   const atClose = intradayVolumeFactor(TRADING_DAY_MINUTES - 1);
   const atMidday = intradayVolumeFactor(Math.floor(TRADING_DAY_MINUTES / 2));
@@ -33,7 +34,7 @@ Deno.test("[timeScale] intradayVolumeFactor open and close are both higher than 
   assertAlmostEquals(atOpen, atClose, 0.05);
 });
 
-Deno.test("[timeScale] TRADING_DAY_MINUTES is 390", () => {
+test("[timeScale] TRADING_DAY_MINUTES is 390", () => {
   assertEquals(TRADING_DAY_MINUTES, 390);
 });
 
@@ -66,7 +67,7 @@ function parseTick(data: unknown): {
   };
 }
 
-Deno.test("[marketSimClient] parseTick handles new enriched format", () => {
+test("[marketSimClient] parseTick handles new enriched format", () => {
   const raw = {
     prices: { AAPL: 189.3 },
     volumes: { AAPL: 12_345 },
@@ -78,7 +79,7 @@ Deno.test("[marketSimClient] parseTick handles new enriched format", () => {
   assertEquals(tick.marketMinute, 42);
 });
 
-Deno.test("[marketSimClient] parseTick handles old flat price format", () => {
+test("[marketSimClient] parseTick handles old flat price format", () => {
   const raw = { AAPL: 189.3, MSFT: 415.2 };
   const tick = parseTick(raw);
   assertEquals(tick.prices.AAPL, 189.3);
@@ -87,18 +88,18 @@ Deno.test("[marketSimClient] parseTick handles old flat price format", () => {
   assertEquals(Object.keys(tick.volumes).length, 0);
 });
 
-Deno.test("[marketSimClient] parseTick marketMinute defaults to 0 if missing", () => {
+test("[marketSimClient] parseTick marketMinute defaults to 0 if missing", () => {
   const raw = { prices: { AAPL: 189.3 }, volumes: { AAPL: 1000 } };
   const tick = parseTick(raw);
   assertEquals(tick.marketMinute, 0);
 });
 
-Deno.test("[priceEngine] generatePrice returns a positive number", () => {
+test("[priceEngine] generatePrice returns a positive number", () => {
   const price = generatePrice("AAPL");
   assert(typeof price === "number" && price > 0, `expected positive number, got ${price}`);
 });
 
-Deno.test("[priceEngine] generatePrice stays within asset volatility band", () => {
+test("[priceEngine] generatePrice stays within asset volatility band", () => {
   const cases: Array<[string, number]> = [
     ["PG", 0.012],
     ["TSLA", 0.045],
@@ -116,7 +117,7 @@ Deno.test("[priceEngine] generatePrice stays within asset volatility band", () =
   }
 });
 
-Deno.test("[priceEngine] generatePrice mutates marketData", () => {
+test("[priceEngine] generatePrice mutates marketData", () => {
   const before = marketData.MSFT;
   generatePrice("MSFT");
   assert(marketData.MSFT > 0, "marketData MSFT became non-positive");
@@ -132,7 +133,7 @@ Deno.test("[priceEngine] generatePrice mutates marketData", () => {
   assert(changed, "generatePrice never changed the price over 20 iterations");
 });
 
-Deno.test("[sp500Assets] all assets have required fields", () => {
+test("[sp500Assets] all assets have required fields", () => {
   for (const a of SP500_ASSETS) {
     assert(typeof a.symbol === "string" && a.symbol.length > 0, `${a.symbol}: missing symbol`);
     assert(
@@ -151,14 +152,14 @@ Deno.test("[sp500Assets] all assets have required fields", () => {
   }
 });
 
-Deno.test("[sp500Assets] ASSET_MAP contains all SP500_ASSETS", () => {
+test("[sp500Assets] ASSET_MAP contains all SP500_ASSETS", () => {
   assertEquals(ASSET_MAP.size, SP500_ASSETS.length);
   for (const a of SP500_ASSETS) {
     assert(ASSET_MAP.has(a.symbol), `${a.symbol} missing from ASSET_MAP`);
   }
 });
 
-Deno.test("[sp500Assets] no duplicate symbols", () => {
+test("[sp500Assets] no duplicate symbols", () => {
   const seen = new Set<string>();
   const dupes: string[] = [];
   for (const a of SP500_ASSETS) {
@@ -168,14 +169,14 @@ Deno.test("[sp500Assets] no duplicate symbols", () => {
   assertEquals(dupes, [], `Duplicate symbols found: ${dupes.join(", ")}`);
 });
 
-Deno.test("[sp500Assets] AAPL has expected properties", () => {
+test("[sp500Assets] AAPL has expected properties", () => {
   const aapl = ASSET_MAP.get("AAPL");
   assert(aapl !== undefined, "AAPL not found");
   assertEquals(aapl?.sector, "Technology");
   assert(aapl?.dailyVolume >= 1_000_000, "AAPL ADV should be at least 1M shares");
 });
 
-Deno.test("[sp500Assets] ETF sector assets exist", () => {
+test("[sp500Assets] ETF sector assets exist", () => {
   const etfs = SP500_ASSETS.filter((a) => a.sector === "ETF");
   assert(etfs.length > 0, "No ETF sector assets found");
   assert(ASSET_MAP.has("SPY"), "SPY missing");

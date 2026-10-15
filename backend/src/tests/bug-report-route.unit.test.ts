@@ -1,14 +1,15 @@
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
 import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
 
 const realFetch = globalThis.fetch;
-const realWebhookAlerts = Deno.env.get("DISCORD_WEBHOOK_URL");
-const realWebhookBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
-const realGithubToken = Deno.env.get("GITHUB_TICKETING_TOKEN");
-const realGithubRepo = Deno.env.get("GITHUB_TICKETING_REPO");
+const realWebhookAlerts = process.env.DISCORD_WEBHOOK_URL;
+const realWebhookBug = process.env.DISCORD_BUG_WEBHOOK_URL;
+const realGithubToken = process.env.GITHUB_TICKETING_TOKEN;
+const realGithubRepo = process.env.GITHUB_TICKETING_REPO;
 
 function makeContext(role = "trader"): GatewayContext {
   return makeGatewayAuthContext({ role, name: "Test User" });
@@ -19,14 +20,14 @@ function unauthContext(): GatewayContext {
 }
 
 function restoreEnv() {
-  if (realWebhookAlerts === undefined) Deno.env.delete("DISCORD_WEBHOOK_URL");
-  else Deno.env.set("DISCORD_WEBHOOK_URL", realWebhookAlerts);
-  if (realWebhookBug === undefined) Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  else Deno.env.set("DISCORD_BUG_WEBHOOK_URL", realWebhookBug);
-  if (realGithubToken === undefined) Deno.env.delete("GITHUB_TICKETING_TOKEN");
-  else Deno.env.set("GITHUB_TICKETING_TOKEN", realGithubToken);
-  if (realGithubRepo === undefined) Deno.env.delete("GITHUB_TICKETING_REPO");
-  else Deno.env.set("GITHUB_TICKETING_REPO", realGithubRepo);
+  if (realWebhookAlerts === undefined) delete process.env["DISCORD_WEBHOOK_URL"];
+  else process.env["DISCORD_WEBHOOK_URL"] = realWebhookAlerts;
+  if (realWebhookBug === undefined) delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  else process.env["DISCORD_BUG_WEBHOOK_URL"] = realWebhookBug;
+  if (realGithubToken === undefined) delete process.env["GITHUB_TICKETING_TOKEN"];
+  else process.env["GITHUB_TICKETING_TOKEN"] = realGithubToken;
+  if (realGithubRepo === undefined) delete process.env["GITHUB_TICKETING_REPO"];
+  else process.env["GITHUB_TICKETING_REPO"] = realGithubRepo;
 }
 
 function captureFetch(): { calls: { url: string; body: string }[]; restore: () => void } {
@@ -50,7 +51,7 @@ function captureFetch(): { calls: { url: string; body: string }[]; restore: () =
   };
 }
 
-Deno.test("ignores paths other than /bug-report", async () => {
+test("ignores paths other than /bug-report", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/other", { method: "POST" }),
     "/other",
@@ -59,7 +60,7 @@ Deno.test("ignores paths other than /bug-report", async () => {
   assertEquals(res, null);
 });
 
-Deno.test("ignores non-POST methods on /bug-report", async () => {
+test("ignores non-POST methods on /bug-report", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", { method: "GET" }),
     "/bug-report",
@@ -68,7 +69,7 @@ Deno.test("ignores non-POST methods on /bug-report", async () => {
   assertEquals(res, null);
 });
 
-Deno.test("requires authentication", async () => {
+test("requires authentication", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", { method: "POST", body: "{}" }),
     "/bug-report",
@@ -77,7 +78,7 @@ Deno.test("requires authentication", async () => {
   assertEquals(res?.status, 401);
 });
 
-Deno.test("rejects invalid JSON", async () => {
+test("rejects invalid JSON", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", { method: "POST", body: "not-json" }),
     "/bug-report",
@@ -86,7 +87,7 @@ Deno.test("rejects invalid JSON", async () => {
   assertEquals(res?.status, 400);
 });
 
-Deno.test("rejects missing title", async () => {
+test("rejects missing title", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", {
       method: "POST",
@@ -98,7 +99,7 @@ Deno.test("rejects missing title", async () => {
   assertEquals(res?.status, 400);
 });
 
-Deno.test("rejects too-short description", async () => {
+test("rejects too-short description", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", {
       method: "POST",
@@ -110,11 +111,11 @@ Deno.test("rejects too-short description", async () => {
   assertEquals(res?.status, 400);
 });
 
-Deno.test("returns 202 when webhook is not configured (report received but not delivered)", async () => {
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.delete("GITHUB_TICKETING_TOKEN");
-  Deno.env.delete("GITHUB_TICKETING_REPO");
+test("returns 202 when webhook is not configured (report received but not delivered)", async () => {
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  delete process.env["GITHUB_TICKETING_TOKEN"];
+  delete process.env["GITHUB_TICKETING_REPO"];
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", {
       method: "POST",
@@ -130,10 +131,10 @@ Deno.test("returns 202 when webhook is not configured (report received but not d
   restoreEnv();
 });
 
-Deno.test("posts to dedicated bug webhook when set, marks ok", async () => {
-  Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc");
-  Deno.env.delete("GITHUB_TICKETING_TOKEN");
-  Deno.env.delete("GITHUB_TICKETING_REPO");
+test("posts to dedicated bug webhook when set, marks ok", async () => {
+  process.env["DISCORD_BUG_WEBHOOK_URL"] = "https://discord.com/api/webhooks/123/abc";
+  delete process.env["GITHUB_TICKETING_TOKEN"];
+  delete process.env["GITHUB_TICKETING_REPO"];
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -161,11 +162,11 @@ Deno.test("posts to dedicated bug webhook when set, marks ok", async () => {
   }
 });
 
-Deno.test("falls back to alerts webhook when bug webhook unset", async () => {
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/999/zzz");
-  Deno.env.delete("GITHUB_TICKETING_TOKEN");
-  Deno.env.delete("GITHUB_TICKETING_REPO");
+test("falls back to alerts webhook when bug webhook unset", async () => {
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  process.env["DISCORD_WEBHOOK_URL"] = "https://discord.com/api/webhooks/999/zzz";
+  delete process.env["GITHUB_TICKETING_TOKEN"];
+  delete process.env["GITHUB_TICKETING_REPO"];
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -188,10 +189,10 @@ Deno.test("falls back to alerts webhook when bug webhook unset", async () => {
   }
 });
 
-Deno.test("rejects category values not in the allowlist", async () => {
-  Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc");
-  Deno.env.delete("GITHUB_TICKETING_TOKEN");
-  Deno.env.delete("GITHUB_TICKETING_REPO");
+test("rejects category values not in the allowlist", async () => {
+  process.env["DISCORD_BUG_WEBHOOK_URL"] = "https://discord.com/api/webhooks/123/abc";
+  delete process.env["GITHUB_TICKETING_TOKEN"];
+  delete process.env["GITHUB_TICKETING_REPO"];
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -217,12 +218,12 @@ Deno.test("rejects category values not in the allowlist", async () => {
   }
 });
 
-Deno.test("drops attachments when MINIO_PUBLIC_URL is not configured", async () => {
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
-  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
-  Deno.env.delete("MINIO_PUBLIC_URL");
+test("drops attachments when MINIO_PUBLIC_URL is not configured", async () => {
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  process.env["GITHUB_TICKETING_TOKEN"] = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa";
+  process.env["GITHUB_TICKETING_REPO"] = "foo/bar";
+  delete process.env["MINIO_PUBLIC_URL"];
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -248,12 +249,12 @@ Deno.test("drops attachments when MINIO_PUBLIC_URL is not configured", async () 
   }
 });
 
-Deno.test("keeps only attachment URLs matching MINIO_PUBLIC_URL, dropping foreign URLs", async () => {
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
-  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
-  Deno.env.set("MINIO_PUBLIC_URL", "http://localhost:3000/attachments");
+test("keeps only attachment URLs matching MINIO_PUBLIC_URL, dropping foreign URLs", async () => {
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  process.env["GITHUB_TICKETING_TOKEN"] = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa";
+  process.env["GITHUB_TICKETING_REPO"] = "foo/bar";
+  process.env["MINIO_PUBLIC_URL"] = "http://localhost:3000/attachments";
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -283,16 +284,16 @@ Deno.test("keeps only attachment URLs matching MINIO_PUBLIC_URL, dropping foreig
   } finally {
     f.restore();
     restoreEnv();
-    Deno.env.delete("MINIO_PUBLIC_URL");
+    delete process.env["MINIO_PUBLIC_URL"];
   }
 });
 
-Deno.test("rejects a URL that shares the public URL's string prefix but not its origin or path", async () => {
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
-  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
-  Deno.env.set("MINIO_PUBLIC_URL", "http://localhost:3000/attachments");
+test("rejects a URL that shares the public URL's string prefix but not its origin or path", async () => {
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  process.env["GITHUB_TICKETING_TOKEN"] = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa";
+  process.env["GITHUB_TICKETING_REPO"] = "foo/bar";
+  process.env["MINIO_PUBLIC_URL"] = "http://localhost:3000/attachments";
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -320,15 +321,15 @@ Deno.test("rejects a URL that shares the public URL's string prefix but not its 
   } finally {
     f.restore();
     restoreEnv();
-    Deno.env.delete("MINIO_PUBLIC_URL");
+    delete process.env["MINIO_PUBLIC_URL"];
   }
 });
 
-Deno.test("creates a GitHub issue when ticketing env is configured", async () => {
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
-  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
+test("creates a GitHub issue when ticketing env is configured", async () => {
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["DISCORD_BUG_WEBHOOK_URL"];
+  process.env["GITHUB_TICKETING_TOKEN"] = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa";
+  process.env["GITHUB_TICKETING_REPO"] = "foo/bar";
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(

@@ -1,5 +1,5 @@
-import { getTraderArchetype, STARTER_MAX_ORDER_QTY } from "@veta/trader-archetypes";
-import type { OrderNew } from "@veta/schemas/orders";
+import { getTraderArchetype, STARTER_MAX_ORDER_QTY } from "#veta/trader-archetypes";
+import type { OrderNew } from "#veta/schemas/orders";
 import type { PositionTracker, Side } from "./position-tracker.ts";
 
 interface DeskConfig {

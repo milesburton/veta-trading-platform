@@ -22,7 +22,7 @@ or "Partially" row on the standards checklist.
 | ------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------- |
 | Casual external attacker        | Mass scanners, public CVE exploits, no targeted research             | Any easy win such as an exposed admin panel, default credentials, or leaked secrets | Targeted social engineering of the operator |
 | Skilled remote attacker         | Custom exploits, RCE chains, lateral movement, willing to spend days | Persistence inside the trading network, data exfiltration, ransom                   | Nation-state-grade zero-days                |
-| Compromised dependency author   | Indirect access via a malicious npm/Deno package update              | Supply-chain foothold inside any service that imports the package                   | A backdoored Postgres or Linux kernel       |
+| Compromised dependency author   | Indirect access via a malicious npm package update              | Supply-chain foothold inside any service that imports the package                   | A backdoored Postgres or Linux kernel       |
 | Insider with viewer credentials | Legitimate session cookie, viewer role only                          | Privilege escalation to trader or admin; reading data outside their role            | Physical access to the host                 |
 | Insider with admin credentials  | Full admin role; can configure risk, kill, run scenarios             | Mistakes that cause loss; or deliberate manipulation of trading                     | Subverting database-level audit             |
 | Network-adjacent attacker       | LAN access on the server subnet                                      | Sniffing inter-service traffic, hitting Postgres or Redpanda directly               | Compromise of the upstream router or ISP    |
@@ -74,7 +74,7 @@ hurdles in order.
 
 1. Attacker finds a remote-code-execution bug in a service.
 2. They get shell as the service's UID inside its container.
-   - **Control**: Deno services run as `deno:deno` (UID 1993), not root.
+   - **Control**: Node services run as `veta:veta` (UID 1993), not root.
 3. They try to escalate via setuid binary.
    - **Control**: `no-new-privileges:true` blocks the bit.
 4. They try raw-socket scanning the docker network.

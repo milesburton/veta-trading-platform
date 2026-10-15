@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import {
   buildFixExecution,
   buildOrdersFilled,
@@ -36,7 +37,7 @@ function pool(buys: DarkOrder[], sells: DarkOrder[]): SymbolPool {
   return { buys, sells };
 }
 
-Deno.test("[dark-pool-matching] a buy and sell that both cross the midpoint match fully", () => {
+test("[dark-pool-matching] a buy and sell that both cross the midpoint match fully", () => {
   execIdSeq = 1;
   const buy = order({ orderId: "B1", side: "BUY", quantity: 10_000, remainingQty: 10_000, limitPrice: 191 });
   const sell = order({ orderId: "S1", side: "SELL", quantity: 10_000, remainingQty: 10_000, limitPrice: 189 });
@@ -51,7 +52,7 @@ Deno.test("[dark-pool-matching] a buy and sell that both cross the midpoint matc
   assertEquals(fills[0].sellOrderId, "S1");
 });
 
-Deno.test("[dark-pool-matching] a buy whose limit is below the midpoint is not eligible", () => {
+test("[dark-pool-matching] a buy whose limit is below the midpoint is not eligible", () => {
   const buy = order({ orderId: "B1", side: "BUY", limitPrice: 188 });
   const sell = order({ orderId: "S1", side: "SELL", limitPrice: 189 });
   const p = pool([buy], [sell]);
@@ -60,7 +61,7 @@ Deno.test("[dark-pool-matching] a buy whose limit is below the midpoint is not e
   assertEquals(fills.length, 0);
 });
 
-Deno.test("[dark-pool-matching] a sell whose limit is above the midpoint is not eligible", () => {
+test("[dark-pool-matching] a sell whose limit is above the midpoint is not eligible", () => {
   const buy = order({ orderId: "B1", side: "BUY", limitPrice: 195 });
   const sell = order({ orderId: "S1", side: "SELL", limitPrice: 192 });
   const p = pool([buy], [sell]);
@@ -69,7 +70,7 @@ Deno.test("[dark-pool-matching] a sell whose limit is above the midpoint is not 
   assertEquals(fills.length, 0);
 });
 
-Deno.test("[dark-pool-matching] a partial fill leaves the larger order resting with reduced remainingQty", () => {
+test("[dark-pool-matching] a partial fill leaves the larger order resting with reduced remainingQty", () => {
   const buy = order({ orderId: "B1", quantity: 15_000, remainingQty: 15_000, limitPrice: 191 });
   const sell = order({ orderId: "S1", side: "SELL", quantity: 10_000, remainingQty: 10_000, limitPrice: 189 });
   const p = pool([buy], [sell]);
@@ -83,7 +84,7 @@ Deno.test("[dark-pool-matching] a partial fill leaves the larger order resting w
   assertEquals(p.sells.length, 0, "the fully-filled sell should be removed from the pool");
 });
 
-Deno.test("[dark-pool-matching] orders past their deadline are skipped, not matched", () => {
+test("[dark-pool-matching] orders past their deadline are skipped, not matched", () => {
   const buy = order({ orderId: "B1", deadlineAt: NOW - 1, limitPrice: 191 });
   const sell = order({ orderId: "S1", side: "SELL", limitPrice: 189 });
   const p = pool([buy], [sell]);
@@ -92,7 +93,7 @@ Deno.test("[dark-pool-matching] orders past their deadline are skipped, not matc
   assertEquals(fills.length, 0);
 });
 
-Deno.test("[dark-pool-matching] matching is FIFO by admission time, not by price", () => {
+test("[dark-pool-matching] matching is FIFO by admission time, not by price", () => {
   const earlyBuy = order({ orderId: "B-early", admittedAt: NOW - 5_000, limitPrice: 190, quantity: 5_000, remainingQty: 5_000 });
   const lateBuy = order({ orderId: "B-late", admittedAt: NOW, limitPrice: 200, quantity: 5_000, remainingQty: 5_000 });
   const sell = order({ orderId: "S1", side: "SELL", limitPrice: 189, quantity: 5_000, remainingQty: 5_000 });
@@ -104,7 +105,7 @@ Deno.test("[dark-pool-matching] matching is FIFO by admission time, not by price
   assertEquals(fills[0].buyOrderId, "B-early", "the earlier-admitted buy should match first despite the later buy's better limit price");
 });
 
-Deno.test("[dark-pool-matching] multiple sequential matches drain both sides of the book", () => {
+test("[dark-pool-matching] multiple sequential matches drain both sides of the book", () => {
   const buy = order({ orderId: "B1", quantity: 20_000, remainingQty: 20_000, limitPrice: 191 });
   const sell1 = order({ orderId: "S1", side: "SELL", admittedAt: NOW - 1_000, quantity: 8_000, remainingQty: 8_000, limitPrice: 189 });
   const sell2 = order({ orderId: "S2", side: "SELL", admittedAt: NOW, quantity: 12_000, remainingQty: 12_000, limitPrice: 189 });
@@ -119,7 +120,7 @@ Deno.test("[dark-pool-matching] multiple sequential matches drain both sides of 
   assertEquals(p.sells.length, 0);
 });
 
-Deno.test("[dark-pool-matching] an empty pool on either side produces no fills", () => {
+test("[dark-pool-matching] an empty pool on either side produces no fills", () => {
   const buy = order({ orderId: "B1" });
   assertEquals(matchSymbol(pool([buy], []), "AAPL", 190, NOW, execIdFactory, settlementDateFactory).length, 0);
   const sell = order({ orderId: "S1", side: "SELL" });
@@ -142,7 +143,7 @@ function fill(overrides: Partial<DarkFill> = {}): DarkFill {
   };
 }
 
-Deno.test("[dark-pool-matching] buildOrdersFilled marks a full fill when remainingQty is zero", () => {
+test("[dark-pool-matching] buildOrdersFilled marks a full fill when remainingQty is zero", () => {
   const o = order({ orderId: "B1", quantity: 10_000, remainingQty: 0 });
   const payload = buildOrdersFilled(fill(), "BUY", o);
   assertEquals(payload.execType, "2");
@@ -151,13 +152,13 @@ Deno.test("[dark-pool-matching] buildOrdersFilled marks a full fill when remaini
   assertEquals(payload.venue, "DARK1");
 });
 
-Deno.test("[dark-pool-matching] buildOrdersFilled marks a partial fill when remainingQty is nonzero", () => {
+test("[dark-pool-matching] buildOrdersFilled marks a partial fill when remainingQty is nonzero", () => {
   const o = order({ orderId: "B1", quantity: 15_000, remainingQty: 5_000 });
   const payload = buildOrdersFilled(fill(), "BUY", o);
   assertEquals(payload.execType, "1");
 });
 
-Deno.test("[dark-pool-matching] buildFixExecution maps side to FIX 1/2 codes", () => {
+test("[dark-pool-matching] buildFixExecution maps side to FIX 1/2 codes", () => {
   const o = order({ orderId: "B1", remainingQty: 0 });
   const buyPayload = buildFixExecution(fill(), "BUY", o);
   const sellPayload = buildFixExecution(fill(), "SELL", o);
@@ -165,7 +166,7 @@ Deno.test("[dark-pool-matching] buildFixExecution maps side to FIX 1/2 codes", (
   assertEquals(sellPayload.side, "2");
 });
 
-Deno.test("[dark-pool-matching] buildFixExecution leavesQty/cumQty reflect the order's remaining quantity", () => {
+test("[dark-pool-matching] buildFixExecution leavesQty/cumQty reflect the order's remaining quantity", () => {
   const o = order({ orderId: "B1", quantity: 15_000, remainingQty: 5_000 });
   const payload = buildFixExecution(fill(), "BUY", o);
   assertEquals(payload.leavesQty, 5_000);

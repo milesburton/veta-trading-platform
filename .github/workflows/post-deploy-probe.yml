@@ -15,7 +15,7 @@ name: Post-deploy probe
 # mirrors ci.yml's docker-path filter so this workflow only waits for a
 # SHA when a new image was actually going to be built.
 #
-# This is the same Deno probe that runs every 60s on the edge server.
+# This is the same probe that runs every 60s on the edge server.
 # CI is a third, independent vantage point — if the edge probe sees a
 # different result from GitHub runners, the divergence itself is a
 # useful signal (e.g. an edge-side network issue).
@@ -69,8 +69,8 @@ jobs:
               - 'frontend/package.json'
               - 'frontend/package-lock.json'
               - 'shared/**'
-              - 'deno.json'
-              - 'deno.lock'
+              - 'package.json'
+              - 'package-lock.json'
               - '.github/workflows/ci.yml'
 
   probe:
@@ -85,10 +85,10 @@ jobs:
           # Only need the probe script — shallow checkout.
           fetch-depth: 1
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
-          deno-version: v2.x
+          node-version: "24"
 
       - name: Wait for the new commit to be live
         env:
@@ -124,7 +124,7 @@ jobs:
           # probe may catch a brief gateway recreate window.
           for attempt in 1 2 3; do
             echo "::group::probe attempt ${attempt}"
-            if deno run --allow-net --allow-env synthetic-probe/probe.ts; then
+            if node synthetic-probe/probe.ts; then
               echo "::endgroup::"
               echo "✅ Probe passed on attempt ${attempt}"
               exit 0

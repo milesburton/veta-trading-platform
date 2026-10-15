@@ -1,11 +1,11 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { marketSimPool } from "@veta/db";
-import { logger } from "@veta/logger";
-import type { OrderBookLevel, OrderBookSnapshot } from "@veta/market-client";
-import { createProducer } from "@veta/messaging";
-import { intradayVolumeFactor } from "@veta/time-scale";
-import { recordGauge } from "@veta/telemetry";
+import "#veta/bootstrap";
+import { serveFetch, upgradeWebSocket } from "#veta/http";
+import { marketSimPool } from "#veta/db";
+import { logger } from "#veta/logger";
+import type { OrderBookLevel, OrderBookSnapshot, MarketFeed } from "#veta/market-client";
+import { createProducer } from "#veta/messaging";
+import { intradayVolumeFactor } from "#veta/time-scale";
+import { recordGauge } from "#veta/telemetry";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bond-assets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodity-assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fx-assets.ts";
@@ -48,16 +48,15 @@ import {
   parseMarketFeed,
   symbolsNeedingFreshBook,
 } from "./tick-diff.ts";
-import type { MarketFeed } from "@veta/market-client";
 
-const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
-  Deno.env.get("JOURNAL_PORT") ?? "5009"
+const PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const JOURNAL_URL = `http://${process.env.JOURNAL_HOST ?? "localhost"}:${
+  process.env.JOURNAL_PORT ?? "5009"
 }`;
 const MARKET_DATA_URL = `http://${
-  Deno.env.get("MARKET_DATA_HOST") ?? "localhost"
-}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
+  process.env.MARKET_DATA_HOST ?? "localhost"
+}:${process.env.MARKET_DATA_PORT ?? "5015"}`;
 
 let overriddenSymbols = new Set<string>();
 
@@ -152,7 +151,7 @@ async function seedFromJournal(): Promise<void> {
 }
 
 snapshotOpenPrices();
-const PREWARM_TICKS = Number(Deno.env.get("MARKET_SIM_PREWARM_TICKS")) || 28_080;
+const PREWARM_TICKS = Number(process.env.MARKET_SIM_PREWARM_TICKS) || 28_080;
 warmUpPrices(PREWARM_TICKS, async () => {
   snapshotOpenPrices();
   logger.info(`Price engine pre-warmed — intraday moves seeded`);
@@ -165,7 +164,7 @@ let tickCount = 0;
 const TICKS_PER_MINUTE = 240;
 
 const DEFAULT_ALLOW_OUT_OF_HOURS = parseAllowOutOfHours(
-  Deno.env.get("MARKET_SIM_ALLOW_OUT_OF_HOURS")
+  process.env.MARKET_SIM_ALLOW_OUT_OF_HOURS
 );
 let allowOutOfHours: Record<AssetClass, boolean> = {
   equity: DEFAULT_ALLOW_OUT_OF_HOURS,
@@ -310,7 +309,7 @@ type SessionPhase =
 // Deliberately derived from the simulated 390-minute loop (marketMinute),
 // not wall-clock time — the loop compresses a trading day into ~90 seconds
 // of ticks as a demo/UX choice, orthogonal to whether real-world calendar
-// gating (holidays, weekends; see @veta/trading-calendar and
+// gating (holidays, weekends; see #veta/trading-calendar and
 // isUsEquityRegularSession in market-hours.ts) allows order entry right now.
 // Do not "fix" this into a wall-clock-only check — that would lose the
 // fast demo pacing every consumer of sessionPhase currently relies on.
@@ -440,7 +439,7 @@ setInterval(() => {
 
 logger.info(`Market Simulator running on ws://localhost:${PORT}`);
 
-Deno.serve({ port: PORT }, async (req) => {
+serveFetch({ port: PORT }, async (req) => {
   const url = new URL(req.url);
 
   if (url.pathname === "/health" && req.method === "GET") {
@@ -521,7 +520,7 @@ Deno.serve({ port: PORT }, async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const { socket, response } = Deno.upgradeWebSocket(req);
+  const { socket, response } = upgradeWebSocket(req);
   const feed = parseMarketFeed(url);
 
   socket.onopen = () => {

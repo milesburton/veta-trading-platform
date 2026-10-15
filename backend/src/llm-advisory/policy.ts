@@ -1,7 +1,7 @@
-import type { LlmPolicy, LlmTriggerMode } from "@veta/types/llm-advisory";
+import type { LlmPolicy, LlmTriggerMode } from "#veta/types/llm-advisory";
 
 export function loadPolicy(): LlmPolicy {
-  const triggerModeRaw = Deno.env.get("LLM_TRIGGER_MODE") ?? "manual";
+  const triggerModeRaw = process.env.LLM_TRIGGER_MODE ?? "manual";
   const validModes: LlmTriggerMode[] = [
     "disabled",
     "manual",
@@ -14,22 +14,22 @@ export function loadPolicy(): LlmPolicy {
     : "manual";
 
   return {
-    enabled: Deno.env.get("LLM_ENABLED") === "true",
-    workerEnabled: Deno.env.get("LLM_WORKER_ENABLED") === "true",
+    enabled: process.env.LLM_ENABLED === "true",
+    workerEnabled: process.env.LLM_WORKER_ENABLED === "true",
     triggerMode,
-    provider: Deno.env.get("LLM_PROVIDER") ?? "mock",
-    modelId: Deno.env.get("LLM_MODEL_ID") ?? "mock-v1",
-    ollamaBaseUrl: Deno.env.get("LLM_OLLAMA_BASE_URL") ?? "http://localhost:11434",
-    maxConcurrentJobs: Number(Deno.env.get("LLM_MAX_CONCURRENT_JOBS") ?? "1"),
-    maxNoteAgeMs: Number(Deno.env.get("LLM_MAX_NOTE_AGE_MS") ?? "300000"),
-    minRefreshMinutes: Number(Deno.env.get("LLM_MIN_REFRESH_MINUTES") ?? "5"),
-    workerIdleTimeoutSeconds: Number(Deno.env.get("LLM_WORKER_IDLE_TIMEOUT_SECONDS") ?? "120"),
-    workerMaxJobsPerSession: Number(Deno.env.get("LLM_WORKER_MAX_JOBS_PER_SESSION") ?? "20"),
-    allowedHours: Deno.env.get("LLM_ALLOWED_HOURS") ?? null,
-    signalConvictionThreshold: Number(Deno.env.get("LLM_SIGNAL_CONVICTION_THRESHOLD") ?? "0.7"),
-    confidenceThreshold: Number(Deno.env.get("LLM_CONFIDENCE_THRESHOLD") ?? "0.8"),
-    dedupeWindowMs: Number(Deno.env.get("LLM_DEDUPE_WINDOW_MS") ?? "60000"),
-    autoTriggerEnabled: Deno.env.get("LLM_AUTO_TRIGGER_ENABLED") !== "false",
+    provider: process.env.LLM_PROVIDER ?? "mock",
+    modelId: process.env.LLM_MODEL_ID ?? "mock-v1",
+    ollamaBaseUrl: process.env.LLM_OLLAMA_BASE_URL ?? "http://localhost:11434",
+    maxConcurrentJobs: Number(process.env.LLM_MAX_CONCURRENT_JOBS ?? "1"),
+    maxNoteAgeMs: Number(process.env.LLM_MAX_NOTE_AGE_MS ?? "300000"),
+    minRefreshMinutes: Number(process.env.LLM_MIN_REFRESH_MINUTES ?? "5"),
+    workerIdleTimeoutSeconds: Number(process.env.LLM_WORKER_IDLE_TIMEOUT_SECONDS ?? "120"),
+    workerMaxJobsPerSession: Number(process.env.LLM_WORKER_MAX_JOBS_PER_SESSION ?? "20"),
+    allowedHours: process.env.LLM_ALLOWED_HOURS ?? null,
+    signalConvictionThreshold: Number(process.env.LLM_SIGNAL_CONVICTION_THRESHOLD ?? "0.7"),
+    confidenceThreshold: Number(process.env.LLM_CONFIDENCE_THRESHOLD ?? "0.8"),
+    dedupeWindowMs: Number(process.env.LLM_DEDUPE_WINDOW_MS ?? "60000"),
+    autoTriggerEnabled: process.env.LLM_AUTO_TRIGGER_ENABLED !== "false",
   };
 }
 

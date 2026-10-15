@@ -1,5 +1,6 @@
-import { join } from "https://deno.land/std@0.210.0/path/mod.ts";
-import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { Pool } from "#veta/db";
 
 export interface MigrationResult {
   applied: string[];
@@ -32,8 +33,8 @@ export async function runMigrations(
     `);
 
     const entries: string[] = [];
-    for await (const entry of Deno.readDir(dir)) {
-      if (entry.isFile && entry.name.endsWith(".sql")) entries.push(entry.name);
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith(".sql")) entries.push(entry.name);
     }
     entries.sort();
 
@@ -50,7 +51,7 @@ export async function runMigrations(
         continue;
       }
       log(`  [apply] ${version}`);
-      const sql = await Deno.readTextFile(join(dir, filename));
+      const sql = await readFile(join(dir, filename), "utf8");
       await client.queryArray(sql);
       await client.queryArray(
         "INSERT INTO public.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING",

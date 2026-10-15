@@ -1,17 +1,18 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { z } from "@veta/zod";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { z } from "zod";
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
-Deno.test({
+test({
   name: "[typed-consumer] validates per-topic schemas against real Redpanda",
   ignore: !SHOULD_RUN,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn(t) {
     const rp = await startEphemeralRedpanda();
-    Deno.env.set("REDPANDA_BROKERS", rp.brokers);
+    process.env["REDPANDA_BROKERS"] = rp.brokers;
     const messaging = await import(`../lib/messaging.ts?broker=${encodeURIComponent(rp.brokers)}`);
 
     const orderTopic = `typed-order-${crypto.randomUUID().slice(0, 8)}`;

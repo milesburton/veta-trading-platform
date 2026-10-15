@@ -3,10 +3,10 @@
  * Key: TIINGO_KEY (https://api.tiingo.com — free tier)
  */
 
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 import type { CachedQuote, ProviderDef } from "./types.ts";
 
-const TIINGO_KEY = Deno.env.get("TIINGO_KEY") ?? "";
+const TIINGO_KEY = process.env.TIINGO_KEY ?? "";
 const PROV = { provider: "tiingo" };
 
 async function fetchTiingoEquity(symbol: string): Promise<CachedQuote | null> {

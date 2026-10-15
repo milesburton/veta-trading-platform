@@ -1,7 +1,8 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
 function journalUrl(stack: TestStack): string {
   const url = stack.urls.journal;
@@ -9,7 +10,7 @@ function journalUrl(stack: TestStack): string {
   return url;
 }
 
-Deno.test({
+test({
   name: "journal HTTP contracts (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {

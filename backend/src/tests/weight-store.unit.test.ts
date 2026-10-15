@@ -1,7 +1,8 @@
+import { test } from "#veta/test";
+import { assertEquals, assertStrictEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 // fallow-ignore-file complexity
 
-import { assertEquals, assertStrictEquals } from "jsr:@std/assert@0.217";
 import {
   createWeightStore,
   DEFAULT_WEIGHTS,
@@ -101,7 +102,7 @@ function makeFakePool(seedRow: WeightMap | null): FakePool {
   };
 }
 
-Deno.test("[weight-store] seeds defaults when the row is missing", async () => {
+test("[weight-store] seeds defaults when the row is missing", async () => {
   const pool = makeFakePool(null);
   const store = await createWeightStore(pool as unknown as Parameters<typeof createWeightStore>[0]);
 
@@ -114,7 +115,7 @@ Deno.test("[weight-store] seeds defaults when the row is missing", async () => {
   assertEquals(pool.__getReleaseCount() >= 2, true);
 });
 
-Deno.test("[weight-store] caches weights and invalidates after save", async () => {
+test("[weight-store] caches weights and invalidates after save", async () => {
   const initial: WeightMap = {
     momentum: 0.3,
     relativeVolume: 0.05,
@@ -147,7 +148,7 @@ Deno.test("[weight-store] caches weights and invalidates after save", async () =
   assertEquals(third === second, false);
 });
 
-Deno.test("[weight-store] existing row skips default seed insert", async () => {
+test("[weight-store] existing row skips default seed insert", async () => {
   const pool = makeFakePool(DEFAULT_WEIGHTS);
   const store = await createWeightStore(pool as unknown as Parameters<typeof createWeightStore>[0]);
 

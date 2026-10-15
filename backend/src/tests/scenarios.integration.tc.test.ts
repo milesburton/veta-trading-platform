@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
@@ -17,7 +18,7 @@ interface ScenarioRun {
   error: string | null;
 }
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
 function gateway(stack: TestStack): string {
   const url = stack.urls.gateway;
@@ -89,11 +90,11 @@ const SCENARIO_SERVICES = [
 
 const FILL_PRICE_DRIFT_TOLERANCE_BPS = 60;
 
-Deno.test({
+test({
   name: `scenarios (testcontainers): same seed produces fills within ${FILL_PRICE_DRIFT_TOLERANCE_BPS}bps across three runs`,
   ignore: !SHOULD_RUN,
   async fn() {
-    const verbose = Deno.env.get("STACK_VERBOSE") === "1";
+    const verbose = process.env.STACK_VERBOSE === "1";
     const stack = await startStack({
       services: [...SCENARIO_SERVICES],
       startupTimeoutMs: 90_000,
@@ -136,9 +137,7 @@ Deno.test({
         `avgFillPriceBps drift B↔C = ${bc.toFixed(2)}bps (expected ≤${FILL_PRICE_DRIFT_TOLERANCE_BPS}bps)`
       );
     } catch (err) {
-      await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
-      );
+      process.stderr.write(`\n--- service logs ---\n${stack.dumpLogs()}`);
       throw err;
     } finally {
       await stack.teardown();
@@ -146,11 +145,11 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "scenarios (testcontainers): different seeds produce different fills",
   ignore: !SHOULD_RUN,
   async fn() {
-    const verbose = Deno.env.get("STACK_VERBOSE") === "1";
+    const verbose = process.env.STACK_VERBOSE === "1";
     const stack = await startStack({
       services: [...SCENARIO_SERVICES],
       startupTimeoutMs: 90_000,
@@ -176,9 +175,7 @@ Deno.test({
         "different seeds produced bit-identical outcomes — RNG isn't seeded"
       );
     } catch (err) {
-      await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
-      );
+      process.stderr.write(`\n--- service logs ---\n${stack.dumpLogs()}`);
       throw err;
     } finally {
       await stack.teardown();

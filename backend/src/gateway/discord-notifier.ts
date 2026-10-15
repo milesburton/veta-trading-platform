@@ -16,7 +16,7 @@ interface AlertPayload {
 }
 
 function readWebhookEnv(name: string): string | null {
-  const url = Deno.env.get(name) ?? "";
+  const url = process.env[name] ?? "";
   if (!url.startsWith("https://discord.com/api/webhooks/")) return null;
   if (url.includes("REPLACE_ME")) return null;
   return url;

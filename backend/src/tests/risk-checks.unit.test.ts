@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals, assertGreater } from "#veta/test-assert";
 import type { Position, RiskState } from "../risk-engine/checks.ts";
 import {
   checkConcentration,
@@ -86,17 +87,17 @@ function assertHitCode(
   }
 }
 
-Deno.test("[risk-checks] orderNotional multiplies quantity by limit price", () => {
+test("[risk-checks] orderNotional multiplies quantity by limit price", () => {
   assertEquals(orderNotional(makeRequest({ quantity: 100, limitPrice: 150 })), 15_000);
   assertEquals(orderNotional(makeRequest({ quantity: 1, limitPrice: 1.5 })), 1.5);
 });
 
-Deno.test("[risk-checks] userGrossNotional with no positions returns 0", () => {
+test("[risk-checks] userGrossNotional with no positions returns 0", () => {
   const state = makeState();
   assertEquals(userGrossNotional(state, "alice"), 0);
 });
 
-Deno.test("[risk-checks] userGrossNotional sums absolute notional across symbols using mark price when available", () => {
+test("[risk-checks] userGrossNotional sums absolute notional across symbols using mark price when available", () => {
   const state = makeState({ prices: { AAPL: 200, MSFT: 400 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -117,7 +118,7 @@ Deno.test("[risk-checks] userGrossNotional sums absolute notional across symbols
   assertEquals(userGrossNotional(state, "alice"), 100 * 200 + 50 * 400);
 });
 
-Deno.test("[risk-checks] userGrossNotional falls back to avgPrice when mark unavailable", () => {
+test("[risk-checks] userGrossNotional falls back to avgPrice when mark unavailable", () => {
   const state = makeState();
   setPosition(state, "alice", {
     symbol: "ZZZZ",
@@ -130,7 +131,7 @@ Deno.test("[risk-checks] userGrossNotional falls back to avgPrice when mark unav
   assertEquals(userGrossNotional(state, "alice"), 100 * 50);
 });
 
-Deno.test("[risk-checks] userTotalPnl sums realised plus unrealised across positions", () => {
+test("[risk-checks] userTotalPnl sums realised plus unrealised across positions", () => {
   const state = makeState({ prices: { AAPL: 160 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -143,11 +144,11 @@ Deno.test("[risk-checks] userTotalPnl sums realised plus unrealised across posit
   assertEquals(userTotalPnl(state, "alice"), 200 + 100 * (160 - 150));
 });
 
-Deno.test("[risk-checks] userTotalPnl returns 0 for unknown user", () => {
+test("[risk-checks] userTotalPnl returns 0 for unknown user", () => {
   assertEquals(userTotalPnl(makeState(), "ghost"), 0);
 });
 
-Deno.test("[risk-checks] userSymbolNotional returns absolute notional per symbol", () => {
+test("[risk-checks] userSymbolNotional returns absolute notional per symbol", () => {
   const state = makeState({ prices: { AAPL: 200 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -162,7 +163,7 @@ Deno.test("[risk-checks] userSymbolNotional returns absolute notional per symbol
   assertEquals(userSymbolNotional(state, "ghost", "AAPL"), 0);
 });
 
-Deno.test("[risk-checks] pruneRecent drops orders older than 5s", () => {
+test("[risk-checks] pruneRecent drops orders older than 5s", () => {
   const state = makeState({
     recentOrders: [
       {
@@ -189,7 +190,7 @@ Deno.test("[risk-checks] pruneRecent drops orders older than 5s", () => {
   assertEquals(state.recentOrders[0].ts, 999_000);
 });
 
-Deno.test("[risk-checks] pruneRecent caps array at MAX_RECENT", () => {
+test("[risk-checks] pruneRecent caps array at MAX_RECENT", () => {
   const state = makeState({ now: () => 1_000_000 });
   for (let i = 0; i < MAX_RECENT + 50; i++) {
     state.recentOrders.push({
@@ -205,7 +206,7 @@ Deno.test("[risk-checks] pruneRecent caps array at MAX_RECENT", () => {
   assertEquals(state.recentOrders.length, MAX_RECENT);
 });
 
-Deno.test("[risk-checks] fat-finger scenarios", () => {
+test("[risk-checks] fat-finger scenarios", () => {
   const cases = [
     {
       label: "order at mid passes",
@@ -262,7 +263,7 @@ Deno.test("[risk-checks] fat-finger scenarios", () => {
   }
 });
 
-Deno.test("[risk-checks] duplicate: identical order within window is rejected and original is recorded", () => {
+test("[risk-checks] duplicate: identical order within window is rejected and original is recorded", () => {
   const state = makeState();
   assertEquals(checkDuplicateOrder(state, makeRequest()), null);
   const hit = checkDuplicateOrder(state, makeRequest());
@@ -270,7 +271,7 @@ Deno.test("[risk-checks] duplicate: identical order within window is rejected an
   assertEquals(hit?.code, "DUPLICATE_ORDER");
 });
 
-Deno.test("[risk-checks] duplicate: order is allowed once window has elapsed", () => {
+test("[risk-checks] duplicate: order is allowed once window has elapsed", () => {
   let t = 1_000_000;
   const state = makeState({ now: () => t });
   state.config.duplicateWindowMs = 500;
@@ -279,7 +280,7 @@ Deno.test("[risk-checks] duplicate: order is allowed once window has elapsed", (
   assertEquals(checkDuplicateOrder(state, makeRequest()), null);
 });
 
-Deno.test("[risk-checks] duplicate: different side, symbol, qty, or price are not duplicates", () => {
+test("[risk-checks] duplicate: different side, symbol, qty, or price are not duplicates", () => {
   const state = makeState();
   checkDuplicateOrder(state, makeRequest());
   assertEquals(checkDuplicateOrder(state, makeRequest({ side: "SELL" })), null);
@@ -288,7 +289,7 @@ Deno.test("[risk-checks] duplicate: different side, symbol, qty, or price are no
   assertEquals(checkDuplicateOrder(state, makeRequest({ limitPrice: 151 })), null);
 });
 
-Deno.test("[risk-checks] max open orders threshold behavior", () => {
+test("[risk-checks] max open orders threshold behavior", () => {
   const cases = [
     { count: 49, code: null },
     { count: 50, code: "MAX_OPEN_ORDERS" },
@@ -306,7 +307,7 @@ Deno.test("[risk-checks] max open orders threshold behavior", () => {
   }
 });
 
-Deno.test("[risk-checks] self-cross: BUY when SELL is working is rejected", () => {
+test("[risk-checks] self-cross: BUY when SELL is working is rejected", () => {
   const state = makeState({
     workingOrders: [{ userId: "alice", symbol: "AAPL", side: "SELL", orderId: "wO-1" }],
   });
@@ -316,21 +317,21 @@ Deno.test("[risk-checks] self-cross: BUY when SELL is working is rejected", () =
   assert(hit?.message.includes("wO-1"));
 });
 
-Deno.test("[risk-checks] self-cross: BUY when SELL is working for different user passes", () => {
+test("[risk-checks] self-cross: BUY when SELL is working for different user passes", () => {
   const state = makeState({
     workingOrders: [{ userId: "bob", symbol: "AAPL", side: "SELL", orderId: "wO-1" }],
   });
   assertEquals(checkSelfCross(state, makeRequest({ side: "BUY" })), null);
 });
 
-Deno.test("[risk-checks] self-cross: BUY when SELL is working for different symbol passes", () => {
+test("[risk-checks] self-cross: BUY when SELL is working for different symbol passes", () => {
   const state = makeState({
     workingOrders: [{ userId: "alice", symbol: "MSFT", side: "SELL", orderId: "wO-1" }],
   });
   assertEquals(checkSelfCross(state, makeRequest({ side: "BUY" })), null);
 });
 
-Deno.test("[risk-checks] ADV scenarios", () => {
+test("[risk-checks] ADV scenarios", () => {
   const cases = [
     { volumes: { AAPL: 1000 }, quantity: 50, code: null },
     { volumes: { AAPL: 1000 }, quantity: 51, code: "ORDER_SIZE_VS_ADV" },
@@ -350,7 +351,7 @@ Deno.test("[risk-checks] ADV scenarios", () => {
   }
 });
 
-Deno.test("[risk-checks] rate-limit: bucket starts full and allows up to N orders/sec", () => {
+test("[risk-checks] rate-limit: bucket starts full and allows up to N orders/sec", () => {
   const t = 1_000_000;
   const state = makeState({ now: () => t });
   state.config.maxOrdersPerSecond = 3;
@@ -362,7 +363,7 @@ Deno.test("[risk-checks] rate-limit: bucket starts full and allows up to N order
   assertEquals(hit?.code, "RATE_LIMIT");
 });
 
-Deno.test("[risk-checks] rate-limit: tokens refill at config rate", () => {
+test("[risk-checks] rate-limit: tokens refill at config rate", () => {
   let t = 1_000_000;
   const state = makeState({ now: () => t });
   state.config.maxOrdersPerSecond = 1;
@@ -372,14 +373,14 @@ Deno.test("[risk-checks] rate-limit: tokens refill at config rate", () => {
   assertEquals(checkRateLimit(state, makeRequest()), null);
 });
 
-Deno.test("[risk-checks] rate-limit: separate users have separate buckets", () => {
+test("[risk-checks] rate-limit: separate users have separate buckets", () => {
   const state = makeState();
   state.config.maxOrdersPerSecond = 1;
   assertEquals(checkRateLimit(state, makeRequest({ userId: "alice" })), null);
   assertEquals(checkRateLimit(state, makeRequest({ userId: "bob" })), null);
 });
 
-Deno.test("[risk-checks] position notional threshold behavior", () => {
+test("[risk-checks] position notional threshold behavior", () => {
   const cases = [
     { limit: 100_000, quantity: 100, limitPrice: 50, code: null },
     { limit: 5_000, quantity: 100, limitPrice: 50, code: null },
@@ -409,7 +410,7 @@ Deno.test("[risk-checks] position notional threshold behavior", () => {
   }
 });
 
-Deno.test("[risk-checks] daily P&L stop: positive P&L allowed", () => {
+test("[risk-checks] daily P&L stop: positive P&L allowed", () => {
   const state = makeState({ prices: { AAPL: 200 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -423,7 +424,7 @@ Deno.test("[risk-checks] daily P&L stop: positive P&L allowed", () => {
   assertEquals(checkDailyPnlStop(state, makeRequest()), null);
 });
 
-Deno.test("[risk-checks] daily P&L stop: P&L at threshold rejected and breaker callback fires", () => {
+test("[risk-checks] daily P&L stop: P&L at threshold rejected and breaker callback fires", () => {
   let firedFor: string | null = null;
   let firedAt: number | null = null;
   const state = makeState({
@@ -449,7 +450,7 @@ Deno.test("[risk-checks] daily P&L stop: P&L at threshold rejected and breaker c
   assertEquals(firedAt, -10_000);
 });
 
-Deno.test("[risk-checks] concentration: single symbol exceeds pct rejected", () => {
+test("[risk-checks] concentration: single symbol exceeds pct rejected", () => {
   const state = makeState({ prices: { AAPL: 100 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -465,7 +466,7 @@ Deno.test("[risk-checks] concentration: single symbol exceeds pct rejected", () 
   assertEquals(hit?.code, "CONCENTRATION_LIMIT");
 });
 
-Deno.test("[risk-checks] concentration: diverse book passes", () => {
+test("[risk-checks] concentration: diverse book passes", () => {
   const state = makeState({ prices: { AAPL: 100, MSFT: 100, NVDA: 100 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -498,13 +499,13 @@ Deno.test("[risk-checks] concentration: diverse book passes", () => {
   );
 });
 
-Deno.test("[risk-checks] concentration: empty book skips (postGross<=0)", () => {
+test("[risk-checks] concentration: empty book skips (postGross<=0)", () => {
   const state = makeState();
   state.config.maxConcentrationPct = 1;
   assertEquals(checkConcentration(state, makeRequest({ quantity: 0, limitPrice: 0 })), null);
 });
 
-Deno.test("[risk-checks] runChecks aggregates all reasons across failing checks", () => {
+test("[risk-checks] runChecks aggregates all reasons across failing checks", () => {
   const state = makeState({
     prices: { AAPL: 100 },
     workingOrders: [
@@ -525,7 +526,7 @@ Deno.test("[risk-checks] runChecks aggregates all reasons across failing checks"
   assertEquals(result.warnings.length, 0);
 });
 
-Deno.test("[risk-checks] runChecks returns allowed=true with empty reasons when nothing fails", () => {
+test("[risk-checks] runChecks returns allowed=true with empty reasons when nothing fails", () => {
   const state = makeState({
     prices: { AAPL: 150, MSFT: 200, NVDA: 500 },
     volumes: { AAPL: 1_000_000 },
@@ -551,7 +552,7 @@ Deno.test("[risk-checks] runChecks returns allowed=true with empty reasons when 
   assertEquals(result.reasons.length, 0);
 });
 
-Deno.test("[risk-checks] math sanity: gross + total pnl interact predictably with prices", () => {
+test("[risk-checks] math sanity: gross + total pnl interact predictably with prices", () => {
   const state = makeState({ prices: { AAPL: 200 } });
   setPosition(state, "alice", {
     symbol: "AAPL",
@@ -566,7 +567,7 @@ Deno.test("[risk-checks] math sanity: gross + total pnl interact predictably wit
   assertGreater(userGrossNotional(state, "alice"), userTotalPnl(state, "alice"));
 });
 
-Deno.test("[risk-checks] market hours: equity order during regular session is allowed", () => {
+test("[risk-checks] market hours: equity order during regular session is allowed", () => {
   const openNow = new Date("2026-07-30T14:00:00Z").getTime(); // Thu, 10:00 ET
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
@@ -577,7 +578,7 @@ Deno.test("[risk-checks] market hours: equity order during regular session is al
   assertEquals(hit, null);
 });
 
-Deno.test("[risk-checks] market hours: equity order outside session hours is rejected", () => {
+test("[risk-checks] market hours: equity order outside session hours is rejected", () => {
   const beforeOpen = new Date("2026-07-30T13:00:00Z").getTime(); // Thu, 09:00 ET — before 09:30 open
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
@@ -588,7 +589,7 @@ Deno.test("[risk-checks] market hours: equity order outside session hours is rej
   assertHitCode(hit, "MARKET_CLOSED");
 });
 
-Deno.test("[risk-checks] market hours: equity order on a weekend is rejected", () => {
+test("[risk-checks] market hours: equity order on a weekend is rejected", () => {
   const saturday = new Date("2026-08-01T15:00:00Z").getTime();
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
@@ -599,7 +600,7 @@ Deno.test("[risk-checks] market hours: equity order on a weekend is rejected", (
   assertHitCode(hit, "MARKET_CLOSED");
 });
 
-Deno.test("[risk-checks] market hours: equity order on a holiday is rejected", () => {
+test("[risk-checks] market hours: equity order on a holiday is rejected", () => {
   const newYearsDay = new Date("2026-01-01T15:00:00Z").getTime(); // Thu, but a US equity holiday
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
@@ -610,7 +611,7 @@ Deno.test("[risk-checks] market hours: equity order on a holiday is rejected", (
   assertHitCode(hit, "MARKET_CLOSED");
 });
 
-Deno.test("[risk-checks] market hours: FX order is NOT gated by the US equity calendar (regression)", () => {
+test("[risk-checks] market hours: FX order is NOT gated by the US equity calendar (regression)", () => {
   // Saturday — US equity would reject, but FX trades weekends up until
   // Friday 22:00 UTC / reopens Sunday 22:00 UTC. Pick a moment squarely
   // inside FX's continuous window: Wed 12:00 UTC.
@@ -635,7 +636,7 @@ Deno.test("[risk-checks] market hours: FX order is NOT gated by the US equity ca
   assertHitCode(equityHit, "MARKET_CLOSED");
 });
 
-Deno.test("[risk-checks] market hours: commodity order is halted during the daily maintenance window", () => {
+test("[risk-checks] market hours: commodity order is halted during the daily maintenance window", () => {
   // COMMODITY_CALENDAR's daily break is 16:00-17:00 America/Chicago.
   const duringBreak = new Date("2026-07-29T21:30:00Z").getTime(); // 16:30 CT (UTC-5 in July, DST)
   const state = makeState({
@@ -647,7 +648,7 @@ Deno.test("[risk-checks] market hours: commodity order is halted during the dail
   assertHitCode(hit, "MARKET_CLOSED");
 });
 
-Deno.test("[risk-checks] market hours: bypassed entirely when marketHoursEnforced is false", () => {
+test("[risk-checks] market hours: bypassed entirely when marketHoursEnforced is false", () => {
   const saturday = new Date("2026-08-01T15:00:00Z").getTime();
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: false },
@@ -658,7 +659,7 @@ Deno.test("[risk-checks] market hours: bypassed entirely when marketHoursEnforce
   assertEquals(hit, null);
 });
 
-Deno.test("[risk-checks] market hours: unknown symbol falls back to the US equity calendar", () => {
+test("[risk-checks] market hours: unknown symbol falls back to the US equity calendar", () => {
   const saturday = new Date("2026-08-01T15:00:00Z").getTime();
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },

@@ -1,7 +1,9 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { runNode } from "#veta/run-node";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { armAlgoIdleExit } from "../algo/common-http.ts";
 
-Deno.test("[armAlgoIdleExit] does not exit while orders are pending, even past timeout", () => {
+test("[armAlgoIdleExit] does not exit while orders are pending, even past timeout", () => {
   const exitCodes: number[] = [];
   const { checkNow, stop } = armAlgoIdleExit(1_000, () => false, "test-algo", {
     exit: (code) => exitCodes.push(code),
@@ -14,7 +16,7 @@ Deno.test("[armAlgoIdleExit] does not exit while orders are pending, even past t
   }
 });
 
-Deno.test("[armAlgoIdleExit] exits once quiescent and past the idle timeout", () => {
+test("[armAlgoIdleExit] exits once quiescent and past the idle timeout", () => {
   const exitCodes: number[] = [];
   let now = 0;
   const realDateNow = Date.now;
@@ -35,7 +37,7 @@ Deno.test("[armAlgoIdleExit] exits once quiescent and past the idle timeout", ()
   }
 });
 
-Deno.test("[armAlgoIdleExit] touch() resets the idle clock even when quiescent", () => {
+test("[armAlgoIdleExit] touch() resets the idle clock even when quiescent", () => {
   const exitCodes: number[] = [];
   let now = 0;
   const realDateNow = Date.now;
@@ -58,7 +60,7 @@ Deno.test("[armAlgoIdleExit] touch() resets the idle clock even when quiescent",
   }
 });
 
-Deno.test("[armAlgoIdleExit] becoming non-quiescent again blocks a previously-due exit", () => {
+test("[armAlgoIdleExit] becoming non-quiescent again blocks a previously-due exit", () => {
   const exitCodes: number[] = [];
   let now = 0;
   let quiescent = true;
@@ -78,19 +80,15 @@ Deno.test("[armAlgoIdleExit] becoming non-quiescent again blocks a previously-du
   }
 });
 
-Deno.test("[spawnKillWatchdog] kills a process whose main thread is blocked", async () => {
+test("[spawnKillWatchdog] kills a process whose main thread is blocked", async () => {
   const modulePath = new URL("../algo/common-http.ts", import.meta.url).href;
   const script = `
     const { spawnKillWatchdog } = await import(${JSON.stringify(modulePath)});
-    spawnKillWatchdog(Deno.pid, 300);
+    spawnKillWatchdog(process.pid, 300);
     while (true) {}
   `;
   const started = Date.now();
-  const status = await new Deno.Command(Deno.execPath(), {
-    args: ["eval", script],
-    stdout: "null",
-    stderr: "null",
-  }).output();
+  const status = await runNode(script);
   assertEquals(status.signal, "SIGKILL");
   assertEquals(Date.now() - started < 15_000, true, "watchdog must fire within a bounded time");
 });

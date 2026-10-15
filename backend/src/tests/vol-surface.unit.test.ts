@@ -1,7 +1,8 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import { buildVolSurface } from "../analytics/vol-surface.ts";
 
-Deno.test("[vol-surface] surface has 45 points", () => {
+test("[vol-surface] surface has 45 points", () => {
   const result = buildVolSurface("AAPL", 189.3, 0.25);
 
   assertEquals(result.surface.length, 45);
@@ -9,7 +10,7 @@ Deno.test("[vol-surface] surface has 45 points", () => {
   assertEquals(result.moneynesses.length, 9);
 });
 
-Deno.test("[vol-surface] ATM points stay anchored to ATM vol", () => {
+test("[vol-surface] ATM points stay anchored to ATM vol", () => {
   const result = buildVolSurface("AAPL", 189.3, 0.25);
   const atmPoints = result.surface.filter((point) => point.moneyness === 1.0);
 

@@ -1,8 +1,9 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { computeSpreadAnalysis, rateAt } from "../analytics/spread-analysis.ts";
 import type { YieldCurvePoint } from "../analytics/types.ts";
 
-Deno.test("[spread-analysis] rateAt interpolates correctly", () => {
+test("[spread-analysis] rateAt interpolates correctly", () => {
   const curve: YieldCurvePoint[] = [
     { tenorYears: 1, tenorLabel: "1y", spotRate: 0.02 },
     { tenorYears: 2, tenorLabel: "2y", spotRate: 0.03 },
@@ -21,7 +22,7 @@ Deno.test("[spread-analysis] rateAt interpolates correctly", () => {
   assertEquals(rate3, 0.04);
 });
 
-Deno.test("[spread-analysis] computeSpreadAnalysis returns valid results", () => {
+test("[spread-analysis] computeSpreadAnalysis returns valid results", () => {
   const result = computeSpreadAnalysis({
     couponRate: 0.05,
     totalPeriods: 20, // 10 years, semi-annual
@@ -40,7 +41,7 @@ Deno.test("[spread-analysis] computeSpreadAnalysis returns valid results", () =>
   assert(result.computedAt !== undefined);
 });
 
-Deno.test("[spread-analysis] gSpread is calculated correctly", () => {
+test("[spread-analysis] gSpread is calculated correctly", () => {
   const result = computeSpreadAnalysis({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -54,7 +55,7 @@ Deno.test("[spread-analysis] gSpread is calculated correctly", () => {
   assert(result.gSpread !== undefined);
 });
 
-Deno.test("[spread-analysis] zSpread and oas are positive for investment-grade bonds", () => {
+test("[spread-analysis] zSpread and oas are positive for investment-grade bonds", () => {
   const result = computeSpreadAnalysis({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -68,7 +69,7 @@ Deno.test("[spread-analysis] zSpread and oas are positive for investment-grade b
   assert(result.oas >= 0);
 });
 
-Deno.test("[spread-analysis] returns computedAt timestamp", () => {
+test("[spread-analysis] returns computedAt timestamp", () => {
   const before = Date.now();
   const result = computeSpreadAnalysis({
     couponRate: 0.05,
@@ -82,7 +83,7 @@ Deno.test("[spread-analysis] returns computedAt timestamp", () => {
   assert(result.computedAt >= before && result.computedAt <= after);
 });
 
-Deno.test("[spread-analysis] edge case - zero coupon bond", () => {
+test("[spread-analysis] edge case - zero coupon bond", () => {
   const result = computeSpreadAnalysis({
     couponRate: 0,
     totalPeriods: 20,
@@ -97,7 +98,7 @@ Deno.test("[spread-analysis] edge case - zero coupon bond", () => {
   assert(result.govSpotRate > 0);
 });
 
-Deno.test("[spread-analysis] edge case - very short maturity", () => {
+test("[spread-analysis] edge case - very short maturity", () => {
   const result = computeSpreadAnalysis({
     couponRate: 0.05,
     totalPeriods: 2, // 1 year
@@ -111,7 +112,7 @@ Deno.test("[spread-analysis] edge case - very short maturity", () => {
   assert(result.govSpotRate > 0);
 });
 
-Deno.test("[spread-analysis] different face values", () => {
+test("[spread-analysis] different face values", () => {
   const result1 = computeSpreadAnalysis({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -133,7 +134,7 @@ Deno.test("[spread-analysis] different face values", () => {
   assert(result1.tenorYears === result2.tenorYears);
 });
 
-Deno.test("[spread-analysis] zSpread should be close to gSpread for low volatility", () => {
+test("[spread-analysis] zSpread should be close to gSpread for low volatility", () => {
   const result = computeSpreadAnalysis({
     couponRate: 0.05,
     totalPeriods: 20,

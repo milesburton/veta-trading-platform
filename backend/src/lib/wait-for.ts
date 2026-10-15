@@ -1,3 +1,4 @@
+import { connect } from "node:net";
 export interface WaitForOptions {
   intervalMs?: number;
   timeoutMs?: number;
@@ -15,8 +16,13 @@ export async function waitForUrl(url: string, opts: WaitForOptions = {}): Promis
 
   const tcpOpen = async (): Promise<boolean> => {
     try {
-      const conn = await Deno.connect({ hostname, port });
-      conn.close();
+      await new Promise<void>((resolve, reject) => {
+        const conn = connect({ host: hostname, port }, () => {
+          conn.destroy();
+          resolve();
+        });
+        conn.on("error", reject);
+      });
       return true;
     } catch {
       return false;

@@ -1,4 +1,4 @@
-import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import type { Pool } from "#veta/db";
 import type {
   AdvisoryNote,
   LlmJob,
@@ -6,7 +6,7 @@ import type {
   LlmPromptAudit,
   LlmResponseAudit,
   LlmWorkerSession,
-} from "@veta/types/llm-advisory";
+} from "#veta/types/llm-advisory";
 
 export interface JobStore {
   insertJob(job: Omit<LlmJob, "id">): Promise<string>;

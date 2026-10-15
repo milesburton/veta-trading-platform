@@ -1,4 +1,4 @@
-import { scenariosPool } from "@veta/db";
+import { scenariosPool } from "#veta/db";
 import type {
   RunStatus,
   Scenario,

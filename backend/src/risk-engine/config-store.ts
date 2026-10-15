@@ -1,6 +1,6 @@
-import { riskPool } from "@veta/db";
-import { logger } from "@veta/logger";
-import type { RiskConfig } from "@veta/schemas/risk";
+import { riskPool } from "#veta/db";
+import { logger } from "#veta/logger";
+import type { RiskConfig } from "#veta/schemas/risk";
 
 export interface ConfigVersion {
   id: number;

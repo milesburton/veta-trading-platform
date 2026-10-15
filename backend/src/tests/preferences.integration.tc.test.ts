@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 /**
  * Preferences persistence through the gateway (testcontainers).
  *
@@ -16,11 +18,10 @@
  *
  * Gated behind RUN_TESTCONTAINERS=1.
  */
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 10_000) => AbortSignal.timeout(ms);
 const ORIGIN = "http://localhost:5173";
 
@@ -56,7 +57,7 @@ async function putPrefs(
   });
 }
 
-Deno.test({
+test({
   name:
     "preferences (testcontainers): persist through gateway only with the session cookie",
   ignore: !SHOULD_RUN,

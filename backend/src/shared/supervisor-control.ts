@@ -1,21 +1,17 @@
+import { runCommand } from "../lib/process.ts";
 const DEFAULT_SUPERVISORD_CONF = "/home/deno/supervisord.conf";
 
 function supervisordConf(): string {
-  return Deno.env.get("SUPERVISORD_CONF") || DEFAULT_SUPERVISORD_CONF;
+  return process.env.SUPERVISORD_CONF || DEFAULT_SUPERVISORD_CONF;
 }
 
 export type SupervisorctlRunner = (args: string[]) => Promise<{ ok: boolean; output: string }>;
 
 export const defaultSupervisorctlRunner: SupervisorctlRunner = async (args) => {
   try {
-    const cmd = new Deno.Command("supervisorctl", {
-      args: ["-c", supervisordConf(), ...args],
-      stdout: "piped",
-      stderr: "piped",
-    });
-    const result = await cmd.output();
-    const stdout = new TextDecoder().decode(result.stdout).trim();
-    const stderr = new TextDecoder().decode(result.stderr).trim();
+    const result = await runCommand("supervisorctl", ["-c", supervisordConf(), ...args]);
+    const stdout = result.stdout.trim();
+    const stderr = result.stderr.trim();
     return { ok: result.code === 0, output: stdout || stderr };
   } catch (err) {
     return { ok: false, output: (err as Error).message };

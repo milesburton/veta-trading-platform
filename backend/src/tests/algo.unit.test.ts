@@ -1,7 +1,8 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import { availableSniperQty } from "../algo/sniper-math.ts";
 
-Deno.test("[sniper] does not reroute quantity already in flight", () => {
+test("[sniper] does not reroute quantity already in flight", () => {
   assertEquals(availableSniperQty(50, 40), 10);
   assertEquals(availableSniperQty(50, 50), 0);
   assertEquals(availableSniperQty(50, 60), 0);
@@ -24,7 +25,7 @@ function twapSlices(quantity: number, durationMs: number, intervalMs: number): n
   return slices;
 }
 
-Deno.test("[twap] slices sum to total quantity", () => {
+test("[twap] slices sum to total quantity", () => {
   const slices = twapSlices(100, 30_000, 5_000);
   assertEquals(
     slices.reduce((a, b) => a + b, 0),
@@ -32,31 +33,31 @@ Deno.test("[twap] slices sum to total quantity", () => {
   );
 });
 
-Deno.test("[twap] produces correct number of slices", () => {
+test("[twap] produces correct number of slices", () => {
   assertEquals(twapSlices(60, 30_000, 5_000).length, 6);
   assertEquals(twapSlices(60, 30_000, 10_000).length, 3);
 });
 
-Deno.test("[twap] single slice when duration equals interval", () => {
+test("[twap] single slice when duration equals interval", () => {
   const slices = twapSlices(50, 5_000, 5_000);
   assertEquals(slices.length, 1);
   assertEquals(slices[0], 50);
 });
 
-Deno.test("[twap] minimum one slice when duration shorter than interval", () => {
+test("[twap] minimum one slice when duration shorter than interval", () => {
   const slices = twapSlices(50, 1_000, 5_000);
   assertEquals(slices.length, 1);
   assertEquals(slices[0], 50);
 });
 
-Deno.test("[twap] slices are approximately equal (max diff ≤ 1 share)", () => {
+test("[twap] slices are approximately equal (max diff ≤ 1 share)", () => {
   const slices = twapSlices(31, 30_000, 5_000);
   const min = Math.min(...slices);
   const max = Math.max(...slices);
   assert(max - min <= 1, `Slices vary by more than 1: min=${min} max=${max}`);
 });
 
-Deno.test("[twap] slices total is within one share of requested quantity", () => {
+test("[twap] slices total is within one share of requested quantity", () => {
   for (const qty of [7, 11, 97, 100, 999]) {
     const slices = twapSlices(qty, 30_000, 5_000);
     const total = slices.reduce((a, b) => a + b, 0);
@@ -80,24 +81,24 @@ function povSlice(
   return Math.max(minSlice, Math.min(maxSlice, Math.min(raw, remaining)));
 }
 
-Deno.test("[pov] slice is povRate fraction of tick volume", () => {
+test("[pov] slice is povRate fraction of tick volume", () => {
   assertEquals(povSlice(1000, 0.1, 10, 5000, 9999), 100);
   assertEquals(povSlice(2000, 0.05, 10, 5000, 9999), 100);
 });
 
-Deno.test("[pov] slice never exceeds maxSlice", () => {
+test("[pov] slice never exceeds maxSlice", () => {
   assertEquals(povSlice(100_000, 0.1, 10, 500, 9_999), 500);
 });
 
-Deno.test("[pov] slice is at least minSlice when tick volume is tiny", () => {
+test("[pov] slice is at least minSlice when tick volume is tiny", () => {
   assertEquals(povSlice(5, 0.1, 50, 5_000, 9_999), 50);
 });
 
-Deno.test("[pov] slice never exceeds remaining quantity", () => {
+test("[pov] slice never exceeds remaining quantity", () => {
   assertEquals(povSlice(10_000, 0.1, 10, 5_000, 30), 30);
 });
 
-Deno.test("[pov] zero tick volume returns minSlice (clamp behaviour)", () => {
+test("[pov] zero tick volume returns minSlice (clamp behaviour)", () => {
   assertEquals(povSlice(0, 0.1, 10, 5_000, 9_999), 10);
 });
 
@@ -124,17 +125,17 @@ function rollingVwap(buf: PriceVolPoint[]): number {
   return buf.reduce((s, p) => s + p.price * p.volume, 0) / totalVol;
 }
 
-Deno.test("[vwap] empty history returns 0", () => {
+test("[vwap] empty history returns 0", () => {
   assertEquals(rollingVwap([]), 0);
 });
 
-Deno.test("[vwap] uniform price: vwap equals that price", () => {
+test("[vwap] uniform price: vwap equals that price", () => {
   let buf: PriceVolPoint[] = [];
   for (let i = 0; i < 10; i++) buf = updateHistory(buf, 100, 500, 20);
   assertAlmostEquals(rollingVwap(buf), 100, 1e-9);
 });
 
-Deno.test("[vwap] high-volume tick dominates vwap", () => {
+test("[vwap] high-volume tick dominates vwap", () => {
   let buf: PriceVolPoint[] = [];
   buf = updateHistory(buf, 100, 1, 20);
   buf = updateHistory(buf, 200, 999, 20);
@@ -142,7 +143,7 @@ Deno.test("[vwap] high-volume tick dominates vwap", () => {
   assert(vwap > 190, `vwap ${vwap} should be close to 200 (high-volume price)`);
 });
 
-Deno.test("[vwap] window evicts oldest entries", () => {
+test("[vwap] window evicts oldest entries", () => {
   let buf: PriceVolPoint[] = [];
   for (let i = 0; i < 5; i++) buf = updateHistory(buf, 50, 1000, 3);
   buf = updateHistory(buf, 200, 1000, 3);
@@ -152,14 +153,14 @@ Deno.test("[vwap] window evicts oldest entries", () => {
   assertAlmostEquals(rollingVwap(buf), 200, 1e-9);
 });
 
-Deno.test("[vwap] zero-volume tick does not affect vwap", () => {
+test("[vwap] zero-volume tick does not affect vwap", () => {
   let buf: PriceVolPoint[] = [];
   buf = updateHistory(buf, 100, 1_000, 20);
   buf = updateHistory(buf, 999, 0, 20);
   assertAlmostEquals(rollingVwap(buf), 100, 1e-9);
 });
 
-Deno.test("[vwap] vwap is within price range of constituent ticks", () => {
+test("[vwap] vwap is within price range of constituent ticks", () => {
   const prices = [90, 100, 110, 95, 105];
   let buf: PriceVolPoint[] = [];
   for (const p of prices) buf = updateHistory(buf, p, 1_000, 20);
@@ -177,15 +178,15 @@ function icebergSlicesNeeded(totalQty: number, visibleQty: number): number {
   return Math.ceil(totalQty / visibleQty);
 }
 
-Deno.test("[iceberg] first slice equals visibleQty when total > visible", () => {
+test("[iceberg] first slice equals visibleQty when total > visible", () => {
   assertEquals(icebergNextSlice(500, 100), 100);
 });
 
-Deno.test("[iceberg] last slice is the remainder, not a full visibleQty", () => {
+test("[iceberg] last slice is the remainder, not a full visibleQty", () => {
   assertEquals(icebergNextSlice(30, 100), 30);
 });
 
-Deno.test("[iceberg] exactly divisible: all slices are full visibleQty", () => {
+test("[iceberg] exactly divisible: all slices are full visibleQty", () => {
   const total = 300;
   const visible = 100;
   assertEquals(icebergSlicesNeeded(total, visible), 3);
@@ -199,7 +200,7 @@ Deno.test("[iceberg] exactly divisible: all slices are full visibleQty", () => {
   assertEquals(slices, [100, 100, 100]);
 });
 
-Deno.test("[iceberg] indivisible total produces correct final slice", () => {
+test("[iceberg] indivisible total produces correct final slice", () => {
   const total = 250;
   const visible = 100;
   assertEquals(icebergSlicesNeeded(total, visible), 3);
@@ -217,7 +218,7 @@ Deno.test("[iceberg] indivisible total produces correct final slice", () => {
   );
 });
 
-Deno.test("[iceberg] visibleQty=1 produces one slice per share", () => {
+test("[iceberg] visibleQty=1 produces one slice per share", () => {
   const total = 5;
   const slices: number[] = [];
   let remaining = total;
@@ -249,23 +250,23 @@ function trancheSize(totalQty: number, maxTranches: number): number {
   return Math.max(1, Math.ceil(totalQty / maxTranches));
 }
 
-Deno.test("[momentum/ema] converges to constant price", () => {
+test("[momentum/ema] converges to constant price", () => {
   let ema = 100;
   for (let i = 0; i < 50; i++) ema = nextEma(200, ema, 5);
   assertAlmostEquals(ema, 200, 1);
 });
 
-Deno.test("[momentum/ema] k factor: short period reacts faster than long period", () => {
+test("[momentum/ema] k factor: short period reacts faster than long period", () => {
   const fast = nextEma(200, 100, 3);
   const slow = nextEma(200, 100, 20);
   assert(fast > slow, `fast EMA ${fast} should exceed slow EMA ${slow} after price spike`);
 });
 
-Deno.test("[momentum/ema] period=1 collapses to current price", () => {
+test("[momentum/ema] period=1 collapses to current price", () => {
   assertAlmostEquals(nextEma(150, 100, 1), 150, 1e-9);
 });
 
-Deno.test("[momentum/signal] rising price → positive signal bps", () => {
+test("[momentum/signal] rising price → positive signal bps", () => {
   let shortEma = 100;
   let longEma = 100;
   for (let i = 0; i < 20; i++) {
@@ -276,7 +277,7 @@ Deno.test("[momentum/signal] rising price → positive signal bps", () => {
   assert(computeSignalBps(shortEma, longEma) > 0, "rising price should yield positive signal");
 });
 
-Deno.test("[momentum/signal] falling price → negative signal bps", () => {
+test("[momentum/signal] falling price → negative signal bps", () => {
   let shortEma = 100;
   let longEma = 100;
   for (let i = 0; i < 20; i++) {
@@ -287,7 +288,7 @@ Deno.test("[momentum/signal] falling price → negative signal bps", () => {
   assert(computeSignalBps(shortEma, longEma) < 0, "falling price should yield negative signal");
 });
 
-Deno.test("[momentum/signal] flat price → near-zero signal", () => {
+test("[momentum/signal] flat price → near-zero signal", () => {
   let shortEma = 100;
   let longEma = 100;
   for (let i = 0; i < 20; i++) {
@@ -297,13 +298,13 @@ Deno.test("[momentum/signal] flat price → near-zero signal", () => {
   assert(Math.abs(computeSignalBps(shortEma, longEma)) < 0.01, "flat price should yield ~0 signal");
 });
 
-Deno.test("[momentum/tranche] tranche size divides quantity into maxTranches", () => {
+test("[momentum/tranche] tranche size divides quantity into maxTranches", () => {
   assertEquals(trancheSize(100, 5), 20);
   assertEquals(trancheSize(101, 5), 21);
   assertEquals(trancheSize(1, 10), 1);
 });
 
-Deno.test("[momentum/tranche] total covered by maxTranches tranches ≥ totalQty", () => {
+test("[momentum/tranche] total covered by maxTranches tranches ≥ totalQty", () => {
   for (const [qty, max] of [
     [100, 4],
     [77, 5],
@@ -346,7 +347,7 @@ function buildSliceSchedule(
   return { sliceQtys: sliceQtys.slice(1), numSlices, sliceIntervalMs };
 }
 
-Deno.test("[is] slice quantities sum to totalQty", () => {
+test("[is] slice quantities sum to totalQty", () => {
   for (const urgency of [0.1, 0.3, 0.5, 0.7, 0.9]) {
     const { sliceQtys } = buildSliceSchedule(100, urgency, 2, 10, 60_000);
     assertEquals(
@@ -357,7 +358,7 @@ Deno.test("[is] slice quantities sum to totalQty", () => {
   }
 });
 
-Deno.test("[is] high urgency: first slice is larger than last slice", () => {
+test("[is] high urgency: first slice is larger than last slice", () => {
   const { sliceQtys } = buildSliceSchedule(100, 0.9, 2, 10, 60_000);
   assert(
     sliceQtys[0] >= sliceQtys[sliceQtys.length - 1],
@@ -365,7 +366,7 @@ Deno.test("[is] high urgency: first slice is larger than last slice", () => {
   );
 });
 
-Deno.test("[is] low urgency: schedule more evenly distributed than high urgency", () => {
+test("[is] low urgency: schedule more evenly distributed than high urgency", () => {
   const high = buildSliceSchedule(100, 0.9, 2, 10, 60_000);
   const low = buildSliceSchedule(100, 0.1, 2, 10, 60_000);
   const highSkew = high.sliceQtys[0] - high.sliceQtys[high.sliceQtys.length - 1];
@@ -376,7 +377,7 @@ Deno.test("[is] low urgency: schedule more evenly distributed than high urgency"
   );
 });
 
-Deno.test("[is] numSlices is within [minSlices, maxSlices]", () => {
+test("[is] numSlices is within [minSlices, maxSlices]", () => {
   for (const urgency of [0.01, 0.5, 0.99]) {
     const { numSlices } = buildSliceSchedule(100, urgency, 3, 12, 60_000);
     assert(
@@ -386,7 +387,7 @@ Deno.test("[is] numSlices is within [minSlices, maxSlices]", () => {
   }
 });
 
-Deno.test("[is] urgency clamped: 0 and 1 do not crash and still sum correctly", () => {
+test("[is] urgency clamped: 0 and 1 do not crash and still sum correctly", () => {
   for (const urgency of [0, 1, -0.5, 1.5]) {
     const { sliceQtys } = buildSliceSchedule(50, urgency, 2, 8, 30_000);
     assertEquals(
@@ -397,13 +398,13 @@ Deno.test("[is] urgency clamped: 0 and 1 do not crash and still sum correctly", 
   }
 });
 
-Deno.test("[is] sliceIntervalMs = durationMs / numSlices", () => {
+test("[is] sliceIntervalMs = durationMs / numSlices", () => {
   const duration = 60_000;
   const { sliceIntervalMs, numSlices } = buildSliceSchedule(100, 0.5, 2, 10, duration);
   assertAlmostEquals(sliceIntervalMs, duration / numSlices, 1e-9);
 });
 
-Deno.test("[is] all slice quantities are non-negative", () => {
+test("[is] all slice quantities are non-negative", () => {
   const { sliceQtys } = buildSliceSchedule(100, 0.7, 2, 10, 60_000);
   assert(
     sliceQtys.every((q) => q >= 0),
@@ -419,27 +420,27 @@ function slippageBps(arrivalPrice: number, currentPrice: number, side: "BUY" | "
   return side === "BUY" ? drift : -drift;
 }
 
-Deno.test("[arrival-price] BUY: price rising above arrival is adverse (positive bps)", () => {
+test("[arrival-price] BUY: price rising above arrival is adverse (positive bps)", () => {
   assert(slippageBps(100, 101, "BUY") > 0);
 });
 
-Deno.test("[arrival-price] BUY: price falling below arrival is favourable (negative bps)", () => {
+test("[arrival-price] BUY: price falling below arrival is favourable (negative bps)", () => {
   assert(slippageBps(100, 99, "BUY") < 0);
 });
 
-Deno.test("[arrival-price] SELL: price falling is adverse (positive bps)", () => {
+test("[arrival-price] SELL: price falling is adverse (positive bps)", () => {
   assert(slippageBps(100, 99, "SELL") > 0);
 });
 
-Deno.test("[arrival-price] SELL: price rising is favourable (negative bps)", () => {
+test("[arrival-price] SELL: price rising is favourable (negative bps)", () => {
   assert(slippageBps(100, 101, "SELL") < 0);
 });
 
-Deno.test("[arrival-price] zero slippage when price equals arrival", () => {
+test("[arrival-price] zero slippage when price equals arrival", () => {
   assertEquals(slippageBps(100, 100, "BUY"), 0);
   assertEquals(slippageBps(100, 100, "SELL"), 0);
 });
 
-Deno.test("[arrival-price] slippage magnitude: 1% move = 100 bps", () => {
+test("[arrival-price] slippage magnitude: 1% move = 100 bps", () => {
   assertAlmostEquals(Math.abs(slippageBps(100, 101, "BUY")), 100, 1e-6);
 });

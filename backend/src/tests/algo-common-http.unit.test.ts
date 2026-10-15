@@ -1,5 +1,7 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { FakeTime } from "jsr:@std/testing@0.217/time";
+import { spawn } from "node:child_process";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { FakeTime } from "#veta/fake-time";
 import {
   serveAlgoHealth,
   spawnKillWatchdog,
@@ -46,15 +48,16 @@ const tracked = (overrides: Partial<TrackedOrder> = {}): TrackedOrder => ({
   ...overrides,
 });
 
-Deno.test("[spawnKillWatchdog] kills the target process after the delay", async () => {
-  const child = new Deno.Command("sleep", { args: ["30"], stdin: "null", stdout: "null", stderr: "null" }).spawn();
-  spawnKillWatchdog(child.pid, 200);
-  const status = await child.status;
-  assertEquals(status.success, false);
-  assertEquals(status.signal, "SIGKILL");
+test("[spawnKillWatchdog] kills the target process after the delay", async () => {
+  const child = spawn("sleep", ["30"], { stdio: "ignore" });
+  spawnKillWatchdog(child.pid as number, 200);
+  const signal = await new Promise<NodeJS.Signals | null>((resolve) =>
+    child.on("exit", (_code, sig) => resolve(sig))
+  );
+  assertEquals(signal, "SIGKILL");
 });
 
-Deno.test({
+test({
   name: "[serveAlgoHealth] reports health, answers preflight and rejects other routes",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -85,7 +88,7 @@ Deno.test({
   },
 });
 
-Deno.test("[startExpirySweep] expires overdue orders with their average fill and keeps live ones", async () => {
+test("[startExpirySweep] expires overdue orders with their average fill and keeps live ones", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -111,7 +114,7 @@ Deno.test("[startExpirySweep] expires overdue orders with their average fill and
   }
 });
 
-Deno.test("[startExpirySweep] tolerates a missing producer and a failing producer", async () => {
+test("[startExpirySweep] tolerates a missing producer and a failing producer", async () => {
   const time = new FakeTime(0);
   try {
     const withoutProducer = new Map([["o1", expirable()]]);
@@ -130,7 +133,7 @@ Deno.test("[startExpirySweep] tolerates a missing producer and a failing produce
   }
 });
 
-Deno.test("[startExpirySweepIndexed] expires by numeric key and leaves unexpired orders", async () => {
+test("[startExpirySweepIndexed] expires by numeric key and leaves unexpired orders", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -153,7 +156,7 @@ Deno.test("[startExpirySweepIndexed] expires by numeric key and leaves unexpired
   }
 });
 
-Deno.test("[startJournalProgressSweep] leaves working orders alone", async () => {
+test("[startJournalProgressSweep] leaves working orders alone", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -171,7 +174,7 @@ Deno.test("[startJournalProgressSweep] leaves working orders alone", async () =>
   }
 });
 
-Deno.test("[startJournalProgressSweep] publishes a complete heartbeat once the order is filled", async () => {
+test("[startJournalProgressSweep] publishes a complete heartbeat once the order is filled", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -192,7 +195,7 @@ Deno.test("[startJournalProgressSweep] publishes a complete heartbeat once the o
   }
 });
 
-Deno.test("[startJournalProgressSweep] expires an unfilled order past its deadline, with or without journal data", async () => {
+test("[startJournalProgressSweep] expires an unfilled order past its deadline, with or without journal data", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -218,7 +221,7 @@ Deno.test("[startJournalProgressSweep] expires an unfilled order past its deadli
   }
 });
 
-Deno.test("[startJournalProgressSweep] survives a failing progress reader and keeps sweeping", async () => {
+test("[startJournalProgressSweep] survives a failing progress reader and keeps sweeping", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();

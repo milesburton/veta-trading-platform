@@ -1,18 +1,13 @@
 import { logger } from "#veta/logger";
+import { deriveServiceName } from "./service-name.ts";
 
 function isOtelEnabled(): boolean {
-  return (process.env.OTEL_DENO ?? "").toLowerCase() === "true";
+  return (process.env.OTEL_ENABLED ?? "").toLowerCase() === "true";
 }
 
 const OTEL_ENABLED_AT_IMPORT = isOtelEnabled();
 
-export function deriveServiceName(): string {
-  const explicit = process.env.OTEL_SERVICE_NAME;
-  if (explicit && explicit.length > 0) return explicit;
-  const host = process.env.HOSTNAME ?? "";
-  const stripped = host.replace(/^veta-/, "").replace(/-\d+$/, "");
-  return stripped || "veta-service";
-}
+export { deriveServiceName };
 
 if (OTEL_ENABLED_AT_IMPORT && !process.env.OTEL_SERVICE_NAME) {
   process.env.OTEL_SERVICE_NAME = deriveServiceName();
@@ -158,6 +153,10 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
     description: "Memory used by C++ objects bound to JavaScript",
     unit: "By",
   });
+  const v8HeapGauge = meter.createObservableGauge("v8js.memory.heap.size", {
+    description: "V8 heap size in use",
+    unit: "By",
+  });
   const cpuGauge = meter.createObservableGauge("process_cpu_seconds_total", {
     description: "Total CPU time consumed by the process since startup",
     unit: "s",
@@ -181,6 +180,8 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   const uptimeCb = (r: ObservableResultLike) => r.observe(performance.now() / 1000 - wallStart);
 
   rssGauge.addCallback(rssCb);
+  const v8HeapCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapUsed);
+  v8HeapGauge.addCallback(v8HeapCb);
   heapUsedGauge.addCallback(heapUsedCb);
   heapTotalGauge.addCallback(heapTotalCb);
   externalGauge.addCallback(externalCb);
@@ -195,6 +196,7 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   processMetricsHandle = {
     stop: () => {
       rssGauge.removeCallback(rssCb);
+      v8HeapGauge.removeCallback(v8HeapCb);
       heapUsedGauge.removeCallback(heapUsedCb);
       heapTotalGauge.removeCallback(heapTotalCb);
       externalGauge.removeCallback(externalCb);

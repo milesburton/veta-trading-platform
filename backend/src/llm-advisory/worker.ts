@@ -1,8 +1,8 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { llmAdvisoryPool } from "@veta/db";
-import { logger } from "@veta/logger";
-import { createProducer } from "@veta/messaging";
+import "#veta/bootstrap";
+import { serveFetch } from "#veta/http";
+import { llmAdvisoryPool } from "#veta/db";
+import { logger } from "#veta/logger";
+import { createProducer } from "#veta/messaging";
 import { createJobStore } from "./job-store.ts";
 import { handleParseTicket } from "./parse-ticket-handler.ts";
 import { isIdleWindowOpen, isWorkerAllowed, loadPolicy } from "./policy.ts";
@@ -13,11 +13,11 @@ import { createMockProvider } from "./providers/mock.ts";
 import { createOllamaProvider } from "./providers/ollama.ts";
 import { createRuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
 
-const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_033;
-const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
-const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
-const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.LLM_WORKER_PORT) || 5_033;
+const JOURNAL_URL = process.env.JOURNAL_URL || "http://localhost:5009";
+const FEATURE_ENGINE_URL = process.env.FEATURE_ENGINE_URL || "http://localhost:5017";
+const SIGNAL_ENGINE_URL = process.env.SIGNAL_ENGINE_URL || "http://localhost:5018";
+const VERSION = process.env.COMMIT_SHA || "dev";
 const MAX_RETRIES = 3;
 
 const basePolicy = loadPolicy();
@@ -28,7 +28,7 @@ const effectivePolicy = resolveEffectivePolicy(basePolicy, await runtimeConfig.g
 
 if (!isWorkerAllowed(effectivePolicy)) {
   logger.info("LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
-  Deno.exit(0);
+  process.exit(0);
 }
 
 const IDLE_TIMEOUT_MS = effectivePolicy.workerIdleTimeoutSeconds * 1_000;
@@ -49,7 +49,7 @@ const provider = buildProvider();
 const available = await provider.isAvailable();
 if (!available) {
   logger.warn(`Provider '${effectivePolicy.provider}' is not available — exiting`);
-  Deno.exit(0);
+  process.exit(0);
 }
 
 const producer = await createProducer("llm-worker").catch((err) => {
@@ -64,7 +64,7 @@ const sessionId = await store.insertWorkerSession({
   modelId: provider.modelId,
   jobsProcessed: 0,
   jobsFailed: 0,
-  pid: Deno.pid,
+  pid: process.pid,
   exitReason: null,
 });
 
@@ -242,7 +242,7 @@ async function processJob(jobId: string): Promise<boolean> {
   }
 }
 
-const server = Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+const server = serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   if (req.method === "POST" && url.pathname === "/parse-ticket") {
     return await handleParseTicket(req, { provider });
@@ -322,5 +322,5 @@ producer
 logger.info(
   `Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`
 );
-await server.shutdown();
-Deno.exit(0);
+server.close();
+process.exit(0);

@@ -5,6 +5,7 @@ export function assert(condition: unknown, message?: string): asserts condition 
 }
 
 export function assertEquals<T>(actual: unknown, expected: T, message?: string): void {
+  if (typeof actual === "number" && typeof expected === "number" && actual === expected) return;
   expect(actual, message).toEqual(expected);
 }
 

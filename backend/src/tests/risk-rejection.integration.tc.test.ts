@@ -1,8 +1,9 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 8_000) => AbortSignal.timeout(ms);
 
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
@@ -22,7 +23,7 @@ const SERVICES = [
   "gateway",
 ] as const;
 
-Deno.test({
+test({
   name: "risk-engine pre-trade rejection (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {

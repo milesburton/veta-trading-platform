@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import { notifyDiscord } from "../discord-notifier.ts";
 import { platformStats } from "../platform-stats.ts";

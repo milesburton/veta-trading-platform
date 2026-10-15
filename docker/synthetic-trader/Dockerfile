@@ -3,4 +3,4 @@ FROM ghcr.io/milesburton/veta-trading-platform/base:${BASE_TAG}
 ARG COMMIT_SHA=dev
 ENV COMMIT_SHA=${COMMIT_SHA}
 EXPOSE 5031
-CMD ["deno", "run", "--allow-all", "/app/backend/src/synthetic-trader/synthetic-trader.ts"]
+CMD ["node", "/app/backend/src/synthetic-trader/synthetic-trader.ts"]

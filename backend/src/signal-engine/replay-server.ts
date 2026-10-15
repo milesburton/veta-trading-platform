@@ -1,5 +1,5 @@
-import { intelligencePool } from "@veta/db";
-import type { FeatureVector, Signal } from "@veta/types/intelligence";
+import { intelligencePool } from "#veta/db";
+import type { FeatureVector, Signal } from "#veta/types/intelligence";
 import {
   computeEventScore,
   computeMomentum,
@@ -10,7 +10,7 @@ import { createMarketEventStore } from "../market-data-adapters/market-event-sto
 import { scoreFeatureVector } from "./scorer.ts";
 import type { WeightStore } from "./weight-store.ts";
 
-const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
+const JOURNAL_URL = process.env.JOURNAL_URL || "http://localhost:5009";
 
 const marketEventStore = createMarketEventStore(intelligencePool);
 
