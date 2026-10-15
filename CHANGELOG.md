@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.87.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.87.0...veta-trading-platform-v1.87.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **discord-bot:** post the message of the day once a day by default ([#855](https://github.com/milesburton/veta-trading-platform/issues/855)) ([583b1f7](https://github.com/milesburton/veta-trading-platform/commit/583b1f7cb7f499cd1f3f779c56878467d51cd3e8))
+* **fix-exchange:** correct FIX message framing and make exec IDs unique, run FIX testcontainers suite ([#857](https://github.com/milesburton/veta-trading-platform/issues/857)) ([3d0956a](https://github.com/milesburton/veta-trading-platform/commit/3d0956aa1c83654fe664c12ddc28d3f1cda86c4f)), closes [#848](https://github.com/milesburton/veta-trading-platform/issues/848)
+* **oms:** enforce max_daily_notional as a cumulative per-day total ([#856](https://github.com/milesburton/veta-trading-platform/issues/856)) ([ebcc31e](https://github.com/milesburton/veta-trading-platform/commit/ebcc31ee4cf7af1897fdabbe35f1c8deb4848185))
+
 ## [1.87.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.86.3...veta-trading-platform-v1.87.0) (2026-10-14)
 
 
