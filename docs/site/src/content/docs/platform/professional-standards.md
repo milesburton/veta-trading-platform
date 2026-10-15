@@ -159,7 +159,7 @@ sometimes time out under load. Each follow-up PR named in the
 | Risk-engine pressure test           | Implemented | [`k6/risk-stress.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/risk-stress.js): weighted under/at/over-limit mix.                                                |
 | Live load-test telemetry to Grafana | Implemented | k6 writes to Prometheus via remote-write; rendered on the **k6 Prometheus** dashboard.                                                                                                    |
 | Performance regression tracking     | Partially   | JSON summaries written per-run to [`docs/site/src/data/loadtest/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/site/src/data/loadtest); no automated CI gate yet. |
-| Load tests scheduled in CI          | Deferred    | Currently manual; nightly k6 run on the server is a planned follow-up.                                                                                                                    |
+| Load tests scheduled in CI          | Implemented | `load-tests.yml` runs `mixed-strategy.js` daily at 06:15 UTC and on manual dispatch; scheduled runs skip when all markets are closed.                                                     |
 
 ## Recovery and operational drills
 
@@ -169,7 +169,7 @@ sometimes time out under load. Each follow-up PR named in the
 | Restore drill performed at least once | Deferred | Untested.                                                                      |
 | Redpanda topic snapshots              | Deferred | No snapshotting.                                                               |
 | Documented disaster-recovery runbook  | Deferred | No DR runbook yet.                                                             |
-| Incident postmortems                  | Deferred | No incidents to post-mortem yet, but template should exist before they happen. |
+| Incident log and postmortems          | Implemented | [`docs/incidents/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/incidents) holds a template, seven incident entries and two postmortems. |
 
 ## Deliberate non-goals
 

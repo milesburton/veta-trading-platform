@@ -172,8 +172,8 @@ Two alert rules consume it:
 
 | Rule | Threshold | Duration | Severity |
 | --- | --- | --- | --- |
-| `FrontendHeapHigh` | > 2 GiB | 10m | warning |
-| `FrontendHeapCritical` | > 4 GiB | 2m | critical |
+| `FrontendHeapHigh` | > 2 GB (2e9 bytes) | 10m | warning |
+| `FrontendHeapCritical` | > 4 GB (4e9 bytes) | 2m | critical |
 
 Hitting `Critical` typically precedes a frozen tab (Firefox starts swapping at 4 GiB). Get the affected user to hard-refresh and grab a heap snapshot from `about:memory` if you want to investigate further.
 

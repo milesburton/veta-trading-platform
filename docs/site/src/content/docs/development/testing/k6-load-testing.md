@@ -183,7 +183,7 @@ When in doubt, open the **Order Pipeline (Traces)** dashboard while a run is in 
 ## Scheduled runs and Discord alerting
 
 `.github/workflows/load-tests.yml` runs `mixed-strategy.js` against production
-(`https://veta.mnetcs.com/api/gateway`) every 4 hours, in addition to being
+(`https://veta.mnetcs.com/api/gateway`) daily at 06:15 UTC, in addition to being
 runnable on demand via `workflow_dispatch` with a choice of scenario. This is
 independent of the always-on homelab loadgen (`loadgen-soak` /
 `loadgen-matrix`, see [continuous load generator](../loadgen/)): the homelab
