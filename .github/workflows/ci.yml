@@ -203,24 +203,15 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
-
-      - name: Cache npm
-        uses: actions/cache@v5
-        with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-          key: npm-${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-frontend-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
       - name: Biome lint
         working-directory: frontend
@@ -347,24 +338,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
-
-      - name: Cache npm
-        uses: actions/cache@v5
-        with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-          key: npm-${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-frontend-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
       - name: Ensure base ref is available
         run: git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
@@ -741,25 +723,23 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
-      - name: Cache npm and Playwright browsers
+      - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-            ~/.cache/ms-playwright
-          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
-            npm-playwright-${{ runner.os }}-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -850,25 +830,23 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
-      - name: Cache npm and Playwright browsers
+      - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-            ~/.cache/ms-playwright
-          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
-            npm-playwright-${{ runner.os }}-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -908,25 +886,23 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
-      - name: Cache npm and Playwright browsers
+      - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-            ~/.cache/ms-playwright
-          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
-            npm-playwright-${{ runner.os }}-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -967,25 +943,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
-      - name: Cache npm and Playwright browsers
+      - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-            ~/.cache/ms-playwright
-          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
-            npm-playwright-${{ runner.os }}-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -1080,25 +1054,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
-      - name: Cache npm and Playwright browsers
+      - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-            ~/.cache/ms-playwright
-          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
-            npm-playwright-${{ runner.os }}-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -1197,24 +1169,15 @@ jobs:
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
-
-      - name: Cache npm
-        uses: actions/cache@v5
-        with:
-          path: |
-            frontend/node_modules
-            ~/.npm
-          key: npm-${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-frontend-
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+          cache: true
+          cache-dependency-path: frontend/package-lock.json
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
       - name: Install xvfb and Electron native dependencies
         run: |
@@ -1606,16 +1569,15 @@ jobs:
           done < scripts/gate-services.txt
           docker image ls "ghcr.io/milesburton/veta-trading-platform/*" --format '{{.Repository}}:{{.Tag}} {{.Size}}' | sort
 
-      - name: Set up Node + Playwright
-        uses: actions/setup-node@v4
+      - name: Setup Vite+ and Node
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
-          node-version: "22"
-          cache: npm
+          node-version: "24"
+          cache: true
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend deps (for Playwright)
-        working-directory: frontend
-        run: npm ci
+          run-install: |
+            - cwd: frontend
+              args: ['--frozen-lockfile']
 
       - name: Install Playwright browsers
         working-directory: frontend
