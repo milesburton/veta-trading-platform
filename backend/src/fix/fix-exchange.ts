@@ -45,12 +45,15 @@ const producer = await createProducer("fix-exchange").catch((err) => {
 });
 
 const SOH = "\x01";
+const FIX_TRAILER_LENGTH = 8;
 
 async function handleConnection(conn: Deno.TcpConn): Promise<void> {
   const remote = `${conn.remoteAddr.hostname}:${conn.remoteAddr.port}`;
   logger.info(`[FIX Exchange] Connection from ${remote}`);
 
   let execIdCounter = 1;
+  const execIdPrefix = crypto.randomUUID().slice(0, 8);
+  const nextExecId = () => `${execIdPrefix}-${execIdCounter++}`;
   let buffer = "";
 
   // Working orders for this connection, keyed by the ClOrdID the client
@@ -160,7 +163,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
         [Tag.MsgType, MsgType.ExecutionReport],
         [Tag.OrderID, orderId],
         [Tag.ClOrdID, clOrdId],
-        [Tag.ExecID, `${execIdCounter++}`],
+        [Tag.ExecID, nextExecId()],
         [Tag.ExecType, ExecType.Rejected],
         [Tag.OrdStatus, OrdStatus.Rejected],
         [Tag.Symbol, symbol],
@@ -221,7 +224,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     }
 
     // ExecReport: New (acknowledge receipt)
-    const ackExecId = `${execIdCounter++}`;
+    const ackExecId = nextExecId();
     session.sendMessage([
       [Tag.MsgType, MsgType.ExecutionReport],
       [Tag.OrderID, orderId],
@@ -295,7 +298,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
       const execType = isFinal ? ExecType.Fill : ExecType.PartialFill;
       const ordStatus = isFinal ? OrdStatus.Filled : OrdStatus.PartiallyFilled;
 
-      const fillExecId = `${execIdCounter++}`;
+      const fillExecId = nextExecId();
       const transactTime = utcTimestamp();
       session.sendMessage([
         [Tag.MsgType, MsgType.ExecutionReport],
@@ -395,7 +398,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
       [Tag.OrderID, order.orderId],
       [Tag.ClOrdID, cancelClOrdId],
       [Tag.OrigClOrdID, origClOrdId],
-      [Tag.ExecID, `${execIdCounter++}`],
+      [Tag.ExecID, nextExecId()],
       [Tag.ExecType, ExecType.Canceled],
       [Tag.OrdStatus, OrdStatus.Canceled],
       [Tag.Symbol, symbol || order.symbol],
@@ -471,7 +474,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
       [Tag.OrderID, order.orderId],
       [Tag.ClOrdID, replaceClOrdId],
       [Tag.OrigClOrdID, origClOrdId],
-      [Tag.ExecID, `${execIdCounter++}`],
+      [Tag.ExecID, nextExecId()],
       [Tag.ExecType, ExecType.New],
       [Tag.OrdStatus, order.cumQty > 0 ? OrdStatus.PartiallyFilled : OrdStatus.New],
       [Tag.Symbol, symbol || order.symbol],
@@ -500,7 +503,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
         const msgEnd = buffer.indexOf(`${SOH}10=`);
         if (msgEnd === -1) break;
         // Find the SOH after the checksum value (3 digits + SOH)
-        const trailerEnd = msgEnd + 7; // \x0110=XXX\x01 = 7 chars
+        const trailerEnd = msgEnd + FIX_TRAILER_LENGTH;
         if (trailerEnd > buffer.length) break; // incomplete
 
         const raw = buffer.slice(0, trailerEnd);
