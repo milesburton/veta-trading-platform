@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { SignalExplainabilityPanel } from "@veta/frontend/components/SignalExplainabilityPanel";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 let mockChannelData: { selectedAsset: string } | null = {
   selectedAsset: "AAPL",

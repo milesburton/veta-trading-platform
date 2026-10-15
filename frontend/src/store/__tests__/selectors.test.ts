@@ -1,6 +1,6 @@
 import type { RootState } from "@veta/frontend/store/index";
 import { selectSymbols } from "@veta/frontend/store/selectors";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function makeState(symbols: string[]): RootState {
   return {

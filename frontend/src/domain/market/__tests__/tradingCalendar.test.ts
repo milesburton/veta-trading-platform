@@ -6,7 +6,7 @@ import {
   totalTradingMinutes,
   US_EQUITY_CALENDAR,
 } from "@veta/frontend/domain/market/tradingCalendar";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("buildSessionSchedule", () => {
   const schedule = buildSessionSchedule(US_EQUITY_CALENDAR);

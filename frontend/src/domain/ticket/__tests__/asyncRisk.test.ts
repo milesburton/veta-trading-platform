@@ -1,5 +1,5 @@
 import { checkPreTradeRisk, shouldTriggerRiskCheck } from "@veta/frontend/domain/ticket/asyncRisk";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { makeCtx } from "./fixtures";
 
 describe("shouldTriggerRiskCheck", () => {

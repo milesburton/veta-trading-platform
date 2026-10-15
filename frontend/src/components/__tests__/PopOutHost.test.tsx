@@ -6,7 +6,7 @@ import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { themeSlice } from "@veta/frontend/store/themeSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("../MarketLadder.tsx", () => ({
   MarketLadder: () => <div data-testid="market-ladder-panel">Market Ladder Panel</div>,

@@ -12,7 +12,7 @@ import {
   submitOrderThunk,
 } from "@veta/frontend/store/ordersSlice";
 import type { ChildOrder, OrderRecord } from "@veta/frontend/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const { reducer } = ordersSlice;
 const initial = { orders: [], lastSubmittedOrderId: null };

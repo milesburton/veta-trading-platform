@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { ExchangeBadge } from "@veta/frontend/components/ExchangeBadge";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const queryResult = vi.fn();
 let signedIn = true;

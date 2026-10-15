@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { OptionPreview } from "@veta/frontend/components/OrderTicket/OptionPreview";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("OptionPreview", () => {
   it("renders nothing when quantity is zero", () => {

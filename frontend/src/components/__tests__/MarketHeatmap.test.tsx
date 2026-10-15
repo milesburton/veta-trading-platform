@@ -16,7 +16,7 @@ import { COLOR } from "@veta/frontend/tokens";
 import type { AssetDef } from "@veta/frontend/types";
 import { act } from "react";
 import { Provider as ReduxProvider } from "react-redux";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 describe("MarketHeatmap helpers", () => {
   it("maps percentage bands to heat colors", () => {

@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { useFrontendMemoryTelemetry } from "@veta/frontend/hooks/useFrontendMemoryTelemetry.ts";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 interface PerformanceMemory {
   jsHeapSizeLimit: number;

@@ -3,7 +3,7 @@ import {
   openOrderTicketWindow,
   orderToTicketPrefill,
 } from "@veta/frontend/utils/orderTicketWindow.ts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 describe("openOrderTicketWindow", () => {
   let openSpy: ReturnType<typeof vi.fn>;

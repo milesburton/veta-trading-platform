@@ -6,7 +6,7 @@ import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { observabilitySlice } from "@veta/frontend/store/observabilitySlice";
 import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const byService: Record<string, { ok: boolean; version: string; warn?: boolean }> = {
   OMS: { ok: true, version: "1.0.0" },

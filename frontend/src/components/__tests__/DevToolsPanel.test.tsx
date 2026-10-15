@@ -6,7 +6,7 @@ import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const runDemoDay = vi.fn();
 const runLoadTest = vi.fn();

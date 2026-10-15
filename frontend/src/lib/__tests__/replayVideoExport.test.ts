@@ -1,7 +1,7 @@
 import type { eventWithTime } from "@rrweb/types";
 import * as htmlToImage from "html-to-image";
 import { Replayer } from "rrweb";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("rrweb", () => ({
   Replayer: vi.fn(),

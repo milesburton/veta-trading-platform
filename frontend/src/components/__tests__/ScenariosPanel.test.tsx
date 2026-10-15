@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ScenariosPanel } from "@veta/frontend/components/ScenariosPanel";
 import { type Scenario, type ScenarioRun, scenariosApi } from "@veta/frontend/store/scenariosApi";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const sampleScenarios: Scenario[] = [
   {

@@ -7,7 +7,7 @@ import { channelsSlice } from "@veta/frontend/store/channelsSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function makeStore() {
   return configureStore({

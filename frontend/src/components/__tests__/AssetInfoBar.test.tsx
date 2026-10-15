@@ -4,7 +4,7 @@ import { AssetInfoBar } from "@veta/frontend/components/OrderTicket/AssetInfoBar
 import type { ExchangeStatus } from "@veta/frontend/domain/market/exchangeStatus";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 const exchangeStatusMock = vi.hoisted(() => vi.fn<() => ExchangeStatus | null>(() => null));
 

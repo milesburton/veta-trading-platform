@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { type BuildPayloadInputs, buildKillPayloads, buildResumePayload } from "../payloads";
 
 function inputs(overrides: Partial<BuildPayloadInputs> = {}): BuildPayloadInputs {

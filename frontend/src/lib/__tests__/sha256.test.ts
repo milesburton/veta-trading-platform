@@ -1,5 +1,5 @@
 import { sha256, sha256Async } from "@veta/frontend/lib/sha256";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)

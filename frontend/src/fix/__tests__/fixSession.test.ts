@@ -2,7 +2,7 @@ import { decode, encode, MsgType, Tag } from "@veta/frontend/fix/fixCodec";
 import type { SessionConfig } from "@veta/frontend/fix/fixSession";
 import { FIXSession } from "@veta/frontend/fix/fixSession";
 import type { OrderRecord } from "@veta/frontend/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

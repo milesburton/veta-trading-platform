@@ -8,7 +8,7 @@ import {
   setUser,
   setUserWithLimits,
 } from "@veta/frontend/store/authSlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = authSlice;
 

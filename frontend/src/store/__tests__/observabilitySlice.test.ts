@@ -4,7 +4,7 @@ import {
   observabilitySlice,
 } from "@veta/frontend/store/observabilitySlice";
 import type { ObsEvent } from "@veta/frontend/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = observabilitySlice;
 

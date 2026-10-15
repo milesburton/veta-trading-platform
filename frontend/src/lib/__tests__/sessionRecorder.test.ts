@@ -1,5 +1,5 @@
 import type { eventWithTime } from "@rrweb/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 let emitCallback: ((event: eventWithTime) => void) | null = null;
 const mockStopFn = vi.fn();

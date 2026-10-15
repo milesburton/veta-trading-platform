@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { WorldClocksPanel } from "@veta/frontend/components/WorldClocksPanel";
 import { FINANCIAL_CENTERS } from "@veta/frontend/domain/market/financialCenters";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 describe("WorldClocksPanel", () => {
   it("renders the panel header", () => {

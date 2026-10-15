@@ -3,7 +3,7 @@ import {
   LIT_EQUITY_VENUES,
   VENUE_REGISTRY,
 } from "@veta/frontend/domain/market/venueCapabilities";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("VENUE_REGISTRY", () => {
   it("has entries for all 11 venue MICs", () => {

@@ -4,7 +4,7 @@ import { TradingProvider, useTradingContext } from "@veta/frontend/context/Tradi
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const openOrderTicketWindow = vi.fn();
 const hotkeyHandlers = new Map<string, () => void>();

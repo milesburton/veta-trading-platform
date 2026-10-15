@@ -10,7 +10,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { AssetDef, MarketPrices, PriceHistory } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const exchangeStatusMock = vi.hoisted(() => vi.fn<() => ExchangeStatus | null>(() => null));
 

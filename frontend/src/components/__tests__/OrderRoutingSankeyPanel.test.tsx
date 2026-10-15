@@ -8,7 +8,7 @@ import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { COLOR } from "@veta/frontend/tokens";
 import type { ChildOrder, OrderRecord } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const now = Date.now();
 

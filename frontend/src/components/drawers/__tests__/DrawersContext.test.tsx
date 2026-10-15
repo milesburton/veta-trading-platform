@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Drawer } from "@veta/frontend/components/drawers/Drawer";
 import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/DrawersContext";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function Probe() {
   const { open, close, toggle, openDrawers, isOpen, positionOf, closeAll } = useDrawers();

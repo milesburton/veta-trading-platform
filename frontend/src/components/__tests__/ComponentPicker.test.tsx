@@ -6,7 +6,7 @@ import { DashboardContext, DEFAULT_LAYOUT } from "@veta/frontend/components/Dash
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const setDraggedPanelId = vi.fn();
 const clearDraggedPanelId = vi.fn();

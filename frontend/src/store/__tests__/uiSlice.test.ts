@@ -13,7 +13,7 @@ import {
   toggleShortcuts,
   uiSlice,
 } from "@veta/frontend/store/uiSlice";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const { reducer } = uiSlice;
 const initial = reducer(undefined, { type: "@@init" });

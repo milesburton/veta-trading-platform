@@ -5,7 +5,7 @@ import {
   requestStateFromMainWindow,
 } from "@veta/frontend/store/channel";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 // ─── BroadcastChannel mock ───────────────────────────────────────────────────
 // We override the global with an instance that lets us inspect calls and

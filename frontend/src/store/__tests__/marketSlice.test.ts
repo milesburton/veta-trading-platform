@@ -10,7 +10,7 @@ import {
   tickReceived,
 } from "@veta/frontend/store/marketSlice";
 import type { OhlcCandle } from "@veta/frontend/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = marketSlice;
 

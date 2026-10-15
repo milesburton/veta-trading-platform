@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { marketDataApi } from "@veta/frontend/store/marketDataApi";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const NativeRequest = Request;
 

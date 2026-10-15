@@ -12,7 +12,7 @@ import {
   selectMuteRules,
 } from "@veta/frontend/store/alertsSlice";
 import type { RootState } from "@veta/frontend/store/index";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = alertsSlice;
 

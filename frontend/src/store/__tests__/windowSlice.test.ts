@@ -5,7 +5,7 @@ import {
   panelPopped,
   windowSlice,
 } from "@veta/frontend/store/windowSlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = windowSlice;
 const initial = reducer(undefined, { type: "@@init" });

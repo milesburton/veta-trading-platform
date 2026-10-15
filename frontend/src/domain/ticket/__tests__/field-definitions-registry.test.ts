@@ -4,7 +4,7 @@ import {
   STRATEGY_OPTIONS,
 } from "@veta/frontend/domain/ticket/fieldDefinitions";
 import { FIELD_REGISTRY, FK, getFieldDef } from "@veta/frontend/domain/ticket/fieldRegistry";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("ticket field definitions", () => {
   it("contains all supported strategy options", () => {

@@ -9,7 +9,7 @@ import {
   MAX_NOTE_AGE_MS,
   selectAdvisoryForSymbol,
 } from "@veta/frontend/store/advisorySlice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const { reducer } = advisorySlice;
 

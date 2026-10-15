@@ -1,7 +1,7 @@
 import type { SessionState } from "@veta/frontend/domain/market/marketSession";
 import { resolveTicket } from "@veta/frontend/domain/ticket/resolveTicket";
 import type { TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import {
   AUCTION_SESSION,
   DEFAULT_LIMITS,

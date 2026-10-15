@@ -4,7 +4,7 @@ import { AnalysisPanel } from "@veta/frontend/components/AnalysisPanel";
 import { type NewsItem, newsSlice } from "@veta/frontend/store/newsSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const refetch = vi.fn();
 const queryState: {

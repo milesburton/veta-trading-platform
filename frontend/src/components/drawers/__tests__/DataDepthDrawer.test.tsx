@@ -8,7 +8,7 @@ import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/D
 import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { useEffect } from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const mockAddPanel = vi.fn();
 const mockActivePanelIds = new Set<string>();

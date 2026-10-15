@@ -11,7 +11,7 @@ import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderRecord } from "@veta/frontend/types";
 import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
   ExchangeBadge: () => null,

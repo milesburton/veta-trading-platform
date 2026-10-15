@@ -5,7 +5,7 @@ import {
   isOrderBlocked,
   killSwitchSlice,
 } from "@veta/frontend/store/killSwitchSlice";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 describe("killSwitchSlice", () => {
   afterEach(() => {

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { KillSwitchButton } from "@veta/frontend/components/KillSwitchButton";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const dispatch = vi.fn();
 const killOrdersThunk = vi.fn((payload) => ({ type: "orders/kill", payload }));

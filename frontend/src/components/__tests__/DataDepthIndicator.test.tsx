@@ -5,7 +5,7 @@ import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/D
 import { DataDepthIndicator } from "@veta/frontend/components/StatusBar";
 import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const sampleData = {
   totalSymbols: 5,

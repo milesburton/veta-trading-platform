@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ProductBuilderPanel } from "@veta/frontend/components/ProductBuilderPanel";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mockUser = { id: "sales-1", role: "sales" };
 

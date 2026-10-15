@@ -12,7 +12,7 @@ import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Model } from "flexlayout-react";
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 function makeStore() {
   return configureStore({

@@ -4,7 +4,7 @@ import { MyPositionsPanel } from "@veta/frontend/components/MyPositionsPanel";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import type { RiskPosition } from "@veta/frontend/store/riskApi";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const state: {
   isLoading: boolean;

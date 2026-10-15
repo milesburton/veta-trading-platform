@@ -155,8 +155,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 21,
-      "cases": 227,
+      "files": 22,
+      "cases": 241,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -176,6 +176,7 @@
         "registration.integration.tc.test.ts": 5,
         "preferences.integration.tc.test.ts": 6,
         "trading-limits-lookup.integration.tc.test.ts": 5,
+        "fix.integration.tc.test.ts": 14,
         "venues.integration.tc.test.ts": 9,
         "product-service.integration.tc.test.ts": 8,
         "analytics-services.integration.tc.test.ts": 9

@@ -1,6 +1,6 @@
 import { exchangeLabel, exchangeStatus } from "@veta/frontend/domain/market/exchangeStatus.ts";
 import type { MarketHoursConfig } from "@veta/frontend/store/gatewayApi.ts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 function session(calendarLabel: string, isOpen: boolean, phase: string) {
   return { calendarLabel, isOpen, phase, allowOutOfHoursOverride: false };

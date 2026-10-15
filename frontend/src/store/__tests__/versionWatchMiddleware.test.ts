@@ -1,6 +1,6 @@
 import { versionWatchMiddleware } from "@veta/frontend/store/middleware/versionWatchMiddleware";
 import { setUpdateAvailable } from "@veta/frontend/store/uiSlice";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 /** Build a minimal store harness and run the middleware initialisation */
 function createHarness() {

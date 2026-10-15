@@ -7,7 +7,7 @@ import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import type { AssetDef } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const assets: AssetDef[] = [
   {

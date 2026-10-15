@@ -4,7 +4,7 @@ import { MarketFeedControlPanel } from "@veta/frontend/components/MarketFeedCont
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const toggleFeed = vi.fn();
 const apiState = {

@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { BugReportModal } from "@veta/frontend/components/BugReportModal";
 import { gatewayApi } from "@veta/frontend/store/gatewayApi";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mockSubmit = vi.fn();
 const mockPresign = vi.fn();

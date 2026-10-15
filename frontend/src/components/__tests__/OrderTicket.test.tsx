@@ -12,7 +12,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { AssetDef, MarketPrices } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
   ExchangeBadge: () => null,

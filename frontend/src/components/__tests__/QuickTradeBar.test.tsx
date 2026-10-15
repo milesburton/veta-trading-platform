@@ -5,7 +5,7 @@ import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { setOrderTicketWindowSize, uiSlice } from "@veta/frontend/store/uiSlice";
 import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const parseTicketMock = vi.fn();
 const useParseTicketMutationMock = vi.fn();

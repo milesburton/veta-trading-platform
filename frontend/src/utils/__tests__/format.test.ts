@@ -1,5 +1,5 @@
 import { formatBps, formatCurrency, formatTime, pnlColor } from "@veta/frontend/utils/format";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("format utilities", () => {
   it("formats time as zero-padded UTC HH:MM:SS suffixed with UTC", () => {

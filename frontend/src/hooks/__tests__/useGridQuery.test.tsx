@@ -1,6 +1,6 @@
 import { act, render, renderHook, screen } from "@testing-library/react";
 import { useContainerLimit, useGridQuery } from "@veta/frontend/hooks/useGridQuery";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mockUseQueryGridQuery = vi.fn();
 const gridPrefsState = {
