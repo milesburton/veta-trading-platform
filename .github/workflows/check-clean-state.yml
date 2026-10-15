@@ -17,10 +17,18 @@ jobs:
         with:
           deno-version: 2.7.x
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
+          version: "1.2.0"
           node-version: "24"
+          cache: true
+          cache-dependency-path: docs/site/package-lock.json
+          run-install: |
+          - cwd: frontend
+            args: ['--frozen-lockfile']
+          - cwd: docs/site
+            args: ['--frozen-lockfile']
 
       - name: Cache Deno deps
         uses: actions/cache@v5
@@ -34,13 +42,6 @@ jobs:
 
       - name: Install backend dependencies
         run: deno install
-
-      - name: Install frontend dependencies
-        run: cd frontend && npm ci
-
-      - name: Install docs/site dependencies
-        working-directory: docs/site
-        run: npm ci
 
       - name: Regenerate derived docs files
         working-directory: docs/site
