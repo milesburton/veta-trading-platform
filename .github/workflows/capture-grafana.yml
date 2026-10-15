@@ -21,13 +21,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
+          version: "1.2.0"
           node-version: "24"
-
-      - name: Install dependencies
-        working-directory: docs/site
-        run: npm ci
+          cache: true
+          cache-dependency-path: docs/site/package-lock.json
+          run-install: |
+            - cwd: docs/site
+              args: ['--frozen-lockfile']
 
       - name: Capture screenshots
         working-directory: docs/site
