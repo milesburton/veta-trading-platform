@@ -452,8 +452,8 @@ jobs:
           cache: true
           cache-dependency-path: docs/site/package-lock.json
           run-install: |
-          - cwd: docs/site
-            args: ['--frozen-lockfile']
+            - cwd: docs/site
+              args: ['--frozen-lockfile']
 
       - name: Markdown lint
         if: needs.changes.outputs.docs == 'true'

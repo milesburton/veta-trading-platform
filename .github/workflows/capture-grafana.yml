@@ -29,8 +29,8 @@ jobs:
           cache: true
           cache-dependency-path: docs/site/package-lock.json
           run-install: |
-          - cwd: docs/site
-            args: ['--frozen-lockfile']
+            - cwd: docs/site
+              args: ['--frozen-lockfile']
 
       - name: Capture screenshots
         working-directory: docs/site

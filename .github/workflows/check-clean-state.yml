@@ -25,10 +25,10 @@ jobs:
           cache: true
           cache-dependency-path: docs/site/package-lock.json
           run-install: |
-          - cwd: frontend
-            args: ['--frozen-lockfile']
-          - cwd: docs/site
-            args: ['--frozen-lockfile']
+            - cwd: frontend
+              args: ['--frozen-lockfile']
+            - cwd: docs/site
+              args: ['--frozen-lockfile']
 
       - name: Cache Deno deps
         uses: actions/cache@v5
