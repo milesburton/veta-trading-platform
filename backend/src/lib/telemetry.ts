@@ -1,28 +1,28 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 
 function isOtelEnabled(): boolean {
-  return (Deno.env.get("OTEL_DENO") ?? "").toLowerCase() === "true";
+  return (process.env.OTEL_DENO ?? "").toLowerCase() === "true";
 }
 
 const OTEL_ENABLED_AT_IMPORT = isOtelEnabled();
 
 export function deriveServiceName(): string {
-  const explicit = Deno.env.get("OTEL_SERVICE_NAME");
+  const explicit = process.env.OTEL_SERVICE_NAME;
   if (explicit && explicit.length > 0) return explicit;
-  const host = Deno.env.get("HOSTNAME") ?? "";
+  const host = process.env.HOSTNAME ?? "";
   const stripped = host.replace(/^veta-/, "").replace(/-\d+$/, "");
   return stripped || "veta-service";
 }
 
-if (OTEL_ENABLED_AT_IMPORT && !Deno.env.get("OTEL_SERVICE_NAME")) {
-  Deno.env.set("OTEL_SERVICE_NAME", deriveServiceName());
+if (OTEL_ENABLED_AT_IMPORT && !process.env.OTEL_SERVICE_NAME) {
+  process.env.OTEL_SERVICE_NAME = deriveServiceName();
 }
 
 if (OTEL_ENABLED_AT_IMPORT) {
   logger.info("OTel enabled", {
     component: "telemetry",
-    service: Deno.env.get("OTEL_SERVICE_NAME"),
-    endpoint: Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
+    service: process.env.OTEL_SERVICE_NAME,
+    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
   });
   queueMicrotask(() => {
     setupProcessMetrics().catch((err) => {
@@ -140,17 +140,17 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   const wallStart = performance.now() / 1000;
 
   const rssGauge = meter.createObservableGauge("process_memory_usage_bytes", {
-    description: "Resident set size of the Deno process",
+    description: "Resident set size of the process",
     unit: "By",
   });
   const heapUsedGauge = meter.createObservableGauge("process_runtime_deno_memory_heap_used_bytes", {
-    description: "V8 heap used by the Deno runtime",
+    description: "V8 heap used by the runtime",
     unit: "By",
   });
   const heapTotalGauge = meter.createObservableGauge(
     "process_runtime_deno_memory_heap_total_bytes",
     {
-      description: "V8 heap total allocated by the Deno runtime",
+      description: "V8 heap total allocated by the runtime",
       unit: "By",
     }
   );
@@ -168,12 +168,12 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   });
 
   const rssCb = (r: ObservableResultLike) => {
-    const mem = Deno.memoryUsage();
+    const mem = process.memoryUsage();
     r.observe(mem.rss);
   };
-  const heapUsedCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().heapUsed);
-  const heapTotalCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().heapTotal);
-  const externalCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().external);
+  const heapUsedCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapUsed);
+  const heapTotalCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapTotal);
+  const externalCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().external);
   const cpuCb = (r: ObservableResultLike) => {
     const now = readCpuTimeSeconds();
     if (now !== null) r.observe(now - (cpuStart ?? 0));
@@ -189,7 +189,7 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
 
   logger.info("process metrics registered", {
     component: "telemetry",
-    service: Deno.env.get("OTEL_SERVICE_NAME"),
+    service: process.env.OTEL_SERVICE_NAME,
   });
 
   processMetricsHandle = {
@@ -207,15 +207,8 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
 }
 
 function readCpuTimeSeconds(): number | null {
-  try {
-    const usage = (
-      Deno as unknown as { cpuUsage?: () => { user: number; system: number } }
-    ).cpuUsage?.();
-    if (usage) return (usage.user + usage.system) / 1_000_000;
-  } catch {
-    /* ignore */
-  }
-  return null;
+  const usage = process.cpuUsage();
+  return (usage.user + usage.system) / 1_000_000;
 }
 
 export async function recordGauge(

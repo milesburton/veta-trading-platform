@@ -1,4 +1,4 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 
 const LIB = { component: "market-client" };
 

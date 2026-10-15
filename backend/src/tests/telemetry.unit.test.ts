@@ -1,4 +1,6 @@
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "vitest";
+import { runNode } from "#veta/run-node";
+import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 
 import {
   __resetTelemetryForTests,
@@ -17,14 +19,14 @@ function withEnv<T>(
 ): Promise<T> {
   const prev: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(values)) {
-    prev[key] = Deno.env.get(key);
-    if (value === undefined) Deno.env.delete(key);
-    else Deno.env.set(key, value);
+    prev[key] = process.env[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
   }
   return Promise.resolve(fn()).finally(() => {
     for (const [key, value] of Object.entries(prev)) {
-      if (value === undefined) Deno.env.delete(key);
-      else Deno.env.set(key, value);
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
     }
     __resetTelemetryForTests();
   });
@@ -198,36 +200,25 @@ for (const [name, env, expected] of [
     "veta-service",
   ],
 ] as const) {
-  Deno.test(`[telemetry] deriveServiceName ${name}`, async () => {
+  test(`[telemetry] deriveServiceName ${name}`, async () => {
     await withEnv(env, () => {
       assertEquals(deriveServiceName(), expected);
     });
   });
 }
 
-Deno.test("[telemetry] import-time setup derives OTEL service name in a subprocess", async () => {
+test("[telemetry] import-time setup derives OTEL service name in a subprocess", async () => {
   const moduleUrl = new URL("../lib/telemetry.ts", import.meta.url).href;
-  const command = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `await import("${moduleUrl}"); console.log(Deno.env.get("OTEL_SERVICE_NAME") ?? "");`,
-    ],
-    env: {
-      OTEL_DENO: "true",
-      HOSTNAME: "veta-gateway-7",
-    },
-    clearEnv: true,
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { code, stdout } = await command.output();
-  const lines = new TextDecoder().decode(stdout).trim().split("\n");
+  const { code, stdout } = await runNode(
+    `await import("${moduleUrl}"); console.log(process.env["OTEL_SERVICE_NAME"] ?? "");`,
+    { OTEL_DENO: "true", HOSTNAME: "veta-gateway-7" }
+  );
+  const lines = stdout.trim().split("\n");
   assertEquals(code, 0);
   assert(lines.includes("gateway"));
 });
 
-Deno.test("[telemetry] disabled-path helpers are no-ops or passthroughs", async () => {
+test("[telemetry] disabled-path helpers are no-ops or passthroughs", async () => {
   await withEnv(
     {
       OTEL_DENO: undefined,
@@ -254,7 +245,7 @@ Deno.test("[telemetry] disabled-path helpers are no-ops or passthroughs", async 
   );
 });
 
-Deno.test("[telemetry] enabled recordGauge caches gauges and preserves attributes", async () => {
+test("[telemetry] enabled recordGauge caches gauges and preserves attributes", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
@@ -289,7 +280,7 @@ Deno.test("[telemetry] enabled recordGauge caches gauges and preserves attribute
   );
 });
 
-Deno.test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, and removes callbacks on stop", async () => {
+test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, and removes callbacks on stop", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
@@ -333,7 +324,7 @@ Deno.test("[telemetry] setupProcessMetrics registers callbacks, reuses the handl
   );
 });
 
-Deno.test("[telemetry] withSpan sets attributes, returns values, and records Error exceptions", async () => {
+test("[telemetry] withSpan sets attributes, returns values, and records Error exceptions", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
@@ -379,7 +370,7 @@ Deno.test("[telemetry] withSpan sets attributes, returns values, and records Err
   );
 });
 
-Deno.test("[telemetry] injectTraceContext stringifies setter values when OTEL is enabled", async () => {
+test("[telemetry] injectTraceContext stringifies setter values when OTEL is enabled", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
@@ -403,7 +394,7 @@ Deno.test("[telemetry] injectTraceContext stringifies setter values when OTEL is
   );
 });
 
-Deno.test("[telemetry] withExtractedContext coerces carrier values and runs inside extracted context", async () => {
+test("[telemetry] withExtractedContext coerces carrier values and runs inside extracted context", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
@@ -445,7 +436,7 @@ Deno.test("[telemetry] withExtractedContext coerces carrier values and runs insi
   );
 });
 
-Deno.test("[telemetry] OTEL loader failures gracefully fall back to no-op behavior", async () => {
+test("[telemetry] OTEL loader failures gracefully fall back to no-op behavior", async () => {
   await withEnv(
     {
       OTEL_DENO: "true",

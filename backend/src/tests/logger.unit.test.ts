@@ -1,15 +1,16 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "vitest";
+import { runNode } from "#veta/run-node";
+import { assert, assertEquals } from "#veta/test-assert";
 
 import { type LogLevel, logger, registerLogSink } from "../lib/logger.ts";
 
 function captureStdout<T>(fn: () => T): { result: T; lines: string[] } {
-  const originalWriteSync = Deno.stdout.writeSync;
+  const originalWrite = process.stdout.write;
   const captured: string[] = [];
-  const decoder = new TextDecoder();
-  Deno.stdout.writeSync = (data: Uint8Array) => {
-    captured.push(decoder.decode(data));
-    return data.length;
-  };
+  process.stdout.write = ((data: string | Uint8Array) => {
+    captured.push(typeof data === "string" ? data : new TextDecoder().decode(data));
+    return true;
+  }) as typeof process.stdout.write;
   try {
     const result = fn();
     return {
@@ -20,7 +21,7 @@ function captureStdout<T>(fn: () => T): { result: T; lines: string[] } {
         .filter((l) => l.length > 0),
     };
   } finally {
-    Deno.stdout.writeSync = originalWriteSync;
+    process.stdout.write = originalWrite;
   }
 }
 
@@ -28,7 +29,7 @@ function parseLine(line: string): Record<string, unknown> {
   return JSON.parse(line) as Record<string, unknown>;
 }
 
-Deno.test("[logger] emits newline-terminated JSON line", () => {
+test("[logger] emits newline-terminated JSON line", () => {
   const { lines } = captureStdout(() => logger.info("hello"));
   assertEquals(lines.length, 1);
   const parsed = parseLine(lines[0]);
@@ -36,7 +37,7 @@ Deno.test("[logger] emits newline-terminated JSON line", () => {
   assertEquals(parsed.level, "info");
 });
 
-Deno.test("[logger] record has ts, level, service, msg", () => {
+test("[logger] record has ts, level, service, msg", () => {
   const { lines } = captureStdout(() => logger.info("x"));
   const parsed = parseLine(lines[0]);
   assert(typeof parsed.ts === "string");
@@ -46,7 +47,7 @@ Deno.test("[logger] record has ts, level, service, msg", () => {
   assertEquals(parsed.msg, "x");
 });
 
-Deno.test("[logger] ctx fields spread at top level, not nested", () => {
+test("[logger] ctx fields spread at top level, not nested", () => {
   const { lines } = captureStdout(() => logger.info("x", { userId: "u1", orderId: 42 }));
   const parsed = parseLine(lines[0]);
   assertEquals(parsed.userId, "u1");
@@ -54,7 +55,7 @@ Deno.test("[logger] ctx fields spread at top level, not nested", () => {
   assert(!("ctx" in parsed), "ctx should not be a nested property");
 });
 
-Deno.test("[logger] err: Error serializes to { name, message, stack }", () => {
+test("[logger] err: Error serializes to { name, message, stack }", () => {
   const err = new Error("boom");
   const { lines } = captureStdout(() => logger.warn("oops", { err }));
   const parsed = parseLine(lines[0]);
@@ -64,7 +65,7 @@ Deno.test("[logger] err: Error serializes to { name, message, stack }", () => {
   assert(typeof errField.stack === "string");
 });
 
-Deno.test("[logger] level methods route correctly", () => {
+test("[logger] level methods route correctly", () => {
   const { lines } = captureStdout(() => {
     logger.debug("d");
     logger.info("i");
@@ -75,12 +76,12 @@ Deno.test("[logger] level methods route correctly", () => {
   assertEquals(levels, ["info", "warn", "error"]);
 });
 
-Deno.test("[logger] debug is filtered out by default info threshold", () => {
+test("[logger] debug is filtered out by default info threshold", () => {
   const { lines } = captureStdout(() => logger.debug("hidden"));
   assertEquals(lines.length, 0);
 });
 
-Deno.test("[logger] circular ctx falls back to _serializeError record", () => {
+test("[logger] circular ctx falls back to _serializeError record", () => {
   const bad: Record<string, unknown> = {};
   bad.self = bad;
   const { lines } = captureStdout(() => logger.error("cycle", bad));
@@ -91,7 +92,7 @@ Deno.test("[logger] circular ctx falls back to _serializeError record", () => {
   assertEquals(parsed.level, "error");
 });
 
-Deno.test("[logger] Error without stack still serializes", () => {
+test("[logger] Error without stack still serializes", () => {
   const err = new Error("nostack");
   err.stack = undefined;
   const { lines } = captureStdout(() => logger.error("x", { err }));
@@ -100,7 +101,7 @@ Deno.test("[logger] Error without stack still serializes", () => {
   assertEquals(errField.stack, "");
 });
 
-Deno.test("[logger] multiple ctx values coexist", () => {
+test("[logger] multiple ctx values coexist", () => {
   const { lines } = captureStdout(() =>
     logger.info("x", {
       symbol: "AAPL",
@@ -116,116 +117,60 @@ Deno.test("[logger] multiple ctx values coexist", () => {
   assert(typeof (parsed.err as Record<string, unknown>).message === "string");
 });
 
-Deno.test("[logger] LOG_LEVEL=debug enables debug output (subprocess)", async () => {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `
+test("[logger] LOG_LEVEL=debug enables debug output (subprocess)", async () => {
+  const text = (await runNode(`
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.debug("d-msg");
       logger.info("i-msg");
-    `,
-    ],
-    env: { LOG_LEVEL: "debug", OTEL_SERVICE_NAME: "subtest" },
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout } = await cmd.output();
-  const text = new TextDecoder().decode(stdout);
+    `, { LOG_LEVEL: "debug", OTEL_SERVICE_NAME: "subtest" })).stdout;
   const lines = text.split("\n").filter((l) => l.length > 0);
   const levels = lines.map((l) => JSON.parse(l).level);
   assertEquals(levels, ["debug", "info"]);
 });
 
-Deno.test("[logger] LOG_LEVEL=warn suppresses info (subprocess)", async () => {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `
+test("[logger] LOG_LEVEL=warn suppresses info (subprocess)", async () => {
+  const text = (await runNode(`
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.info("i");
       logger.warn("w");
       logger.error("e");
-    `,
-    ],
-    env: { LOG_LEVEL: "warn", OTEL_SERVICE_NAME: "subtest" },
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout } = await cmd.output();
-  const text = new TextDecoder().decode(stdout);
+    `, { LOG_LEVEL: "warn", OTEL_SERVICE_NAME: "subtest" })).stdout;
   const lines = text.split("\n").filter((l) => l.length > 0);
   assertEquals(lines.length, 2);
   const levels = lines.map((l) => JSON.parse(l).level);
   assertEquals(levels, ["warn", "error"]);
 });
 
-Deno.test("[logger] OTEL_SERVICE_NAME populates service field (subprocess)", async () => {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `
+test("[logger] OTEL_SERVICE_NAME populates service field (subprocess)", async () => {
+  const text = (await runNode(`
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.info("hi");
-    `,
-    ],
-    env: { OTEL_SERVICE_NAME: "test-service-42" },
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout } = await cmd.output();
-  const text = new TextDecoder().decode(stdout);
+    `, { OTEL_SERVICE_NAME: "test-service-42" })).stdout;
   const parsed = JSON.parse(text.trim());
   assertEquals(parsed.service, "test-service-42");
 });
 
-Deno.test("[logger] missing OTEL_SERVICE_NAME falls back to 'unknown' (subprocess)", async () => {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `
+test("[logger] missing OTEL_SERVICE_NAME falls back to 'unknown' (subprocess)", async () => {
+  const text = (await runNode(`
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.info("hi");
-    `,
-    ],
-    env: {},
-    clearEnv: true,
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout } = await cmd.output();
-  const text = new TextDecoder().decode(stdout);
+    `, {})).stdout;
   const parsed = JSON.parse(text.trim());
   assertEquals(parsed.service, "unknown");
 });
 
-Deno.test("[logger] invalid LOG_LEVEL falls back to info (subprocess)", async () => {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `
+test("[logger] invalid LOG_LEVEL falls back to info (subprocess)", async () => {
+  const text = (await runNode(`
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.debug("d");
       logger.info("i");
-    `,
-    ],
-    env: { LOG_LEVEL: "nonsense", OTEL_SERVICE_NAME: "subtest" },
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout } = await cmd.output();
-  const text = new TextDecoder().decode(stdout);
+    `, { LOG_LEVEL: "nonsense", OTEL_SERVICE_NAME: "subtest" })).stdout;
   const lines = text.split("\n").filter((l) => l.length > 0);
   assertEquals(lines.length, 1);
   assertEquals(JSON.parse(lines[0]).level, "info");
 });
 
-Deno.test("[logger] registerLogSink forwards every emit until unsubscribed", () => {
+test("[logger] registerLogSink forwards every emit until unsubscribed", () => {
   const events: { level: LogLevel; msg: string; line: string; ctx?: Record<string, unknown> }[] =
     [];
   const unsubscribe = registerLogSink((level, msg, line, ctx) => {
@@ -246,7 +191,7 @@ Deno.test("[logger] registerLogSink forwards every emit until unsubscribed", () 
   assert(events[0].line.includes('"msg":"hello"'));
 });
 
-Deno.test("[logger] sink that throws does not break subsequent sinks or emit", () => {
+test("[logger] sink that throws does not break subsequent sinks or emit", () => {
   const events: string[] = [];
   const u1 = registerLogSink(() => {
     throw new Error("boom");
@@ -263,7 +208,7 @@ Deno.test("[logger] sink that throws does not break subsequent sinks or emit", (
   assertEquals(events, ["via-throwing-sink"]);
 });
 
-Deno.test("[logger] unsubscribe is idempotent (calling twice is harmless)", () => {
+test("[logger] unsubscribe is idempotent (calling twice is harmless)", () => {
   const u = registerLogSink(() => {});
   u();
   u();

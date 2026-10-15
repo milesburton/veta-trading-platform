@@ -1,8 +1,11 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { z } from "@veta/zod";
+import { once } from "node:events";
+import type { AddressInfo } from "node:net";
+import { test } from "vitest";
+import { assert, assertEquals } from "#veta/test-assert";
+import { z } from "zod";
 import { CORS_HEADERS, corsOptions, decodePathSegment, json, jsonError, parseBody, parseQuery, serveJsonService } from "../lib/http.ts";
 
-Deno.test("json wraps data as a 200 JSON response with CORS headers by default", async () => {
+test("json wraps data as a 200 JSON response with CORS headers by default", async () => {
   const res = json({ ok: true });
   assertEquals(res.status, 200);
   assertEquals(res.headers.get("Content-Type"), "application/json");
@@ -10,24 +13,24 @@ Deno.test("json wraps data as a 200 JSON response with CORS headers by default",
   assertEquals(await res.json(), { ok: true });
 });
 
-Deno.test("json accepts a custom status and extra headers", async () => {
+test("json accepts a custom status and extra headers", async () => {
   const res = json({ x: 1 }, 201, { "X-Custom": "yes" });
   assertEquals(res.status, 201);
   assertEquals(res.headers.get("X-Custom"), "yes");
 });
 
-Deno.test("jsonError wraps a message under { error } with the given status", async () => {
+test("jsonError wraps a message under { error } with the given status", async () => {
   const res = jsonError("nope", 404);
   assertEquals(res.status, 404);
   assertEquals(await res.json(), { error: "nope" });
 });
 
-Deno.test("jsonError defaults to 400", () => {
+test("jsonError defaults to 400", () => {
   const res = jsonError("bad request");
   assertEquals(res.status, 400);
 });
 
-Deno.test("corsOptions returns a 204 with no body and CORS headers", async () => {
+test("corsOptions returns a 204 with no body and CORS headers", async () => {
   const res = corsOptions();
   assertEquals(res.status, 204);
   assertEquals(await res.text(), "");
@@ -36,7 +39,7 @@ Deno.test("corsOptions returns a 204 with no body and CORS headers", async () =>
 
 const Schema = z.object({ name: z.string(), age: z.number() });
 
-Deno.test("parseBody returns ok:true with the parsed data on a valid body", async () => {
+test("parseBody returns ok:true with the parsed data on a valid body", async () => {
   const req = new Request("http://x", {
     method: "POST",
     body: JSON.stringify({ name: "Ada", age: 30 }),
@@ -46,7 +49,7 @@ Deno.test("parseBody returns ok:true with the parsed data on a valid body", asyn
   if (result.ok) assertEquals(result.data, { name: "Ada", age: 30 });
 });
 
-Deno.test("parseBody returns a 400 invalid-json response when the body isn't JSON", async () => {
+test("parseBody returns a 400 invalid-json response when the body isn't JSON", async () => {
   const req = new Request("http://x", { method: "POST", body: "not json" });
   const result = await parseBody(req, Schema);
   assert(!result.ok);
@@ -56,7 +59,7 @@ Deno.test("parseBody returns a 400 invalid-json response when the body isn't JSO
   }
 });
 
-Deno.test("parseBody returns a 400 validation_failed response when the schema rejects it", async () => {
+test("parseBody returns a 400 validation_failed response when the schema rejects it", async () => {
   const req = new Request("http://x", {
     method: "POST",
     body: JSON.stringify({ name: "Ada" }),
@@ -71,7 +74,7 @@ Deno.test("parseBody returns a 400 validation_failed response when the schema re
   }
 });
 
-Deno.test("parseQuery returns ok:true with parsed query params", () => {
+test("parseQuery returns ok:true with parsed query params", () => {
   const url = new URL("http://x?name=Ada&age=30");
   const NumSchema = z.object({ name: z.string(), age: z.coerce.number() });
   const result = parseQuery(url, NumSchema);
@@ -79,14 +82,14 @@ Deno.test("parseQuery returns ok:true with parsed query params", () => {
   if (result.ok) assertEquals(result.data, { name: "Ada", age: 30 });
 });
 
-Deno.test("parseQuery returns a 400 validation_failed response on invalid params", () => {
+test("parseQuery returns a 400 validation_failed response on invalid params", () => {
   const url = new URL("http://x?name=Ada");
   const result = parseQuery(url, Schema);
   assert(!result.ok);
   if (!result.ok) assertEquals(result.res.status, 400);
 });
 
-Deno.test("serveJsonService serves /health with service/version/status plus extra health fields", async () => {
+test("serveJsonService serves /health with service/version/status plus extra health fields", async () => {
   const controller = new AbortController();
   const server = serveJsonService({
     port: 0,
@@ -97,8 +100,9 @@ Deno.test("serveJsonService serves /health with service/version/status plus extr
     signal: controller.signal,
   });
   try {
-    const addr = server.addr as Deno.NetAddr;
-    const res = await fetch(`http://127.0.0.1:${addr.port}/health`);
+    await once(server, "listening");
+    const { port } = server.address() as AddressInfo;
+    const res = await fetch(`http://127.0.0.1:${port}/health`);
     const body = await res.json();
     assertEquals(body.service, "test-svc");
     assertEquals(body.version, "1.2.3");
@@ -106,11 +110,11 @@ Deno.test("serveJsonService serves /health with service/version/status plus extr
     assertEquals(body.extra, 42);
   } finally {
     controller.abort();
-    await server.finished;
+    await once(server, "close");
   }
 });
 
-Deno.test("serveJsonService responds to OPTIONS with corsOptions", async () => {
+test("serveJsonService responds to OPTIONS with corsOptions", async () => {
   const controller = new AbortController();
   const server = serveJsonService({
     port: 0,
@@ -121,17 +125,18 @@ Deno.test("serveJsonService responds to OPTIONS with corsOptions", async () => {
     signal: controller.signal,
   });
   try {
-    const addr = server.addr as Deno.NetAddr;
-    const res = await fetch(`http://127.0.0.1:${addr.port}/anything`, { method: "OPTIONS" });
+    await once(server, "listening");
+    const { port } = server.address() as AddressInfo;
+    const res = await fetch(`http://127.0.0.1:${port}/anything`, { method: "OPTIONS" });
     assertEquals(res.status, 204);
     await res.body?.cancel();
   } finally {
     controller.abort();
-    await server.finished;
+    await once(server, "close");
   }
 });
 
-Deno.test("serveJsonService delegates non-/health requests to the provided handler", async () => {
+test("serveJsonService delegates non-/health requests to the provided handler", async () => {
   const controller = new AbortController();
   let handlerCalledWith: { path: string; method: string } | null = null;
   const server = serveJsonService({
@@ -146,23 +151,24 @@ Deno.test("serveJsonService delegates non-/health requests to the provided handl
     signal: controller.signal,
   });
   try {
-    const addr = server.addr as Deno.NetAddr;
-    const res = await fetch(`http://127.0.0.1:${addr.port}/custom-route`);
+    await once(server, "listening");
+    const { port } = server.address() as AddressInfo;
+    const res = await fetch(`http://127.0.0.1:${port}/custom-route`);
     const body = await res.json();
     assertEquals(body.handled, true);
     assertEquals(handlerCalledWith, { path: "/custom-route", method: "GET" });
   } finally {
     controller.abort();
-    await server.finished;
+    await once(server, "close");
   }
 });
 
 
-Deno.test("decodePathSegment decodes a percent-encoded segment", () => {
+test("decodePathSegment decodes a percent-encoded segment", () => {
   assertEquals(decodePathSegment("BRK%2EB"), "BRK.B");
 });
 
-Deno.test("decodePathSegment returns null on malformed percent-encoding instead of throwing", () => {
+test("decodePathSegment returns null on malformed percent-encoding instead of throwing", () => {
   assertEquals(decodePathSegment("%E0%A4%A"), null);
   assertEquals(decodePathSegment("%"), null);
 });

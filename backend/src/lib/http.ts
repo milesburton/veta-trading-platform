@@ -1,4 +1,5 @@
-import type { ZodTypeAny, z } from "@veta/zod";
+import { serve, type ServerType } from "@hono/node-server";
+import type { ZodTypeAny, z } from "zod";
 
 // docs: /reference/api-gateway/
 export const CORS_HEADERS: Record<string, string> = {
@@ -72,10 +73,9 @@ export function serveJsonService(options: {
   handler: (req: Request, url: URL, path: string) => Response | Promise<Response>;
   signal?: AbortSignal;
   onRequest?: () => void;
-}): Deno.HttpServer {
-  return Deno.serve(
-    { port: options.port, signal: options.signal },
-    async (req: Request): Promise<Response> => {
+}): ServerType {
+  const server = serve(
+    { port: options.port, fetch: async (req: Request): Promise<Response> => {
       if (req.method === "OPTIONS") {
         return corsOptions();
       }
@@ -95,6 +95,8 @@ export function serveJsonService(options: {
       }
 
       return options.handler(req, url, path);
-    }
+    } }
   );
+  options.signal?.addEventListener("abort", () => server.close(), { once: true });
+  return server;
 }

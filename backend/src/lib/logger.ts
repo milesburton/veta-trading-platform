@@ -7,10 +7,10 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
   error: 40,
 };
 
-const SERVICE = Deno.env.get("OTEL_SERVICE_NAME") ?? "unknown";
+const SERVICE = process.env.OTEL_SERVICE_NAME ?? "unknown";
 
 function resolveThreshold(): number {
-  const raw = (Deno.env.get("LOG_LEVEL") ?? "info").toLowerCase();
+  const raw = (process.env.LOG_LEVEL ?? "info").toLowerCase();
   if (raw === "debug" || raw === "info" || raw === "warn" || raw === "error") {
     return LEVEL_ORDER[raw];
   }
@@ -18,7 +18,6 @@ function resolveThreshold(): number {
 }
 
 const THRESHOLD = resolveThreshold();
-const encoder = new TextEncoder();
 
 type Ctx = Record<string, unknown>;
 
@@ -78,7 +77,7 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
     line = `${JSON.stringify(fallback)}\n`;
   }
   try {
-    Deno.stdout.writeSync(encoder.encode(line));
+    process.stdout.write(line);
   } catch {
     // stdout may be unavailable in rare test scenarios; silently drop
   }

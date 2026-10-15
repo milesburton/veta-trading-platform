@@ -21,9 +21,9 @@ import {
   Kafka,
   type KafkaMessage,
   type Producer,
-} from "npm:kafkajs@2.2.4";
-import { logger } from "@veta/logger";
-import type { z } from "@veta/zod";
+} from "kafkajs";
+import { logger } from "#veta/logger";
+import type { z } from "zod";
 import {
   injectTraceContext,
   recordGauge,
@@ -32,7 +32,7 @@ import {
 
 const LIB = { component: "messaging" };
 
-const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092")
+const BROKERS = (process.env.REDPANDA_BROKERS ?? "localhost:9092")
   .split(",")
   .map((b) => b.trim());
 
@@ -70,7 +70,7 @@ export function headerString(
 }
 
 function maxInFlightFromEnv(): number {
-  const parsed = Number(Deno.env.get("PRODUCER_MAX_IN_FLIGHT"));
+  const parsed = Number(process.env.PRODUCER_MAX_IN_FLIGHT);
   return Number.isInteger(parsed) && parsed > 0
     ? parsed
     : DEFAULT_MAX_IN_FLIGHT;
