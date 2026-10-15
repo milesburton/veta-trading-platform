@@ -31,7 +31,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 COPY frontend-server.ts ./
-COPY backend/src/lib/http.ts backend/src/lib/static-files.ts ./backend/src/lib/
+COPY backend/src/lib/http.ts backend/src/lib/static-files.ts backend/src/lib/telemetry.ts backend/src/lib/logger.ts backend/src/lib/service-name.ts ./backend/src/lib/
 COPY --from=builder /src/frontend/dist ./frontend/dist
 
 EXPOSE 3000
