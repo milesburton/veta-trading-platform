@@ -65,7 +65,7 @@ The same container serves [LLM advisory](../../llm-advisory/), so the allocation
 | `LLM_OLLAMA_BASE_URL` | Ollama base URL, when `LLM_PROVIDER=ollama` | `http://localhost:11434` |
 | `GITHUB_TICKETING_TOKEN_FILE` / `GITHUB_TICKETING_TOKEN` | GitHub token used to file the resulting issue, same credential as [ticketing](../ticketing/) | unset (ticket creation skipped) |
 | `DISCORD_MOTD_ENABLED` | Turn the recurring message of the day on or off | `true` |
-| `DISCORD_MOTD_INTERVAL_MS` | How often the message of the day reposts | `3600000` (1 hour) |
+| `DISCORD_MOTD_INTERVAL_MS` | How often the message of the day reposts | `86400000` (24 hours) |
 | `VETA_DOCS_URL` | Docs link included in the message of the day | `https://milesburton.github.io/veta-trading-platform/` |
 | `VETA_PLATFORM_URL` | Live platform link included in the message of the day | `https://veta.mnetcs.com` |
 
@@ -97,7 +97,7 @@ The message is static aside from the member mention. Implementation in [`backend
 
 ## Message of the day
 
-Alongside the welcome message, a second, non-personalised message posts on every join and again on a fixed interval (`DISCORD_MOTD_INTERVAL_MS`, default one hour), so members who don't happen to catch the welcome message still see how to use the bot:
+Alongside the welcome message, a second, non-personalised message posts on every join and again on a fixed interval (`DISCORD_MOTD_INTERVAL_MS`, default 24 hours), so members who don't happen to catch the welcome message still see how to use the bot:
 
 ```
 📌 VETA quick guide
