@@ -1,6 +1,7 @@
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "vitest";
+import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 
-import { z } from "@veta/zod";
+import { z } from "zod";
 
 import {
   __setMessagingTestHooks,
@@ -160,7 +161,7 @@ function installHooks(
   });
 }
 
-Deno.test({
+test({
   name:
     "[messaging] producer holds order sends until the initial connection and drops droppable sends",
   async fn() {
@@ -211,7 +212,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "[messaging] producer delivers order sends issued while reconnecting",
   async fn() {
     const failing = new FakeProducer();
@@ -253,7 +254,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "[messaging] disconnect releases order sends waiting for a connection",
   async fn() {
     const producerClient = new FakeProducer();
@@ -274,7 +275,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] producer retries failed connect and reconnects after send failure",
   async fn() {
@@ -321,7 +322,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] isDroppableTopic sheds tick-derived topics and keeps order topics",
   fn() {
@@ -334,7 +335,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] saturated producer drops droppable sends and queues order sends",
   async fn() {
@@ -376,7 +377,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] disconnect releases sends waiting for a slot without sending them",
   async fn() {
@@ -407,7 +408,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] consumer subscribes topics, parses valid messages, and ignores empty or invalid payloads",
   sanitizeOps: false,
@@ -446,7 +447,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] consumer swallows handler failures and timeouts and reconnects after crash",
   sanitizeOps: false,
@@ -504,7 +505,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "[messaging] consumer retries failed startup connection",
   async fn() {
     const bad = new FakeConsumer();
@@ -540,7 +541,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] typed consumer validates payloads, reports invalid, and ignores unbound topics",
   sanitizeOps: false,
@@ -593,7 +594,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name:
     "[messaging] createTypedConsumer throws synchronously on duplicate topic binding",
   fn() {
@@ -619,7 +620,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "[messaging] producer rejects order sends once the wait queue is full",
   async fn() {
     const producerClient = new FakeProducer();
@@ -649,7 +650,7 @@ Deno.test({
   },
 });
 
-Deno.test("[messaging] sendInChunks keeps concurrent sends within the chunk size", async () => {
+test("[messaging] sendInChunks keeps concurrent sends within the chunk size", async () => {
   let active = 0;
   let peak = 0;
   const sent: unknown[] = [];
@@ -669,7 +670,7 @@ Deno.test("[messaging] sendInChunks keeps concurrent sends within the chunk size
   assertEquals(peak, 100);
 });
 
-Deno.test("[messaging] sendInChunks continues past a failed send", async () => {
+test("[messaging] sendInChunks continues past a failed send", async () => {
   const sent: unknown[] = [];
   const producer = {
     send(_topic: string, value: unknown) {
@@ -684,7 +685,7 @@ Deno.test("[messaging] sendInChunks continues past a failed send", async () => {
   assertEquals(sent, [0, 2, 3]);
 });
 
-Deno.test("[messaging] dedupe window flags repeats and evicts the oldest id", () => {
+test("[messaging] dedupe window flags repeats and evicts the oldest id", () => {
   const isDuplicate = createDedupeWindow(2);
   assertEquals(isDuplicate("a"), false);
   assertEquals(isDuplicate("a"), true);
@@ -694,7 +695,7 @@ Deno.test("[messaging] dedupe window flags repeats and evicts the oldest id", ()
   assertEquals(isDuplicate("c"), true);
 });
 
-Deno.test("[messaging] headerString reads string, buffer and array header values", () => {
+test("[messaging] headerString reads string, buffer and array header values", () => {
   const buf = new TextEncoder().encode("from-buffer");
   const headers = {
     s: "plain",
@@ -708,7 +709,7 @@ Deno.test("[messaging] headerString reads string, buffer and array header values
   assertEquals(headerString(undefined, "s"), undefined);
 });
 
-Deno.test({
+test({
   name: "[messaging] producer stamps every send with a unique message id",
   async fn() {
     const producerClient = new FakeProducer();
@@ -734,7 +735,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "[messaging] consumer delivers a redelivered message id only once",
   async fn() {
     const fakeConsumer = new FakeConsumer();

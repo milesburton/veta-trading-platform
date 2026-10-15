@@ -1,0 +1,27 @@
+{
+  "name": "@veta/backend",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "kafkajs": "2.2.4",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.5.3",
+    "vite-plus": "^1.2.0"
+  },
+  "imports": {
+    "#veta/bootstrap": "./src/lib/bootstrap.ts",
+    "#veta/http": "./src/lib/http.ts",
+    "#veta/logger": "./src/lib/logger.ts",
+    "#veta/messaging": "./src/lib/messaging.ts",
+    "#veta/telemetry": "./src/lib/telemetry.ts",
+    "#veta/test-assert": "./src/test-support/assert.ts",
+    "#veta/run-node": "./src/test-support/run-node.ts"
+  }
+}

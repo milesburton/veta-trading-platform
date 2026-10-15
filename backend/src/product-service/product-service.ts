@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Product Service — Structured product builder
  *
@@ -8,13 +8,13 @@ import "@veta/bootstrap";
  * State machine: draft → structured → issued → sold → unwound
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createProducer } from "@veta/messaging";
+import { serve } from "@hono/node-server";
+import { corsOptions, json } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createProducer } from "#veta/messaging";
 
-const PORT = Number(Deno.env.get("PRODUCT_SERVICE_PORT")) || 5_030;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.PRODUCT_SERVICE_PORT) || 5_030;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";
 
@@ -70,7 +70,7 @@ function jsonOk(body: unknown, status = 200): Response {
   return json(body, status);
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+serve({ port: PORT, fetch: async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
   const method = req.method;
@@ -326,6 +326,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   return json({ error: "Not found" }, 404);
-});
+} });
 
 logger.info(`Listening on port ${PORT}`);

@@ -1,1 +1,1 @@
-import "@veta/telemetry";
+import "#veta/telemetry";
