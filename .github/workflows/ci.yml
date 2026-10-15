@@ -213,7 +213,7 @@ jobs:
             - cwd: frontend
               args: ['--frozen-lockfile']
 
-      - name: Biome lint
+      - name: Lint and format check
         working-directory: frontend
         run: npm run lint
 

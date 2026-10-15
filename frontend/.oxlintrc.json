@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "jsx-a11y", "unicorn", "oxc"],
+  "categories": { "correctness": "error" },
+  "rules": {
+    "react/exhaustive-deps": "warn",
+    "react/immutability": "off",
+    "react/refs": "off",
+    "react/purity": "off",
+    "react/set-state-in-effect": "off",
+    "react/static-components": "off",
+    "react/no-array-index-key": "error",
+    "jsx-a11y/control-has-associated-label": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/interactive-supports-focus": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
+    "unicorn/no-new-array": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-array-for-each": "warn",
+    "no-unused-vars": "warn",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "prefer-const": "error",
+    "prefer-template": "warn"
+  },
+  "ignorePatterns": ["dist", "dist-app", "dist-electron", "coverage", "test-results"]
+}

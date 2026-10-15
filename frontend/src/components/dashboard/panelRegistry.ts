@@ -585,7 +585,7 @@ const ONCALL_EXCLUDED_PANELS: ReadonlySet<PanelId> = new Set<PanelId>([
   "dev-tools",
 ]);
 
-// biome-ignore lint/complexity/noForEach: project preference is functional/forEach over for-of for mutating sets
+// oxlint-disable-next-line unicorn/no-array-for-each -- project preference is functional/forEach over for-of for mutating sets
 (Object.entries(PANEL_PERMISSIONS) as [PanelId, Set<AuthRole>][])
   .filter(([panelId, roles]) => !ONCALL_EXCLUDED_PANELS.has(panelId) && roles.has("admin"))
   .forEach(([, roles]) => {

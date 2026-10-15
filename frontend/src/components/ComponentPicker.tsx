@@ -1,8 +1,8 @@
 import { useSignal } from "@preact/signals-react";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { canAccessPanel } from "./dashboard/panelRegistry.ts";
 import type { PanelId } from "./DashboardLayout.tsx";
 import { PANEL_IDS, PANEL_TITLES, SINGLETON_PANELS, useDashboard } from "./DashboardLayout.tsx";
-import { canAccessPanel } from "./dashboard/panelRegistry.ts";
 import { clearDraggedPanelId, setDraggedPanelId } from "./panelDragState.ts";
 
 const PANEL_DESCRIPTIONS: Record<PanelId, string> = {

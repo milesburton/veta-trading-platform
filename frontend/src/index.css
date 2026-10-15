@@ -14,38 +14,38 @@
 
   /* Trading semantics — RGB triplets so Tailwind <alpha-value> works.
      Constant across themes for now; per-theme contrast tuning is a follow-up. */
-  --semantic-up: 52 211 153;          /* emerald-400  */
-  --semantic-up-dark: 5 150 105;      /* emerald-600  */
-  --semantic-down: 248 113 113;       /* red-400      */
-  --semantic-down-dark: 220 38 38;    /* red-600      */
-  --semantic-neutral: 156 163 175;    /* gray-400     */
-  --semantic-maker: 16 185 129;       /* emerald-500  */
-  --semantic-taker: 245 158 11;       /* amber-500    */
-  --semantic-cross: 56 189 248;       /* sky-400      */
-  --semantic-limit: 96 165 250;       /* blue-400 — AA on panel */
-  --semantic-twap: 196 132 252;       /* purple-400 — AA on panel */
-  --semantic-pov: 249 115 22;         /* orange-500   */
-  --semantic-vwap: 234 179 8;         /* yellow-500   */
-  --semantic-iceberg: 34 211 238;     /* cyan-400     */
-  --semantic-sniper: 251 113 133;     /* rose-400 — AA on panel */
+  --semantic-up: 52 211 153; /* emerald-400  */
+  --semantic-up-dark: 5 150 105; /* emerald-600  */
+  --semantic-down: 248 113 113; /* red-400      */
+  --semantic-down-dark: 220 38 38; /* red-600      */
+  --semantic-neutral: 156 163 175; /* gray-400     */
+  --semantic-maker: 16 185 129; /* emerald-500  */
+  --semantic-taker: 245 158 11; /* amber-500    */
+  --semantic-cross: 56 189 248; /* sky-400      */
+  --semantic-limit: 96 165 250; /* blue-400 — AA on panel */
+  --semantic-twap: 196 132 252; /* purple-400 — AA on panel */
+  --semantic-pov: 249 115 22; /* orange-500   */
+  --semantic-vwap: 234 179 8; /* yellow-500   */
+  --semantic-iceberg: 34 211 238; /* cyan-400     */
+  --semantic-sniper: 251 113 133; /* rose-400 — AA on panel */
   --semantic-arrival-price: 129 140 248; /* indigo-400 */
-  --semantic-is: 45 212 191;          /* teal-400     */
-  --semantic-momentum: 232 121 249;   /* fuchsia-400  */
+  --semantic-is: 45 212 191; /* teal-400     */
+  --semantic-momentum: 232 121 249; /* fuchsia-400  */
 
   /* Status semantics — generic UI concepts (order/RFQ/alert state), distinct
      from the trading-concept palette above. Aliased to the closest matching
      trading colour so there's one source of truth per hue. */
-  --semantic-status-success: 52 211 153;  /* = semantic-up      */
-  --semantic-status-pending: 245 158 11;  /* = semantic-taker    */
-  --semantic-status-info: 56 189 248;     /* = semantic-cross    */
+  --semantic-status-success: 52 211 153; /* = semantic-up      */
+  --semantic-status-pending: 245 158 11; /* = semantic-taker    */
+  --semantic-status-info: 56 189 248; /* = semantic-cross    */
   --semantic-status-critical: 248 113 113; /* = semantic-down    */
-  --semantic-status-warning: 249 115 22;  /* = semantic-pov      */
+  --semantic-status-warning: 249 115 22; /* = semantic-pov      */
 
   /* Chart chrome */
-  --chart-grid: 31 41 55;             /* gray-800     */
-  --chart-axis: 107 114 128;          /* gray-500     */
-  --chart-tooltip-bg: 17 24 39;       /* gray-900     */
-  --chart-tooltip-border: 55 65 81;   /* gray-700     */
+  --chart-grid: 31 41 55; /* gray-800     */
+  --chart-axis: 107 114 128; /* gray-500     */
+  --chart-tooltip-bg: 17 24 39; /* gray-900     */
+  --chart-tooltip-border: 55 65 81; /* gray-700     */
 
   /* Heatmap palette — Finviz-style, perceptually balanced. */
   --heat-strong-up: 10 92 49;
@@ -100,29 +100,29 @@
   /* Light-mode semantic overrides — darker variants for AA on light bgs.
      The dark-mode defaults are tuned for dark backgrounds and fail WCAG
      contrast when used on slate-50/100. */
-  --semantic-up: 4 120 87;            /* emerald-700 */
+  --semantic-up: 4 120 87; /* emerald-700 */
   --semantic-up-dark: 4 120 87;
-  --semantic-down: 185 28 28;         /* red-700 */
-  --semantic-down-dark: 153 27 27;    /* red-800 */
-  --semantic-neutral: 75 85 99;       /* gray-600 */
-  --semantic-maker: 4 120 87;         /* emerald-700 */
-  --semantic-taker: 180 83 9;         /* amber-700 */
-  --semantic-cross: 3 105 161;        /* sky-700 */
-  --semantic-limit: 29 78 216;        /* blue-700 */
-  --semantic-twap: 126 34 206;        /* purple-700 */
-  --semantic-pov: 194 65 12;          /* orange-700 */
-  --semantic-vwap: 161 98 7;          /* yellow-700 */
-  --semantic-iceberg: 14 116 144;     /* cyan-700 */
-  --semantic-sniper: 190 18 60;       /* rose-700 */
+  --semantic-down: 185 28 28; /* red-700 */
+  --semantic-down-dark: 153 27 27; /* red-800 */
+  --semantic-neutral: 75 85 99; /* gray-600 */
+  --semantic-maker: 4 120 87; /* emerald-700 */
+  --semantic-taker: 180 83 9; /* amber-700 */
+  --semantic-cross: 3 105 161; /* sky-700 */
+  --semantic-limit: 29 78 216; /* blue-700 */
+  --semantic-twap: 126 34 206; /* purple-700 */
+  --semantic-pov: 194 65 12; /* orange-700 */
+  --semantic-vwap: 161 98 7; /* yellow-700 */
+  --semantic-iceberg: 14 116 144; /* cyan-700 */
+  --semantic-sniper: 190 18 60; /* rose-700 */
   --semantic-arrival-price: 67 56 202; /* indigo-700 */
-  --semantic-is: 15 118 110;          /* teal-700 */
-  --semantic-momentum: 162 28 175;    /* fuchsia-700 */
+  --semantic-is: 15 118 110; /* teal-700 */
+  --semantic-momentum: 162 28 175; /* fuchsia-700 */
 
-  --semantic-status-success: 4 120 87;    /* = semantic-up (emerald-700) */
-  --semantic-status-pending: 146 64 14;   /* amber-800 — darker than semantic-taker for AA on bg-surface */
-  --semantic-status-info: 3 105 161;      /* = semantic-cross (sky-700) */
-  --semantic-status-critical: 185 28 28;  /* = semantic-down (red-700) */
-  --semantic-status-warning: 154 52 18;   /* orange-800 — darker than semantic-pov for AA on bg-surface */
+  --semantic-status-success: 4 120 87; /* = semantic-up (emerald-700) */
+  --semantic-status-pending: 146 64 14; /* amber-800 — darker than semantic-taker for AA on bg-surface */
+  --semantic-status-info: 3 105 161; /* = semantic-cross (sky-700) */
+  --semantic-status-critical: 185 28 28; /* = semantic-down (red-700) */
+  --semantic-status-warning: 154 52 18; /* orange-800 — darker than semantic-pov for AA on bg-surface */
 }
 
 [data-theme="high-contrast"] {

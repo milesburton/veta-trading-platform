@@ -9,7 +9,7 @@ existing, documented conventions. Full detail: [Contributing](https://milesburto
   Use commas, periods, or restructure the sentence.
 - No inline or block comments in application code. The codebase is meant
   to be self-documenting through naming and structure. Exceptions:
-  `biome-ignore`, `eslint-disable`, and comments explaining a genuinely
+  `oxlint-disable`, `eslint-disable`, and comments explaining a genuinely
   non-obvious constraint (a workaround, a subtle invariant) are fine.
 - British English spelling and grammar in docs and user-facing text.
 - No ASCII-art diagrams in docs. Use mermaid (`graph LR` / `graph TD`).

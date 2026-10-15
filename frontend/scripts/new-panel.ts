@@ -205,7 +205,7 @@ async function main(): Promise<void> {
   console.log(`  1. Add "${args.id}" to a workspace in src/components/dashboard/layoutModels.ts`);
   console.log(`  2. Flesh out src/components/${name}.tsx`);
   console.log(
-    `  3. Run: npx biome check --write src/components/${name}.tsx src/components/dashboard`
+    `  3. Run: npm run lint:fix`
   );
   console.log(`  4. Test: npm run test:unit -- --run src/components/__tests__/${name}.test.tsx`);
 }

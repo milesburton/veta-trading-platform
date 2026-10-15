@@ -383,7 +383,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
     lastSizeRef
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: theme is a trigger; getChartTheme reads CSS vars from the DOM
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- theme is a trigger; getChartTheme reads CSS vars from the DOM
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
       chartRef.current?.applyOptions(getChartTheme());

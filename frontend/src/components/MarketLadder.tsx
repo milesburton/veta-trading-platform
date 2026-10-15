@@ -6,13 +6,13 @@ import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
-import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import type {
   AssetDef,
   MarketPrices,
   OrderBookSnapshot,
   PriceHistory,
 } from "@veta/frontend/types.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { List, useListRef } from "react-window";
@@ -375,7 +375,7 @@ export function MarketLadder() {
 
   const incomingAsset = channelIn.selectedAsset;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: localSelected, search and sectorFilter are stable signal refs
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- localSelected, search and sectorFilter are stable signal refs
   useEffect(() => {
     if (!incomingAsset || incomingAsset === localSelected.value) return;
     const target = assets.find((a) => a.symbol === incomingAsset);
@@ -441,7 +441,7 @@ export function MarketLadder() {
     ctxMenu.value = { x: e.clientX, y: e.clientY, items };
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: localSelected and broadcast are stable signal/callback refs
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- localSelected and broadcast are stable signal/callback refs
   useEffect(() => {
     if (localSelected.value !== null) return;
     const first = assets[0];

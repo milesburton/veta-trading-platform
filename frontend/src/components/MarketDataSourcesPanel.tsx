@@ -157,7 +157,7 @@ export function MarketDataSourcesPanel() {
 
       <section
         className="flex-1 min-h-0 overflow-y-auto"
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region needs keyboard focus (WCAG SC 2.1.1)
         tabIndex={0}
         aria-label="Market data sources"
       >

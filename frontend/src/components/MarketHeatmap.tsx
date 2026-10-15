@@ -413,7 +413,6 @@ export function MarketHeatmap() {
     if (tile.isOther) {
       const showLabel = tw > 24 && th > 12;
       return (
-        // biome-ignore lint/a11y/useSemanticElements: SVG <g> cannot be replaced by <button>
         <g
           key={tile.symbol}
           onClick={() => onClickOther?.(tile.sector)}
@@ -467,7 +466,6 @@ export function MarketHeatmap() {
     const pctY = midY + (large ? 10 : 6);
 
     return (
-      // biome-ignore lint/a11y/useSemanticElements: SVG <g> cannot be replaced by <button>
       <g
         key={tile.symbol}
         data-testid={`heatmap-cell-${tile.symbol}`}

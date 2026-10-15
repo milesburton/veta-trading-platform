@@ -68,7 +68,7 @@ export function useColumnLayout(
 
   const frozenSet = useMemo(() => new Set(frozenColumns ?? []), [frozenColumns]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: columnWidths drives getWidth; listing it covers the dependency
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- columnWidths drives getWidth; listing it covers the dependency
   const stickyOffsets = useMemo(() => {
     const offsets: Record<string, number> = {};
     let left = 0;

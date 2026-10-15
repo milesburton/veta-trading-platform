@@ -12,7 +12,7 @@ The project uses a **Dev Container**. Open the repository in VS Code or JetBrain
 ## Code standards
 
 - **TypeScript everywhere**: Deno for backend, Vite and React for frontend.
-- **No comments in code**: the codebase should be self-documenting. Exceptions: `biome-ignore` and `eslint-disable` directives, and the two docs-linking markers described below (`// docs: /path/` references and `// #region docs:name` / `// #endregion docs:name` region markers).
+- **No comments in code**: the codebase should be self-documenting. Exceptions: `oxlint-disable` and `eslint-disable` directives, and the two docs-linking markers described below (`// docs: /path/` references and `// #region docs:name` / `// #endregion docs:name` region markers).
   If a piece of code has non-obvious rationale that a future reader genuinely needs (a workaround for a specific bug, a subtle invariant, why a value was chosen), write that explanation as a docs page instead of a comment, and leave a single-line reference in the code pointing at it, e.g. `// docs: /development/testing/k6-load-testing/`. Use `<Source>` (see [Source References](/veta-trading-platform/development/source-references/)) on the docs side to link back to the exact file or region, so the pair stays in sync and the build fails if either side drifts.
 - **Functional where possible**: pure functions with explicit inputs and outputs over mutable module-level state.
 - **Single source of truth**: shared types in `backend/src/types/`, shared utilities in `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`.
@@ -21,7 +21,7 @@ The project uses a **Dev Container**. Open the repository in VS Code or JetBrain
 
 ### Known false-positive lint suppressions
 
-`useAllServiceHealth` in `frontend/src/components/StatusBar.tsx` iterates a module-level constant array and calls a hook per element. Biome's static analysis cannot see that `SERVICES` is a fixed, module-level array, so it flags the call as a conditional/loop-dependent hook call. The iteration order is stable across every render (the array reference never changes), so the Rule of Hooks is satisfied semantically even though biome cannot verify it structurally; the accompanying `biome-ignore` is a verified false positive, not a workaround.
+`useAllServiceHealth` in `frontend/src/components/StatusBar.tsx` iterates a module-level constant array and calls a hook per element. Oxlint's static analysis cannot see that `SERVICES` is a fixed, module-level array, so it flags the call as a conditional/loop-dependent hook call. The iteration order is stable across every render (the array reference never changes), so the Rule of Hooks is satisfied semantically even though the linter cannot verify it structurally; the accompanying `oxlint-disable-next-line` is a verified false positive, not a workaround.
 
 ## Pre-commit hooks
 
@@ -31,7 +31,7 @@ The pre-commit hook (`.husky/pre-commit`) runs these checks in order:
 2. Backend lint (`deno lint`).
 3. Backend type-check (`deno task check`).
 4. Backend unit tests (`deno task test`).
-5. Frontend lint (Biome, all files).
+5. Frontend lint and format check (Oxlint, Oxfmt, all files).
 6. Frontend type-check (tsc, all files).
 7. Frontend unit tests (Vitest).
 8. Integration tests (auto-skipped if local services are not running).

@@ -277,10 +277,10 @@ function SessionPlayer({ sessionId, onBack }: { sessionId: string; onBack: () =>
 
     (async () => {
       interface RRWebPlayerClass {
-        new (opts: {
-          target: HTMLElement;
-          props: Record<string, unknown>;
-        }): { $destroy?: () => void; destroy?: () => void };
+        new (opts: { target: HTMLElement; props: Record<string, unknown> }): {
+          $destroy?: () => void;
+          destroy?: () => void;
+        };
       }
       const mod = (await import("rrweb-player")) as unknown as {
         default?: RRWebPlayerClass;

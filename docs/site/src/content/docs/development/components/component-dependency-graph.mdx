@@ -49,7 +49,7 @@ graph TD
 | CandlestickChart | `components/CandlestickChart.tsx` | 0 (—) | 1 (PopOutHost) |
 | ChildOrdersPanel | `components/ChildOrdersPanel.tsx` | 2 (panelRegistry, ResizableHeader) | 0 (—) |
 | ClientRfqPanel | `components/ClientRfqPanel.tsx` | 1 (shared) | 0 (—) |
-| ComponentPicker | `components/ComponentPicker.tsx` | 3 (DashboardLayout, panelRegistry, panelDragState) | 1 (StatusBar) |
+| ComponentPicker | `components/ComponentPicker.tsx` | 3 (panelRegistry, DashboardLayout, panelDragState) | 1 (StatusBar) |
 | ConnectionLostBanner | `components/ConnectionLostBanner.tsx` | 0 (—) | 1 (App) |
 | ContextMenu | `components/ContextMenu.tsx` | 0 (—) | 4 (DecisionLog, MarketLadder, MarketMatch, OrderBlotter) |
 | DashboardContext | `components/dashboard/DashboardContext.tsx` | 3 (layoutModels, layoutUtils, panelRegistry) | 4 (AlertDrawer, DashboardLayout, StatusBar, DashboardLayout) |
@@ -116,7 +116,7 @@ graph TD
 | PanelMenu | `components/PanelMenu.tsx` | 1 (DashboardLayout) | 0 (—) |
 | PlatformStatusPanel | `components/PlatformStatusPanel.tsx` | 0 (—) | 0 (—) |
 | PopOutButton | `components/PopOutButton.tsx` | 0 (—) | 9 (AlgoMonitor, ExecutionsPanel, FixSessionsPanel, MarketLadder, MyPositionsPanel, ObservabilityPanel, +3 more) |
-| PopOutHost | `components/PopOutHost.tsx` | 17 (AdminPanel, AlgoMonitor, AnalysisPanel, CandlestickChart, DashboardLayout, DecisionLog, +11 more) | 1 (main) |
+| PopOutHost | `components/PopOutHost.tsx` | 17 (AdminPanel, AlgoMonitor, AnalysisPanel, CandlestickChart, panelRegistry, DashboardLayout, +11 more) | 1 (main) |
 | PopOutPlaceholder | `components/PopOutPlaceholder.tsx` | 0 (—) | 0 (—) |
 | PriceFanPanel | `components/PriceFanPanel.tsx` | 0 (—) | 0 (—) |
 | ProductBookPanel | `components/ProductBookPanel.tsx` | 0 (—) | 0 (—) |

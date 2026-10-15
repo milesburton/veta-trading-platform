@@ -62,7 +62,7 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (one Docker
 
 ### frontend (~70 seconds)
 
-- `npx @biomejs/biome check src/`: lint the frontend sources
+- `vp lint` and `vp fmt --check`: lint and format-check the frontend sources
 - `tsc --noEmit`: type-check
 - `npm run test:coverage`: frontend unit tests with v8 coverage
 - Generates `docs/badges/frontend-tests.json` and `docs/badges/coverage.json`

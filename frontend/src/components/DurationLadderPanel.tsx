@@ -121,7 +121,7 @@ export function DurationLadderPanel() {
           </thead>
           <tbody>
             {positions.value.map((pos, idx) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: positions are identified by index
+              // oxlint-disable-next-line react/no-array-index-key -- positions are identified by index
               <tr key={idx} className="border-b border-panel">
                 <td className="py-0.5 pr-2 text-muted">{idx + 1}</td>
                 {(
@@ -202,7 +202,7 @@ export function DurationLadderPanel() {
                 <ReferenceLine y={0} stroke={COLOR.CHART_AXIS} strokeDasharray="3 3" />
                 {positions.value.map((_, i) => (
                   <Bar
-                    // biome-ignore lint/suspicious/noArrayIndexKey: bond index is the chart series key
+                    // oxlint-disable-next-line react/no-array-index-key -- bond index is the chart series key
                     key={`bond${i}`}
                     dataKey={`bond${i}`}
                     stackId="dv01"

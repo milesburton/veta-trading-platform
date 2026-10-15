@@ -62,8 +62,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
   }
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop dismiss on click
-    // biome-ignore lint/a11y/useKeyWithClickEvents: modal backdrop — keyboard handled by ESC on inner dialog
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- modal backdrop dismiss on click
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={(e) => {

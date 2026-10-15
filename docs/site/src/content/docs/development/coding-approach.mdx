@@ -72,7 +72,7 @@ The pre-commit hook runs 16 steps. You cannot commit until all pass:
 2. `deno lint`: backend linting
 3. `deno task check`: backend type-checking
 4. `deno task test`: backend unit tests
-5. Frontend linting (Biome)
+5. Frontend linting and formatting (Oxlint, Oxfmt)
 6. Frontend type-checking (`tsc --noEmit`)
 7. Frontend unit tests (Vitest)
 8. Integration tests (if services are running locally)

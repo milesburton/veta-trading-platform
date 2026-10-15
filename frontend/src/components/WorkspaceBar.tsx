@@ -536,8 +536,7 @@ export function WorkspaceSidebar({
       )}
 
       {shareDialog.value && (
-        // biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop
-        // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard handled by buttons inside
+        // oxlint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- modal backdrop
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={(e) => {

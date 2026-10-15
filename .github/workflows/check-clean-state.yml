@@ -53,7 +53,7 @@ jobs:
 
           # Run a quick lint to ensure any generated files are up-to-date
           deno task lint --fix || true
-          cd frontend && deno run -A npm:@biomejs/biome check --write src/ || true
+          cd frontend && npm run lint:fix || true
           cd ..
 
           # Refresh the index first. Without this, `git diff-index` can

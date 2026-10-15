@@ -13,8 +13,8 @@ import { useGetBondPriceMutation, useGetQuoteMutation } from "@veta/frontend/sto
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
 import { saveUiPrefs, setActiveSide, setActiveStrategy } from "@veta/frontend/store/uiSlice.ts";
-import type { BondPriceResponse, OptionQuoteResponse } from "@veta/frontend/types/analytics.ts";
 import type { InstrumentType, Trade } from "@veta/frontend/types.ts";
+import type { BondPriceResponse, OptionQuoteResponse } from "@veta/frontend/types/analytics.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -106,7 +106,7 @@ export function OrderTicket() {
     }
   }, [limits.allowed_desks, instrumentType]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot mount-time prefill from URL
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- one-shot mount-time prefill from URL
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = new URLSearchParams(globalThis.location.search).get("prefill");
@@ -168,7 +168,7 @@ export function OrderTicket() {
   }
 
   const channelAsset = channelIn.selectedAsset;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: signal read is reactive, selectAsset is stable
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- signal read is reactive, selectAsset is stable
   useEffect(() => {
     if (channelAsset && channelAsset !== assetSearch.value) {
       selectAsset(channelAsset);

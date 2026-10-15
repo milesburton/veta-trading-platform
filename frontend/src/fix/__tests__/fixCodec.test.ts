@@ -30,7 +30,7 @@ describe("encode", () => {
 
   it("checksum is 3 digits zero-padded", () => {
     const msg = encode([[Tag.MsgType, MsgType.Logon]]);
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: FIX protocol uses SOH
+    // oxlint-disable-next-line no-control-regex -- FIX protocol uses SOH
     const match = msg.match(/10=(\d{3})\u0001$/);
     expect(match).not.toBeNull();
     expect(match?.[1]).toHaveLength(3);
@@ -78,7 +78,7 @@ describe("encode", () => {
     const msg = encode(tags);
 
     // Extract claimed body length
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: FIX protocol uses SOH
+    // oxlint-disable-next-line no-control-regex -- FIX protocol uses SOH
     const bodyLenMatch = msg.match(/9=(\d+)\x01/);
     const claimed = Number(bodyLenMatch?.[1] ?? "0");
 

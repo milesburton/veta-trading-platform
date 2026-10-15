@@ -100,7 +100,7 @@ export function LogsDrawer() {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   useEffect(() => {
     runQuery();
   }, []);

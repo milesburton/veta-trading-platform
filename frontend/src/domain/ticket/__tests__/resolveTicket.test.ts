@@ -615,11 +615,14 @@ describe("resolveTicket", () => {
       [10, "spread.wide", false, "spread.exceeds-max", false],
       [75, "spread.wide", true, "spread.exceeds-max", false],
       [250, "spread.wide", false, "spread.exceeds-max", true],
-    ] as const)("spreadBps=%s → wide=%s, blocked=%s", (bps, _wideId, expectWide, _blockId, expectBlock) => {
-      const r = resolveTicket(makeCtx({ spreadBps: bps }));
-      expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(expectWide);
-      expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(expectBlock);
-    });
+    ] as const)(
+      "spreadBps=%s → wide=%s, blocked=%s",
+      (bps, _wideId, expectWide, _blockId, expectBlock) => {
+        const r = resolveTicket(makeCtx({ spreadBps: bps }));
+        expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(expectWide);
+        expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(expectBlock);
+      }
+    );
 
     it("skips spread check for bonds", () => {
       const r = resolveTicket(
@@ -642,16 +645,19 @@ describe("resolveTicket", () => {
       [185.0, 189.5, true, false],
       [200.0, 189.5, false, true],
       [179.0, 189.5, false, true],
-    ] as const)("limitPrice=%d market=%s → warning=%s error=%s", (limitPrice, currentPrice, expectWarning, expectError) => {
-      const r = resolveTicket(
-        makeCtx({
-          instrument: { ...makeCtx().instrument, currentPrice },
-          ...withDraft({ limitPrice }),
-        })
-      );
-      expect(r.warnings.some((d) => d.ruleId === "price-collar.deviation")).toBe(expectWarning);
-      expect(r.errors.some((d) => d.ruleId === "price-collar.exceeds-max")).toBe(expectError);
-    });
+    ] as const)(
+      "limitPrice=%d market=%s → warning=%s error=%s",
+      (limitPrice, currentPrice, expectWarning, expectError) => {
+        const r = resolveTicket(
+          makeCtx({
+            instrument: { ...makeCtx().instrument, currentPrice },
+            ...withDraft({ limitPrice }),
+          })
+        );
+        expect(r.warnings.some((d) => d.ruleId === "price-collar.deviation")).toBe(expectWarning);
+        expect(r.errors.some((d) => d.ruleId === "price-collar.exceeds-max")).toBe(expectError);
+      }
+    );
 
     it("skips for options", () => {
       const r = resolveTicket(
