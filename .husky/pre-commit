@@ -38,13 +38,13 @@ deno task test
 
 echo "  [4/15] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
-deno run -A npm:@biomejs/biome check src/
+npm run lint --silent
 
 echo "  [5/15] Frontend type-check (all files)..."
-./node_modules/.bin/tsc --noEmit --skipLibCheck
+npm run typecheck --silent
 
 echo "  [6/15] Frontend unit tests..."
-./node_modules/.bin/vitest run
+./node_modules/.bin/vp test run
 
 echo "  [7/15] Integration tests (skipped if services offline)..."
 cd "$REPO_ROOT"

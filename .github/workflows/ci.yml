@@ -215,11 +215,11 @@ jobs:
 
       - name: Biome lint
         working-directory: frontend
-        run: npx @biomejs/biome check src/
+        run: npm run lint
 
       - name: TypeScript type-check
         working-directory: frontend
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Check for leaked private IPs in public docs
         run: |
