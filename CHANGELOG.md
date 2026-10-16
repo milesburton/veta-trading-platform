@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.1...veta-trading-platform-v1.88.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** do not install git hooks on CI runners ([#875](https://github.com/milesburton/veta-trading-platform/issues/875)) ([84e2351](https://github.com/milesburton/veta-trading-platform/commit/84e2351abd5f0053e6f8b14f431d1311cc172910))
+
 ## [1.88.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.0...veta-trading-platform-v1.88.1) (2026-10-16)
 
 
