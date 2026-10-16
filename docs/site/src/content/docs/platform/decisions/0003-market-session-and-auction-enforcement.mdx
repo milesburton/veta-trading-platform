@@ -71,7 +71,7 @@ Three places currently hand-maintain the same NYSE-hours fact:
 `marketSession.ts`'s phase model, `tradingCalendar.ts`'s unused holiday/early-close
 schedule, and `marketHours.ts`'s hardcoded weekday/09:30–16:00 check. Promote
 `tradingCalendar.ts`'s calendar (holidays, early closes) to the source of truth; extend
-`marketHours.ts`'s `isUsEquityRegularSession()` to consult it. Since the Deno backend and
+`marketHours.ts`'s `isUsEquityRegularSession()` to consult it. Since the backend and
 the Vite frontend build separately, this means porting an equivalent minimal calendar
 object into a new `backend/src/market-sim/tradingCalendar.ts` with the same values, plus a
 test asserting the two lists match, rather than a literal shared import — a cheap guard
@@ -224,7 +224,7 @@ of this ADR's scope.
 
 ### Phase 6 — FIX path: same enforcement, independent wiring
 
-`fix-exchange.ts` is a standalone Deno process with its own `#veta/market-client`
+`fix-exchange.ts` is a standalone process with its own `#veta/market-client`
 WebSocket connection to market-sim (see [FIX protocol](../../fix-protocol/)) — it does not
 call risk-engine or OMS, so Phase 3's check does not cover it by construction. Phase 2's
 `MarketTick.sessionPhase` field is already available to it via the same client library, so

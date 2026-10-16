@@ -83,14 +83,14 @@
     }
   },
   "initializeCommand": "mkdir -p $HOME/.ssh $HOME/.config/gh $HOME/.claude && touch $HOME/.gitconfig",
-  "remoteUser": "deno",
+  "remoteUser": "veta",
   "userEnvProbe": "none",
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    "source=${localEnv:HOME}/.ssh,target=/home/deno/.ssh,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.config/gh,target=/home/deno/.config/gh,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.gitconfig,target=/home/deno/.gitconfig,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.claude,target=/home/deno/.claude,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.ssh,target=/home/veta/.ssh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/gh,target=/home/veta/.config/gh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/veta/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.claude,target=/home/veta/.claude,type=bind,consistency=cached"
   ],
   "postCreateCommand": "CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder} bash ${containerWorkspaceFolder}/.devcontainer/post-create.sh",
   "postStartCommand": "CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder} bash ${containerWorkspaceFolder}/.devcontainer/post-start.sh"

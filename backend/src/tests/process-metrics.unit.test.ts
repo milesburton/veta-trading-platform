@@ -2,7 +2,7 @@ import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import { setupProcessMetrics } from "../lib/telemetry.ts";
 
-function denoMemorySnapshot() {
+function processMemorySnapshot() {
   const mem = process.memoryUsage();
   return { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal };
 }
@@ -34,8 +34,8 @@ test("process.cpuUsage() exposes user + system in microseconds", () => {
 });
 
 test("memoryUsage snapshot stays sane between two consecutive reads", () => {
-  const a = denoMemorySnapshot();
-  const b = denoMemorySnapshot();
+  const a = processMemorySnapshot();
+  const b = processMemorySnapshot();
   assert(a.rss > 0 && b.rss > 0);
   assert(Math.abs(b.rss - a.rss) < 1024 * 1024 * 1024, "rss shouldn't jump by >1GB between reads");
 });

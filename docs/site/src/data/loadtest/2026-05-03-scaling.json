@@ -1,8 +1,8 @@
 {
   "runDate": "2026-05-03",
-  "runner": "deno-scaling-driver",
-  "runnerNotes": "Pre-k6 measurement using a Deno script that drove gateway POST /load-test at three order counts and queried journal /metrics/latency for end-to-end pipeline percentiles. Captures the full submit→fill path, not just HTTP RTT.",
-  "target": "http://localhost:5011 (deno-local services, dockerized postgres+redpanda)",
+  "runner": "scaling-driver",
+  "runnerNotes": "Pre-k6 measurement using a script that drove gateway POST /load-test at three order counts and queried journal /metrics/latency for end-to-end pipeline percentiles. Captures the full submit→fill path, not just HTTP RTT.",
+  "target": "http://localhost:5011 (locally run services, dockerized postgres+redpanda)",
   "config": {
     "riskEngineEnabled": false,
     "userPool": ["alice", "amelia", "bob", "dave"],
