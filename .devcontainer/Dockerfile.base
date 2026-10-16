@@ -83,38 +83,38 @@ RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk && \
 # breaks any shell that loads it at startup. The /opt/redpanda/lib symlink
 # satisfies the binary's PT_INTERP without needing LD_LIBRARY_PATH at all.
 
-# Create the 'deno' user with Fish as default shell, and pre-create bind mount targets.
-# Create the docker group (docker-ce-cli doesn't create it) and add deno to it so
+# Create the veta user with Fish as default shell, and pre-create bind mount targets.
+# Create the docker group (docker-ce-cli doesn't create it) and add veta to it so
 # the host Docker socket is accessible without sudo.
 RUN groupadd -f docker && \
-    useradd -m -s /usr/bin/fish deno && \
-    usermod -aG docker deno && \
-    chown -R deno:deno /var/lib/redpanda /etc/redpanda && \
-    mkdir -p /home/deno/.ssh /home/deno/.claude && \
-    chown -R deno:deno /home/deno/.ssh /home/deno/.claude && \
-    chmod 700 /home/deno/.ssh
+    useradd -m -s /usr/bin/fish veta && \
+    usermod -aG docker veta && \
+    chown -R veta:veta /var/lib/redpanda /etc/redpanda && \
+    mkdir -p /home/veta/.ssh /home/veta/.claude && \
+    chown -R veta:veta /home/veta/.ssh /home/veta/.claude && \
+    chmod 700 /home/veta/.ssh
 
-# Install Playwright browsers as root (--with-deps needs apt), then hand off to deno user.
+# Install Playwright browsers as root (--with-deps needs apt), then hand off to veta user.
 # Pinned to match frontend/package.json (@playwright/test ^1.58.2).
 RUN npx --yes playwright@1.58.2 install --with-deps && \
-    mkdir -p /home/deno/.cache && \
-    mv /root/.cache/ms-playwright /home/deno/.cache/ms-playwright && \
-    chown -R deno:deno /home/deno/.cache
+    mkdir -p /home/veta/.cache && \
+    mv /root/.cache/ms-playwright /home/veta/.cache/ms-playwright && \
+    chown -R veta:veta /home/veta/.cache
 
-ENV PLAYWRIGHT_BROWSERS_PATH=/home/deno/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/veta/.cache/ms-playwright
 
-# Switch to the 'deno' user
-USER deno
+# Switch to the veta user
+USER veta
 
 # Set the working directory
-WORKDIR /home/deno
+WORKDIR /home/veta
 
 # Ensure the Fish configuration directory exists
-RUN mkdir -p /home/deno/.config/fish
+RUN mkdir -p /home/veta/.config/fish
 
 # Copy Fish shell config (MOTD, aliases, supervisord shortcuts).
 # Edit .devcontainer/config.fish to update — the Dockerfile just copies it.
-COPY --chown=deno:deno config.fish /home/deno/.config/fish/config.fish
+COPY --chown=veta:veta config.fish /home/veta/.config/fish/config.fish
 
 # Set Fish as the default shell
 SHELL ["/usr/bin/fish", "-c"]

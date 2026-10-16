@@ -41,8 +41,8 @@ Choices made along the way:
 - Oxfmt options match the previous Biome output (100 columns, double quotes, semicolons,
   ES5 trailing commas), so the reformat touched 43 files rather than the 119 that default
   options would have changed.
-- The root `deno task lint` runs Oxlint through Deno at a pinned version, because the
-  backend CI job has no frontend `node_modules`.
+- The root `npm run lint:backend` runs Oxlint through `vp lint`, so the backend CI job
+  does not need the frontend `node_modules`.
 
 ## Alternatives considered
 

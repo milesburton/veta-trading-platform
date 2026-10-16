@@ -1,8 +1,8 @@
 /**
  * Frontend bond universe. Reads the same curated + generated data as
  * backend/src/market-sim/bondUniverse.ts from shared/ instead of
- * hand-duplicating it (Vite can import shared/*.ts directly; it's only
- * Deno-specific backend modules it can't reach).
+ * hand-duplicating it (Vite can import shared/*.ts directly; it cannot reach
+ * the backend modules).
  */
 
 import type { BondDef } from "@shared/bondUniverseTypes";

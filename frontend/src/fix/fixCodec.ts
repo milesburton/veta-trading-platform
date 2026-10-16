@@ -1,5 +1,5 @@
 // Browser-side FIX 4.4 encoder/decoder
-// Mirrors backend/src/fix/fixParser.ts (no Node/Deno APIs used).
+// Mirrors backend/src/fix/fixParser.ts (no Node APIs used).
 
 export const SOH = "\x01";
 export const BEGIN_STRING = "FIX.4.4";

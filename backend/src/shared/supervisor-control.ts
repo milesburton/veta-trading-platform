@@ -1,5 +1,5 @@
 import { runCommand } from "../lib/process.ts";
-const DEFAULT_SUPERVISORD_CONF = "/home/deno/supervisord.conf";
+const DEFAULT_SUPERVISORD_CONF = "/home/veta/supervisord.conf";
 
 function supervisordConf(): string {
   return process.env.SUPERVISORD_CONF || DEFAULT_SUPERVISORD_CONF;

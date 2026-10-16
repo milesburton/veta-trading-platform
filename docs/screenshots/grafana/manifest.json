@@ -31,7 +31,7 @@
       "uid": "veta-services-otel",
       "slug": "veta-services-otel",
       "title": "Service Performance (OTel)",
-      "description": "Per-service request rate, latency, errors, and resource usage — sourced from Deno's built-in OpenTelemetry instrumentation. All panels respect the service variable, so pick a service from the top to scope the view.",
+      "description": "Per-service request rate, latency, errors, and resource usage — sourced from OpenTelemetry instrumentation. All panels respect the service variable, so pick a service from the top to scope the view.",
       "panels": [
         {
           "id": 21,

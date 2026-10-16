@@ -63,5 +63,5 @@ constructor parameter properties). `erasableSyntaxOnly` in `tsconfig.json` enfor
   dotenv import.
 - The synthetic probe on the edge host now needs Node.js 24 instead of the Deno binary. That
   host is provisioned outside this repository.
-- The Linux user in the dev container is still called `deno`. Renaming it would break the
-  bind-mounted home directories, so it is left for a separate change.
+- The Linux user in the dev container is now called `veta`. Existing dev containers must be
+  rebuilt so the bind-mounted home directories land under `/home/veta`.

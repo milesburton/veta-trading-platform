@@ -20,20 +20,20 @@ RUN apt-get update \
        xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth libgbm-dev \
     && npm install -g @anthropic-ai/claude-code \
     && rm -rf /var/lib/apt/lists/*
-USER deno
+USER veta
 
 # Per-user npm global prefix so `npm install -g <pkg>` works at runtime without sudo.
 # The system prefix (/usr) is root-owned; image-baked globals like @anthropic-ai/claude-code
-# live there, but anything installed by the deno user goes here.
-ENV NPM_CONFIG_PREFIX=/home/deno/.npm-global
-ENV PATH=/home/deno/.npm-global/bin:$PATH
-RUN mkdir -p /home/deno/.npm-global
+# live there, but anything installed by the veta user goes here.
+ENV NPM_CONFIG_PREFIX=/home/veta/.npm-global
+ENV PATH=/home/veta/.npm-global/bin:$PATH
+RUN mkdir -p /home/veta/.npm-global
 
 # Bootstrap Fish config: source the live workspace file so changes take effect
 # without rebuilding the container. The workspace is mounted at runtime at
 # /workspaces/virtual-equities-trading-application by the devcontainer.
 RUN echo 'source /workspaces/virtual-equities-trading-application/.devcontainer/config.fish' \
-    > /home/deno/.config/fish/config.fish
+    > /home/veta/.config/fish/config.fish
 
 # Services are started by postStartCommand in devcontainer.json via docker compose
 # using the host Docker socket. No supervisord needed.
