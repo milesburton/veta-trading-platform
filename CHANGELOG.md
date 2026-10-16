@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.3...veta-trading-platform-v1.88.4) (2026-10-16)
+
+
+### Bug Fixes
+
+* **news:** bound poll concurrency and fetch general feeds once per cycle ([#880](https://github.com/milesburton/veta-trading-platform/issues/880)) ([37cae88](https://github.com/milesburton/veta-trading-platform/commit/37cae8821c6d6e11c66713fc1afe000404b15557))
+
 ## [1.88.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.2...veta-trading-platform-v1.88.3) (2026-10-16)
 
 
