@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.4...veta-trading-platform-v1.88.5) (2026-10-16)
+
+
+### Bug Fixes
+
+* **tests:** shorten market-sim prewarm warm-up so it fits the runner timeout ([#888](https://github.com/milesburton/veta-trading-platform/issues/888)) ([5e22071](https://github.com/milesburton/veta-trading-platform/commit/5e2207163e218da164a771997ad64fd10c305b3e))
+
 ## [1.88.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.3...veta-trading-platform-v1.88.4) (2026-10-16)
 
 
