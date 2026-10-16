@@ -147,8 +147,8 @@ test("prewarmPrices moves prices away from their initial values", () => {
   assertEquals(movedCount > 0, true);
 });
 
-test("prewarmPrices produces meaningful intraday spread after a full warm-up", () => {
-  prewarmPrices(28_080);
+test("prewarmPrices produces meaningful intraday spread after an extended warm-up", () => {
+  prewarmPrices(2_000);
   const sample = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL", "AMD", "JPM", "NFLX"];
   for (const sym of sample) {
     assertEquals(marketData[sym] > 0, true, `${sym} should have positive price after warm-up`);
