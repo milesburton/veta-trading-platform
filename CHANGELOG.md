@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.87.1...veta-trading-platform-v1.88.0) (2026-10-16)
+
+
+### Features
+
+* **backend:** migrate backend services from Deno to Node.js 24 ([#866](https://github.com/milesburton/veta-trading-platform/issues/866)) ([de2b78a](https://github.com/milesburton/veta-trading-platform/commit/de2b78a3942005b94d3a656f1f8d7714e2505ba8))
+
 ## [1.87.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.87.0...veta-trading-platform-v1.87.1) (2026-10-15)
 
 
