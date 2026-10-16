@@ -21,8 +21,6 @@ import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
 const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
-const T = (ms = 15_000) => AbortSignal.timeout(ms);
-
 // Scales every startup/test timeout in this file. Set on contended runners
 // (e.g. a homelab box that also runs the full production stack) where
 // cold-starting 15-30 subprocesses for a group takes longer than on an
@@ -30,6 +28,7 @@ const T = (ms = 15_000) => AbortSignal.timeout(ms);
 // everywhere else.
 const TIMEOUT_SCALE = Number(process.env.TC_TIMEOUT_SCALE ?? "1");
 const scaled = (ms: number) => Math.round(ms * TIMEOUT_SCALE);
+const T = (ms = 15_000) => AbortSignal.timeout(scaled(ms));
 
 // Maximum wall-clock time for a single test block including container
 // startup. If a test hangs (e.g. waiting for a service that never responds),
