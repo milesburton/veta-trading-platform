@@ -1463,7 +1463,7 @@ services:
     cpus: 1
     command: [
       "node",
-      "--v8-flags=--max-old-space-size=2048",
+      "--max-old-space-size=2048",
       "/app/backend/src/feature-engine/feature-engine.ts",
     ]
     depends_on:
