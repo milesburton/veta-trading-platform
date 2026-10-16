@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.5...veta-trading-platform-v1.88.6) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** skip git hooks on bot badge and screenshot commits ([#891](https://github.com/milesburton/veta-trading-platform/issues/891)) ([cc61013](https://github.com/milesburton/veta-trading-platform/commit/cc61013b9f2c599f55e40312ff35b7d3612002dd))
+
 ## [1.88.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.4...veta-trading-platform-v1.88.5) (2026-10-16)
 
 
