@@ -90,7 +90,7 @@
     "#veta/test-server": "./backend/src/test-support/server.ts"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "@types/ws": "^8.5.0",
     "@vitest/coverage-v8": "^5.0.4",
