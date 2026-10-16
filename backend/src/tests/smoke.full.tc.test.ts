@@ -101,9 +101,13 @@ test({
           const results = await Promise.all(
             services.map(async (s) => {
               const u = url(stack, s);
-              const res = await fetch(`${u}/health`, { signal: T() });
-              const body = await res.json().catch(() => null);
-              return { service: s, status: res.status, body };
+              try {
+                const res = await fetch(`${u}/health`, { signal: T() });
+                const body = await res.json().catch(() => null);
+                return { service: s, status: res.status, body };
+              } catch (err) {
+                return { service: s, status: 0, body: String(err) };
+              }
             })
           );
           const failures = results.filter((r) => r.status !== 200);

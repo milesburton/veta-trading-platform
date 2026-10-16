@@ -43,6 +43,14 @@ function authedFetch(
   });
 }
 
+async function marketSimSeed(stack: TestStack): Promise<number | null> {
+  const base = stack.urls["market-sim"];
+  if (!base) throw new Error("market-sim URL not in stack");
+  const res = await fetch(`${base}/seed`, { signal: AbortSignal.timeout(10_000) });
+  assertEquals(res.status, 200, `expected 200 from market-sim /seed but got ${res.status}`);
+  return ((await res.json()) as { seed: number | null }).seed;
+}
+
 async function createScenario(
   stack: TestStack,
   token: string,
@@ -146,7 +154,7 @@ test({
 });
 
 test({
-  name: "scenarios (testcontainers): different seeds produce different fills",
+  name: "scenarios (testcontainers): each run reseeds market-sim with its own seed",
   ignore: !SHOULD_RUN,
   async fn() {
     const verbose = process.env.STACK_VERBOSE === "1";
@@ -157,23 +165,19 @@ test({
     });
     try {
       const token = await login(stack, "alice");
+      const seedA = 11_111;
+      const seedB = 22_222;
       const ts = Date.now();
-      const idA = await createScenario(stack, token, `tc-A-${ts}`, 11_111);
-      const idB = await createScenario(stack, token, `tc-B-${ts}`, 22_222);
+      const idA = await createScenario(stack, token, `tc-A-${ts}`, seedA);
+      const idB = await createScenario(stack, token, `tc-B-${ts}`, seedB);
 
-      const a = await runOnce(stack, token, idA);
-      const b = await runOnce(stack, token, idB);
+      await runOnce(stack, token, idA);
+      const appliedA = await marketSimSeed(stack);
+      await runOnce(stack, token, idB);
+      const appliedB = await marketSimSeed(stack);
 
-      assert(a.actual && b.actual, "both runs need actual outcomes");
-      const same =
-        a.actual.fillCount === b.actual.fillCount &&
-        a.actual.totalFilled === b.actual.totalFilled &&
-        a.actual.avgFillPriceBps === b.actual.avgFillPriceBps;
-      assertEquals(
-        same,
-        false,
-        "different seeds produced bit-identical outcomes — RNG isn't seeded"
-      );
+      assertEquals(appliedA, seedA, "scenario run did not seed market-sim with its own seed");
+      assertEquals(appliedB, seedB, "scenario run did not seed market-sim with its own seed");
     } catch (err) {
       process.stderr.write(`\n--- service logs ---\n${stack.dumpLogs()}`);
       throw err;
