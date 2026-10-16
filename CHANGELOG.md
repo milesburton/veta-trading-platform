@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.0...veta-trading-platform-v1.88.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **tests:** scale smoke.full request timeouts with TC_TIMEOUT_SCALE ([#873](https://github.com/milesburton/veta-trading-platform/issues/873)) ([6e3e138](https://github.com/milesburton/veta-trading-platform/commit/6e3e1387685f9c71fbb79510b78918ec5897590f))
+
 ## [1.88.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.87.1...veta-trading-platform-v1.88.0) (2026-10-16)
 
 
