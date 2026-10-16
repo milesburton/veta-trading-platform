@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.2...veta-trading-platform-v1.88.3) (2026-10-16)
+
+
+### Bug Fixes
+
+* **tests:** assert scenario reseeding directly and name the service on /health timeout ([#877](https://github.com/milesburton/veta-trading-platform/issues/877)) ([3ceda91](https://github.com/milesburton/veta-trading-platform/commit/3ceda910814c1807d10dfdce71c4ce55f61bf343))
+
 ## [1.88.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.1...veta-trading-platform-v1.88.2) (2026-10-16)
 
 
