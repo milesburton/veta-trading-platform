@@ -12,6 +12,7 @@ const MARKET_SIM_URL = process.env.MARKET_SIM_URL || "http://localhost:5000";
 const POLL_INTERVAL_MS = Number(process.env.NEWS_POLL_INTERVAL_MS) || 120_000;
 const VERSION = process.env.COMMIT_SHA || "dev";
 const MAX_ITEMS_PER_SYMBOL = 100;
+const POLL_CONCURRENCY = Number(process.env.NEWS_POLL_CONCURRENCY) || 8;
 const SOURCES_FILE = process.env.NEWS_SOURCES_FILE ?? "./news_sources.json";
 
 logger.info(`Starting, poll=${POLL_INTERVAL_MS}ms`);
@@ -155,55 +156,82 @@ async function publishItem(item: NewsItem): Promise<void> {
   await producer.send("news.events.normalised", newsEvent).catch(() => {});
 }
 
-async function pollSourceForSymbol(source: NewsSource, symbol: string): Promise<void> {
-  const url = source.symbolSpecific
-    ? source.rssTemplate.replace("{symbol}", encodeURIComponent(symbol))
-    : source.rssTemplate;
+async function ingestItem(source: NewsSource, symbol: string, raw: RssItem): Promise<boolean> {
+  const headline = raw.title ?? "";
+  if (!headline) return false;
 
-  const items = await fetchRss(url);
-  let newCount = 0;
-
-  for (const raw of items) {
-    const headline = raw.title ?? "";
-    if (!headline) continue;
-
-    if (!source.symbolSpecific) {
-      const tickers = extractTickers(`${headline} ${raw.description ?? ""}`);
-      if (!tickers.includes(symbol)) continue;
+  const id = raw.guid ?? raw.link ?? headline;
+  const itemKey = `${source.id}:${id}`;
+  if (seenIds.has(itemKey)) return false;
+  if (seenIds.size >= SEEN_IDS_MAX) {
+    for (const k of [...seenIds].slice(0, Math.floor(SEEN_IDS_MAX / 4))) {
+      seenIds.delete(k);
     }
-
-    const id = raw.guid ?? raw.link ?? headline;
-    const itemKey = `${source.id}:${id}`;
-    if (seenIds.has(itemKey)) continue;
-    if (seenIds.size >= SEEN_IDS_MAX) {
-      for (const k of [...seenIds].slice(0, Math.floor(SEEN_IDS_MAX / 4))) {
-        seenIds.delete(k);
-      }
-    }
-    seenIds.add(itemKey);
-
-    const { sentiment, score } = scoreSentiment(headline);
-    const relatedSymbols = extractTickers(headline);
-
-    const item: NewsItem = {
-      id: itemKey,
-      symbol,
-      headline,
-      source: source.label,
-      url: raw.link ?? "",
-      publishedAt: raw.pubDate ? new Date(raw.pubDate).getTime() : Date.now(),
-      sentiment,
-      sentimentScore: score,
-      relatedSymbols,
-    };
-
-    storeItem(item);
-    await publishItem(item);
-    newCount++;
   }
+  seenIds.add(itemKey);
 
+  const { sentiment, score } = scoreSentiment(headline);
+  const item: NewsItem = {
+    id: itemKey,
+    symbol,
+    headline,
+    source: source.label,
+    url: raw.link ?? "",
+    publishedAt: raw.pubDate ? new Date(raw.pubDate).getTime() : Date.now(),
+    sentiment,
+    sentimentScore: score,
+    relatedSymbols: extractTickers(headline),
+  };
+
+  storeItem(item);
+  await publishItem(item);
+  return true;
+}
+
+async function ingestAll(
+  source: NewsSource,
+  pairs: readonly (readonly [string, RssItem])[]
+): Promise<number> {
+  const results: boolean[] = [];
+  for (const [symbol, raw] of pairs) {
+    results.push(await ingestItem(source, symbol, raw));
+  }
+  return results.filter(Boolean).length;
+}
+
+async function pollSymbolSpecific(source: NewsSource, symbol: string): Promise<void> {
+  const url = source.rssTemplate.replace("{symbol}", encodeURIComponent(symbol));
+  const items = await fetchRss(url);
+  const newCount = await ingestAll(
+    source,
+    items.map((raw) => [symbol, raw] as const)
+  );
   if (newCount > 0) {
     logger.info(`${source.label} → ${symbol}: +${newCount} items`);
+  }
+}
+
+async function pollGeneral(source: NewsSource): Promise<void> {
+  const items = await fetchRss(source.rssTemplate);
+  const symbols = new Set(knownSymbols);
+  const pairs = items.flatMap((raw) =>
+    extractTickers(`${raw.title ?? ""} ${raw.description ?? ""}`)
+      .filter((ticker) => symbols.has(ticker))
+      .map((ticker) => [ticker, raw] as const)
+  );
+  const newCount = await ingestAll(source, pairs);
+  if (newCount > 0) {
+    logger.info(`${source.label}: +${newCount} items`);
+  }
+}
+
+async function inBatches<T>(
+  items: readonly T[],
+  size: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  for (let i = 0; i < items.length; i += size) {
+    await Promise.allSettled(items.slice(i, i + size).map(fn));
   }
 }
 
@@ -214,21 +242,14 @@ async function pollAll(): Promise<void> {
   const symbolSpecific = enabledSources.filter((s) => s.symbolSpecific);
   const general = enabledSources.filter((s) => !s.symbolSpecific);
 
-  const tasks: Promise<void>[] = [];
+  await inBatches(general, POLL_CONCURRENCY, pollGeneral);
 
-  for (const source of symbolSpecific) {
-    for (const symbol of knownSymbols) {
-      tasks.push(pollSourceForSymbol(source, symbol));
-    }
-  }
-
-  for (const source of general) {
-    for (const symbol of knownSymbols) {
-      tasks.push(pollSourceForSymbol(source, symbol));
-    }
-  }
-
-  await Promise.allSettled(tasks);
+  const jobs = symbolSpecific.flatMap((source) =>
+    knownSymbols.map((symbol) => [source, symbol] as const)
+  );
+  await inBatches(jobs, POLL_CONCURRENCY, ([source, symbol]) =>
+    pollSymbolSpecific(source, symbol)
+  );
 }
 
 async function loadSymbols(): Promise<void> {
@@ -250,9 +271,16 @@ async function loadSymbols(): Promise<void> {
   if (!ready) logger.warn("market-sim not reachable after 60s — proceeding anyway");
   await loadSymbols();
   await pollAll();
+  let polling = false;
   setInterval(async () => {
-    await loadSymbols();
-    await pollAll();
+    if (polling) return;
+    polling = true;
+    try {
+      await loadSymbols();
+      await pollAll();
+    } finally {
+      polling = false;
+    }
   }, POLL_INTERVAL_MS);
 })();
 
