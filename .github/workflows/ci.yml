@@ -154,7 +154,7 @@ jobs:
       - name: Extract backend line coverage
         id: backend_coverage
         run: |
-          PCT=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END { if (lf > 0) printf "%.1f", (lh*100/lf); else print "0.0" }' coverage.lcov)
+          PCT=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END { if (lf > 0) printf "%.1f", (lh*100/lf); else print "0.0" }' coverage/lcov.info)
           echo "value=${PCT}" >> "$GITHUB_OUTPUT"
 
       - name: Generate backend test badge
@@ -182,7 +182,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: backend-coverage
-          path: coverage.lcov
+          path: coverage/lcov.info
           retention-days: 14
 
   frontend:
@@ -510,7 +510,7 @@ jobs:
         id: combine
         run: |
           inputs=()
-          [[ -f cov-unit/coverage.lcov ]] && inputs+=(cov-unit/coverage.lcov)
+          [[ -f cov-unit/lcov.info ]] && inputs+=(cov-unit/lcov.info)
           [[ -f cov-tc/coverage-tc.lcov ]] && inputs+=(cov-tc/coverage-tc.lcov)
           if [[ ${#inputs[@]} -eq 0 ]]; then
             : > coverage-combined.lcov
