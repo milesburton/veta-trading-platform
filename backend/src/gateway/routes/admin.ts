@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import { type AuthResult, type GatewayContext, isResponse } from "../context.ts";
 
 type OrderSpec = {
@@ -42,7 +42,7 @@ function busUnavailable(producerReady: boolean): Response | null {
 
 // docs: /user-guide/admin-tools/
 export function testTraderIds(): string[] {
-  return (Deno.env.get("LOAD_TEST_USER_IDS") ?? "")
+  return (process.env.LOAD_TEST_USER_IDS ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -166,7 +166,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     "AMD",
   ];
   const symbols = body.symbols ?? ALL_SYMBOLS;
-  const maxOrderCount = Math.max(1, Number(Deno.env.get("LOAD_TEST_MAX_ORDERS") ?? "5000"));
+  const maxOrderCount = Math.max(1, Number(process.env.LOAD_TEST_MAX_ORDERS ?? "5000"));
   const orderCount = Math.min(body.orderCount ?? 100, maxOrderCount);
   const strategy = body.strategy ?? "LIMIT";
   const jobId = `load-${Date.now()}`;
@@ -188,7 +188,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     );
   }
 
-  const loadTestUserIds = Deno.env.get("LOAD_TEST_USER_IDS");
+  const loadTestUserIds = process.env.LOAD_TEST_USER_IDS;
   if (!loadTestUserIds) {
     return new Response(
       JSON.stringify({
@@ -203,9 +203,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const ORDERS_PER_SECOND_PER_USER = Number(
-    Deno.env.get("LOAD_TEST_ORDERS_PER_SEC_PER_USER") ?? "5"
-  );
+  const ORDERS_PER_SECOND_PER_USER = Number(process.env.LOAD_TEST_ORDERS_PER_SEC_PER_USER ?? "5");
 
   let prices: Record<string, number> = {};
   try {

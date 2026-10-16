@@ -1,13 +1,6 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-  assertGreater,
-} from "jsr:@std/assert@0.217";
-import type {
-  NelsonSiegelParams,
-  YieldCurvePoint,
-} from "../analytics/types.ts";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals, assertGreater } from "#veta/test-assert";
+import type { NelsonSiegelParams, YieldCurvePoint } from "../analytics/types.ts";
 import {
   _internalForTests,
   buildYieldCurveResponse,
@@ -23,7 +16,7 @@ const DEFAULT_PARAMS: NelsonSiegelParams = {
   lambda: 2.5,
 };
 
-Deno.test("[yield-curve] computeYieldCurve returns default tenor set", () => {
+test("[yield-curve] computeYieldCurve returns default tenor set", () => {
   const curve = computeYieldCurve();
   assertEquals(curve.length, 10);
   assertEquals(curve[0].tenorLabel, "3m");
@@ -33,7 +26,7 @@ Deno.test("[yield-curve] computeYieldCurve returns default tenor set", () => {
   for (const point of curve) assertGreater(point.spotRate, 0);
 });
 
-Deno.test("[yield-curve] computeYieldCurve applies parameter overrides", () => {
+test("[yield-curve] computeYieldCurve applies parameter overrides", () => {
   const baseline = computeYieldCurve();
   const shifted = computeYieldCurve({ beta0: 0.1 });
   for (let index = 0; index < baseline.length; index++) {
@@ -41,7 +34,7 @@ Deno.test("[yield-curve] computeYieldCurve applies parameter overrides", () => {
   }
 });
 
-Deno.test("[yield-curve] rateAt clamps and interpolates correctly", () => {
+test("[yield-curve] rateAt clamps and interpolates correctly", () => {
   const curve: YieldCurvePoint[] = [
     { tenorYears: 5, tenorLabel: "5y", spotRate: 0.05 },
     { tenorYears: 1, tenorLabel: "1y", spotRate: 0.01 },
@@ -52,7 +45,7 @@ Deno.test("[yield-curve] rateAt clamps and interpolates correctly", () => {
   assertAlmostEquals(rateAt(curve, 1.5), 0.015, 1e-12);
 });
 
-Deno.test("[yield-curve] forwardRates match a flat curve", () => {
+test("[yield-curve] forwardRates match a flat curve", () => {
   const curve: YieldCurvePoint[] = [
     { tenorYears: 1, tenorLabel: "1y", spotRate: 0.03 },
     { tenorYears: 2, tenorLabel: "2y", spotRate: 0.03 },
@@ -65,7 +58,7 @@ Deno.test("[yield-curve] forwardRates match a flat curve", () => {
   }
 });
 
-Deno.test("[yield-curve] response uses defaults and caller overrides", () => {
+test("[yield-curve] response uses defaults and caller overrides", () => {
   const before = Date.now();
   const response = buildYieldCurveResponse({ beta0: 0.08 });
   const after = Date.now();
@@ -75,14 +68,8 @@ Deno.test("[yield-curve] response uses defaults and caller overrides", () => {
   for (const point of response.curve) assertGreater(point.spotRate, 0.03);
 });
 
-Deno.test("[yield-curve] nelsonSiegel handles non-positive tau", () => {
+test("[yield-curve] nelsonSiegel handles non-positive tau", () => {
   const { nelsonSiegel } = _internalForTests;
-  assertEquals(
-    nelsonSiegel(0, DEFAULT_PARAMS),
-    DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1,
-  );
-  assertEquals(
-    nelsonSiegel(-1, DEFAULT_PARAMS),
-    DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1,
-  );
+  assertEquals(nelsonSiegel(0, DEFAULT_PARAMS), DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1);
+  assertEquals(nelsonSiegel(-1, DEFAULT_PARAMS), DEFAULT_PARAMS.beta0 + DEFAULT_PARAMS.beta1);
 });

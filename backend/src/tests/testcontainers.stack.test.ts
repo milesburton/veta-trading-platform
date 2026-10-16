@@ -1,9 +1,10 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { startStack } from "./testcontainers/services.ts";
 
-Deno.test({
+test({
   name: "testcontainers stack: boots market-sim + journal against ephemeral infra",
-  ignore: Deno.env.get("RUN_TESTCONTAINERS") !== "1",
+  ignore: process.env.RUN_TESTCONTAINERS !== "1",
   async fn() {
     const stack = await startStack({ services: ["market-sim", "journal"] });
     try {

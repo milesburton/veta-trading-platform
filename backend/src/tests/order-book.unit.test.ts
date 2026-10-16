@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import {
   addOrder,
   bestAsk,
@@ -23,13 +24,13 @@ function order(overrides: Partial<RestingOrder>): RestingOrder {
   };
 }
 
-Deno.test("[order-book] resting bid becomes the best bid", () => {
+test("[order-book] resting bid becomes the best bid", () => {
   const book = addOrder(createBook("AAPL"), order({ orderId: "B1", side: "BUY", price: 99 }));
   assertEquals(bestBid(book), 99);
   assertEquals(bestAsk(book), undefined);
 });
 
-Deno.test("[order-book] higher-priced bid ranks ahead of a lower-priced bid", () => {
+test("[order-book] higher-priced bid ranks ahead of a lower-priced bid", () => {
   let book = createBook("AAPL");
   book = addOrder(book, order({ orderId: "B1", side: "BUY", price: 99, seq: 0 }));
   book = addOrder(book, order({ orderId: "B2", side: "BUY", price: 101, seq: 1 }));
@@ -37,7 +38,7 @@ Deno.test("[order-book] higher-priced bid ranks ahead of a lower-priced bid", ()
   assertEquals(book.bids[0].orderId, "B2");
 });
 
-Deno.test("[order-book] equal-priced bids keep price-time priority (earlier seq first)", () => {
+test("[order-book] equal-priced bids keep price-time priority (earlier seq first)", () => {
   let book = createBook("AAPL");
   book = addOrder(book, order({ orderId: "B1", side: "BUY", price: 100, seq: 0 }));
   book = addOrder(book, order({ orderId: "B2", side: "BUY", price: 100, seq: 1 }));
@@ -45,7 +46,7 @@ Deno.test("[order-book] equal-priced bids keep price-time priority (earlier seq 
   assertEquals(book.bids[1].orderId, "B2");
 });
 
-Deno.test("[order-book] cancel removes the order from whichever side holds it", () => {
+test("[order-book] cancel removes the order from whichever side holds it", () => {
   let book = createBook("AAPL");
   book = addOrder(book, order({ orderId: "B1", side: "BUY", price: 100 }));
   book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 101 }));
@@ -54,9 +55,12 @@ Deno.test("[order-book] cancel removes the order from whichever side holds it", 
   assertEquals(book.asks.length, 1);
 });
 
-Deno.test("[order-book] marketable buy fully matches a resting ask at the ask's price", () => {
+test("[order-book] marketable buy fully matches a resting ask at the ask's price", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 10, remainingQty: 10 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 10, remainingQty: 10 })
+  );
 
   const result = matchOrder(
     book,
@@ -74,9 +78,12 @@ Deno.test("[order-book] marketable buy fully matches a resting ask at the ask's 
   assertEquals(result.book.bids.length, 0);
 });
 
-Deno.test("[order-book] partial fill leaves remainder resting when restRemainder is true", () => {
+test("[order-book] partial fill leaves remainder resting when restRemainder is true", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 })
+  );
 
   const result = matchOrder(
     book,
@@ -92,9 +99,12 @@ Deno.test("[order-book] partial fill leaves remainder resting when restRemainder
   assertEquals(result.book.bids[0].remainingQty, 6);
 });
 
-Deno.test("[order-book] partial fill remainder is dropped when restRemainder is false", () => {
+test("[order-book] partial fill remainder is dropped when restRemainder is false", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 4, remainingQty: 4 })
+  );
 
   const result = matchOrder(
     book,
@@ -108,9 +118,12 @@ Deno.test("[order-book] partial fill remainder is dropped when restRemainder is 
   assertEquals(result.book.bids.length, 0);
 });
 
-Deno.test("[order-book] no-fill when incoming price does not cross the book", () => {
+test("[order-book] no-fill when incoming price does not cross the book", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 105, quantity: 10, remainingQty: 10 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 105, quantity: 10, remainingQty: 10 })
+  );
 
   const result = matchOrder(
     book,
@@ -126,10 +139,16 @@ Deno.test("[order-book] no-fill when incoming price does not cross the book", ()
   assertEquals(result.book.bids.length, 1);
 });
 
-Deno.test("[order-book] incoming order walks the book across multiple price levels in price priority", () => {
+test("[order-book] incoming order walks the book across multiple price levels in price priority", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 101, quantity: 5, remainingQty: 5, seq: 0 }));
-  book = addOrder(book, order({ orderId: "S2", side: "SELL", price: 100, quantity: 5, remainingQty: 5, seq: 1 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 101, quantity: 5, remainingQty: 5, seq: 0 })
+  );
+  book = addOrder(
+    book,
+    order({ orderId: "S2", side: "SELL", price: 100, quantity: 5, remainingQty: 5, seq: 1 })
+  );
 
   const result = matchOrder(
     book,
@@ -148,9 +167,12 @@ Deno.test("[order-book] incoming order walks the book across multiple price leve
   assertEquals(result.book.asks[0].remainingQty, 2);
 });
 
-Deno.test("[order-book] two competing buys against one resting ask fill in time priority, second buy partially unfilled", () => {
+test("[order-book] two competing buys against one resting ask fill in time priority, second buy partially unfilled", () => {
   let book = createBook("AAPL");
-  book = addOrder(book, order({ orderId: "S1", side: "SELL", price: 100, quantity: 6, remainingQty: 6 }));
+  book = addOrder(
+    book,
+    order({ orderId: "S1", side: "SELL", price: 100, quantity: 6, remainingQty: 6 })
+  );
 
   const first = matchOrder(
     book,

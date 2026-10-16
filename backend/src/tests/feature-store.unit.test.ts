@@ -1,8 +1,8 @@
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
 // fallow-ignore-file complexity
-
-import { assertEquals } from "jsr:@std/assert@0.217";
-import type { FeatureVector } from "@veta/types/intelligence";
+import type { FeatureVector } from "#veta/types/intelligence";
 import { buildBatchInsert, createFeatureStore } from "../feature-engine/feature-store.ts";
 import { makeAsyncConnect } from "./test-helpers.ts";
 
@@ -183,7 +183,7 @@ function makeFakePool(seed: FeatureVector[] = []): FakePool {
   };
 }
 
-Deno.test("[feature-store] buildBatchInsert returns placeholders and values", () => {
+test("[feature-store] buildBatchInsert returns placeholders and values", () => {
   const batch = [makeFeature("AAPL", 1000, 0.1), makeFeature("MSFT", 2000, 0.2)];
   const { placeholders, values } = buildBatchInsert(batch);
 
@@ -191,7 +191,7 @@ Deno.test("[feature-store] buildBatchInsert returns placeholders and values", ()
   assertEquals(values.length, 18);
 });
 
-Deno.test("[feature-store] insert, insertBatch, getLatest and getHistory round-trip", async () => {
+test("[feature-store] insert, insertBatch, getLatest and getHistory round-trip", async () => {
   const pool = makeFakePool();
   const store = createFeatureStore(pool as unknown as Parameters<typeof createFeatureStore>[0]);
 
@@ -215,7 +215,7 @@ Deno.test("[feature-store] insert, insertBatch, getLatest and getHistory round-t
   assertEquals(missing, null);
 });
 
-Deno.test("[feature-store] insertBatch no-ops on empty input", async () => {
+test("[feature-store] insertBatch no-ops on empty input", async () => {
   const pool = makeFakePool();
   const store = createFeatureStore(pool as unknown as Parameters<typeof createFeatureStore>[0]);
   const releasesBefore = pool.__releaseCount();
@@ -223,7 +223,7 @@ Deno.test("[feature-store] insertBatch no-ops on empty input", async () => {
   assertEquals(pool.__releaseCount(), releasesBefore);
 });
 
-Deno.test("[feature-store] startCleanup prunes old rows per symbol and swallows cleanup errors", async () => {
+test("[feature-store] startCleanup prunes old rows per symbol and swallows cleanup errors", async () => {
   const seed = [
     makeFeature("AAPL", 1000, 0.1),
     makeFeature("AAPL", 2000, 0.2),
@@ -259,7 +259,7 @@ Deno.test("[feature-store] startCleanup prunes old rows per symbol and swallows 
   }
 });
 
-Deno.test("[feature-store] startCleanup skips a tick while the previous prune is still running", async () => {
+test("[feature-store] startCleanup skips a tick while the previous prune is still running", async () => {
   const pool = makeFakePool([makeFeature("AAPL", 1000, 0.1)]);
   const store = createFeatureStore(pool as unknown as Parameters<typeof createFeatureStore>[0]);
 

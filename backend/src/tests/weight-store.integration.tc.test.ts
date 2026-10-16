@@ -1,5 +1,6 @@
-import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { assertEquals, assertNotEquals, assertStrictEquals } from "jsr:@std/assert@0.217";
+import { Pool } from "#veta/db";
+import { test } from "#veta/test";
+import { assertEquals, assertNotEquals, assertStrictEquals } from "#veta/test-assert";
 import {
   createWeightStore,
   DEFAULT_WEIGHTS,
@@ -8,9 +9,9 @@ import {
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
-Deno.test({
+test({
   name: "[weight-store] seeds defaults and round-trips saves against real Postgres",
   ignore: !SHOULD_RUN,
   async fn(t) {

@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Execution Management System (EMS)
  *
@@ -10,15 +10,13 @@ import "@veta/bootstrap";
  * No longer accepts direct HTTP order submission from algos.
  * HTTP surface (internal only): GET /health
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import type { OrderChild } from "@veta/schemas/orders";
-import { OrderChildSchema } from "@veta/schemas/orders";
-import { type Desk, settlementDate } from "@veta/settlement";
+import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
+import type { OrderChild } from "#veta/schemas/orders";
+import { OrderChildSchema } from "#veta/schemas/orders";
+import { type Desk, settlementDate } from "#veta/settlement";
 import {
   computeFees,
   computeFill,
@@ -32,15 +30,13 @@ import {
 } from "./fill-math.ts";
 import { ALL_VENUES, routeToBestVenue } from "./venue-router.ts";
 
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const PORT = Number(Deno.env.get("EMS_PORT")) || 5_001;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const PORT = Number(process.env.EMS_PORT) || 5_001;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
-const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) ||
-  PARTICIPATION_CAP_DEFAULT;
-const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) ||
-  IMPACT_PER_1000_DEFAULT;
+const PARTICIPATION_CAP = Number(process.env.EMS_PARTICIPATION_CAP) || PARTICIPATION_CAP_DEFAULT;
+const IMPACT_PER_1000 = Number(process.env.EMS_IMPACT_PER_1000_BPS) || IMPACT_PER_1000_DEFAULT;
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT, { feed: "full" });
 marketClient.start();
@@ -97,11 +93,11 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     return;
   }
 
-  const directedVenue = child.venue && VALID_VENUES.has(child.venue)
-    ? (child.venue as VenueMIC)
-    : null;
+  const directedVenue =
+    child.venue && VALID_VENUES.has(child.venue) ? (child.venue as VenueMIC) : null;
 
-  const requestedPrice = child.limitPrice ??
+  const requestedPrice =
+    child.limitPrice ??
     child.effectivePrice ??
     (child.side === "BUY" ? midPrice * 1.05 : midPrice * 0.95);
 
@@ -129,18 +125,11 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     impactBps = route.match.impactBps + route.match.unfilledImpactBps;
   } else {
     const tickVolume = tick.volumes[child.asset] ?? 1_000;
-    const fallback = computeFill(
-      child.quantity,
-      tickVolume,
-      venue,
-      PARTICIPATION_CAP,
-    );
+    const fallback = computeFill(child.quantity, tickVolume, venue, PARTICIPATION_CAP);
     filledQty = fallback.filledQty;
     remainingQty = fallback.remainingQty;
     impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
-    const impactFactor = child.side === "BUY"
-      ? 1 + impactBps / 10_000
-      : 1 - impactBps / 10_000;
+    const impactFactor = child.side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
     avgFillPrice = child.effectivePrice ?? midPrice * impactFactor;
   }
   avgFillPrice = parseFloat(avgFillPrice.toFixed(4));
@@ -152,16 +141,14 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     filledQty,
     avgFillPrice,
     child.side,
-    liquidityFlag,
+    liquidityFlag
   );
 
   const execId = makeExecId(fillSeq++);
 
   logger.info(
     `Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
-      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${
-        impactBps.toFixed(2)
-      }bps`,
+      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${impactBps.toFixed(2)}bps`
   );
 
   if (filledQty > 0) {
@@ -232,13 +219,9 @@ const consumer = await createTypedConsumer("ems-child-orders", [
   return null;
 });
 
-logger.info(
-  `Listening for orders.child on message bus (consumer=${
-    consumer ? "ok" : "skipped"
-  })`,
-);
+logger.info(`Listening for orders.child on message bus (consumer=${consumer ? "ok" : "skipped"})`);
 
-Deno.serve({ port: PORT }, (req) => {
+serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return corsOptions();
   if (url.pathname === "/health" && req.method === "GET") {

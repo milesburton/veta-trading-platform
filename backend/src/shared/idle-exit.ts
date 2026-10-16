@@ -1,11 +1,11 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 
 export function armIdleExit(
   timeoutMs: number,
   onExit?: () => Promise<void> | void,
-  exit: (code: number) => void = Deno.exit
+  exit: (code: number) => void = process.exit
 ): { touch: () => void } {
-  let timer: number | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
   const fire = async () => {
     try {
@@ -29,9 +29,9 @@ export function armIdleExit(
 export function armConsumerIdleExit(
   timeoutMs: number,
   label: string,
-  exit: (code: number) => void = Deno.exit
+  exit: (code: number) => void = process.exit
 ): { touch: () => void } {
-  let timer: number | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
   const fire = () => {
     logger.info(`[${label}] Idle timeout reached with no messages consumed — exiting`);

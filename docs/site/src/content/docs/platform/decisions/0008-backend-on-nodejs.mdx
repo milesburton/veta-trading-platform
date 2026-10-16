@@ -1,0 +1,67 @@
+---
+title: "ADR 0008: Move the backend from Deno to Node.js"
+description: "Deno's development is ending, so the backend services move to Node.js 24 with native TypeScript, sharing one toolchain with the frontend. Records the mapping, the alternatives and the operational consequences."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-10-15
+
+## Context
+
+The backend services ran on Deno 2.x. On 2026-10-09 Deno announced that it is joining
+Cloudflare. The runtime receives monthly bug and security releases for one more year, after
+which its development ends, and Deno Deploy shuts down after about six months. Deno stays
+open source and others may continue it, but the platform cannot depend on that.
+
+The frontend already ran on Node.js 24 with Vite+ ([ADR 0007](../0007-vite-plus-frontend-toolchain/)).
+Keeping a second runtime, a second test runner, a second lockfile and a second set of lint
+rules for the backend had a standing cost even before the announcement.
+
+## Decision
+
+Run every backend service, script and test on Node.js 24 and manage them from the root
+`package.json`, with the same Vite+ toolchain as the frontend.
+
+| Concern | Before | After |
+| --- | --- | --- |
+| Runtime | Deno 2.x | Node.js 24, native TypeScript (type stripping, no build step) |
+| Dependencies | `deno.json` imports, `jsr:`, `npm:`, URL imports | root `package.json` and `package-lock.json` |
+| Internal aliases | `@veta/*` import map | `#veta/*` subpath imports in `package.json` |
+| HTTP and WebSocket | `Deno.serve`, `Deno.upgradeWebSocket` | `serveFetch()` and `upgradeWebSocket()` in `#veta/http`, built on `@hono/node-server` and `ws` |
+| Postgres | `deno-postgres` | `pg`, behind a `Pool` wrapper in `#veta/db` that keeps the `queryArray`, `queryObject` and `release` call shape |
+| Tests | `deno test` and `@std/assert` | Vitest through `vp test`, with `#veta/test` and `#veta/test-assert` keeping the existing test and assertion names |
+| Type-check | `deno check` on a file list | `tsc --noEmit` over the whole tree |
+| Lint and format | Oxlint run through Deno for the backend, Oxlint and Oxfmt for the frontend | Oxlint and Oxfmt from one root configuration for backend and frontend |
+| Telemetry | built-in Deno OpenTelemetry | OpenTelemetry Node SDK preloaded through `NODE_OPTIONS` |
+| Container base | `denoland/deno` | `node:24-slim`, same UID and GID (1993) |
+
+Two constraints follow from native type stripping: relative imports keep their `.ts`
+extension, and syntax that needs code generation is not allowed (`enum`, namespaces,
+constructor parameter properties). `erasableSyntaxOnly` in `tsconfig.json` enforces this.
+
+## Alternatives considered
+
+| Option | For | Against |
+| --- | --- | --- |
+| Stay on Deno | No migration work | Runtime support ends in about a year; a community fork is unproven |
+| Bun | Fast, built-in TypeScript and test runner | Diverges from Vite+ and the existing CI; a younger runtime with its own long-term risk |
+| Node.js with a build step (tsc or tsdown) | Conventional | Adds a build and source-map layer that Node 24 makes unnecessary |
+
+## Consequences
+
+- One runtime, one lockfile and one toolchain for the whole repository.
+- Metric names that dashboards and alerts use are preserved where possible. The HTTP metrics
+  come from the OpenTelemetry HTTP instrumentation with stable semantic conventions, and
+  `v8js.memory.heap.size` is emitted by the process metrics set up in `#veta/telemetry`. The
+  `OTEL_DENO` flag is now `OTEL_ENABLED`.
+- WebSocket sockets are kept alive with ping and pong frames. The `idleTimeout` option on
+  `upgradeWebSocket()` keeps its meaning, and the gateway still passes 300 seconds.
+- Node resolves host names through libuv's thread pool, which defaults to four threads. A burst of slow lookups, for example for services that are stopped, can starve unrelated connections such as the gateway's Kafka clients. `UV_THREADPOOL_SIZE=64` is set in the base image and in `supervisord.conf`.
+- kafkajs schedules a timer with a negative delay on Node 24, which Node reports as `TimeoutNegativeWarning` on every service. The base image silences that one warning with `--disable-warning`.
+- Local services load `.env` with `node --env-file-if-exists`, replacing the per-service
+  dotenv import.
+- The synthetic probe on the edge host now needs Node.js 24 instead of the Deno binary. That
+  host is provisioned outside this repository.
+- The Linux user in the dev container is still called `deno`. Renaming it would break the
+  bind-mounted home directories, so it is left for a separate change.

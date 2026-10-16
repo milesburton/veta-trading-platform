@@ -1,4 +1,5 @@
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS, upgradeWebSocket } from "#veta/http";
+import { runCommand } from "../lib/process.ts";
 
 export interface DiskStatus {
   total: number;
@@ -9,14 +10,9 @@ export interface DiskStatus {
 
 export async function getDiskUsage(): Promise<DiskStatus | null> {
   try {
-    const proc = new Deno.Command("df", {
-      args: ["-Pk", "/"],
-      stdout: "piped",
-      stderr: "null",
-    });
-    const { code, stdout } = await proc.output();
+    const { code, stdout } = await runCommand("df", ["-Pk", "/"]);
     if (code !== 0) return null;
-    const lines = new TextDecoder().decode(stdout).trim().split("\n");
+    const lines = stdout.trim().split("\n");
     if (lines.length < 2) return null;
     const cols = lines[1].split(/\s+/);
     const totalKb = Number(cols[1]);
@@ -43,7 +39,7 @@ export function diskStatusLabel(disk: DiskStatus | null): string {
 
 export async function handleSystemStatus(): Promise<Response> {
   const disk = await getDiskUsage();
-  const mem = Deno.memoryUsage();
+  const mem = process.memoryUsage();
   return new Response(
     JSON.stringify({
       disk,
@@ -70,7 +66,7 @@ export function makeMarketSimWsProxy(req: Request, marketSimPort: number): Respo
   if (req.headers.get("upgrade") !== "websocket") {
     return new Response("Expected WebSocket upgrade", { status: 426 });
   }
-  const { socket: client, response } = Deno.upgradeWebSocket(req, { idleTimeout: 300 });
+  const { socket: client, response } = upgradeWebSocket(req, { idleTimeout: 300 });
   const upstream = new WebSocket(`ws://localhost:${marketSimPort}`);
   upstream.onmessage = (ev) => {
     try {

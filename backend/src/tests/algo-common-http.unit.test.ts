@@ -1,5 +1,7 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { FakeTime } from "jsr:@std/testing@0.217/time";
+import { spawn } from "node:child_process";
+import { FakeTime } from "#veta/fake-time";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import {
   serveAlgoHealth,
   spawnKillWatchdog,
@@ -46,15 +48,16 @@ const tracked = (overrides: Partial<TrackedOrder> = {}): TrackedOrder => ({
   ...overrides,
 });
 
-Deno.test("[spawnKillWatchdog] kills the target process after the delay", async () => {
-  const child = new Deno.Command("sleep", { args: ["30"], stdin: "null", stdout: "null", stderr: "null" }).spawn();
-  spawnKillWatchdog(child.pid, 200);
-  const status = await child.status;
-  assertEquals(status.success, false);
-  assertEquals(status.signal, "SIGKILL");
+test("[spawnKillWatchdog] kills the target process after the delay", async () => {
+  const child = spawn("sleep", ["30"], { stdio: "ignore" });
+  spawnKillWatchdog(child.pid as number, 200);
+  const signal = await new Promise<NodeJS.Signals | null>((resolve) =>
+    child.on("exit", (_code, sig) => resolve(sig))
+  );
+  assertEquals(signal, "SIGKILL");
 });
 
-Deno.test({
+test({
   name: "[serveAlgoHealth] reports health, answers preflight and rejects other routes",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -65,7 +68,12 @@ Deno.test({
 
     const health = await fetch(`http://127.0.0.1:${port}/health`);
     assertEquals(health.status, 200);
-    assertEquals(await health.json(), { service: "twap-algo", version: "abc123", status: "ok", activeOrders: 3 });
+    assertEquals(await health.json(), {
+      service: "twap-algo",
+      version: "abc123",
+      status: "ok",
+      activeOrders: 3,
+    });
 
     active = 0;
     const again = await fetch(`http://127.0.0.1:${port}/health`);
@@ -85,7 +93,7 @@ Deno.test({
   },
 });
 
-Deno.test("[startExpirySweep] expires overdue orders with their average fill and keeps live ones", async () => {
+test("[startExpirySweep] expires overdue orders with their average fill and keeps live ones", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -100,7 +108,10 @@ Deno.test("[startExpirySweep] expires overdue orders with their average fill and
     await time.runMicrotasks();
 
     assertEquals([...orders.keys()], ["o2"]);
-    assertEquals(sent.map((s) => s.topic), ["orders.expired", "orders.expired"]);
+    assertEquals(
+      sent.map((s) => s.topic),
+      ["orders.expired", "orders.expired"]
+    );
     assertEquals(sent[0].msg.orderId, "o1");
     assertEquals(sent[0].msg.avgFillPrice, 100);
     assertEquals(sent[0].msg.algo, "TWAP");
@@ -111,14 +122,19 @@ Deno.test("[startExpirySweep] expires overdue orders with their average fill and
   }
 });
 
-Deno.test("[startExpirySweep] tolerates a missing producer and a failing producer", async () => {
+test("[startExpirySweep] tolerates a missing producer and a failing producer", async () => {
   const time = new FakeTime(0);
   try {
     const withoutProducer = new Map([["o1", expirable()]]);
     startExpirySweep(withoutProducer, null, "TWAP", "twap");
 
     const failing = new Map([["o2", expirable({ orderId: "o2" })]]);
-    startExpirySweep(failing, { send: () => Promise.reject(new Error("broker down")) }, "TWAP", "twap");
+    startExpirySweep(
+      failing,
+      { send: () => Promise.reject(new Error("broker down")) },
+      "TWAP",
+      "twap"
+    );
 
     await time.tickAsync(5_000);
     await time.runMicrotasks();
@@ -130,7 +146,7 @@ Deno.test("[startExpirySweep] tolerates a missing producer and a failing produce
   }
 });
 
-Deno.test("[startExpirySweepIndexed] expires by numeric key and leaves unexpired orders", async () => {
+test("[startExpirySweepIndexed] expires by numeric key and leaves unexpired orders", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -153,12 +169,13 @@ Deno.test("[startExpirySweepIndexed] expires by numeric key and leaves unexpired
   }
 });
 
-Deno.test("[startJournalProgressSweep] leaves working orders alone", async () => {
+test("[startJournalProgressSweep] leaves working orders alone", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
     const orders = new Map([["o1", tracked()]]);
-    const reader = () => Promise.resolve<OrderProgress | null>({ filledQty: 10, avgFillPrice: 99 } as OrderProgress);
+    const reader = () =>
+      Promise.resolve<OrderProgress | null>({ filledQty: 10, avgFillPrice: 99 } as OrderProgress);
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 
     await time.tickAsync(1_000);
@@ -171,12 +188,16 @@ Deno.test("[startJournalProgressSweep] leaves working orders alone", async () =>
   }
 });
 
-Deno.test("[startJournalProgressSweep] publishes a complete heartbeat once the order is filled", async () => {
+test("[startJournalProgressSweep] publishes a complete heartbeat once the order is filled", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
     const orders = new Map([["o1", tracked()]]);
-    const reader = () => Promise.resolve<OrderProgress | null>({ filledQty: 100, avgFillPrice: 101.5 } as OrderProgress);
+    const reader = () =>
+      Promise.resolve<OrderProgress | null>({
+        filledQty: 100,
+        avgFillPrice: 101.5,
+      } as OrderProgress);
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 
     await time.tickAsync(1_000);
@@ -192,7 +213,7 @@ Deno.test("[startJournalProgressSweep] publishes a complete heartbeat once the o
   }
 });
 
-Deno.test("[startJournalProgressSweep] expires an unfilled order past its deadline, with or without journal data", async () => {
+test("[startJournalProgressSweep] expires an unfilled order past its deadline, with or without journal data", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -202,7 +223,7 @@ Deno.test("[startJournalProgressSweep] expires an unfilled order past its deadli
     ]);
     const reader = (orderId: string) =>
       Promise.resolve<OrderProgress | null>(
-        orderId === "o1" ? ({ filledQty: 30, avgFillPrice: 98 } as OrderProgress) : null,
+        orderId === "o1" ? ({ filledQty: 30, avgFillPrice: 98 } as OrderProgress) : null
       );
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 
@@ -210,7 +231,10 @@ Deno.test("[startJournalProgressSweep] expires an unfilled order past its deadli
     await time.runMicrotasks();
 
     assertEquals(orders.size, 0);
-    assertEquals(sent.map((s) => s.topic), ["orders.expired", "orders.expired"]);
+    assertEquals(
+      sent.map((s) => s.topic),
+      ["orders.expired", "orders.expired"]
+    );
     assertEquals(sent[0].msg.filledQty, 30);
     assertEquals(sent[1].msg.filledQty, 0);
   } finally {
@@ -218,7 +242,7 @@ Deno.test("[startJournalProgressSweep] expires an unfilled order past its deadli
   }
 });
 
-Deno.test("[startJournalProgressSweep] survives a failing progress reader and keeps sweeping", async () => {
+test("[startJournalProgressSweep] survives a failing progress reader and keeps sweeping", async () => {
   const time = new FakeTime(0);
   try {
     const { sent, producer } = recordingProducer();
@@ -228,7 +252,10 @@ Deno.test("[startJournalProgressSweep] survives a failing progress reader and ke
       calls += 1;
       return calls === 1
         ? Promise.reject(new Error("journal unavailable"))
-        : Promise.resolve<OrderProgress | null>({ filledQty: 100, avgFillPrice: 100 } as OrderProgress);
+        : Promise.resolve<OrderProgress | null>({
+            filledQty: 100,
+            avgFillPrice: 100,
+          } as OrderProgress);
     };
     startJournalProgressSweep(orders, reader, producer, "VWAP", "vwap", 1_000);
 

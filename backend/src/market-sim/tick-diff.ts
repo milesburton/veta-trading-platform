@@ -1,4 +1,4 @@
-import type { MarketFeed, OrderBookSnapshot } from "@veta/market-client";
+import type { MarketFeed, OrderBookSnapshot } from "#veta/market-client";
 
 export type SessionPhase =
   | "PRE_OPEN"
@@ -38,7 +38,7 @@ export const FULL_SNAPSHOT_INTERVAL_MS = 60_000;
 
 /** Bound high-frequency publishing when the downstream transport is slow. */
 export function createSingleFlightPublisher<T>(
-  send: (value: T) => Promise<void>,
+  send: (value: T) => Promise<void>
 ): (value: T) => boolean {
   let inFlight = false;
 
@@ -84,7 +84,10 @@ export function forFeed<T extends { orderBook?: unknown; venueBooks?: unknown }>
   return rest;
 }
 
-export function lagThresholdBytes(snapshotBytes: number, floor = MAX_CLIENT_BUFFERED_BYTES): number {
+export function lagThresholdBytes(
+  snapshotBytes: number,
+  floor = MAX_CLIENT_BUFFERED_BYTES
+): number {
   return Math.max(floor, snapshotBytes * 2);
 }
 
@@ -93,7 +96,7 @@ export function fanOutTick<S extends FanOutSocket>(
   message: string,
   lagging: ReadonlySet<S>,
   buildSnapshot: () => string,
-  maxBufferedBytes = MAX_CLIENT_BUFFERED_BYTES,
+  maxBufferedBytes = MAX_CLIENT_BUFFERED_BYTES
 ): FanOutResult<S> {
   const nextLagging = new Set<S>();
   const failed: S[] = [];
@@ -312,7 +315,8 @@ export function buildTickDiff(
     bookSymbols.length > 0
       ? { ...state.lastBookPrices, ...pick(payload.prices, bookSymbols) }
       : state.lastBookPrices;
-  const nextLastVenueBookPrices = venueBooksResult?.nextLastVenueBookPrices ?? state.lastVenueBookPrices;
+  const nextLastVenueBookPrices =
+    venueBooksResult?.nextLastVenueBookPrices ?? state.lastVenueBookPrices;
   const nextLastOpenPrices =
     openChangedSymbols.length > 0
       ? { ...state.lastOpenPrices, ...diff.openPrices }

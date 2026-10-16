@@ -1,4 +1,4 @@
-import type { ILlmProvider, LlmProviderResponse } from "@veta/types/llm-advisory";
+import type { ILlmProvider, LlmProviderResponse } from "#veta/types/llm-advisory";
 
 const CANNED_RESPONSES = [
   `**Signal Analysis (Simulated)**\n\nThis is a mock advisory for educational purposes only. The signal indicates a directional bias based on momentum and sector relative strength. Realised volatility is within normal parameters. No trade action is recommended based on this simulation.\n\n*This is a simulated response. Not financial advice.*`,

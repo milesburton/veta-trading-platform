@@ -1,8 +1,9 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { login, submitOrderViaWs } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 15_000) => AbortSignal.timeout(ms);
 
 interface OrderRow {
@@ -80,9 +81,7 @@ async function withRetry<R>(label: string, attempts: number, fn: () => Promise<R
     } catch (err) {
       lastErr = err;
       if (i < attempts - 1) {
-        await Deno.stderr.write(
-          new TextEncoder().encode(`[${label}] attempt ${i + 1} failed, retrying...\n`)
-        );
+        process.stderr.write(`[${label}] attempt ${i + 1} failed, retrying...\n`);
         await new Promise((r) => setTimeout(r, 5_000));
       }
     }
@@ -134,7 +133,7 @@ const SERVICES = [
   "gateway",
 ] as const;
 
-Deno.test({
+test({
   name: "algo strategies (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {
@@ -424,9 +423,7 @@ Deno.test({
         });
       });
     } catch (err) {
-      await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
-      );
+      process.stderr.write(`\n--- service logs ---\n${stack.dumpLogs()}`);
       throw err;
     } finally {
       await stack.teardown();

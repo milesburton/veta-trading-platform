@@ -1,42 +1,46 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { isDeskOpen } from "./desk-calendar.ts";
+import "#veta/bootstrap";
+import { serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
 import { DecisionEngine } from "./decision-engine.ts";
+import { isDeskOpen } from "./desk-calendar.ts";
 import { GatewaySocket } from "./gateway-socket.ts";
 import { nextDelayMs } from "./pacing.ts";
 import { interpretOrderEvent, PricesSchema } from "./payloads.ts";
 import { PositionTracker } from "./position-tracker.ts";
 import { TokenClient } from "./token-client.ts";
 
-const PORT = Number(Deno.env.get("SYNTHETIC_TRADER_PORT")) || 5_031;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.SYNTHETIC_TRADER_PORT) || 5_031;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
-const GATEWAY_WS_URL = Deno.env.get("GATEWAY_WS_URL") ?? "ws://gateway:5011/ws/gateway";
-const USER_SERVICE_URL = Deno.env.get("USER_SERVICE_URL") ?? "http://user-service:5008";
-const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "market-sim"}:${
-  Deno.env.get("MARKET_SIM_PORT") ?? "5000"
+const GATEWAY_WS_URL = process.env.GATEWAY_WS_URL ?? "ws://gateway:5011/ws/gateway";
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL ?? "http://user-service:5008";
+const MARKET_SIM_URL = `http://${process.env.MARKET_SIM_HOST ?? "market-sim"}:${
+  process.env.MARKET_SIM_PORT ?? "5000"
 }`;
 
-const OAUTH_CLIENT_ID = Deno.env.get("OAUTH_CLIENT_ID") ?? "veta-automation";
-const USER_ID = Deno.env.get("SYNTHETIC_TRADER_USER_ID") ?? "synthetic-trader-1";
-const PASSWORD = Deno.env.get("SYNTHETIC_TRADER_PASSWORD") ?? "";
-const ARCHETYPE_ID = Deno.env.get("SYNTHETIC_TRADER_ARCHETYPE") ?? "equity-high-touch";
-const ENABLED = Deno.env.get("SYNTHETIC_TRADER_ENABLED") === "true";
-const DRY_RUN = Deno.env.get("SYNTHETIC_TRADER_DRY_RUN") !== "false";
-const MIN_PACE_MS = Number(Deno.env.get("SYNTHETIC_TRADER_MIN_PACE_MS")) || 30_000;
-const MAX_PACE_MS = Number(Deno.env.get("SYNTHETIC_TRADER_MAX_PACE_MS")) || 480_000;
-const SYMBOLS = Deno.env.get("SYNTHETIC_TRADER_SYMBOLS")?.split(",").map((s) => s.trim());
+const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID ?? "veta-automation";
+const USER_ID = process.env.SYNTHETIC_TRADER_USER_ID ?? "synthetic-trader-1";
+const PASSWORD = process.env.SYNTHETIC_TRADER_PASSWORD ?? "";
+const ARCHETYPE_ID = process.env.SYNTHETIC_TRADER_ARCHETYPE ?? "equity-high-touch";
+const ENABLED = process.env.SYNTHETIC_TRADER_ENABLED === "true";
+const DRY_RUN = process.env.SYNTHETIC_TRADER_DRY_RUN !== "false";
+const MIN_PACE_MS = Number(process.env.SYNTHETIC_TRADER_MIN_PACE_MS) || 30_000;
+const MAX_PACE_MS = Number(process.env.SYNTHETIC_TRADER_MAX_PACE_MS) || 480_000;
+const SYMBOLS = process.env.SYNTHETIC_TRADER_SYMBOLS?.split(",").map((s) => s.trim());
 const MAX_DAILY_NOTIONAL_FRACTION = 0.5;
 
 if (ENABLED && !PASSWORD) {
   logger.error("synthetic-trader: SYNTHETIC_TRADER_PASSWORD is required when enabled, exiting");
-  Deno.exit(1);
+  process.exit(1);
 }
 
 function startTrading(): void {
   const tracker = new PositionTracker();
-  const engine = new DecisionEngine({ archetypeId: ARCHETYPE_ID, userId: USER_ID, symbols: SYMBOLS });
+  const engine = new DecisionEngine({
+    archetypeId: ARCHETYPE_ID,
+    userId: USER_ID,
+    symbols: SYMBOLS,
+  });
 
   let latestPrices: Record<string, number> = {};
   let dailyNotional = 0;
@@ -204,7 +208,7 @@ if (ENABLED) {
   });
 }
 
-Deno.serve({ port: PORT }, (req) => {
+serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (url.pathname === "/health") {
     return new Response(

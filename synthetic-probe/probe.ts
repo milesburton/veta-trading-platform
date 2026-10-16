@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-env --allow-read
+#!/usr/bin/env node
 // VETA synthetic probe.
 //
 // Runs end-to-end checks against the public site to detect user-visible
@@ -25,8 +25,8 @@
 // /ready still passed. Future additions: order submit + cancel via the
 // guest session.
 
-const BASE_URL = Deno.env.get("PROBE_BASE_URL") ?? "https://veta.mnetcs.com";
-const TIMEOUT_MS = Number(Deno.env.get("PROBE_TIMEOUT_MS")) || 10_000;
+const BASE_URL = process.env.PROBE_BASE_URL ?? "https://veta.mnetcs.com";
+const TIMEOUT_MS = Number(process.env.PROBE_TIMEOUT_MS) || 10_000;
 
 interface StepResult {
   step: number;
@@ -52,7 +52,7 @@ function emit(record: Record<string, unknown>): void {
 }
 
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: number | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
   });
@@ -345,7 +345,7 @@ async function main(): Promise<void> {
   emit({ event: "step", ...r1 });
   if (r1.outcome === "fail") {
     emit({ event: "probe_done", outcome: "fail", failedAtStep: 1, totalMs: nowMs() - runStart });
-    Deno.exit(1);
+    process.exit(1);
   }
 
   const { result: r2, cookie } = await step2GuestLogin();
@@ -353,7 +353,7 @@ async function main(): Promise<void> {
   emit({ event: "step", ...r2 });
   if (r2.outcome === "fail") {
     emit({ event: "probe_done", outcome: "fail", failedAtStep: 2, totalMs: nowMs() - runStart });
-    Deno.exit(1);
+    process.exit(1);
   }
 
   const r3 = await step3GatewayReady(cookie);
@@ -361,7 +361,7 @@ async function main(): Promise<void> {
   emit({ event: "step", ...r3 });
   if (r3.outcome === "fail") {
     emit({ event: "probe_done", outcome: "fail", failedAtStep: 3, totalMs: nowMs() - runStart });
-    Deno.exit(1);
+    process.exit(1);
   }
 
   const r4 = await step4Personas(cookie);
@@ -369,7 +369,7 @@ async function main(): Promise<void> {
   emit({ event: "step", ...r4 });
   if (r4.outcome === "fail") {
     emit({ event: "probe_done", outcome: "fail", failedAtStep: 4, totalMs: nowMs() - runStart });
-    Deno.exit(1);
+    process.exit(1);
   }
 
   const r5 = await step5MarketFeed();
@@ -377,7 +377,7 @@ async function main(): Promise<void> {
   emit({ event: "step", ...r5 });
   if (r5.outcome === "fail") {
     emit({ event: "probe_done", outcome: "fail", failedAtStep: 5, totalMs: nowMs() - runStart });
-    Deno.exit(1);
+    process.exit(1);
   }
 
   emit({ event: "probe_done", outcome: "ok", totalMs: nowMs() - runStart });

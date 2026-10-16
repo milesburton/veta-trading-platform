@@ -1,5 +1,9 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
 import {
   _internalForTests,
   createTicketForAlert,
@@ -7,8 +11,8 @@ import {
   probeTicketingHealth,
 } from "../gateway/ticketing.ts";
 
-const REAL_TOKEN = Deno.env.get("GITHUB_TICKETING_TOKEN");
-const REAL_REPO = Deno.env.get("GITHUB_TICKETING_REPO");
+const REAL_TOKEN = process.env.GITHUB_TICKETING_TOKEN;
+const REAL_REPO = process.env.GITHUB_TICKETING_REPO;
 const realFetch = globalThis.fetch;
 const VALID_GITHUB_ENV = {
   GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -20,7 +24,7 @@ const CRITICAL_ALERT = {
   message: "m",
 } as const;
 
-Deno.test("probeTicketingHealth reports an invalid credential without exposing it", async () => {
+test("probeTicketingHealth reports an invalid credential without exposing it", async () => {
   await withValidGithubEnv(async () => {
     const f = captureFetch(
       () =>
@@ -41,9 +45,9 @@ Deno.test("probeTicketingHealth reports an invalid credential without exposing i
   });
 });
 
-Deno.test("readTokenEnv prefers the mounted secret file", async () => {
-  const file = await Deno.makeTempFile();
-  await Deno.writeTextFile(file, "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbb\n");
+test("readTokenEnv prefers the mounted secret file", async () => {
+  const file = join(await mkdtemp(join(tmpdir(), "ticketing-")), "token");
+  await writeFile(file, "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbb\n");
   try {
     await withEnv(
       {
@@ -53,21 +57,21 @@ Deno.test("readTokenEnv prefers the mounted secret file", async () => {
       async () => assertEquals(_internalForTests.readTokenEnv(), "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbb")
     );
   } finally {
-    await Deno.remove(file);
+    await rm(file);
   }
 });
 
 function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
   const prev: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(values)) {
-    prev[k] = Deno.env.get(k);
-    if (v === undefined) Deno.env.delete(k);
-    else Deno.env.set(k, v);
+    prev[k] = process.env[k];
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
   }
   return fn().finally(() => {
     for (const [k, v] of Object.entries(prev)) {
-      if (v === undefined) Deno.env.delete(k);
-      else Deno.env.set(k, v);
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
     }
   });
 }
@@ -120,7 +124,7 @@ for (const testCase of [
     expectedReason: "no-repo",
   },
 ] as const) {
-  Deno.test(testCase.label, async () => {
+  test(testCase.label, async () => {
     await withEnv(testCase.env, async () => {
       const f = captureFetch(() => new Response(null, { status: 201 }));
       try {
@@ -135,7 +139,7 @@ for (const testCase of [
   });
 }
 
-Deno.test("createTicketForAlert creates an issue on first CRITICAL", async () => {
+test("createTicketForAlert creates an issue on first CRITICAL", async () => {
   await withValidGithubEnv(async () => {
     const f = captureFetch((url) => {
       if (url.includes("/search/issues")) {
@@ -179,7 +183,7 @@ Deno.test("createTicketForAlert creates an issue on first CRITICAL", async () =>
   });
 });
 
-Deno.test("createTicketForAlert dedupes onto a recent open issue", async () => {
+test("createTicketForAlert dedupes onto a recent open issue", async () => {
   await withValidGithubEnv(async () => {
     const recent = new Date(Date.now() - 60_000).toISOString();
     const f = captureFetch((url) => {
@@ -217,7 +221,7 @@ Deno.test("createTicketForAlert dedupes onto a recent open issue", async () => {
   });
 });
 
-Deno.test("createTicketForAlert opens a fresh issue once the prior one was closed", async () => {
+test("createTicketForAlert opens a fresh issue once the prior one was closed", async () => {
   await withValidGithubEnv(async () => {
     const f = captureFetch((url) => {
       if (url.includes("/search/issues")) {
@@ -251,7 +255,7 @@ Deno.test("createTicketForAlert opens a fresh issue once the prior one was close
   });
 });
 
-Deno.test("createTicketForUserReport does not dedupe — every report opens its own issue", async () => {
+test("createTicketForUserReport does not dedupe — every report opens its own issue", async () => {
   await withValidGithubEnv(async () => {
     const f = captureFetch((url) => {
       if (url.includes("/search/issues")) {
@@ -276,7 +280,7 @@ Deno.test("createTicketForUserReport does not dedupe — every report opens its 
   });
 });
 
-Deno.test("buildTitle truncates long messages", () => {
+test("buildTitle truncates long messages", () => {
   const title = _internalForTests.buildTitle({
     severity: "CRITICAL",
     source: "x",
@@ -285,7 +289,7 @@ Deno.test("buildTitle truncates long messages", () => {
   assertEquals(title.length < 200, true);
 });
 
-Deno.test("buildTitle and buildBody sanitise newlines in messages", () => {
+test("buildTitle and buildBody sanitise newlines in messages", () => {
   const title = _internalForTests.buildTitle({
     severity: "CRITICAL",
     source: "src",
@@ -309,30 +313,30 @@ for (const testCase of [
     read: () => _internalForTests.readRepoEnv(),
   },
 ] as const) {
-  Deno.test(testCase.label, () => {
-    const prev = Deno.env.get(testCase.key);
-    Deno.env.set(testCase.key, testCase.value);
+  test(testCase.label, () => {
+    const prev = process.env[testCase.key];
+    process.env[testCase.key] = testCase.value;
     try {
       assertEquals(testCase.read(), null);
     } finally {
-      if (prev !== undefined) Deno.env.set(testCase.key, prev);
-      else Deno.env.delete(testCase.key);
+      if (prev !== undefined) process.env[testCase.key] = prev;
+      else delete process.env[testCase.key];
     }
   });
 }
 
-Deno.test("readRepoEnv defaults to the production repo when unset", () => {
-  const prev = Deno.env.get("GITHUB_TICKETING_REPO");
-  Deno.env.delete("GITHUB_TICKETING_REPO");
+test("readRepoEnv defaults to the production repo when unset", () => {
+  const prev = process.env.GITHUB_TICKETING_REPO;
+  delete process.env["GITHUB_TICKETING_REPO"];
   try {
     assertEquals(_internalForTests.readRepoEnv(), "milesburton/veta-trading-platform");
   } finally {
-    if (prev !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", prev);
-    else Deno.env.delete("GITHUB_TICKETING_REPO");
+    if (prev !== undefined) process.env["GITHUB_TICKETING_REPO"] = prev;
+    else delete process.env["GITHUB_TICKETING_REPO"];
   }
 });
 
-Deno.test("buildBody includes Correlation line when runId is provided", () => {
+test("buildBody includes Correlation line when runId is provided", () => {
   const body = _internalForTests.buildBody(
     { severity: "CRITICAL", source: "src", message: "m" },
     "u-1",
@@ -341,7 +345,7 @@ Deno.test("buildBody includes Correlation line when runId is provided", () => {
   assertEquals(body.includes("_Correlation: run-abc_"), true);
 });
 
-Deno.test("buildBody includes Detail block when detail is provided", () => {
+test("buildBody includes Detail block when detail is provided", () => {
   const body = _internalForTests.buildBody(
     {
       severity: "CRITICAL",
@@ -356,7 +360,7 @@ Deno.test("buildBody includes Detail block when detail is provided", () => {
   assertEquals(body.includes("stack trace here"), true);
 });
 
-Deno.test("createTicketForUserReport creates a labelled GitHub issue", async () => {
+test("createTicketForUserReport creates a labelled GitHub issue", async () => {
   await withValidGithubEnv(async () => {
     const f = captureFetch(() => {
       return new Response(
@@ -398,7 +402,7 @@ Deno.test("createTicketForUserReport creates a labelled GitHub issue", async () 
   });
 });
 
-Deno.test("createTicketForUserReport no-ops when token is missing", async () => {
+test("createTicketForUserReport no-ops when token is missing", async () => {
   await withEnv(
     {
       GITHUB_TICKETING_TOKEN: undefined,
@@ -422,7 +426,7 @@ Deno.test("createTicketForUserReport no-ops when token is missing", async () => 
   );
 });
 
-Deno.test("createTicketForAlert ignores deduplicate hits older than the 1h window", async () => {
+test("createTicketForAlert ignores deduplicate hits older than the 1h window", async () => {
   await withValidGithubEnv(async () => {
     const tooOld = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const f = captureFetch((url) => {
@@ -495,7 +499,7 @@ for (const testCase of [
     expectedIssueNumber: 11,
   },
 ] as const) {
-  Deno.test(testCase.label, async () => {
+  test(testCase.label, async () => {
     await withValidGithubEnv(async () => {
       const f = captureFetch((url) => {
         return testCase.handler(url);
@@ -512,7 +516,7 @@ for (const testCase of [
   });
 }
 
-Deno.test("createTicketForAlert handles findOpenDuplicate fetch throw by creating", async () => {
+test("createTicketForAlert handles findOpenDuplicate fetch throw by creating", async () => {
   await withValidGithubEnv(async () => {
     let isSearch = true;
     globalThis.fetch = ((_url: string, _init?: RequestInit) => {
@@ -543,7 +547,7 @@ Deno.test("createTicketForAlert handles findOpenDuplicate fetch throw by creatin
   });
 });
 
-Deno.test("createTicketForAlert handles createIssue fetch throw", async () => {
+test("createTicketForAlert handles createIssue fetch throw", async () => {
   await withValidGithubEnv(async () => {
     let call = 0;
     globalThis.fetch = ((_url: string) => {
@@ -566,7 +570,7 @@ Deno.test("createTicketForAlert handles createIssue fetch throw", async () => {
   });
 });
 
-Deno.test("createTicketForAlert handles commentOnIssue throw silently while deduping", async () => {
+test("createTicketForAlert handles commentOnIssue throw silently while deduping", async () => {
   await withValidGithubEnv(async () => {
     const recent = new Date(Date.now() - 60_000).toISOString();
     let call = 0;
@@ -606,7 +610,7 @@ Deno.test("createTicketForAlert handles commentOnIssue throw silently while dedu
   });
 });
 
-Deno.test("buildUserTicketBody omits an Attachments section when there are none", () => {
+test("buildUserTicketBody omits an Attachments section when there are none", () => {
   const body = _internalForTests.buildUserTicketBody(
     { title: "t", description: "d" },
     "u-1",
@@ -615,7 +619,7 @@ Deno.test("buildUserTicketBody omits an Attachments section when there are none"
   assertEquals(body.includes("**Attachments:**"), false);
 });
 
-Deno.test("buildUserTicketBody renders an image attachment as a markdown image", () => {
+test("buildUserTicketBody renders an image attachment as a markdown image", () => {
   const body = _internalForTests.buildUserTicketBody(
     {
       title: "t",
@@ -633,7 +637,7 @@ Deno.test("buildUserTicketBody renders an image attachment as a markdown image",
   );
 });
 
-Deno.test("buildUserTicketBody renders a non-image attachment as a plain link", () => {
+test("buildUserTicketBody renders a non-image attachment as a plain link", () => {
   const body = _internalForTests.buildUserTicketBody(
     {
       title: "t",
@@ -652,7 +656,7 @@ Deno.test("buildUserTicketBody renders a non-image attachment as a plain link", 
   assertEquals(body.includes("!["), false);
 });
 
-Deno.test("buildUserTicketBody renders multiple attachments, image and non-image mixed", () => {
+test("buildUserTicketBody renders multiple attachments, image and non-image mixed", () => {
   const body = _internalForTests.buildUserTicketBody(
     {
       title: "t",
@@ -670,6 +674,6 @@ Deno.test("buildUserTicketBody renders multiple attachments, image and non-image
 });
 
 if (REAL_TOKEN !== undefined) {
-  Deno.env.set("GITHUB_TICKETING_TOKEN", REAL_TOKEN);
+  process.env["GITHUB_TICKETING_TOKEN"] = REAL_TOKEN;
 }
-if (REAL_REPO !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", REAL_REPO);
+if (REAL_REPO !== undefined) process.env["GITHUB_TICKETING_REPO"] = REAL_REPO;

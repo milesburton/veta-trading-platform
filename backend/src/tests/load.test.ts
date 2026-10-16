@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
  * Load tests — require all backend services to be running.
  *
@@ -5,10 +7,8 @@
  * (admin-only), then assert pipeline throughput, fill rates, and system health
  * under load. Run separately from smoke/integration tests:
  *
- *   deno test --allow-all backend/src/tests/load.test.ts
+ *   npm run test:load
  */
-
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import {
   ARCHIVE_URL,
   GATEWAY_URL,
@@ -110,7 +110,7 @@ async function queryOrderBlotterTotal(jobId: string, status?: string): Promise<n
 
 // ── Access control ────────────────────────────────────────────────────────────
 
-Deno.test("[load] /load-test requires authentication", async () => {
+test("[load] /load-test requires authentication", async () => {
   const res = await fetch(`${GATEWAY_URL}/load-test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -121,7 +121,7 @@ Deno.test("[load] /load-test requires authentication", async () => {
   await res.body?.cancel();
 });
 
-Deno.test("[load] /load-test requires admin role (trader is rejected)", async () => {
+test("[load] /load-test requires admin role (trader is rejected)", async () => {
   const token = await loginAs("alice");
   const res = await fetch(`${GATEWAY_URL}/load-test`, {
     method: "POST",
@@ -138,7 +138,7 @@ Deno.test("[load] /load-test requires admin role (trader is rejected)", async ()
 
 // ── Submission ─────────────────────────────────────────────────────────────────
 
-Deno.test("[load] admin can submit 50 orders and receives jobId", async () => {
+test("[load] admin can submit 50 orders and receives jobId", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
     orderCount: 50,
@@ -151,7 +151,7 @@ Deno.test("[load] admin can submit 50 orders and receives jobId", async () => {
   assertEquals(result.strategy, "LIMIT");
 });
 
-Deno.test("[load] orderCount is capped at 5000", async () => {
+test("[load] orderCount is capped at 5000", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
     orderCount: 99_999,
@@ -167,7 +167,7 @@ Deno.test("[load] orderCount is capped at 5000", async () => {
 
 // ── Pipeline throughput ────────────────────────────────────────────────────────
 
-Deno.test("[load] 100-order burst: all orders appear in journal within 30s", async () => {
+test("[load] 100-order burst: all orders appear in journal within 30s", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
     orderCount: SLA_INGESTION_ORDER_COUNT,
@@ -195,7 +195,7 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
   );
 });
 
-Deno.test("[load] 100-order burst: observability receives orders.submitted events", async () => {
+test("[load] 100-order burst: observability receives orders.submitted events", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
     orderCount: SLA_INGESTION_ORDER_COUNT,
@@ -234,7 +234,7 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
 
 // ── Fill throughput ────────────────────────────────────────────────────────────
 
-Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
+test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
     orderCount: SLA_FILL_ORDER_COUNT,
@@ -267,7 +267,7 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
 
 // ── FIX archive under load ────────────────────────────────────────────────────
 
-Deno.test("[load] FIX archive grows after load injection", async () => {
+test("[load] FIX archive grows after load injection", async () => {
   const beforeRes = await fetch(`${ARCHIVE_URL}/health`, { signal: t() });
   const before = ((await beforeRes.json()) as { executions: number }).executions;
 
@@ -292,7 +292,7 @@ Deno.test("[load] FIX archive grows after load injection", async () => {
 
 // ── System stability after load ───────────────────────────────────────────────
 
-Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA budget", async () => {
+test("[load] pipeline latency: 90% of orders visible in journal within SLA budget", async () => {
   const token = await loginAsAdmin();
   const t0 = Date.now();
   const result = await triggerLoadTest(token, {
@@ -326,7 +326,7 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
   );
 });
 
-Deno.test("[load] LIMIT pipeline percentiles within budget after 100-order burst", async () => {
+test("[load] LIMIT pipeline percentiles within budget after 100-order burst", async () => {
   const ORDER_COUNT = 100;
   const SETTLE_MS = 90_000;
   const SUBMITTED_TO_FILLED_P99_BUDGET_MS = 2_000;
@@ -376,7 +376,7 @@ Deno.test("[load] LIMIT pipeline percentiles within budget after 100-order burst
   );
 });
 
-Deno.test("[load] all services remain healthy after 100-order burst", async () => {
+test("[load] all services remain healthy after 100-order burst", async () => {
   const token = await loginAsAdmin();
   await triggerLoadTest(token, {
     orderCount: SLA_INGESTION_ORDER_COUNT,

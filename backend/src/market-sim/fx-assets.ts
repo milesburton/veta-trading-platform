@@ -1,5 +1,5 @@
-import type { AssetDef } from "./sp500-assets.ts";
 import { GENERATED_FX, GENERATED_FX_NAMES } from "./generated-fx.ts";
+import type { AssetDef } from "./sp500-assets.ts";
 
 /** Simulated ISIN: FX + padded symbol + check digit 0. */
 function fxIsin(symbol: string): string {

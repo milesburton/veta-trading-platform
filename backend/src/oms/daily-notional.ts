@@ -1,4 +1,4 @@
-import { z } from "@veta/zod";
+import { z } from "zod";
 
 const PricesSchema = z.record(z.number());
 

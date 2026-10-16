@@ -20,7 +20,7 @@ existing, documented conventions. Full detail: [Contributing](https://milesburto
 
 ## Architecture conventions
 
-- TypeScript everywhere: Deno for backend, Vite/React for frontend.
+- TypeScript everywhere: Node for backend and frontend (Vite+ toolchain).
 - Functional style preferred: pure functions with explicit inputs and
   outputs over mutable module-level state.
 - Shared types live in `backend/src/types/`, shared backend utilities in

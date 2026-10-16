@@ -1,4 +1,4 @@
-import type { SessionPhase } from "@veta/market-client";
+import type { SessionPhase } from "#veta/market-client";
 
 /**
  * ADR 0003 Phase 6: reject NewOrderSingle while the market is HALTED or

@@ -59,7 +59,7 @@ apply, because each one covers only the line directly after it.
 | Place | What runs |
 | --- | --- |
 | Pre-commit hook | Frontend lint, type-check and unit tests through the local `vp` binary |
-| `deno task lint` | Oxlint at a pinned version through Deno, so the backend CI job needs no frontend install |
+| `npm run lint:backend` | Oxlint over the backend from the root configuration, with Oxfmt for formatting through `npm run format` |
 | CI frontend job | `setup-vp` installs dependencies, then `npm run lint` and `npm run typecheck` |
 | Clean-state workflow | `npm run lint:fix`, failing if it changes any file |
 | Electron build | `vp build --mode electron` |

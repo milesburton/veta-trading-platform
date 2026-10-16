@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import type { OrderNew } from "@veta/schemas/orders";
+import { logger } from "#veta/logger";
+import type { OrderNew } from "#veta/schemas/orders";
 
 export interface AuthIdentity {
   user: { id: string; role: string };
@@ -68,7 +68,9 @@ export class GatewaySocket {
       this.#ready = false;
       this.#handlers.onClose?.();
       if (this.#closedByUser) return;
-      logger.warn(`synthetic-trader: gateway socket closed, reconnecting in ${this.#reconnectDelayMs}ms`);
+      logger.warn(
+        `synthetic-trader: gateway socket closed, reconnecting in ${this.#reconnectDelayMs}ms`
+      );
       setTimeout(() => this.connect(), this.#reconnectDelayMs);
       this.#reconnectDelayMs = Math.min(this.#reconnectDelayMs * 2, 30_000);
     };

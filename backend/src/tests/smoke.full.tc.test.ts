@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
  * Full smoke suite, ported from the legacy backend/src/tests/smoke.test.ts.
  *
@@ -8,29 +10,28 @@
  * recommendation-engine, scenario-engine, llm-advisory, dark-pool,
  * ccp-service, rfq-service, replay, risk-engine, observability.
  *
- * Gated behind RUN_TESTCONTAINERS=1 so the regular `deno task test` stays
+ * Gated behind RUN_TESTCONTAINERS=1 so the regular `npm run test:backend` stays
  * fast and the suite only runs inside scripts/run-testcontainers.sh.
  *
  * Splits the 62 legacy checks into logical groups so the testcontainers
  * stack can be sized per group rather than booting every service for every
- * step. Each group is one Deno.test with multiple t.step children.
+ * step. Each group is one test with multiple t.step children.
  */
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 15_000) => AbortSignal.timeout(ms);
 
 // Scales every startup/test timeout in this file. Set on contended runners
 // (e.g. a homelab box that also runs the full production stack) where
-// cold-starting 15-30 Deno subprocesses for a group takes longer than on an
+// cold-starting 15-30 subprocesses for a group takes longer than on an
 // otherwise-idle GitHub-hosted runner, without changing the defaults
 // everywhere else.
-const TIMEOUT_SCALE = Number(Deno.env.get("TC_TIMEOUT_SCALE") ?? "1");
+const TIMEOUT_SCALE = Number(process.env.TC_TIMEOUT_SCALE ?? "1");
 const scaled = (ms: number) => Math.round(ms * TIMEOUT_SCALE);
 
-// Maximum wall-clock time for a single Deno.test block including container
+// Maximum wall-clock time for a single test block including container
 // startup. If a test hangs (e.g. waiting for a service that never responds),
 // this races it to a clean timeout failure rather than blocking the CI runner.
 const TEST_TIMEOUT_MS = scaled(5 * 60 * 1_000);
@@ -55,7 +56,7 @@ function url(stack: TestStack, name: keyof TestStack["urls"]): string {
 // Group 1: service health + version consistency across the platform.
 // Boots the full critical-path service set to confirm every /health
 // endpoint responds and all services report the same version string.
-Deno.test({
+test({
   name: "smoke.full (testcontainers): service health and version",
   ignore: !SHOULD_RUN,
   fn: (t) =>
@@ -168,7 +169,7 @@ Deno.test({
 
 // Group 2: core trading flows. Boots the order pipeline plus every algo
 // strategy so we can submit and settle orders end-to-end against the bus.
-Deno.test({
+test({
   name: "smoke.full (testcontainers): core trading flows",
   ignore: !SHOULD_RUN,
   fn: (t) =>
@@ -500,7 +501,7 @@ Deno.test({
             asset: "AAPL",
             side: "BUY",
             quantity: 10,
-            limitPrice: 99_999,
+            limitPrice: 1_000,
             strategy: "LIMIT",
           });
           assertEquals(event, "orderAck", `Expected orderAck, got ${event}`);
@@ -1339,9 +1340,7 @@ Deno.test({
               }
             }
 
-            const syntheticViewer = body.personas.find(
-              (p) => p.id === "synthetic-trader-1-viewer"
-            );
+            const syntheticViewer = body.personas.find((p) => p.id === "synthetic-trader-1-viewer");
             assertExists(syntheticViewer, "synthetic-trader-1-viewer persona missing");
             assertEquals(syntheticViewer?.role, "viewer");
           }
@@ -1478,7 +1477,7 @@ Deno.test({
 // Group 3: peripheral services. Boots the intelligence and analytics
 // pipeline plus the alternative-trading-system services and replay so we
 // can probe each one's public contract in isolation from the order flow.
-Deno.test({
+test({
   name: "smoke.full (testcontainers): peripheral services",
   ignore: !SHOULD_RUN,
   fn: (t) =>

@@ -1,14 +1,12 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Central Counterparty Clearing (CCP) Service.
  * See platform/post-trade-ccp for novation, margin, and settlement details.
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createConsumer, createProducer } from "#veta/messaging";
 import {
   computeInitialMargin,
   computeMarginCall,
@@ -17,16 +15,16 @@ import {
   updatePosition,
 } from "./margin-math.ts";
 
-const PORT = Number(Deno.env.get("CCP_SERVICE_PORT")) || 5_028;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
+const PORT = Number(process.env.CCP_SERVICE_PORT) || 5_028;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
 
 /** How often to run the settlement sweep (ms). */
-const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) || 30_000;
+const SETTLEMENT_SWEEP_MS = Number(process.env.CCP_SETTLEMENT_SWEEP_MS) || 30_000;
 
 /** How often to mark-to-market margin positions (ms). */
-const MARGIN_MTM_MS = Number(Deno.env.get("CCP_MARGIN_MTM_MS")) || 10_000;
+const MARGIN_MTM_MS = Number(process.env.CCP_MARGIN_MTM_MS) || 10_000;
 
 interface Fill {
   execId: string;
@@ -440,7 +438,7 @@ setInterval(() => {
 logger.info(`Listening for orders.filled and rfq.executed`);
 logger.info(`Settlement sweep=${SETTLEMENT_SWEEP_MS}ms  MtM=${MARGIN_MTM_MS}ms`);
 
-Deno.serve({ port: PORT }, (req) => {
+serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 

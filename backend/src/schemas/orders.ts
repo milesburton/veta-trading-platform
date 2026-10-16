@@ -1,4 +1,4 @@
-import { z } from "@veta/zod";
+import { z } from "zod";
 import {
   ChildOrderIdSchema,
   ClientOrderIdSchema,

@@ -1,5 +1,5 @@
-import type { MsgProducer } from "@veta/messaging";
-import type { RateLimiter } from "@veta/rate-limit";
+import type { MsgProducer } from "#veta/messaging";
+import type { RateLimiter } from "#veta/rate-limit";
 import type { LoadAgent } from "./load-agent.ts";
 
 export interface AuthenticatedUser {

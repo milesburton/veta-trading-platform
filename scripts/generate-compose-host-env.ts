@@ -1,8 +1,9 @@
+import { readFileSync, writeFileSync } from "node:fs";
 import { gatewayHostEnvBlock, SERVICE_REGISTRY } from "../shared/serviceRegistry.ts";
 
 const composePath = new URL("../compose.yml", import.meta.url).pathname;
 
-const composeText = Deno.readTextFileSync(composePath);
+const composeText = readFileSync(composePath, "utf8");
 const lines = composeText.split("\n");
 
 let gatewayStart = -1;
@@ -14,7 +15,7 @@ for (let i = 0; i < lines.length; i++) {
 }
 if (gatewayStart === -1) {
   console.error("Could not find 'gateway:' service in compose.yml");
-  Deno.exit(1);
+  process.exit(1);
 }
 
 let nextServiceStart = lines.length;
@@ -46,14 +47,14 @@ for (let i = gatewayStart + 1; i < nextServiceStart; i++) {
 
 if (blockStart === -1 || blockEnd === -1) {
   console.error("Could not locate HOST/PORT block inside gateway service");
-  Deno.exit(1);
+  process.exit(1);
 }
 
 const before = lines.slice(0, blockStart).join("\n");
 const after = lines.slice(blockEnd + 1).join("\n");
 const newBlock = gatewayHostEnvBlock();
 
-Deno.writeTextFileSync(composePath, `${before}\n${newBlock}\n${after}`);
+writeFileSync(composePath, `${before}\n${newBlock}\n${after}`);
 
 console.log(
   `Regenerated gateway HOST env block in compose.yml ` +

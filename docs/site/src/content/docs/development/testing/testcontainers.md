@@ -19,7 +19,7 @@ Real trading shops use per-test isolation, and the platform's remit is to demons
 
 ```mermaid
 graph TD
-    A["Deno.test starts"] --> B["startStack({ services: [...] })"]
+    A["test starts"] --> B["startStack({ services: [...] })"]
     B --> C["startEphemeralPostgres()<br/>random host port, fresh database"]
     B --> D["startEphemeralRedpanda()<br/>random host port, empty topics"]
     C --> E["applyMigrations(databaseUrl)<br/>schema + seed data"]
@@ -46,7 +46,7 @@ Each test owns its containers end to end. Ryuk (the testcontainers reaper) is di
 ## Running
 
 ```bash
-deno task test:testcontainers
+npm run test:testcontainers
 ```
 
 The task wraps each `.tc.test.ts` file in `scripts/run-testcontainers.sh`, which sets up the Docker plumbing the helpers need (see [Dev-container quirks](#dev-container-quirks)).
@@ -55,7 +55,7 @@ Each individual file boots its slice of the stack in 5 to 15 seconds depending o
 
 ## Suites
 
-Every file listed in the `test:testcontainers` task in `deno.json` runs as part of `deno task test:testcontainers`. The task lists files explicitly rather than globbing, so a new `.tc.test.ts` file does not run until it is added there (see [Adding a new test](#adding-a-new-test)).
+Every file matching `*.tc.test.ts` or `testcontainers.*.test.ts` runs as part of `npm run test:testcontainers`. Files are discovered by glob in `vitest.testcontainers.config.ts`, so a new `.tc.test.ts` file runs without registration (see [Adding a new test](#adding-a-new-test)).
 
 | File | Boots | What it covers |
 | --- | --- | --- |
@@ -72,7 +72,7 @@ Every file listed in the `test:testcontainers` task in `deno.json` runs as part 
 | `risk-rejection.integration.tc.test.ts` | OMS + risk-engine stack | Pre-trade risk rejections reach the client |
 | `job-store.integration.tc.test.ts` | postgres | LLM advisory job-store lifecycle |
 | `weight-store.integration.tc.test.ts` | postgres | Signal weight seeding and round-trip saves |
-| `messaging.integration.tc.test.ts` | redpanda | `@veta/messaging` producer and consumer round trip |
+| `messaging.integration.tc.test.ts` | redpanda | `#veta/messaging` producer and consumer round trip |
 | `typed-consumer.integration.tc.test.ts` | redpanda | Per-topic Zod schema validation on consume |
 | `registration.integration.tc.test.ts` | user-service | Registration persists the trader archetype to `trading_limits` |
 | `preferences.integration.tc.test.ts` | user-service + gateway | User preferences and saved workspaces |
@@ -125,7 +125,7 @@ Runs the production migration runner against an ephemeral Postgres URL. Use this
 
 ### `startStack({ services, ... })`
 
-The high-level entry point most tests use. Boots Postgres, applies migrations, boots Redpanda, then spawns each named service as a Deno subprocess with the right environment (DATABASE\_URL, REDPANDA\_BROKERS, OAUTH2\_SHARED\_SECRET, etc). Waits for `/health` and any `readyLog` regex (algos wait for `connected to market-sim`).
+The high-level entry point most tests use. Boots Postgres, applies migrations, boots Redpanda, then spawns each named service as a Node subprocess with the right environment (DATABASE\_URL, REDPANDA\_BROKERS, OAUTH2\_SHARED\_SECRET, etc). Waits for `/health` and any `readyLog` regex (algos wait for `connected to market-sim`).
 
 ```typescript
 import { startStack } from "./testcontainers/services.ts";
@@ -157,9 +157,9 @@ Every TC test file follows the same shape:
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { startStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
-Deno.test({
+test({
   name: "journal HTTP contracts (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {
@@ -179,27 +179,22 @@ Deno.test({
 
 Three things to notice:
 
-1. **`RUN_TESTCONTAINERS=1` gate.** The wrapper sets it; running `deno test` directly skips every TC file. This keeps the regular `deno task test` fast and side-effect-free.
-2. **`Deno.test({ ignore })`** rather than `if (!SHOULD_RUN) return`, so the runner reports the test as ignored rather than silently passed.
+1. **`RUN_TESTCONTAINERS=1` gate.** The wrapper sets it; running the tests directly skips every TC file. This keeps the regular `npm run test:backend` fast and side-effect-free.
+2. **`test({ ignore })`** rather than `if (!SHOULD_RUN) return`, so the runner reports the test as ignored rather than silently passed.
 3. **`try { … } finally { teardown() }`**: every test owns its lifecycle. Ryuk is disabled, so containers will not get reaped if the test forgets to clean up.
 
 ## Adding a new test
 
 1. Create `backend/src/tests/<name>.tc.test.ts` following the pattern above.
 2. List the minimum services your test needs in `startStack({ services: [...] })`. Adding a service costs around 2 to 5 seconds of boot time.
-3. Append the file to the `test:testcontainers` task in `deno.json`:
-
-   ```jsonc
-   "test:testcontainers": "./scripts/run-testcontainers.sh deno test --allow-all backend/src/tests/<name>.tc.test.ts && …"
-   ```
-
-4. Run `deno task test:testcontainers` locally before pushing. CI runs the same task, so anything that passes locally inside the dev container will very likely pass on the GitHub-hosted CI jobs. The `integration` job's self-hosted homelab runner is the one exception: that box also runs the full production VETA stack around the clock, so it isn't idle the way a hosted runner or your dev container is. If a test times out only there, check the runner's load before assuming a code regression; see `TC_TIMEOUT_SCALE` below.
+3. Nothing to register: `vitest.testcontainers.config.ts` picks the file up by glob.
+4. Run `npm run test:testcontainers` locally before pushing. CI runs the same task, so anything that passes locally inside the dev container will very likely pass on the GitHub-hosted CI jobs. The `integration` job's self-hosted homelab runner is the one exception: that box also runs the full production VETA stack around the clock, so it isn't idle the way a hosted runner or your dev container is. If a test times out only there, check the runner's load before assuming a code regression; see `TC_TIMEOUT_SCALE` below.
 
 ## The wrapper script
 
 `scripts/run-testcontainers.sh` handles three Docker plumbing problems that affect dev containers, GitHub Codespaces, and GitHub Actions runners alike:
 
-1. **Unix-socket to TCP shim.** Deno's `node:http` polyfill cannot write to Docker's unix socket (a `Symbol(Deno.internal.rid)` polyfill gap), so the wrapper runs an `alpine/socat` sidecar that proxies `tcp://<bridge>:2375` to `/var/run/docker.sock`. `DOCKER_HOST` is pointed at the sidecar's bridge IP.
+1. **Unix-socket to TCP shim.** The wrapper runs an `alpine/socat` sidecar that proxies `tcp://<bridge>:2375` to `/var/run/docker.sock`. `DOCKER_HOST` is pointed at the sidecar's bridge IP.
 2. **`TESTCONTAINERS_HOST_OVERRIDE`.** `container.getHost()` returns `localhost`, but the published port lives on the Docker host's loopback rather than the test process's. The override is set to the bridge gateway IP, which is reachable from both dev containers and CI runners.
 3. **Clean `DOCKER_CONFIG`.** When `~/.docker/config.json` declares a `credsStore` helper that exits 1 for unauthenticated public-registry pulls (Codespaces installs one), Testcontainers treats the failure as fatal. The wrapper points `DOCKER_CONFIG` at an empty config dir to bypass it.
 
@@ -211,11 +206,11 @@ The wrapper finishes by setting `RUN_TESTCONTAINERS=1` and `exec`-ing the rest o
 
 ### `TC_TIMEOUT_SCALE`
 
-`backend/src/tests/smoke.full.tc.test.ts` reads a `TC_TIMEOUT_SCALE` env var (default `1`) and multiplies every `startupTimeoutMs` and the file's overall test timeout by it. This exists because the `integration` job's self-hosted homelab runner also runs the full production VETA stack around the clock, unlike a GitHub-hosted runner which is otherwise idle: cold-starting the 15 to 30 Deno subprocesses one of this file's test groups boots can genuinely take longer under that background load without any code defect. CI sets `TC_TIMEOUT_SCALE=3` for that job only; everywhere else (local dev, other CI jobs) it defaults to `1` and behaves exactly as before.
+`backend/src/tests/smoke.full.tc.test.ts` reads a `TC_TIMEOUT_SCALE` env var (default `1`) and multiplies every `startupTimeoutMs` and the file's overall test timeout by it. This exists because the `integration` job's self-hosted homelab runner also runs the full production VETA stack around the clock, unlike a GitHub-hosted runner which is otherwise idle: cold-starting the 15 to 30 Node subprocesses one of this file's test groups boots can genuinely take longer under that background load without any code defect. CI sets `TC_TIMEOUT_SCALE=3` for that job only; everywhere else (local dev, other CI jobs) it defaults to `1` and behaves exactly as before.
 
 ### Dev-container quirks
 
-The wrapper is required when running locally inside the project's dev container or in Codespaces. On a bare workstation with `/var/run/docker.sock` writable directly by Deno, you can technically run the test files without it, but using the wrapper everywhere keeps environments consistent and matches what CI does.
+The wrapper is required when running locally inside the project's dev container or in Codespaces. On a bare workstation with `/var/run/docker.sock` writable directly by the test process, you can technically run the test files without it, but using the wrapper everywhere keeps environments consistent and matches what CI does.
 
 ## What the migration found
 
@@ -227,7 +222,7 @@ The Testcontainers harness caught five real bugs on its first pilot run that the
 - **journal never populated child fill state**: `orders.filled` events only updated the parent's filled total, leaving child `status="pending"` and `avgFillPrice=0` forever.
 - **market-sim `/seed` reset only the RNG**: `marketMinute`, `tickCount`, regime state, and price levels persisted between runs, so "same seed" runs were not repeatable from a clean state.
 
-The legacy `scenarios.integration.test.ts` was wired into `deno.json`'s `test:integration` task but never invoked by any CI step. It claimed bit-identical replay across three runs but in fact never ran.
+The legacy `scenarios.integration.test.ts` was wired into the `test:integration` task but never invoked by any CI step. It claimed bit-identical replay across three runs but in fact never ran.
 
 ### A note on replay tolerance
 

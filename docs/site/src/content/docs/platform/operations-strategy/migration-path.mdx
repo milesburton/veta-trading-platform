@@ -34,7 +34,7 @@ Previously planned: a second compose project on the server (`veta-uat`) bound to
 
 ## Phase 4: Synthetic monitoring + alerting (shipped)
 
-**Shipped**: [PR #236](https://github.com/milesburton/veta-trading-platform/pull/236). Small Deno binary running on the edge server (not a spare VPS, same hardware that terminates TLS, but a different failure domain from the server). 60-second cadence via systemd timer. Three HTTP checks (root / guest login / gateway ready). Output to journald; webhook alert after 3 consecutive failures.
+**Shipped**: [PR #236](https://github.com/milesburton/veta-trading-platform/pull/236). Small Node script running on the edge server (not a spare VPS, same hardware that terminates TLS, but a different failure domain from the server). 60-second cadence via systemd timer. Three HTTP checks (root / guest login / gateway ready). Output to journald; webhook alert after 3 consecutive failures.
 
 Plus a **post-deploy CI mirror** in `.github/workflows/post-deploy-probe.yml` that runs the same probe from a GitHub runner ~6 minutes after every merge to `main`, closing the "did my merge break prod" loop within ~10 minutes.
 

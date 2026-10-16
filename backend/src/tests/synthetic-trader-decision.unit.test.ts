@@ -1,4 +1,5 @@
-import { assert, assertEquals, assertThrows } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertThrows } from "#veta/test-assert";
 import { FX_ASSETS } from "../market-sim/fx-assets.ts";
 import { DecisionEngine, DESK_CONFIG } from "../synthetic-trader/decision-engine.ts";
 import { PositionTracker } from "../synthetic-trader/position-tracker.ts";
@@ -8,11 +9,11 @@ function sequenceRandom(values: number[]): () => number {
   return () => values[i++ % values.length];
 }
 
-Deno.test("[synthetic-trader-decision] rejects an unknown archetype id", () => {
+test("[synthetic-trader-decision] rejects an unknown archetype id", () => {
   assertThrows(() => new DecisionEngine({ archetypeId: "not-a-real-archetype", userId: "u1" }));
 });
 
-Deno.test("[synthetic-trader-decision] produces an order when everything is available", () => {
+test("[synthetic-trader-decision] produces an order when everything is available", () => {
   const engine = new DecisionEngine({
     archetypeId: "equity-high-touch",
     userId: "u1",
@@ -30,7 +31,7 @@ Deno.test("[synthetic-trader-decision] produces an order when everything is avai
   }
 });
 
-Deno.test("[synthetic-trader-decision] skips when no live price is available", () => {
+test("[synthetic-trader-decision] skips when no live price is available", () => {
   const engine = new DecisionEngine({
     archetypeId: "equity-high-touch",
     userId: "u1",
@@ -41,7 +42,7 @@ Deno.test("[synthetic-trader-decision] skips when no live price is available", (
   assertEquals(decision.kind, "skip");
 });
 
-Deno.test("[synthetic-trader-decision] skips when every candidate symbol has an open opposite-side order", () => {
+test("[synthetic-trader-decision] skips when every candidate symbol has an open opposite-side order", () => {
   const engine = new DecisionEngine({
     archetypeId: "equity-high-touch",
     userId: "u1",
@@ -60,7 +61,7 @@ Deno.test("[synthetic-trader-decision] skips when every candidate symbol has an 
   assertEquals(decision.kind, "skip");
 });
 
-Deno.test("[synthetic-trader-decision] skips when the open-order cap is reached", () => {
+test("[synthetic-trader-decision] skips when the open-order cap is reached", () => {
   const engine = new DecisionEngine({
     archetypeId: "equity-high-touch",
     userId: "u1",
@@ -80,7 +81,7 @@ Deno.test("[synthetic-trader-decision] skips when the open-order cap is reached"
   assertEquals(decision.kind, "skip");
 });
 
-Deno.test("[synthetic-trader-decision] only ever selects strategies within the archetype's allowed set", () => {
+test("[synthetic-trader-decision] only ever selects strategies within the archetype's allowed set", () => {
   const engine = new DecisionEngine({ archetypeId: "fi-voice", userId: "u1", symbols: ["AAPL"] });
   const tracker = new PositionTracker();
   for (let i = 0; i < 20; i++) {
@@ -91,7 +92,7 @@ Deno.test("[synthetic-trader-decision] only ever selects strategies within the a
   }
 });
 
-Deno.test("[synthetic-trader-decision] each archetype's default symbols produce the correct desk and instrumentType", () => {
+test("[synthetic-trader-decision] each archetype's default symbols produce the correct desk and instrumentType", () => {
   const cases: Array<{ archetypeId: string; desk: string; instrumentType: string }> = [
     { archetypeId: "equity-high-touch", desk: "equity", instrumentType: "equity" },
     { archetypeId: "equity-low-touch", desk: "equity", instrumentType: "equity" },
@@ -114,7 +115,7 @@ Deno.test("[synthetic-trader-decision] each archetype's default symbols produce 
   }
 });
 
-Deno.test("[synthetic-trader-decision] side selection is weighted roughly 50/50 over many samples", () => {
+test("[synthetic-trader-decision] side selection is weighted roughly 50/50 over many samples", () => {
   const engine = new DecisionEngine({
     archetypeId: "equity-high-touch",
     userId: "u1",
@@ -135,7 +136,7 @@ Deno.test("[synthetic-trader-decision] side selection is weighted roughly 50/50 
   assert(ratio > 0.3 && ratio < 0.7, `expected roughly balanced BUY/SELL, got ratio=${ratio}`);
 });
 
-Deno.test("[synthetic-trader-decision] trades a priced symbol when the least concentrated one has no price", () => {
+test("[synthetic-trader-decision] trades a priced symbol when the least concentrated one has no price", () => {
   const engine = new DecisionEngine({
     archetypeId: "equity-high-touch",
     userId: "u1",
@@ -143,13 +144,22 @@ Deno.test("[synthetic-trader-decision] trades a priced symbol when the least con
     random: sequenceRandom([0.1, 0.1, 0.1, 0.5]),
   });
   const tracker = new PositionTracker();
-  tracker.recordAck({ clientOrderId: "c1", asset: "AAPL", side: "BUY", quantity: 100, limitPrice: 200 });
+  tracker.recordAck({
+    clientOrderId: "c1",
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: 200,
+  });
   const decision = engine.decide(tracker, (symbol) => (symbol === "AAPL" ? 200 : undefined));
   assertEquals(decision.kind, "order");
   if (decision.kind === "order") assertEquals(decision.order.asset, "AAPL");
 });
 
-Deno.test("[synthetic-trader-decision] every FX desk symbol is in the market-sim FX universe", () => {
+test("[synthetic-trader-decision] every FX desk symbol is in the market-sim FX universe", () => {
   const simulated = new Set(FX_ASSETS.map((a) => a.symbol));
-  assertEquals(DESK_CONFIG.fx.symbols.filter((symbol) => !simulated.has(symbol)), []);
+  assertEquals(
+    DESK_CONFIG.fx.symbols.filter((symbol) => !simulated.has(symbol)),
+    []
+  );
 });

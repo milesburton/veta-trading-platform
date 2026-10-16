@@ -1,4 +1,4 @@
-import type { ILlmProvider, LlmProviderResponse } from "@veta/types/llm-advisory";
+import type { ILlmProvider, LlmProviderResponse } from "#veta/types/llm-advisory";
 
 interface OllamaGenerateResponse {
   response: string;

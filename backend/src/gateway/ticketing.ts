@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 // fallow-ignore-file unused-file
-import { logger } from "@veta/logger";
-import { recordGauge } from "@veta/telemetry";
+import { logger } from "#veta/logger";
+import { recordGauge } from "#veta/telemetry";
 
 export interface TicketAlertPayload {
   severity?: string;
@@ -60,12 +61,12 @@ const DEFAULT_TICKETING_REPO = "milesburton/veta-trading-platform";
 
 function readTokenEnv(): string | null {
   const secretFile =
-    Deno.env.get("GITHUB_TICKETING_TOKEN_FILE") ?? "/run/secrets/github_ticketing_token";
+    process.env.GITHUB_TICKETING_TOKEN_FILE ?? "/run/secrets/github_ticketing_token";
   let token = "";
   try {
-    token = Deno.readTextFileSync(secretFile).trim();
+    token = readFileSync(secretFile, "utf8").trim();
   } catch {
-    token = (Deno.env.get("GITHUB_TICKETING_TOKEN") ?? "").trim();
+    token = (process.env.GITHUB_TICKETING_TOKEN ?? "").trim();
   }
   if (token.length < 20) return null;
   if (token.includes("REPLACE_ME")) return null;
@@ -165,7 +166,7 @@ export function startTicketingHealthMonitor(
 }
 
 function readRepoEnv(): string | null {
-  const repo = Deno.env.get("GITHUB_TICKETING_REPO") ?? DEFAULT_TICKETING_REPO;
+  const repo = process.env.GITHUB_TICKETING_REPO ?? DEFAULT_TICKETING_REPO;
   if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) return null;
   return repo;
 }

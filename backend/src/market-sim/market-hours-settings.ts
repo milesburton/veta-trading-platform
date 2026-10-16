@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import { z } from "@veta/zod";
+import { z } from "zod";
+import { logger } from "#veta/logger";
 import { ASSET_CLASSES, type AssetClass } from "./market-hours-by-asset-class.ts";
 
 const SETTINGS_KEY = "allow_out_of_hours";

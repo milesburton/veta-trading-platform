@@ -25,7 +25,7 @@ function parseCounterparties(config: string): Map<string, Counterparty> {
   return result;
 }
 
-let counterparties = parseCounterparties(Deno.env.get("FIX_COUNTERPARTIES") ?? "");
+let counterparties = parseCounterparties(process.env.FIX_COUNTERPARTIES ?? "");
 
 export function loadCounterparties(config: string): void {
   counterparties = parseCounterparties(config);

@@ -1,4 +1,5 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
+import { readFile, writeFile } from "node:fs/promises";
 /**
  * Market Data Service — port 5015
  *
@@ -18,22 +19,20 @@ import "@veta/bootstrap";
  *   PUT  /overrides                  → { overrides: Record<string, string> }
  *   GET  /cache                      → debug: all cached quotes
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, decodePathSegment, json } from "@veta/http";
-import { logger } from "@veta/logger";
+import { corsOptions, decodePathSegment, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
 import { alphaVantageProvider } from "./providers/alpha-vantage-equity.ts";
 import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
 import { tiingoProvider } from "./providers/tiingo.ts";
 import type { CachedQuote, ProviderDef } from "./providers/types.ts";
 
-const PORT = Number(Deno.env.get("MARKET_DATA_PORT")) || 5_015;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
-  Deno.env.get("JOURNAL_PORT") ?? "5009"
+const PORT = Number(process.env.MARKET_DATA_PORT) || 5_015;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const JOURNAL_URL = `http://${process.env.JOURNAL_HOST ?? "localhost"}:${
+  process.env.JOURNAL_PORT ?? "5009"
 }`;
-const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
-const POLYGON_KEY = Deno.env.get("POLYGON_KEY") ?? "";
+const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY ?? "";
+const POLYGON_KEY = process.env.POLYGON_KEY ?? "";
 const OVERRIDES_FILE = "market_data_overrides.json";
 const FEED_STATE_FILE = "market_data_feed_state.json";
 
@@ -98,7 +97,7 @@ let overrides: Map<string, string> = new Map();
 
 async function loadOverrides(): Promise<void> {
   try {
-    const text = await Deno.readTextFile(OVERRIDES_FILE);
+    const text = await readFile(OVERRIDES_FILE, "utf8");
     const data = JSON.parse(text) as Record<string, string>;
     overrides = new Map(
       Object.entries(data).map(([symbol, source]) => [
@@ -115,7 +114,7 @@ async function loadOverrides(): Promise<void> {
 async function saveOverrides(): Promise<void> {
   try {
     const data = Object.fromEntries(overrides.entries());
-    await Deno.writeTextFile(OVERRIDES_FILE, JSON.stringify(data, null, 2));
+    await writeFile(OVERRIDES_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
     logger.warn(`Failed to persist overrides: ${(err as Error).message}`);
   }
@@ -128,7 +127,7 @@ interface FeedStateFile {
 
 async function loadFeedState(): Promise<void> {
   try {
-    const text = await Deno.readTextFile(FEED_STATE_FILE);
+    const text = await readFile(FEED_STATE_FILE, "utf8");
     const data = JSON.parse(text) as FeedStateFile;
     if (Array.isArray(data.pausedSources)) {
       pausedSources = new Set(
@@ -148,7 +147,7 @@ async function loadFeedState(): Promise<void> {
 async function saveFeedState(): Promise<void> {
   try {
     const data: FeedStateFile = { pausedSources: Array.from(pausedSources) };
-    await Deno.writeTextFile(FEED_STATE_FILE, JSON.stringify(data, null, 2));
+    await writeFile(FEED_STATE_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
     logger.warn(`Failed to persist feed state: ${(err as Error).message}`);
   }
@@ -251,7 +250,7 @@ if (ALPHA_VANTAGE_KEY) {
             if (q) quoteCache.set(toSeed[i], q);
           })
           .catch(() => {}),
-      i * 1_500,
+      i * 1_500
     );
   }
 }
@@ -262,7 +261,7 @@ restartPolygonStream();
 startPollLoop();
 startStalenessChecker();
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 

@@ -1,4 +1,7 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { serveFetch, upgradeWebSocket } from "#veta/http";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import { closeServer, listeningPort } from "#veta/test-server";
 import {
   buildMotd,
   buildTriagePrompt,
@@ -17,142 +20,142 @@ import {
   withTimeout,
 } from "../discord-bot/discord-bot.ts";
 
-Deno.test("buildWelcomeMessage mentions the joining member", () => {
+test("buildWelcomeMessage mentions the joining member", () => {
   const msg = buildWelcomeMessage("<@42>");
   assert(msg.includes("<@42>"));
 });
 
-Deno.test("buildWelcomeMessage points to the Raise. command", () => {
+test("buildWelcomeMessage points to the Raise. command", () => {
   const msg = buildWelcomeMessage("<@1>");
   assert(msg.includes("Raise."));
 });
 
-Deno.test("buildMotd mentions the Raise. command and @mention trigger", () => {
+test("buildMotd mentions the Raise. command and @mention trigger", () => {
   const msg = buildMotd("https://docs.example/", "https://platform.example/");
   assert(msg.includes("Raise."));
   assert(msg.includes("@mention"));
 });
 
-Deno.test("buildMotd includes the given docs and platform URLs", () => {
+test("buildMotd includes the given docs and platform URLs", () => {
   const msg = buildMotd("https://docs.example/", "https://platform.example/");
   assert(msg.includes("https://docs.example/"));
   assert(msg.includes("https://platform.example/"));
 });
 
-Deno.test("buildWelcomeMessage is a single-line greeting", () => {
+test("buildWelcomeMessage is a single-line greeting", () => {
   const msg = buildWelcomeMessage("<@1>");
   assertEquals(msg.includes("\n"), false);
 });
 
-Deno.test("extractHeartbeatIntervalMs reads heartbeat_interval from the payload", () => {
+test("extractHeartbeatIntervalMs reads heartbeat_interval from the payload", () => {
   assertEquals(extractHeartbeatIntervalMs({ op: 10, d: { heartbeat_interval: 30_000 } }), 30_000);
 });
 
-Deno.test("extractHeartbeatIntervalMs falls back to the Discord default when missing", () => {
+test("extractHeartbeatIntervalMs falls back to the Discord default when missing", () => {
   assertEquals(extractHeartbeatIntervalMs({ op: 10 }), 41_250);
 });
 
-Deno.test("extractHeartbeatIntervalMs falls back when d is not an object with the field", () => {
+test("extractHeartbeatIntervalMs falls back when d is not an object with the field", () => {
   assertEquals(extractHeartbeatIntervalMs({ op: 10, d: null }), 41_250);
 });
 
-Deno.test("clampHeartbeatIntervalMs passes through an in-range value unchanged", () => {
+test("clampHeartbeatIntervalMs passes through an in-range value unchanged", () => {
   assertEquals(clampHeartbeatIntervalMs(30_000), 30_000);
 });
 
-Deno.test("clampHeartbeatIntervalMs floors a too-small value to the 1s minimum", () => {
+test("clampHeartbeatIntervalMs floors a too-small value to the 1s minimum", () => {
   assertEquals(clampHeartbeatIntervalMs(0), 1_000);
   assertEquals(clampHeartbeatIntervalMs(-1), 1_000);
 });
 
-Deno.test("clampHeartbeatIntervalMs falls back to Discord's default interval for a non-finite value", () => {
+test("clampHeartbeatIntervalMs falls back to Discord's default interval for a non-finite value", () => {
   assertEquals(clampHeartbeatIntervalMs(Number.NaN), 41_250);
   assertEquals(clampHeartbeatIntervalMs(Number.POSITIVE_INFINITY), 41_250);
 });
 
-Deno.test("clampHeartbeatIntervalMs caps a too-large value to the 60s maximum", () => {
+test("clampHeartbeatIntervalMs caps a too-large value to the 60s maximum", () => {
   assertEquals(clampHeartbeatIntervalMs(1_000_000_000), 60_000);
 });
 
-Deno.test("classifyGatewayEnvelope: op 10 is a hello with the derived heartbeat interval", () => {
+test("classifyGatewayEnvelope: op 10 is a hello with the derived heartbeat interval", () => {
   const action = classifyGatewayEnvelope({ op: 10, d: { heartbeat_interval: 5_000 } });
   assertEquals(action, { kind: "hello", heartbeatIntervalMs: 5_000 });
 });
 
-Deno.test("classifyGatewayEnvelope: op 0 t=READY carries the payload", () => {
+test("classifyGatewayEnvelope: op 0 t=READY carries the payload", () => {
   const data = { user: { id: "1234567890" } };
   const action = classifyGatewayEnvelope({ op: 0, t: "READY", d: data });
   assertEquals(action, { kind: "ready", data });
 });
 
-Deno.test("classifyGatewayEnvelope: op 0 t=GUILD_MEMBER_ADD carries the payload", () => {
+test("classifyGatewayEnvelope: op 0 t=GUILD_MEMBER_ADD carries the payload", () => {
   const data = { user: { id: "123" } };
   const action = classifyGatewayEnvelope({ op: 0, t: "GUILD_MEMBER_ADD", d: data });
   assertEquals(action, { kind: "guildMemberAdd", data });
 });
 
-Deno.test("classifyGatewayEnvelope: op 0 t=MESSAGE_CREATE carries the payload", () => {
+test("classifyGatewayEnvelope: op 0 t=MESSAGE_CREATE carries the payload", () => {
   const data = { id: "1", channel_id: "2", content: "hello" };
   const action = classifyGatewayEnvelope({ op: 0, t: "MESSAGE_CREATE", d: data });
   assertEquals(action, { kind: "messageCreate", data });
 });
 
-Deno.test("classifyGatewayEnvelope: unrecognised op/t pairs are ignored", () => {
+test("classifyGatewayEnvelope: unrecognised op/t pairs are ignored", () => {
   assertEquals(classifyGatewayEnvelope({ op: 11 }), { kind: "ignore" });
   assertEquals(classifyGatewayEnvelope({ op: 0, t: "TYPING_START" }), { kind: "ignore" });
   assertEquals(classifyGatewayEnvelope({ op: 0 }), { kind: "ignore" });
 });
 
-Deno.test("decideWelcomePost posts when a channel is configured and the member has an id", () => {
+test("decideWelcomePost posts when a channel is configured and the member has an id", () => {
   const decision = decideWelcomePost({ user: { id: "42" } }, "chan-1");
   assertEquals(decision.shouldPost, true);
   assertEquals(decision.channelId, "chan-1");
   assert(decision.message?.includes("<@42>"));
 });
 
-Deno.test("decideWelcomePost does not post when no welcome channel is configured", () => {
+test("decideWelcomePost does not post when no welcome channel is configured", () => {
   const decision = decideWelcomePost({ user: { id: "42" } }, "");
   assertEquals(decision.shouldPost, false);
   assertEquals(decision.channelId, undefined);
   assertEquals(decision.message, undefined);
 });
 
-Deno.test("decideWelcomePost does not post when the payload has no user", () => {
+test("decideWelcomePost does not post when the payload has no user", () => {
   const decision = decideWelcomePost({}, "chan-1");
   assertEquals(decision.shouldPost, false);
 });
 
-Deno.test("decideWelcomePost does not post when the payload is not an object with a user", () => {
+test("decideWelcomePost does not post when the payload is not an object with a user", () => {
   const decision = decideWelcomePost(null, "chan-1");
   assertEquals(decision.shouldPost, false);
 });
 
-function withGatewayServer(onOpen: (socket: WebSocket) => void): {
+async function withGatewayServer(onOpen: (socket: WebSocket) => void): Promise<{
   url: string;
   close: () => Promise<void>;
-} {
+}> {
   const controller = new AbortController();
   let serverSocket: WebSocket | undefined;
-  const server = Deno.serve({ port: 0, signal: controller.signal, onListen: () => {} }, (req) => {
-    const { socket, response } = Deno.upgradeWebSocket(req);
+  const server = serveFetch({ port: 0, signal: controller.signal }, (req) => {
+    const { socket, response } = upgradeWebSocket(req);
     serverSocket = socket;
     socket.onopen = () => onOpen(socket);
     return response;
   });
-  const addr = server.addr as Deno.NetAddr;
+  const port = await listeningPort(server);
   return {
-    url: `ws://127.0.0.1:${addr.port}`,
+    url: `ws://127.0.0.1:${port}`,
     close: async () => {
       serverSocket?.close();
       controller.abort();
-      await server.finished;
+      await closeServer(server);
     },
   };
 }
 
-Deno.test("connect() identifies after receiving Hello (op 10)", async () => {
+test("connect() identifies after receiving Hello (op 10)", async () => {
   const received: unknown[] = [];
-  const { url, close } = withGatewayServer((socket) => {
+  const { url, close } = await withGatewayServer((socket) => {
     socket.onmessage = (event) => received.push(JSON.parse(event.data as string));
     socket.send(JSON.stringify({ op: 10, d: { heartbeat_interval: 45_000 } }));
   });
@@ -172,9 +175,9 @@ Deno.test("connect() identifies after receiving Hello (op 10)", async () => {
   }
 });
 
-Deno.test("connect() sends a heartbeat carrying the last sequence number after Hello", async () => {
+test("connect() sends a heartbeat carrying the last sequence number after Hello", async () => {
   const received: { op: number; d: unknown }[] = [];
-  const { url, close } = withGatewayServer((socket) => {
+  const { url, close } = await withGatewayServer((socket) => {
     socket.onmessage = (event) => received.push(JSON.parse(event.data as string));
     // A short heartbeat interval so the test doesn't wait 40+ seconds.
     socket.send(JSON.stringify({ op: 10, d: { heartbeat_interval: 50 }, s: 7 }));
@@ -194,9 +197,9 @@ Deno.test("connect() sends a heartbeat carrying the last sequence number after H
   }
 });
 
-Deno.test("connect() ignores a malformed frame, then still identifies on a subsequent Hello", async () => {
+test("connect() ignores a malformed frame, then still identifies on a subsequent Hello", async () => {
   const received: unknown[] = [];
-  const { url, close } = withGatewayServer((socket) => {
+  const { url, close } = await withGatewayServer((socket) => {
     socket.onmessage = (event) => received.push(JSON.parse(event.data as string));
     socket.send("not json{{{");
     socket.send(JSON.stringify({ op: 10, d: { heartbeat_interval: 45_000 } }));
@@ -216,7 +219,7 @@ Deno.test("connect() ignores a malformed frame, then still identifies on a subse
   }
 });
 
-Deno.test("decideTriageRequest ignores messages from bots", () => {
+test("decideTriageRequest ignores messages from bots", () => {
   const decision = decideTriageRequest({
     id: "1",
     channel_id: "c1",
@@ -226,7 +229,7 @@ Deno.test("decideTriageRequest ignores messages from bots", () => {
   assertEquals(decision.shouldTriage, false);
 });
 
-Deno.test("decideTriageRequest ignores messages without the Raise. prefix", () => {
+test("decideTriageRequest ignores messages without the Raise. prefix", () => {
   const decision = decideTriageRequest({
     id: "1",
     channel_id: "c1",
@@ -236,7 +239,7 @@ Deno.test("decideTriageRequest ignores messages without the Raise. prefix", () =
   assertEquals(decision.shouldTriage, false);
 });
 
-Deno.test("decideTriageRequest ignores an empty message after the prefix", () => {
+test("decideTriageRequest ignores an empty message after the prefix", () => {
   const decision = decideTriageRequest({
     id: "1",
     channel_id: "c1",
@@ -246,7 +249,7 @@ Deno.test("decideTriageRequest ignores an empty message after the prefix", () =>
   assertEquals(decision.shouldTriage, false);
 });
 
-Deno.test("decideTriageRequest ignores a payload missing required fields", () => {
+test("decideTriageRequest ignores a payload missing required fields", () => {
   assertEquals(decideTriageRequest({}).shouldTriage, false);
   assertEquals(decideTriageRequest(null).shouldTriage, false);
   assertEquals(
@@ -255,7 +258,7 @@ Deno.test("decideTriageRequest ignores a payload missing required fields", () =>
   );
 });
 
-Deno.test("decideTriageRequest extracts fields for a valid Raise. message", () => {
+test("decideTriageRequest extracts fields for a valid Raise. message", () => {
   const decision = decideTriageRequest({
     id: "msg-1",
     channel_id: "chan-1",
@@ -272,7 +275,7 @@ Deno.test("decideTriageRequest extracts fields for a valid Raise. message", () =
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
 });
 
-Deno.test("decideTriageRequest falls back to author id when username is missing", () => {
+test("decideTriageRequest falls back to author id when username is missing", () => {
   const decision = decideTriageRequest({
     id: "1",
     channel_id: "c1",
@@ -282,7 +285,7 @@ Deno.test("decideTriageRequest falls back to author id when username is missing"
   assertEquals(decision.request?.authorName, "9");
 });
 
-Deno.test("decideTriageRequest triages a message that @mentions the bot", () => {
+test("decideTriageRequest triages a message that @mentions the bot", () => {
   const decision = decideTriageRequest(
     {
       id: "msg-1",
@@ -296,7 +299,7 @@ Deno.test("decideTriageRequest triages a message that @mentions the bot", () => 
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
 });
 
-Deno.test("decideTriageRequest handles the nickname-mention form <@!id>", () => {
+test("decideTriageRequest handles the nickname-mention form <@!id>", () => {
   const decision = decideTriageRequest(
     {
       id: "msg-1",
@@ -310,7 +313,7 @@ Deno.test("decideTriageRequest handles the nickname-mention form <@!id>", () => 
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
 });
 
-Deno.test("decideTriageRequest strips a mid-message mention of the bot", () => {
+test("decideTriageRequest strips a mid-message mention of the bot", () => {
   const decision = decideTriageRequest(
     {
       id: "msg-1",
@@ -324,7 +327,7 @@ Deno.test("decideTriageRequest strips a mid-message mention of the bot", () => {
   assertEquals(decision.request?.freeText, "hey   the candlestick chart shows blank bars");
 });
 
-Deno.test("decideTriageRequest ignores a mention-only message with no other text", () => {
+test("decideTriageRequest ignores a mention-only message with no other text", () => {
   const decision = decideTriageRequest(
     {
       id: "1",
@@ -337,7 +340,7 @@ Deno.test("decideTriageRequest ignores a mention-only message with no other text
   assertEquals(decision.shouldTriage, false);
 });
 
-Deno.test("decideTriageRequest ignores a mention of a different user, not the bot", () => {
+test("decideTriageRequest ignores a mention of a different user, not the bot", () => {
   const decision = decideTriageRequest(
     {
       id: "1",
@@ -350,7 +353,7 @@ Deno.test("decideTriageRequest ignores a mention of a different user, not the bo
   assertEquals(decision.shouldTriage, false);
 });
 
-Deno.test("decideTriageRequest ignores mentions when the bot's own id is unknown", () => {
+test("decideTriageRequest ignores mentions when the bot's own id is unknown", () => {
   const decision = decideTriageRequest({
     id: "1",
     channel_id: "c1",
@@ -360,7 +363,7 @@ Deno.test("decideTriageRequest ignores mentions when the bot's own id is unknown
   assertEquals(decision.shouldTriage, false);
 });
 
-Deno.test("decideTriageRequest still honours the Raise. prefix when a bot id is known", () => {
+test("decideTriageRequest still honours the Raise. prefix when a bot id is known", () => {
   const decision = decideTriageRequest(
     {
       id: "1",
@@ -374,7 +377,7 @@ Deno.test("decideTriageRequest still honours the Raise. prefix when a bot id is 
   assertEquals(decision.request?.freeText, "the chart is broken");
 });
 
-Deno.test("buildTriagePrompt strips control characters and truncates long input", () => {
+test("buildTriagePrompt strips control characters and truncates long input", () => {
   const prompt = buildTriagePrompt("hello\n\rworld");
   assert(!prompt.includes("\n\r"), "control chars must be stripped");
 
@@ -382,7 +385,7 @@ Deno.test("buildTriagePrompt strips control characters and truncates long input"
   assert(long.length < 1_100, "input must be truncated before reaching the model");
 });
 
-Deno.test("parseTriageResponse parses a valid JSON object", () => {
+test("parseTriageResponse parses a valid JSON object", () => {
   const result = parseTriageResponse('{"title":"Chart bug","description":"Bars are blank"}');
   assert(result.ok);
   if (result.ok) {
@@ -391,7 +394,7 @@ Deno.test("parseTriageResponse parses a valid JSON object", () => {
   }
 });
 
-Deno.test("parseTriageResponse ignores braces inside JSON strings", () => {
+test("parseTriageResponse ignores braces inside JSON strings", () => {
   const result = parseTriageResponse(
     'Here you go: {"title":"Closing } brace","description":"Shows {x} and \\"quoted }\\" text"} trailing'
   );
@@ -402,32 +405,32 @@ Deno.test("parseTriageResponse ignores braces inside JSON strings", () => {
   }
 });
 
-Deno.test("parseTriageResponse strips markdown fences", () => {
+test("parseTriageResponse strips markdown fences", () => {
   const result = parseTriageResponse(
     '```json\n{"title":"Chart bug","description":"Bars are blank"}\n```'
   );
   assert(result.ok);
 });
 
-Deno.test("parseTriageResponse reports unparseable when there is no JSON object", () => {
+test("parseTriageResponse reports unparseable when there is no JSON object", () => {
   const result = parseTriageResponse("sorry, I don't understand");
   assertEquals(result.ok, false);
   if (!result.ok) assertEquals(result.reason, "unparseable");
 });
 
-Deno.test("parseTriageResponse surfaces an explicit model error", () => {
+test("parseTriageResponse surfaces an explicit model error", () => {
   const result = parseTriageResponse('{"error":"unparseable"}');
   assertEquals(result.ok, false);
   if (!result.ok) assertEquals(result.reason, "unparseable");
 });
 
-Deno.test("parseTriageResponse reports schema_mismatch when fields are missing", () => {
+test("parseTriageResponse reports schema_mismatch when fields are missing", () => {
   const result = parseTriageResponse('{"title":"Chart bug"}');
   assertEquals(result.ok, false);
   if (!result.ok) assertEquals(result.reason, "schema_mismatch");
 });
 
-Deno.test("isTriageRateLimited allows up to the max attempts then blocks", () => {
+test("isTriageRateLimited allows up to the max attempts then blocks", () => {
   const userId = `rate-limit-test-${crypto.randomUUID()}`;
   const now = Date.now();
   assertEquals(isTriageRateLimited(userId, now), false);
@@ -436,7 +439,7 @@ Deno.test("isTriageRateLimited allows up to the max attempts then blocks", () =>
   assertEquals(isTriageRateLimited(userId, now), true);
 });
 
-Deno.test("isTriageRateLimited resets once the window has passed", () => {
+test("isTriageRateLimited resets once the window has passed", () => {
   const userId = `rate-limit-window-${crypto.randomUUID()}`;
   const start = Date.now();
   assertEquals(isTriageRateLimited(userId, start), false);
@@ -445,7 +448,7 @@ Deno.test("isTriageRateLimited resets once the window has passed", () => {
   assertEquals(isTriageRateLimited(userId, start + 11 * 60 * 1000), false);
 });
 
-Deno.test("withTimeout rejects with TimeoutError when work outlasts the limit", async () => {
+test("withTimeout rejects with TimeoutError when work outlasts the limit", async () => {
   const never = new Promise<string>(() => {});
   let caught: unknown;
   try {
@@ -456,11 +459,11 @@ Deno.test("withTimeout rejects with TimeoutError when work outlasts the limit", 
   assert(caught instanceof TimeoutError);
 });
 
-Deno.test("withTimeout resolves with the work result when it finishes in time", async () => {
+test("withTimeout resolves with the work result when it finishes in time", async () => {
   assertEquals(await withTimeout(Promise.resolve("ok"), 1_000), "ok");
 });
 
-Deno.test("retryTransient retries thrown errors with exponential backoff", async () => {
+test("retryTransient retries thrown errors with exponential backoff", async () => {
   const delays: number[] = [];
   let calls = 0;
   const result = await retryTransient(
@@ -476,7 +479,7 @@ Deno.test("retryTransient retries thrown errors with exponential backoff", async
   assertEquals(delays, [100, 200]);
 });
 
-Deno.test("retryTransient retries transient outcomes and returns the last one", async () => {
+test("retryTransient retries transient outcomes and returns the last one", async () => {
   let calls = 0;
   const result = await retryTransient(
     () => Promise.resolve(++calls),
@@ -486,7 +489,7 @@ Deno.test("retryTransient retries transient outcomes and returns the last one", 
   assertEquals(result, 3);
 });
 
-Deno.test("retryTransient does not retry a non-transient outcome", async () => {
+test("retryTransient does not retry a non-transient outcome", async () => {
   let calls = 0;
   await retryTransient(
     () => Promise.resolve(++calls),
@@ -496,7 +499,7 @@ Deno.test("retryTransient does not retry a non-transient outcome", async () => {
   assertEquals(calls, 1);
 });
 
-Deno.test("retryTransient rethrows after exhausting attempts", async () => {
+test("retryTransient rethrows after exhausting attempts", async () => {
   let caught: unknown;
   try {
     await retryTransient(
@@ -513,7 +516,7 @@ Deno.test("retryTransient rethrows after exhausting attempts", async () => {
   assertEquals((caught as Error).message, "boom");
 });
 
-Deno.test("triage health probe is unknown until the first refresh", () => {
+test("triage health probe is unknown until the first refresh", () => {
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.resolve(true) },
     true
@@ -521,7 +524,7 @@ Deno.test("triage health probe is unknown until the first refresh", () => {
   assertEquals(probe.current(), { provider: "ollama", enabled: true, reachable: null });
 });
 
-Deno.test("triage health probe reports provider reachability after refresh", async () => {
+test("triage health probe reports provider reachability after refresh", async () => {
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.resolve(true) },
     true
@@ -530,7 +533,7 @@ Deno.test("triage health probe reports provider reachability after refresh", asy
   assertEquals(probe.current(), { provider: "ollama", enabled: true, reachable: true });
 });
 
-Deno.test("triage health probe reports unreachable when the provider check throws", async () => {
+test("triage health probe reports unreachable when the provider check throws", async () => {
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.reject(new Error("down")) },
     true
@@ -539,7 +542,7 @@ Deno.test("triage health probe reports unreachable when the provider check throw
   assertEquals(probe.current().reachable, false);
 });
 
-Deno.test("triage health probe skips the provider check when triage is disabled", async () => {
+test("triage health probe skips the provider check when triage is disabled", async () => {
   let calls = 0;
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.resolve(++calls > 0) },

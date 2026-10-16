@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { computeActual, type OutcomeOrder } from "../scenarios/outcome.ts";
 
 function buy(limitPrice: number, fills: Array<{ filled: number; price: number }>): OutcomeOrder {
@@ -14,7 +15,7 @@ function buy(limitPrice: number, fills: Array<{ filled: number; price: number }>
   };
 }
 
-Deno.test("outcome: empty fills produce zeros", () => {
+test("outcome: empty fills produce zeros", () => {
   const a = computeActual({ side: "BUY", limitPrice: 100, children: [] }, 1000, 1500);
   assertEquals(a.fillCount, 0);
   assertEquals(a.totalFilled, 0);
@@ -22,7 +23,7 @@ Deno.test("outcome: empty fills produce zeros", () => {
   assertEquals(a.durationMs, 500);
 });
 
-Deno.test("outcome: single fill at limit produces zero slippage", () => {
+test("outcome: single fill at limit produces zero slippage", () => {
   const order = buy(190, [{ filled: 100, price: 190 }]);
   const a = computeActual(order, 0, 1000);
   assertEquals(a.fillCount, 1);
@@ -32,21 +33,21 @@ Deno.test("outcome: single fill at limit produces zero slippage", () => {
   assertEquals(a.slippageBps, 0);
 });
 
-Deno.test("outcome: BUY fill above limit reports positive slippage", () => {
+test("outcome: BUY fill above limit reports positive slippage", () => {
   const order = buy(100, [{ filled: 50, price: 100.5 }]);
   const a = computeActual(order, 0, 100);
   assertEquals(a.avgFillPriceBps, 50);
   assertEquals(a.slippageBps, 50);
 });
 
-Deno.test("outcome: BUY fill below limit shows negative price impact, zero slippage", () => {
+test("outcome: BUY fill below limit shows negative price impact, zero slippage", () => {
   const order = buy(100, [{ filled: 50, price: 99 }]);
   const a = computeActual(order, 0, 100);
   assertEquals(a.avgFillPriceBps, -100);
   assertEquals(a.slippageBps, 0);
 });
 
-Deno.test("outcome: SELL fill below limit reports positive slippage", () => {
+test("outcome: SELL fill below limit reports positive slippage", () => {
   const order: OutcomeOrder = {
     side: "SELL",
     limitPrice: 100,
@@ -57,7 +58,7 @@ Deno.test("outcome: SELL fill below limit reports positive slippage", () => {
   assertEquals(a.slippageBps, 100);
 });
 
-Deno.test("outcome: ignores non-filled children", () => {
+test("outcome: ignores non-filled children", () => {
   const order: OutcomeOrder = {
     side: "BUY",
     limitPrice: 100,
@@ -73,7 +74,7 @@ Deno.test("outcome: ignores non-filled children", () => {
   assertEquals(a.childOrderIds, ["c1"]);
 });
 
-Deno.test("outcome: weighted avg across multiple fills", () => {
+test("outcome: weighted avg across multiple fills", () => {
   const order = buy(100, [
     { filled: 100, price: 100 },
     { filled: 100, price: 102 },

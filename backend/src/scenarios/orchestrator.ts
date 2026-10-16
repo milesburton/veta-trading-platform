@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import type { MsgProducer } from "@veta/messaging";
+import { logger } from "#veta/logger";
+import type { MsgProducer } from "#veta/messaging";
 import { diffOutcome } from "./diff.ts";
 import { computeActual } from "./outcome.ts";
 import { completeRun, createRun } from "./store.ts";

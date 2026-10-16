@@ -47,7 +47,7 @@ sequenceDiagram
 | `replayVideoExport` | [`frontend/src/lib/replayVideoExport.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/lib/replayVideoExport.ts) | Client-side WebM renderer — steps through rrweb events at 10 fps, snapshots via `html-to-image`, encodes with `MediaRecorder` (VP9 → VP8 fallback) |
 | `SessionReplayPanel` | [`frontend/src/components/SessionReplayPanel.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/SessionReplayPanel.tsx) | Lists sessions, triggers Play/JSON/Video exports, manages rrweb-player inline playback |
 | `replayApi` | [`frontend/src/store/replayApi.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/replayApi.ts) | RTK Query slice with endpoints for config, sessions, chunks, events, and deletion |
-| `replay-service` | [`backend/src/replay/replay-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/replay/replay-service.ts) | Deno/PostgreSQL REST API — stores session metadata and event chunks |
+| `replay-service` | [`backend/src/replay/replay-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/replay/replay-service.ts) | Node/PostgreSQL REST API — stores session metadata and event chunks |
 
 ## Data model
 

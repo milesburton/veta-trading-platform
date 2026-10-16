@@ -1,28 +1,23 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
+import { deriveServiceName } from "./service-name.ts";
 
 function isOtelEnabled(): boolean {
-  return (Deno.env.get("OTEL_DENO") ?? "").toLowerCase() === "true";
+  return (process.env.OTEL_ENABLED ?? "").toLowerCase() === "true";
 }
 
 const OTEL_ENABLED_AT_IMPORT = isOtelEnabled();
 
-export function deriveServiceName(): string {
-  const explicit = Deno.env.get("OTEL_SERVICE_NAME");
-  if (explicit && explicit.length > 0) return explicit;
-  const host = Deno.env.get("HOSTNAME") ?? "";
-  const stripped = host.replace(/^veta-/, "").replace(/-\d+$/, "");
-  return stripped || "veta-service";
-}
+export { deriveServiceName };
 
-if (OTEL_ENABLED_AT_IMPORT && !Deno.env.get("OTEL_SERVICE_NAME")) {
-  Deno.env.set("OTEL_SERVICE_NAME", deriveServiceName());
+if (OTEL_ENABLED_AT_IMPORT && !process.env.OTEL_SERVICE_NAME) {
+  process.env.OTEL_SERVICE_NAME = deriveServiceName();
 }
 
 if (OTEL_ENABLED_AT_IMPORT) {
   logger.info("OTel enabled", {
     component: "telemetry",
-    service: Deno.env.get("OTEL_SERVICE_NAME"),
-    endpoint: Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
+    service: process.env.OTEL_SERVICE_NAME,
+    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
   });
   queueMicrotask(() => {
     setupProcessMetrics().catch((err) => {
@@ -57,7 +52,20 @@ interface ObservableLike {
   removeCallback(callback: (result: ObservableResultLike) => void | Promise<void>): void;
 }
 
+interface UpDownCounterLike {
+  add(value: number, attributes?: Record<string, string | number | boolean>): void;
+}
+
+interface HistogramLike {
+  record(value: number, attributes?: Record<string, string | number | boolean>): void;
+}
+
 interface MeterLike {
+  createUpDownCounter(
+    name: string,
+    options?: { description?: string; unit?: string }
+  ): UpDownCounterLike;
+  createHistogram(name: string, options?: { description?: string; unit?: string }): HistogramLike;
   createGauge(name: string, options?: { description?: string; unit?: string }): GaugeLike;
   createObservableGauge(
     name: string,
@@ -65,6 +73,12 @@ interface MeterLike {
   ): ObservableLike;
 }
 
+interface HttpServerInstruments {
+  active: UpDownCounterLike;
+  bodySize: HistogramLike;
+}
+
+let httpInstrumentsPromise: Promise<HttpServerInstruments | null> | null = null;
 let tracerCache: TracerLike | null = null;
 let meterCache: MeterLike | null = null;
 const gaugeCache = new Map<string, GaugeLike>();
@@ -124,6 +138,44 @@ async function getMeter(): Promise<MeterLike | null> {
   }
 }
 
+function getHttpServerInstruments(): Promise<HttpServerInstruments | null> {
+  httpInstrumentsPromise ??= getMeter().then((meter) =>
+    meter
+      ? {
+          active: meter.createUpDownCounter("http.server.active_requests", {
+            description: "Number of in-flight HTTP server requests",
+            unit: "{request}",
+          }),
+          bodySize: meter.createHistogram("http.server.request.body.size", {
+            description: "Size of HTTP server request bodies",
+            unit: "By",
+          }),
+        }
+      : null
+  );
+  return httpInstrumentsPromise;
+}
+
+export async function trackHttpServerRequest(
+  req: Request,
+  handler: () => Response | Promise<Response>
+): Promise<Response> {
+  if (!isOtelEnabled()) return handler();
+  const instruments = await getHttpServerInstruments();
+  if (!instruments) return handler();
+  const attributes = { "http.request.method": req.method };
+  const contentLength = Number(req.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > 0) {
+    instruments.bodySize.record(contentLength, attributes);
+  }
+  instruments.active.add(1, attributes);
+  try {
+    return await handler();
+  } finally {
+    instruments.active.add(-1, attributes);
+  }
+}
+
 interface ProcessMetricsHandle {
   stop(): void;
 }
@@ -140,22 +192,32 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   const wallStart = performance.now() / 1000;
 
   const rssGauge = meter.createObservableGauge("process_memory_usage_bytes", {
-    description: "Resident set size of the Deno process",
+    description: "Resident set size of the process",
     unit: "By",
   });
-  const heapUsedGauge = meter.createObservableGauge("process_runtime_deno_memory_heap_used_bytes", {
-    description: "V8 heap used by the Deno runtime",
-    unit: "By",
-  });
-  const heapTotalGauge = meter.createObservableGauge(
-    "process_runtime_deno_memory_heap_total_bytes",
+  const heapUsedGauge = meter.createObservableGauge(
+    "process_runtime_nodejs_memory_heap_used_bytes",
     {
-      description: "V8 heap total allocated by the Deno runtime",
+      description: "V8 heap used by the runtime",
       unit: "By",
     }
   );
-  const externalGauge = meter.createObservableGauge("process_runtime_deno_memory_external_bytes", {
-    description: "Memory used by C++ objects bound to JavaScript",
+  const heapTotalGauge = meter.createObservableGauge(
+    "process_runtime_nodejs_memory_heap_total_bytes",
+    {
+      description: "V8 heap total allocated by the runtime",
+      unit: "By",
+    }
+  );
+  const externalGauge = meter.createObservableGauge(
+    "process_runtime_nodejs_memory_external_bytes",
+    {
+      description: "Memory used by C++ objects bound to JavaScript",
+      unit: "By",
+    }
+  );
+  const v8HeapGauge = meter.createObservableGauge("v8js.memory.heap.size", {
+    description: "V8 heap size in use",
     unit: "By",
   });
   const cpuGauge = meter.createObservableGauge("process_cpu_seconds_total", {
@@ -168,12 +230,12 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   });
 
   const rssCb = (r: ObservableResultLike) => {
-    const mem = Deno.memoryUsage();
+    const mem = process.memoryUsage();
     r.observe(mem.rss);
   };
-  const heapUsedCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().heapUsed);
-  const heapTotalCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().heapTotal);
-  const externalCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().external);
+  const heapUsedCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapUsed);
+  const heapTotalCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapTotal);
+  const externalCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().external);
   const cpuCb = (r: ObservableResultLike) => {
     const now = readCpuTimeSeconds();
     if (now !== null) r.observe(now - (cpuStart ?? 0));
@@ -181,6 +243,8 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   const uptimeCb = (r: ObservableResultLike) => r.observe(performance.now() / 1000 - wallStart);
 
   rssGauge.addCallback(rssCb);
+  const v8HeapCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapUsed);
+  v8HeapGauge.addCallback(v8HeapCb);
   heapUsedGauge.addCallback(heapUsedCb);
   heapTotalGauge.addCallback(heapTotalCb);
   externalGauge.addCallback(externalCb);
@@ -189,12 +253,13 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
 
   logger.info("process metrics registered", {
     component: "telemetry",
-    service: Deno.env.get("OTEL_SERVICE_NAME"),
+    service: process.env.OTEL_SERVICE_NAME,
   });
 
   processMetricsHandle = {
     stop: () => {
       rssGauge.removeCallback(rssCb);
+      v8HeapGauge.removeCallback(v8HeapCb);
       heapUsedGauge.removeCallback(heapUsedCb);
       heapTotalGauge.removeCallback(heapTotalCb);
       externalGauge.removeCallback(externalCb);
@@ -207,15 +272,8 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
 }
 
 function readCpuTimeSeconds(): number | null {
-  try {
-    const usage = (
-      Deno as unknown as { cpuUsage?: () => { user: number; system: number } }
-    ).cpuUsage?.();
-    if (usage) return (usage.user + usage.system) / 1_000_000;
-  } catch {
-    /* ignore */
-  }
-  return null;
+  const usage = process.cpuUsage();
+  return (usage.user + usage.system) / 1_000_000;
 }
 
 export async function recordGauge(
@@ -317,6 +375,7 @@ export function __setOtelApiLoaderForTests(loader: (() => Promise<OTelApiLike>) 
   tracerCache = null;
   meterCache = null;
   gaugeCache.clear();
+  httpInstrumentsPromise = null;
   processMetricsHandle = null;
 }
 
@@ -326,5 +385,6 @@ export function __resetTelemetryForTests(): void {
   tracerCache = null;
   meterCache = null;
   gaugeCache.clear();
+  httpInstrumentsPromise = null;
   processMetricsHandle = null;
 }

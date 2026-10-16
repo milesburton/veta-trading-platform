@@ -1,4 +1,4 @@
-import type { FeatureName, FeatureVector, Signal, SignalFactor } from "@veta/types/intelligence";
+import type { FeatureName, FeatureVector, Signal, SignalFactor } from "#veta/types/intelligence";
 import type { WeightMap } from "./weight-store.ts";
 
 const FEATURE_SCALES: Record<FeatureName, number> = {

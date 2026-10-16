@@ -1,4 +1,5 @@
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { computeContextHash, shouldEnqueueJob } from "../llm-advisory/dedupe.ts";
 import type { JobStore } from "../llm-advisory/job-store.ts";
 import type { LlmJob, LlmJobStatus, LlmPolicy } from "../types/llm-advisory.ts";
@@ -174,32 +175,32 @@ function makeJobInput(
   };
 }
 
-Deno.test("[llm-dedupe] computeContextHash: same inputs produce same hash", async () => {
+test("[llm-dedupe] computeContextHash: same inputs produce same hash", async () => {
   const h1 = await computeContextHash(["AAPL", "long", "0.8"]);
   const h2 = await computeContextHash(["AAPL", "long", "0.8"]);
   assertEquals(h1, h2);
 });
 
-Deno.test("[llm-dedupe] computeContextHash: different inputs produce different hashes", async () => {
+test("[llm-dedupe] computeContextHash: different inputs produce different hashes", async () => {
   const h1 = await computeContextHash(["AAPL", "long", "0.8"]);
   const h2 = await computeContextHash(["AAPL", "short", "0.8"]);
   assert(h1 !== h2, "Hashes should differ for different inputs");
 });
 
-Deno.test("[llm-dedupe] computeContextHash: returns 16-char hex string", async () => {
+test("[llm-dedupe] computeContextHash: returns 16-char hex string", async () => {
   const h = await computeContextHash(["TEST"]);
   assertEquals(h.length, 16);
   assert(/^[0-9a-f]+$/.test(h), "Hash should be lowercase hex");
 });
 
-Deno.test("[llm-dedupe] shouldEnqueueJob: allows enqueue when no recent job exists", async () => {
+test("[llm-dedupe] shouldEnqueueJob: allows enqueue when no recent job exists", async () => {
   const store = makeStore();
   const hash = await computeContextHash(["TEST", "long"]);
   const result = await shouldEnqueueJob(store, hash, ENABLED_POLICY);
   assert(result, "Should allow enqueue on empty store");
 });
 
-Deno.test("[llm-dedupe] shouldEnqueueJob: prevents enqueue within dedupeWindowMs", async () => {
+test("[llm-dedupe] shouldEnqueueJob: prevents enqueue within dedupeWindowMs", async () => {
   const store = makeStore();
   const hash = await computeContextHash(["AAPL", "long"]);
   await store.insertJob(makeJobInput({ contextHash: hash, createdAt: Date.now() }));
@@ -207,7 +208,7 @@ Deno.test("[llm-dedupe] shouldEnqueueJob: prevents enqueue within dedupeWindowMs
   assert(!result, "Should block duplicate within window");
 });
 
-Deno.test("[llm-dedupe] shouldEnqueueJob: allows enqueue after dedupeWindowMs expires", async () => {
+test("[llm-dedupe] shouldEnqueueJob: allows enqueue after dedupeWindowMs expires", async () => {
   const store = makeStore();
   const hash = await computeContextHash(["AAPL", "long"]);
   await store.insertJob(makeJobInput({ contextHash: hash, createdAt: Date.now() - 90_000 }));
@@ -215,14 +216,14 @@ Deno.test("[llm-dedupe] shouldEnqueueJob: allows enqueue after dedupeWindowMs ex
   assert(result, "Should allow enqueue after window expires");
 });
 
-Deno.test("[llm-dedupe] shouldEnqueueJob: returns false when policy disabled", async () => {
+test("[llm-dedupe] shouldEnqueueJob: returns false when policy disabled", async () => {
   const store = makeStore();
   const hash = await computeContextHash(["TEST"]);
   const result = await shouldEnqueueJob(store, hash, DISABLED_POLICY);
   assert(!result, "Should block when policy is disabled");
 });
 
-Deno.test("[llm-dedupe] JobStore.claimNextJob: returns highest priority job first", async () => {
+test("[llm-dedupe] JobStore.claimNextJob: returns highest priority job first", async () => {
   const store = makeStore();
   await store.insertJob(makeJobInput({ symbol: "LOW", priority: -1 }));
   await store.insertJob(makeJobInput({ symbol: "MID", priority: 0 }));
@@ -233,13 +234,13 @@ Deno.test("[llm-dedupe] JobStore.claimNextJob: returns highest priority job firs
   assertEquals(claimed.priority, 1);
 });
 
-Deno.test("[llm-dedupe] JobStore.claimNextJob: returns null when no queued jobs", async () => {
+test("[llm-dedupe] JobStore.claimNextJob: returns null when no queued jobs", async () => {
   const store = makeStore();
   const claimed = await store.claimNextJob("test-session");
   assertEquals(claimed, null);
 });
 
-Deno.test("[llm-dedupe] JobStore.claimNextJob: sets status to running", async () => {
+test("[llm-dedupe] JobStore.claimNextJob: sets status to running", async () => {
   const store = makeStore();
   const jobId = await store.insertJob(makeJobInput());
   const claimed = await store.claimNextJob("test-session");
@@ -249,7 +250,7 @@ Deno.test("[llm-dedupe] JobStore.claimNextJob: sets status to running", async ()
   assertEquals(claimed.workerSessionId, "test-session");
 });
 
-Deno.test("[llm-dedupe] JobStore.sweepStuckJobs: resets running jobs older than maxAge", async () => {
+test("[llm-dedupe] JobStore.sweepStuckJobs: resets running jobs older than maxAge", async () => {
   const store = makeStore();
   const jobId = await store.insertJob(makeJobInput());
   await store.claimNextJob("test-session");
@@ -261,7 +262,7 @@ Deno.test("[llm-dedupe] JobStore.sweepStuckJobs: resets running jobs older than 
   assertEquals(job.status, "queued");
 });
 
-Deno.test("[llm-dedupe] JobStore.hasRecentJob: correctly gates on time window", async () => {
+test("[llm-dedupe] JobStore.hasRecentJob: correctly gates on time window", async () => {
   const store = makeStore();
   const hash = "aabbccdd11223344";
   await store.insertJob(makeJobInput({ contextHash: hash, createdAt: Date.now() - 30_000 }));
@@ -269,7 +270,7 @@ Deno.test("[llm-dedupe] JobStore.hasRecentJob: correctly gates on time window", 
   assert(!(await store.hasRecentJob(hash, 20_000)), "Should not find job outside 20s window");
 });
 
-Deno.test("[llm-dedupe] JobStore.getPendingJobCount: counts queued and running jobs", async () => {
+test("[llm-dedupe] JobStore.getPendingJobCount: counts queued and running jobs", async () => {
   const store = makeStore();
   await store.insertJob(makeJobInput({ symbol: "A" }));
   await store.insertJob(makeJobInput({ symbol: "B" }));

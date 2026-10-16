@@ -1,4 +1,4 @@
-import type { FeatureVector, Signal, TradeRecommendation } from "@veta/types/intelligence";
+import type { FeatureVector, Signal, TradeRecommendation } from "#veta/types/intelligence";
 
 export const SYSTEM_PROMPT = `You are an educational market analysis assistant embedded in a trading simulator.
 Your role is to provide concise, objective commentary on market signals and feature data.

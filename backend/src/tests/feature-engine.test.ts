@@ -1,4 +1,5 @@
-import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import {
   backoffDelayMs,
   buildSectorPeers,
@@ -14,12 +15,12 @@ import {
 import { buildBatchInsert } from "../feature-engine/feature-store.ts";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
 
-Deno.test("computeMomentum: insufficient history → 0", () => {
+test("computeMomentum: insufficient history → 0", () => {
   assertEquals(computeMomentum([]), 0);
   assertEquals(computeMomentum([100, 101, 102]), 0);
 });
 
-Deno.test("computeMomentum: positive, negative, and flat movement", () => {
+test("computeMomentum: positive, negative, and flat movement", () => {
   const base = Array(20).fill(100);
 
   const up = [...base];
@@ -33,12 +34,12 @@ Deno.test("computeMomentum: positive, negative, and flat movement", () => {
   assertAlmostEquals(computeMomentum(base), 0, 1e-6, "no movement");
 });
 
-Deno.test("computeRelativeVolume: insufficient history → 1 (neutral)", () => {
+test("computeRelativeVolume: insufficient history → 1 (neutral)", () => {
   assertEquals(computeRelativeVolume([]), 1);
   assertEquals(computeRelativeVolume([500]), 1);
 });
 
-Deno.test("computeRelativeVolume: 2× and 0.5× average", () => {
+test("computeRelativeVolume: 2× and 0.5× average", () => {
   const vols = Array(20).fill(1000);
 
   const high = [...vols];
@@ -50,12 +51,12 @@ Deno.test("computeRelativeVolume: 2× and 0.5× average", () => {
   assertAlmostEquals(computeRelativeVolume(low), 0.5, 0.01, "0.5× volume");
 });
 
-Deno.test("computeRealisedVol: insufficient history → 0", () => {
+test("computeRealisedVol: insufficient history → 0", () => {
   assertEquals(computeRealisedVol([]), 0);
   assertEquals(computeRealisedVol([100]), 0);
 });
 
-Deno.test("computeRealisedVol: flat price → 0; varying prices → positive annualised vol in range", () => {
+test("computeRealisedVol: flat price → 0; varying prices → positive annualised vol in range", () => {
   assertAlmostEquals(computeRealisedVol(Array(20).fill(100)), 0, 1e-6, "flat");
 
   const prices = [
@@ -66,12 +67,12 @@ Deno.test("computeRealisedVol: flat price → 0; varying prices → positive ann
   assertEquals(vol < 50, true, "plausible (<5000% annualised)");
 });
 
-Deno.test("computeSectorRelativeStrength: insufficient symbol history → 0", () => {
+test("computeSectorRelativeStrength: insufficient symbol history → 0", () => {
   assertEquals(computeSectorRelativeStrength([100, 101], []), 0);
   assertEquals(computeSectorRelativeStrength(Array(5).fill(100), [Array(20).fill(100)]), 0);
 });
 
-Deno.test("computeSectorRelativeStrength: outperform, underperform, match sector", () => {
+test("computeSectorRelativeStrength: outperform, underperform, match sector", () => {
   const symbolUp10 = [...Array(20).fill(100)];
   symbolUp10[19] = 110;
   const sectorUp5 = [...Array(20).fill(100)];
@@ -109,11 +110,11 @@ function makeEvent(overrides: Partial<MarketAdapterEvent>): MarketAdapterEvent {
   };
 }
 
-Deno.test("computeEventScore: no events → 0", () => {
+test("computeEventScore: no events → 0", () => {
   assertEquals(computeEventScore("AAPL", []), 0);
 });
 
-Deno.test("computeEventScore: ticker event counts in full; macro event counts at 50%; past events ignored", () => {
+test("computeEventScore: ticker event counts in full; macro event counts at 50%; past events ignored", () => {
   const now = Date.now();
 
   assertAlmostEquals(
@@ -146,7 +147,7 @@ Deno.test("computeEventScore: ticker event counts in full; macro event counts at
   );
 });
 
-Deno.test("computeEventScore: multiple events accumulate correctly", () => {
+test("computeEventScore: multiple events accumulate correctly", () => {
   const events = [
     makeEvent({ ticker: "AAPL", impact: "high" }), // +1.0
     makeEvent({ ticker: "AAPL", impact: "medium" }), // +0.5
@@ -170,7 +171,7 @@ function makeNews(overrides: Partial<NewsEvent>): NewsEvent {
   };
 }
 
-Deno.test("computeNewsVelocity: no news → 0; counts only recent items for this symbol", () => {
+test("computeNewsVelocity: no news → 0; counts only recent items for this symbol", () => {
   assertEquals(computeNewsVelocity("AAPL", []), 0);
 
   const now = Date.now();
@@ -188,7 +189,7 @@ Deno.test("computeNewsVelocity: no news → 0; counts only recent items for this
   assertEquals(computeNewsVelocity("AAPL", news), 2);
 });
 
-Deno.test("computeSentimentDelta: no news or single item → 0", () => {
+test("computeSentimentDelta: no news or single item → 0", () => {
   assertEquals(computeSentimentDelta("AAPL", []), 0);
   assertEquals(
     computeSentimentDelta("AAPL", [
@@ -198,7 +199,7 @@ Deno.test("computeSentimentDelta: no news or single item → 0", () => {
   );
 });
 
-Deno.test("computeSentimentDelta: improving sentiment → positive; worsening → negative", () => {
+test("computeSentimentDelta: improving sentiment → positive; worsening → negative", () => {
   const now = Date.now();
   const negOld = makeNews({
     id: "o1",
@@ -243,13 +244,13 @@ function makeFv(symbol: string, ts: number): FeatureVector {
   };
 }
 
-Deno.test("buildBatchInsert: empty batch produces no placeholders or values", () => {
+test("buildBatchInsert: empty batch produces no placeholders or values", () => {
   const { placeholders, values } = buildBatchInsert([]);
   assertEquals(placeholders, "");
   assertEquals(values.length, 0);
 });
 
-Deno.test("buildBatchInsert: single row uses placeholders $1..$9", () => {
+test("buildBatchInsert: single row uses placeholders $1..$9", () => {
   const { placeholders, values } = buildBatchInsert([makeFv("AAPL", 1000)]);
   assertEquals(placeholders, "($1,$2,$3,$4,$5,$6,$7,$8,$9)");
   assertEquals(values.length, 9);
@@ -257,7 +258,7 @@ Deno.test("buildBatchInsert: single row uses placeholders $1..$9", () => {
   assertEquals(values[1], 1000);
 });
 
-Deno.test("buildBatchInsert: multi-row offsets each tuple by 9 with contiguous params", () => {
+test("buildBatchInsert: multi-row offsets each tuple by 9 with contiguous params", () => {
   const { placeholders, values } = buildBatchInsert([
     makeFv("AAPL", 1),
     makeFv("MSFT", 2),
@@ -275,7 +276,7 @@ Deno.test("buildBatchInsert: multi-row offsets each tuple by 9 with contiguous p
   assertEquals(maxParam, values.length);
 });
 
-Deno.test("buildSectorPeers: groups symbols by sector", () => {
+test("buildSectorPeers: groups symbols by sector", () => {
   const symbolSectors = new Map([
     ["AAPL", "Technology"],
     ["MSFT", "Technology"],
@@ -288,51 +289,57 @@ Deno.test("buildSectorPeers: groups symbols by sector", () => {
   assertEquals(peers.get("Energy"), ["XOM"]);
 });
 
-Deno.test("buildSectorPeers: empty input produces an empty map", () => {
+test("buildSectorPeers: empty input produces an empty map", () => {
   const peers = buildSectorPeers(new Map());
   assertEquals(peers.size, 0);
 });
 
-Deno.test("buildSectorPeers: does not mutate the input map", () => {
+test("buildSectorPeers: does not mutate the input map", () => {
   const symbolSectors = new Map([["AAPL", "Technology"]]);
   buildSectorPeers(symbolSectors);
   assertEquals(symbolSectors.size, 1);
   assertEquals(symbolSectors.get("AAPL"), "Technology");
 });
 
-Deno.test("backoffDelayMs: zero or negative failures → no delay", () => {
+test("backoffDelayMs: zero or negative failures → no delay", () => {
   assertEquals(backoffDelayMs(0, 250, 30_000), 0);
   assertEquals(backoffDelayMs(-1, 250, 30_000), 0);
 });
 
-Deno.test("backoffDelayMs: doubles per consecutive failure", () => {
+test("backoffDelayMs: doubles per consecutive failure", () => {
   assertEquals(backoffDelayMs(1, 250, 30_000), 250);
   assertEquals(backoffDelayMs(2, 250, 30_000), 500);
   assertEquals(backoffDelayMs(3, 250, 30_000), 1_000);
   assertEquals(backoffDelayMs(4, 250, 30_000), 2_000);
 });
 
-Deno.test("backoffDelayMs: caps at maxMs regardless of failure count", () => {
+test("backoffDelayMs: caps at maxMs regardless of failure count", () => {
   assertEquals(backoffDelayMs(20, 250, 30_000), 30_000);
   assertEquals(backoffDelayMs(1_000_000, 250, 30_000), 30_000);
 });
 
-Deno.test("flushedSymbols: returns symbols whose pending entry is the flushed vector", () => {
+test("flushedSymbols: returns symbols whose pending entry is the flushed vector", () => {
   const aapl = makeFv("AAPL", 1);
   const msft = makeFv("MSFT", 1);
-  const pending = new Map([["AAPL", aapl], ["MSFT", msft]]);
+  const pending = new Map([
+    ["AAPL", aapl],
+    ["MSFT", msft],
+  ]);
   assertEquals(flushedSymbols(pending, [aapl, msft]), ["AAPL", "MSFT"]);
 });
 
-Deno.test("flushedSymbols: keeps symbols updated while the insert was in flight", () => {
+test("flushedSymbols: keeps symbols updated while the insert was in flight", () => {
   const stale = makeFv("AAPL", 1);
   const fresh = makeFv("AAPL", 2);
   const msft = makeFv("MSFT", 1);
-  const pending = new Map([["AAPL", fresh], ["MSFT", msft]]);
+  const pending = new Map([
+    ["AAPL", fresh],
+    ["MSFT", msft],
+  ]);
   assertEquals(flushedSymbols(pending, [stale, msft]), ["MSFT"]);
 });
 
-Deno.test("flushedSymbols: does not mutate the pending map", () => {
+test("flushedSymbols: does not mutate the pending map", () => {
   const aapl = makeFv("AAPL", 1);
   const pending = new Map([["AAPL", aapl]]);
   flushedSymbols(pending, [aapl]);

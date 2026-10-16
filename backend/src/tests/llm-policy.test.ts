@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import {
   canAutoTrigger,
   canTriggerFromUi,
@@ -33,7 +34,7 @@ function policy(overrides: Partial<LlmPolicy> = {}): LlmPolicy {
   };
 }
 
-Deno.test("[llm-policy] loadPolicy: all defaults are safe when no env vars set", () => {
+test("[llm-policy] loadPolicy: all defaults are safe when no env vars set", () => {
   // Unset all LLM vars before testing defaults
   const varsToDelete = [
     "LLM_ENABLED",
@@ -49,8 +50,8 @@ Deno.test("[llm-policy] loadPolicy: all defaults are safe when no env vars set",
   ];
   const saved: Record<string, string | undefined> = {};
   for (const v of varsToDelete) {
-    saved[v] = Deno.env.get(v);
-    Deno.env.delete(v);
+    saved[v] = process.env[v];
+    delete process.env[v];
   }
   try {
     const policy = loadPolicy();
@@ -66,16 +67,16 @@ Deno.test("[llm-policy] loadPolicy: all defaults are safe when no env vars set",
   } finally {
     for (const v of varsToDelete) {
       const value = saved[v];
-      if (value !== undefined) Deno.env.set(v, value);
+      if (value !== undefined) process.env[v] = value;
     }
   }
 });
 
-Deno.test("[llm-policy] loadPolicy: env overrides are parsed correctly", () => {
-  Deno.env.set("LLM_ENABLED", "true");
-  Deno.env.set("LLM_PROVIDER", "ollama");
-  Deno.env.set("LLM_MAX_NOTE_AGE_MS", "600000");
-  Deno.env.set("LLM_SIGNAL_CONVICTION_THRESHOLD", "0.5");
+test("[llm-policy] loadPolicy: env overrides are parsed correctly", () => {
+  process.env["LLM_ENABLED"] = "true";
+  process.env["LLM_PROVIDER"] = "ollama";
+  process.env["LLM_MAX_NOTE_AGE_MS"] = "600000";
+  process.env["LLM_SIGNAL_CONVICTION_THRESHOLD"] = "0.5";
   try {
     const policy = loadPolicy();
     assertEquals(policy.enabled, true);
@@ -83,14 +84,14 @@ Deno.test("[llm-policy] loadPolicy: env overrides are parsed correctly", () => {
     assertEquals(policy.maxNoteAgeMs, 600_000);
     assertEquals(policy.signalConvictionThreshold, 0.5);
   } finally {
-    Deno.env.delete("LLM_ENABLED");
-    Deno.env.delete("LLM_PROVIDER");
-    Deno.env.delete("LLM_MAX_NOTE_AGE_MS");
-    Deno.env.delete("LLM_SIGNAL_CONVICTION_THRESHOLD");
+    delete process.env["LLM_ENABLED"];
+    delete process.env["LLM_PROVIDER"];
+    delete process.env["LLM_MAX_NOTE_AGE_MS"];
+    delete process.env["LLM_SIGNAL_CONVICTION_THRESHOLD"];
   }
 });
 
-Deno.test("[llm-policy] isPolicyEnabled: returns false when disabled", () => {
+test("[llm-policy] isPolicyEnabled: returns false when disabled", () => {
   const policy = {
     enabled: false,
     workerEnabled: false,
@@ -112,7 +113,7 @@ Deno.test("[llm-policy] isPolicyEnabled: returns false when disabled", () => {
   assertEquals(isPolicyEnabled(policy), false);
 });
 
-Deno.test("[llm-policy] isPolicyEnabled: returns true when enabled", () => {
+test("[llm-policy] isPolicyEnabled: returns true when enabled", () => {
   const policy = {
     enabled: true,
     workerEnabled: true,
@@ -134,7 +135,7 @@ Deno.test("[llm-policy] isPolicyEnabled: returns true when enabled", () => {
   assertEquals(isPolicyEnabled(policy), true);
 });
 
-Deno.test("[llm-policy] meetsConvictionThreshold: returns false for low-conviction signal", () => {
+test("[llm-policy] meetsConvictionThreshold: returns false for low-conviction signal", () => {
   const policy = {
     enabled: true,
     workerEnabled: true,
@@ -156,7 +157,7 @@ Deno.test("[llm-policy] meetsConvictionThreshold: returns false for low-convicti
   assert(!meetsConvictionThreshold(policy, { score: 0.3, confidence: 0.9 }));
 });
 
-Deno.test("[llm-policy] meetsConvictionThreshold: returns true for high-conviction signal", () => {
+test("[llm-policy] meetsConvictionThreshold: returns true for high-conviction signal", () => {
   const policy = {
     enabled: true,
     workerEnabled: true,
@@ -178,7 +179,7 @@ Deno.test("[llm-policy] meetsConvictionThreshold: returns true for high-convicti
   assert(meetsConvictionThreshold(policy, { score: 0.8, confidence: 0.9 }));
 });
 
-Deno.test("[llm-policy] meetsConvictionThreshold: returns false when confidence below threshold", () => {
+test("[llm-policy] meetsConvictionThreshold: returns false when confidence below threshold", () => {
   const policy = {
     enabled: true,
     workerEnabled: true,
@@ -200,7 +201,7 @@ Deno.test("[llm-policy] meetsConvictionThreshold: returns false when confidence 
   assert(!meetsConvictionThreshold(policy, { score: 0.8, confidence: 0.5 }));
 });
 
-Deno.test("[llm-policy] canAutoTrigger: respects autoTriggerEnabled=false", () => {
+test("[llm-policy] canAutoTrigger: respects autoTriggerEnabled=false", () => {
   const policy = {
     enabled: true,
     workerEnabled: true,
@@ -222,7 +223,7 @@ Deno.test("[llm-policy] canAutoTrigger: respects autoTriggerEnabled=false", () =
   assertEquals(canAutoTrigger(policy), false);
 });
 
-Deno.test("[llm-policy] canAutoTrigger: returns false when disabled even with autoTriggerEnabled=true", () => {
+test("[llm-policy] canAutoTrigger: returns false when disabled even with autoTriggerEnabled=true", () => {
   const policy = {
     enabled: false,
     workerEnabled: false,
@@ -244,79 +245,79 @@ Deno.test("[llm-policy] canAutoTrigger: returns false when disabled even with au
   assertEquals(canAutoTrigger(policy), false);
 });
 
-Deno.test("[llm-policy] loadPolicy falls back to 'manual' when LLM_TRIGGER_MODE is invalid", () => {
-  const prev = Deno.env.get("LLM_TRIGGER_MODE");
-  Deno.env.set("LLM_TRIGGER_MODE", "nonsense-mode");
+test("[llm-policy] loadPolicy falls back to 'manual' when LLM_TRIGGER_MODE is invalid", () => {
+  const prev = process.env.LLM_TRIGGER_MODE;
+  process.env["LLM_TRIGGER_MODE"] = "nonsense-mode";
   try {
     const p = loadPolicy();
     assertEquals(p.triggerMode, "manual");
   } finally {
-    if (prev !== undefined) Deno.env.set("LLM_TRIGGER_MODE", prev);
-    else Deno.env.delete("LLM_TRIGGER_MODE");
+    if (prev !== undefined) process.env["LLM_TRIGGER_MODE"] = prev;
+    else delete process.env["LLM_TRIGGER_MODE"];
   }
 });
 
-Deno.test("[llm-policy] loadPolicy accepts the valid trigger modes", () => {
-  const prev = Deno.env.get("LLM_TRIGGER_MODE");
+test("[llm-policy] loadPolicy accepts the valid trigger modes", () => {
+  const prev = process.env.LLM_TRIGGER_MODE;
   try {
     for (const mode of ["disabled", "manual", "on-demand-ui", "scheduled-batch", "event-driven"]) {
-      Deno.env.set("LLM_TRIGGER_MODE", mode);
+      process.env["LLM_TRIGGER_MODE"] = mode;
       const p = loadPolicy();
       assertEquals(p.triggerMode, mode);
     }
   } finally {
-    if (prev !== undefined) Deno.env.set("LLM_TRIGGER_MODE", prev);
-    else Deno.env.delete("LLM_TRIGGER_MODE");
+    if (prev !== undefined) process.env["LLM_TRIGGER_MODE"] = prev;
+    else delete process.env["LLM_TRIGGER_MODE"];
   }
 });
 
-Deno.test("[llm-policy] isWorkerAllowed requires both enabled and workerEnabled", () => {
+test("[llm-policy] isWorkerAllowed requires both enabled and workerEnabled", () => {
   assertEquals(isWorkerAllowed(policy({ enabled: false, workerEnabled: true })), false);
   assertEquals(isWorkerAllowed(policy({ enabled: true, workerEnabled: false })), false);
   assertEquals(isWorkerAllowed(policy({ enabled: true, workerEnabled: true })), true);
 });
 
-Deno.test("[llm-policy] canAutoTrigger fires for event-driven and scheduled-batch", () => {
+test("[llm-policy] canAutoTrigger fires for event-driven and scheduled-batch", () => {
   assert(canAutoTrigger(policy({ triggerMode: "event-driven" })));
   assert(canAutoTrigger(policy({ triggerMode: "scheduled-batch" })));
   assertEquals(canAutoTrigger(policy({ triggerMode: "on-demand-ui" })), false);
   assertEquals(canAutoTrigger(policy({ triggerMode: "disabled" })), false);
 });
 
-Deno.test("[llm-policy] canTriggerFromUi requires enabled + non-disabled mode", () => {
+test("[llm-policy] canTriggerFromUi requires enabled + non-disabled mode", () => {
   assertEquals(canTriggerFromUi(policy({ enabled: false })), false);
   assertEquals(canTriggerFromUi(policy({ triggerMode: "disabled" })), false);
   assert(canTriggerFromUi(policy({ triggerMode: "on-demand-ui" })));
   assert(canTriggerFromUi(policy({ triggerMode: "manual" })));
 });
 
-Deno.test("[llm-policy] isWithinAllowedHours returns true when allowedHours is null", () => {
+test("[llm-policy] isWithinAllowedHours returns true when allowedHours is null", () => {
   assert(isWithinAllowedHours(policy({ allowedHours: null })));
 });
 
-Deno.test("[llm-policy] isWithinAllowedHours returns true for malformed input", () => {
+test("[llm-policy] isWithinAllowedHours returns true for malformed input", () => {
   assert(isWithinAllowedHours(policy({ allowedHours: "abc" })));
   assert(isWithinAllowedHours(policy({ allowedHours: "9" })));
   assert(isWithinAllowedHours(policy({ allowedHours: "9-x" })));
 });
 
-Deno.test("[llm-policy] isWithinAllowedHours wraps midnight for ranges where start > end", () => {
+test("[llm-policy] isWithinAllowedHours wraps midnight for ranges where start > end", () => {
   const result = isWithinAllowedHours(policy({ allowedHours: "22-2" }));
   const hour = new Date().getUTCHours();
   const expected = hour >= 22 || hour < 2;
   assertEquals(result, expected);
 });
 
-Deno.test("[llm-policy] isWithinAllowedHours returns true for 0-24 all-day window", () => {
+test("[llm-policy] isWithinAllowedHours returns true for 0-24 all-day window", () => {
   assert(isWithinAllowedHours(policy({ allowedHours: "0-24" })));
 });
 
-Deno.test("[isIdleWindowOpen] closes once the deadline passes", () => {
+test("[isIdleWindowOpen] closes once the deadline passes", () => {
   assertEquals(isIdleWindowOpen(1_000, 2_000, 1_999), true);
   assertEquals(isIdleWindowOpen(1_000, 2_000, 2_000), false);
 });
 
-Deno.test("[isIdleWindowOpen] a zero or negative timeout never closes", () => {
+test("[isIdleWindowOpen] a zero or negative timeout never closes", () => {
   assertEquals(isIdleWindowOpen(0, 0, Number.MAX_SAFE_INTEGER), true);
   assertEquals(isIdleWindowOpen(-1, 0, Number.MAX_SAFE_INTEGER), true);
 });

@@ -3,7 +3,7 @@ title: Synthetic probe
 description: External 60s liveness check from the edge server, with a CI mirror that runs after every merge to main.
 ---
 
-The synthetic probe is a small Deno binary that simulates a user every
+The synthetic probe is a small Node script that simulates a user every
 60 seconds. It is the source of truth for "is the deployment URL actually up
 right now". Distinct from per-container healthchecks (which only know about
 themselves) and Prometheus alert rules (which fire on metric thresholds),
@@ -151,7 +151,7 @@ sudo rm /var/lib/veta-probe/consecutive_failures
 
 - ~3 HTTPS requests per minute against the deployment URL
 - ~1 KB JSON written to journald per cycle
-- One Deno cold start per cycle (no daemon)
+- One Node cold start per cycle (no daemon)
 - Total: negligible on the edge server (single-digit MB RSS during the probe
   run, idle the rest of the minute)
 
@@ -168,7 +168,7 @@ sudo rm /var/lib/veta-probe/consecutive_failures
 
 ## Source
 
-- `synthetic-probe/probe.ts`: Deno binary
+- `synthetic-probe/probe.ts`: Node script
 - `synthetic-probe/alert.sh`: failure / recovery handler
 - `synthetic-probe/deploy/`: systemd units
 - `synthetic-probe/README.md`: install instructions

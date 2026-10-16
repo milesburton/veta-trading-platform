@@ -1,5 +1,5 @@
-import { calendarForOrder } from "@veta/market-calendars";
-import { resolveCurrentSession } from "@veta/trading-calendar";
+import { calendarForOrder } from "#veta/market-calendars";
+import { resolveCurrentSession } from "#veta/trading-calendar";
 
 // "derivatives" deliberately maps to no assetClass: options are gated by
 // their underlying equity's calendar, which is calendarForOrder's default

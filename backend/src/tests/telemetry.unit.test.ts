@@ -1,5 +1,6 @@
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert@0.217";
-
+import { runNode } from "#veta/run-node";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertRejects } from "#veta/test-assert";
 import {
   __resetTelemetryForTests,
   __setOtelApiLoaderForTests,
@@ -7,6 +8,7 @@ import {
   injectTraceContext,
   recordGauge,
   setupProcessMetrics,
+  trackHttpServerRequest,
   withExtractedContext,
   withSpan,
 } from "../lib/telemetry.ts";
@@ -17,14 +19,14 @@ function withEnv<T>(
 ): Promise<T> {
   const prev: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(values)) {
-    prev[key] = Deno.env.get(key);
-    if (value === undefined) Deno.env.delete(key);
-    else Deno.env.set(key, value);
+    prev[key] = process.env[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
   }
   return Promise.resolve(fn()).finally(() => {
     for (const [key, value] of Object.entries(prev)) {
-      if (value === undefined) Deno.env.delete(key);
-      else Deno.env.set(key, value);
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
     }
     __resetTelemetryForTests();
   });
@@ -198,39 +200,28 @@ for (const [name, env, expected] of [
     "veta-service",
   ],
 ] as const) {
-  Deno.test(`[telemetry] deriveServiceName ${name}`, async () => {
+  test(`[telemetry] deriveServiceName ${name}`, async () => {
     await withEnv(env, () => {
       assertEquals(deriveServiceName(), expected);
     });
   });
 }
 
-Deno.test("[telemetry] import-time setup derives OTEL service name in a subprocess", async () => {
+test("[telemetry] import-time setup derives OTEL service name in a subprocess", async () => {
   const moduleUrl = new URL("../lib/telemetry.ts", import.meta.url).href;
-  const command = new Deno.Command(Deno.execPath(), {
-    args: [
-      "eval",
-      "--quiet",
-      `await import("${moduleUrl}"); console.log(Deno.env.get("OTEL_SERVICE_NAME") ?? "");`,
-    ],
-    env: {
-      OTEL_DENO: "true",
-      HOSTNAME: "veta-gateway-7",
-    },
-    clearEnv: true,
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { code, stdout } = await command.output();
-  const lines = new TextDecoder().decode(stdout).trim().split("\n");
+  const { code, stdout } = await runNode(
+    `await import("${moduleUrl}"); console.log(process.env["OTEL_SERVICE_NAME"] ?? "");`,
+    { OTEL_ENABLED: "true", HOSTNAME: "veta-gateway-7" }
+  );
+  const lines = stdout.trim().split("\n");
   assertEquals(code, 0);
   assert(lines.includes("gateway"));
 });
 
-Deno.test("[telemetry] disabled-path helpers are no-ops or passthroughs", async () => {
+test("[telemetry] disabled-path helpers are no-ops or passthroughs", async () => {
   await withEnv(
     {
-      OTEL_DENO: undefined,
+      OTEL_ENABLED: undefined,
       OTEL_SERVICE_NAME: undefined,
     },
     async () => {
@@ -254,11 +245,11 @@ Deno.test("[telemetry] disabled-path helpers are no-ops or passthroughs", async 
   );
 });
 
-Deno.test("[telemetry] enabled recordGauge caches gauges and preserves attributes", async () => {
+test("[telemetry] enabled recordGauge caches gauges and preserves attributes", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -289,11 +280,11 @@ Deno.test("[telemetry] enabled recordGauge caches gauges and preserves attribute
   );
 });
 
-Deno.test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, and removes callbacks on stop", async () => {
+test("[telemetry] setupProcessMetrics registers callbacks, reuses the handle, and removes callbacks on stop", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -307,10 +298,11 @@ Deno.test("[telemetry] setupProcessMetrics registers callbacks, reuses the handl
       assertEquals([...fake.observableGauges.keys()].sort(), [
         "process_cpu_seconds_total",
         "process_memory_usage_bytes",
-        "process_runtime_deno_memory_external_bytes",
-        "process_runtime_deno_memory_heap_total_bytes",
-        "process_runtime_deno_memory_heap_used_bytes",
+        "process_runtime_nodejs_memory_external_bytes",
+        "process_runtime_nodejs_memory_heap_total_bytes",
+        "process_runtime_nodejs_memory_heap_used_bytes",
         "process_uptime_seconds",
+        "v8js.memory.heap.size",
       ]);
 
       for (const state of fake.observableGauges.values()) {
@@ -333,11 +325,11 @@ Deno.test("[telemetry] setupProcessMetrics registers callbacks, reuses the handl
   );
 });
 
-Deno.test("[telemetry] withSpan sets attributes, returns values, and records Error exceptions", async () => {
+test("[telemetry] withSpan sets attributes, returns values, and records Error exceptions", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -379,11 +371,11 @@ Deno.test("[telemetry] withSpan sets attributes, returns values, and records Err
   );
 });
 
-Deno.test("[telemetry] injectTraceContext stringifies setter values when OTEL is enabled", async () => {
+test("[telemetry] injectTraceContext stringifies setter values when OTEL is enabled", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -403,11 +395,11 @@ Deno.test("[telemetry] injectTraceContext stringifies setter values when OTEL is
   );
 });
 
-Deno.test("[telemetry] withExtractedContext coerces carrier values and runs inside extracted context", async () => {
+test("[telemetry] withExtractedContext coerces carrier values and runs inside extracted context", async () => {
   const fake = createFakeOtelApi();
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -445,10 +437,10 @@ Deno.test("[telemetry] withExtractedContext coerces carrier values and runs insi
   );
 });
 
-Deno.test("[telemetry] OTEL loader failures gracefully fall back to no-op behavior", async () => {
+test("[telemetry] OTEL loader failures gracefully fall back to no-op behavior", async () => {
   await withEnv(
     {
-      OTEL_DENO: "true",
+      OTEL_ENABLED: "true",
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
@@ -472,4 +464,39 @@ Deno.test("[telemetry] OTEL loader failures gracefully fall back to no-op behavi
       assertEquals(Object.keys(carrier).length, 0);
     }
   );
+});
+
+test("[telemetry] trackHttpServerRequest counts in-flight requests and records body sizes", async () => {
+  const added: number[] = [];
+  const sizes: number[] = [];
+  const api = {
+    metrics: {
+      getMeter: () => ({
+        createUpDownCounter: () => ({ add: (value: number) => added.push(value) }),
+        createHistogram: () => ({ record: (value: number) => sizes.push(value) }),
+      }),
+    },
+  };
+  await withEnv({ OTEL_ENABLED: "true" }, async () => {
+    __setOtelApiLoaderForTests(() => Promise.resolve(api as never));
+    const req = new Request("http://localhost/orders", {
+      method: "POST",
+      body: "hello",
+      headers: { "content-length": "5" },
+    });
+    const res = await trackHttpServerRequest(req, () => new Response("ok"));
+    assertEquals(await res.text(), "ok");
+    assertEquals(added, [1, -1]);
+    assertEquals(sizes, [5]);
+  });
+});
+
+test("[telemetry] trackHttpServerRequest passes through when telemetry is disabled", async () => {
+  await withEnv({ OTEL_ENABLED: undefined }, async () => {
+    const res = await trackHttpServerRequest(
+      new Request("http://localhost/"),
+      () => new Response("plain")
+    );
+    assertEquals(await res.text(), "plain");
+  });
 });

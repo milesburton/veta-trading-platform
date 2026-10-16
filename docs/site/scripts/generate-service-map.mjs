@@ -206,7 +206,7 @@ function extractDefaultPort(scriptAbs, programName) {
   const src = fs.readFileSync(scriptAbs, "utf8");
 
   const bindRegex =
-    /const\s+([A-Z_][A-Z0-9_]*)\s*=\s*Number\(Deno\.env\.get\("([A-Z_]+_PORT)"\)\)\s*\|\|\s*(\d[_\d]*)/g;
+    /const\s+([A-Z_][A-Z0-9_]*)\s*=\s*Number\(process\.env\.([A-Z_]+_PORT)\)\s*\|\|\s*(\d[_\d]*)/g;
   const bindings = [];
   let m;
   m = bindRegex.exec(src);
@@ -234,7 +234,7 @@ function extractDefaultPort(scriptAbs, programName) {
 // by env var), so extractDefaultPort's source-file scan can't tell them
 // apart: it would report the same fallback default for every one. Prefer
 // an explicit port set inline on the command= line itself
-// (`SOME_PORT=1234 deno run ...`), which is unambiguous per program.
+// (`SOME_PORT=1234 node ...`), which is unambiguous per program.
 function extractInlineCommandPort(command) {
   const m = command.match(/\b[A-Z_]*PORT=(\d+)\b/);
   return m ? Number(m[1]) : null;

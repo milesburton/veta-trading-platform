@@ -1,30 +1,39 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
+import { createServer, type Socket } from "node:net";
+import { serveFetch } from "#veta/http";
 // FIX 4.4 Exchange — TCP listener on port 9880 (internal only)
 // Accepts FIX sessions from fix-gateway, processes NewOrderSingle messages,
 // and returns ExecutionReports using simulated fills from the market-sim.
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer } from "@veta/messaging";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer } from "#veta/messaging";
 import { isKnownCounterparty } from "./counterparties.ts";
-import { CxlRejReason, CxlRejResponseTo, ExecType, MsgType, OrdStatus, OrdType, Side, Tag } from "./fix-dictionary.ts";
 import { computeFill } from "./fill-math.ts";
+import {
+  CxlRejReason,
+  CxlRejResponseTo,
+  ExecType,
+  MsgType,
+  OrdStatus,
+  OrdType,
+  Side,
+  Tag,
+} from "./fix-dictionary.ts";
 import { isMarketOpenForOrderEntry } from "./fix-market-session.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
 import { checkRisk } from "./risk-check.ts";
 import { validateVenueRouting } from "./venue-registry.ts";
 
-const FIX_EXCHANGE_PORT = Number(Deno.env.get("FIX_EXCHANGE_PORT")) || 9_880;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) || 0.2;
-const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) || 1.0;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const RISK_ENGINE_ENABLED = Deno.env.get("RISK_ENGINE_ENABLED") !== "false";
-const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${
-  Deno.env.get("RISK_ENGINE_PORT") ?? "5032"
+const FIX_EXCHANGE_PORT = Number(process.env.FIX_EXCHANGE_PORT) || 9_880;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const PARTICIPATION_CAP = Number(process.env.EMS_PARTICIPATION_CAP) || 0.2;
+const IMPACT_PER_1000 = Number(process.env.EMS_IMPACT_PER_1000_BPS) || 1.0;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const RISK_ENGINE_ENABLED = process.env.RISK_ENGINE_ENABLED !== "false";
+const RISK_ENGINE_URL = `http://${process.env.RISK_ENGINE_HOST ?? "localhost"}:${
+  process.env.RISK_ENGINE_PORT ?? "5032"
 }`;
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
@@ -47,8 +56,9 @@ const producer = await createProducer("fix-exchange").catch((err) => {
 const SOH = "\x01";
 const FIX_TRAILER_LENGTH = 8;
 
-async function handleConnection(conn: Deno.TcpConn): Promise<void> {
-  const remote = `${conn.remoteAddr.hostname}:${conn.remoteAddr.port}`;
+async function handleConnection(conn: Socket): Promise<void> {
+  conn.setEncoding("utf8");
+  const remote = `${conn.remoteAddress}:${conn.remotePort}`;
   logger.info(`[FIX Exchange] Connection from ${remote}`);
 
   let execIdCounter = 1;
@@ -94,11 +104,8 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     targetCompID: "GATEWAY",
     heartBtInt: 30,
     onSend: async (msg: string) => {
-      try {
-        await conn.write(new TextEncoder().encode(msg));
-      } catch {
-        // connection may have closed
-      }
+      if (conn.destroyed) return;
+      await new Promise<void>((resolve) => conn.write(msg, () => resolve()));
     },
     onApplicationMessage: (tags: Map<number, string>) => {
       handleApplicationMessage(tags).catch((err) => {
@@ -489,13 +496,9 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
   }
 
   // Read loop — reassemble SOH-delimited FIX messages from the TCP stream
-  const readBuf = new Uint8Array(4096);
   try {
-    while (true) {
-      const bytesRead = await conn.read(readBuf);
-      if (bytesRead === null) break; // EOF
-
-      buffer += new TextDecoder().decode(readBuf.subarray(0, bytesRead));
+    for await (const chunk of conn) {
+      buffer += chunk as string;
 
       // A FIX message ends with 10=<checksum><SOH>
       // Split on the checksum trailer pattern so we handle multiple messages per read
@@ -512,17 +515,11 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
       }
     }
   } catch (err) {
-    if (!(err instanceof Deno.errors.BadResource)) {
-      logger.error(`[FIX Exchange] Read error (${remote})`, { detail: err });
-    }
+    logger.error(`[FIX Exchange] Read error (${remote})`, { detail: err });
   } finally {
     session.disconnect();
     sessionRegistry.delete(remote);
-    try {
-      conn.close();
-    } catch {
-      /* already closed */
-    }
+    conn.destroy();
     logger.info(`[FIX Exchange] Connection closed (${remote})`);
   }
 }
@@ -532,7 +529,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
 
 const HEALTH_PORT = FIX_EXCHANGE_PORT - 1; // 9879
 
-Deno.serve({ port: HEALTH_PORT }, (req) => {
+serveFetch({ port: HEALTH_PORT }, (req) => {
   const { pathname } = new URL(req.url);
 
   if (pathname === "/health") {
@@ -562,12 +559,11 @@ Deno.serve({ port: HEALTH_PORT }, (req) => {
   return new Response("Not found", { status: 404 });
 });
 
-const listener = Deno.listen({ port: FIX_EXCHANGE_PORT });
-logger.info(`[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`);
-logger.info(`[FIX Exchange] version=${VERSION}`);
-
-for await (const conn of listener) {
-  handleConnection(conn as Deno.TcpConn).catch((err) => {
+const listener = createServer((conn) => {
+  handleConnection(conn).catch((err) => {
     logger.error("[FIX Exchange] Unhandled connection error", { detail: err });
   });
-}
+});
+listener.listen(FIX_EXCHANGE_PORT);
+logger.info(`[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`);
+logger.info(`[FIX Exchange] version=${VERSION}`);

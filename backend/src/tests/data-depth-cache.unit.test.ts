@@ -1,4 +1,5 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals, assertRejects } from "#veta/test-assert";
 import { createSingleFlightCache } from "../journal/data-depth-cache.ts";
 
 function deferred<T>() {
@@ -11,7 +12,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-Deno.test("[data-depth-cache] concurrent callers share one in-flight load", async () => {
+test("[data-depth-cache] concurrent callers share one in-flight load", async () => {
   const pending = deferred<number>();
   let loads = 0;
   const cache = createSingleFlightCache(() => {
@@ -28,10 +29,14 @@ Deno.test("[data-depth-cache] concurrent callers share one in-flight load", asyn
   assertEquals(loads, 1);
 });
 
-Deno.test("[data-depth-cache] serves the cached value until the ttl expires", async () => {
+test("[data-depth-cache] serves the cached value until the ttl expires", async () => {
   let clock = 0;
   let loads = 0;
-  const cache = createSingleFlightCache(() => Promise.resolve(++loads), 1_000, () => clock);
+  const cache = createSingleFlightCache(
+    () => Promise.resolve(++loads),
+    1_000,
+    () => clock
+  );
 
   assertEquals(await cache.get(), 1);
   clock = 999;
@@ -40,7 +45,7 @@ Deno.test("[data-depth-cache] serves the cached value until the ttl expires", as
   assertEquals(await cache.get(), 2);
 });
 
-Deno.test("[data-depth-cache] a failed load is not cached and the next call retries", async () => {
+test("[data-depth-cache] a failed load is not cached and the next call retries", async () => {
   let loads = 0;
   const cache = createSingleFlightCache(() => {
     loads++;

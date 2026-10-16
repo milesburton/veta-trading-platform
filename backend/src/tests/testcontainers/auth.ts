@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { TestStack } from "./services.ts";
 
 export interface WsOrderResponse {

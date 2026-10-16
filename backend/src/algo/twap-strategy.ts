@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * TWAP (Time-Weighted Average Price) algorithm
  *
@@ -6,13 +6,11 @@ import "@veta/bootstrap";
  * Divides order into N time slices; on each interval publishes "orders.child"
  * to the bus. EMS subscribes and executes the fill.
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import type { RoutedOrder } from "@veta/schemas/orders";
-import { RoutedOrderSchema } from "@veta/schemas/orders";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
+import type { RoutedOrder } from "#veta/schemas/orders";
+import { RoutedOrderSchema } from "#veta/schemas/orders";
 import { armAlgoIdleExit, serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 import {
@@ -25,11 +23,11 @@ import {
   readSliceBudget,
 } from "./fill-progress.ts";
 
-const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5004;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const INTERVAL_MS = Number(Deno.env.get("TWAP_INTERVAL_MS")) || 5_000;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.TWAP_ALGO_PORT) || 5004;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const INTERVAL_MS = Number(process.env.TWAP_INTERVAL_MS) || 5_000;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 logger.info(`Starting, interval=${INTERVAL_MS}ms`);
 
@@ -42,7 +40,7 @@ const producer = await createProducer("twap-algo").catch((err) => {
 });
 
 let activeOrderCount = 0;
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("TWAP_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.TWAP_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrderCount === 0, "twap-algo");
 
 const readProgress = createProgressReader(journalBaseUrl());
@@ -85,7 +83,13 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     if (i > 0) await new Promise<void>((r) => setTimeout(r, INTERVAL_MS));
 
     const now = Date.now();
-    const budget = await readSliceBudget(readProgress, order.orderId, order.quantity, inFlight, now);
+    const budget = await readSliceBudget(
+      readProgress,
+      order.orderId,
+      order.quantity,
+      inFlight,
+      now
+    );
     if (!budget) {
       logger.warn(`Slice ${i + 1}/${numSlices} skipped for ${order.orderId}: journal unavailable`);
       continue;

@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
  * Algo integration tests — require all backend services to be running.
  *
@@ -5,8 +7,6 @@
  * then polls the journal until the order is routed, has child slices, and
  * observability events confirm the decision log is populated.
  */
-
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import {
   GATEWAY_URL,
   JOURNAL_URL,
@@ -83,7 +83,7 @@ async function pollForChildren(
 
 // ── LIMIT ─────────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] LIMIT: order routes, gets a child slice, appears in journal", async () => {
+test("[algo] LIMIT: order routes, gets a child slice, appears in journal", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -112,7 +112,7 @@ Deno.test("[algo] LIMIT: order routes, gets a child slice, appears in journal", 
 
 // ── TWAP ──────────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] TWAP: order routes, produces multiple child slices over time", async () => {
+test("[algo] TWAP: order routes, produces multiple child slices over time", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -138,7 +138,7 @@ Deno.test("[algo] TWAP: order routes, produces multiple child slices over time",
 
 // ── POV ───────────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] POV: order routes and dispatches child slices proportional to volume", async () => {
+test("[algo] POV: order routes and dispatches child slices proportional to volume", async () => {
   const token = await loginAs("bob");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -164,7 +164,7 @@ Deno.test("[algo] POV: order routes and dispatches child slices proportional to 
 
 // ── VWAP ──────────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] VWAP: order routes and dispatches volume-weighted child slices", async () => {
+test("[algo] VWAP: order routes and dispatches volume-weighted child slices", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -190,7 +190,7 @@ Deno.test("[algo] VWAP: order routes and dispatches volume-weighted child slices
 
 // ── ICEBERG ───────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] ICEBERG: order routes, initial visible slice appears as child", async () => {
+test("[algo] ICEBERG: order routes, initial visible slice appears as child", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -221,7 +221,7 @@ Deno.test("[algo] ICEBERG: order routes, initial visible slice appears as child"
 
 // ── SNIPER ────────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] SNIPER: order routes and executes aggressively (single or few slices)", async () => {
+test("[algo] SNIPER: order routes and executes aggressively (single or few slices)", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -247,7 +247,7 @@ Deno.test("[algo] SNIPER: order routes and executes aggressively (single or few 
 
 // ── ARRIVAL_PRICE ─────────────────────────────────────────────────────────────
 
-Deno.test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival price", async () => {
+test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival price", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -277,7 +277,7 @@ Deno.test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival p
 
 // ── SELL orders ───────────────────────────────────────────────────────────────
 
-Deno.test("[algo] SELL LIMIT: routes and produces child slice", async () => {
+test("[algo] SELL LIMIT: routes and produces child slice", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -301,7 +301,7 @@ Deno.test("[algo] SELL LIMIT: routes and produces child slice", async () => {
   assert(order.children.length >= 1, `Expected ≥1 child slice, got ${order.children.length}`);
 });
 
-Deno.test("[algo] SELL TWAP: routes and produces multiple child slices", async () => {
+test("[algo] SELL TWAP: routes and produces multiple child slices", async () => {
   const token = await loginAs("bob");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -345,7 +345,7 @@ async function pollUntilSettled(
   return await pollForOrder(clientOrderId, 5_000);
 }
 
-Deno.test("[perf] LIMIT fill rate: order fills completely within 60s", async () => {
+test("[perf] LIMIT fill rate: order fills completely within 60s", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -376,7 +376,7 @@ Deno.test("[perf] LIMIT fill rate: order fills completely within 60s", async () 
   );
 });
 
-Deno.test("[perf] TWAP slice count: 3 slices produce ≥2 children within 15s", async () => {
+test("[perf] TWAP slice count: 3 slices produce ≥2 children within 15s", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -409,7 +409,7 @@ Deno.test("[perf] TWAP slice count: 3 slices produce ≥2 children within 15s", 
   );
 });
 
-Deno.test("[perf] ICEBERG visible qty: each child slice ≤ visibleQty", async () => {
+test("[perf] ICEBERG visible qty: each child slice ≤ visibleQty", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -439,7 +439,7 @@ Deno.test("[perf] ICEBERG visible qty: each child slice ≤ visibleQty", async (
   }
 });
 
-Deno.test("[perf] SNIPER executes in ≤3 slices (aggressive, single-shot strategy)", async () => {
+test("[perf] SNIPER executes in ≤3 slices (aggressive, single-shot strategy)", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -467,7 +467,7 @@ Deno.test("[perf] SNIPER executes in ≤3 slices (aggressive, single-shot strate
 
 // ── IS (Implementation Shortfall) ─────────────────────────────────────────────
 
-Deno.test("[algo] IS order routes at least one child slice within 60s", async () => {
+test("[algo] IS order routes at least one child slice within 60s", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },
@@ -492,7 +492,7 @@ Deno.test("[algo] IS order routes at least one child slice within 60s", async ()
 
 // ── MOMENTUM ──────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async () => {
+test("[algo] MOMENTUM order routes at least one tranche within 120s", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, {
     headers: { cookie: `veta_user=${token}` },

@@ -385,7 +385,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     composeName: "fix-exchange",
     defaultPort: 9880,
     category: "infra",
-    description: "FIX 4.4 exchange simulator — TCP protocol port 9880 (HTTP health served on 9880-1)",
+    description:
+      "FIX 4.4 exchange simulator — TCP protocol port 9880 (HTTP health served on 9880-1)",
     tier: 0,
   },
   {
@@ -506,7 +507,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     composeName: "postgres-health",
     defaultPort: 8100,
     category: "data",
-    description: "Primary database — health via a pg_isready HTTP sidecar (Postgres has no HTTP surface of its own)",
+    description:
+      "Primary database — health via a pg_isready HTTP sidecar (Postgres has no HTTP surface of its own)",
     tier: 0,
   },
   {
@@ -537,7 +539,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     composeName: "grafana",
     defaultPort: 3000,
     category: "observability",
-    description: "Dashboards and alerting over Loki, Prometheus and Tempo, health via /grafana/api/health",
+    description:
+      "Dashboards and alerting over Loki, Prometheus and Tempo, health via /grafana/api/health",
     optional: true,
     tier: 0,
   },

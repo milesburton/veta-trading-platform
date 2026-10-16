@@ -1,3 +1,6 @@
+import { type ChildProcess, spawn } from "node:child_process";
+import type { Readable } from "node:stream";
+import { connectTcp } from "../../lib/tcp.ts";
 import { applyMigrations } from "./migrations.ts";
 import { startEphemeralPostgres } from "./postgres.ts";
 import { startEphemeralRedpanda } from "./redpanda.ts";
@@ -240,7 +243,7 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
 
 interface RunningService {
   name: ServiceName;
-  process: Deno.ChildProcess;
+  process: ChildProcess;
   port: number;
   log: string[];
 }
@@ -259,7 +262,7 @@ export interface StartStackOptions {
   perServiceEnv?: Partial<Record<ServiceName, Record<string, string>>>;
   startupTimeoutMs?: number;
   verbose?: boolean;
-  // When set (or DENO_COVERAGE_DIR env), spawn each service with
+  // When set (or COVERAGE_DIR env), spawn each service with
   // --coverage=<coverageDir>/<service-name> so .tc.test.ts runs
   // contribute to the unified coverage report. Subprocesses get up to
   // 3s on SIGTERM to flush coverage before SIGKILL (see killProcess).
@@ -268,9 +271,8 @@ export interface StartStackOptions {
 
 function buildBaseEnv(pg: ManagedPostgres, rp: ManagedRedpanda): Record<string, string> {
   return {
-    HOME: Deno.env.get("HOME") ?? "/tmp",
-    PATH: Deno.env.get("PATH") ?? "/usr/local/bin:/usr/bin:/bin",
-    DENO_DIR: Deno.env.get("DENO_DIR") ?? "/tmp/deno-cache",
+    HOME: process.env.HOME ?? "/tmp",
+    PATH: process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin",
     DATABASE_URL: pg.url,
     JOURNAL_DATABASE_URL: pg.url,
     USERS_DATABASE_URL: pg.url,
@@ -282,8 +284,8 @@ function buildBaseEnv(pg: ManagedPostgres, rp: ManagedRedpanda): Record<string, 
     RISK_ENGINE_ENABLED: "false",
     MARKET_SIM_PREWARM_TICKS: "240",
     MARKET_SIM_ALLOW_OUT_OF_HOURS: "true",
-    LOG_LEVEL: Deno.env.get("STACK_LOG_LEVEL") ?? "info",
-    OTEL_DENO: "false",
+    LOG_LEVEL: process.env.STACK_LOG_LEVEL ?? "info",
+    OTEL_ENABLED: "false",
   };
 }
 
@@ -308,8 +310,8 @@ async function waitForKafka(host: string, port: number, deadlineMs: number): Pro
   let lastErr: unknown = null;
   while (Date.now() < deadline) {
     try {
-      const sock = await Deno.connect({ hostname: host, port });
-      sock.close();
+      const sock = await connectTcp(host, port);
+      sock.destroy();
       return;
     } catch (err) {
       lastErr = err;
@@ -333,57 +335,34 @@ async function waitForLog(
   throw new Error(`Ready-log ${pattern} not seen for ${label} within ${deadlineMs}ms`);
 }
 
-async function killProcess(proc: Deno.ChildProcess): Promise<void> {
-  try {
-    proc.kill("SIGTERM");
-  } catch {
-    /* already dead */
-  }
-  let killTimer: number | undefined;
-  const killOnTimeout = new Promise<Deno.CommandStatus>((resolve) => {
+async function killProcess(proc: ChildProcess): Promise<void> {
+  if (proc.exitCode !== null || proc.signalCode !== null) return;
+  const exited = new Promise<void>((resolve) => proc.once("exit", () => resolve()));
+  proc.kill("SIGTERM");
+  let killTimer: ReturnType<typeof setTimeout> | undefined;
+  const killOnTimeout = new Promise<void>((resolve) => {
     killTimer = setTimeout(() => {
-      try {
-        proc.kill("SIGKILL");
-      } catch {
-        /* */
-      }
-      resolve({ success: false, code: -1, signal: "SIGKILL" });
+      proc.kill("SIGKILL");
+      resolve();
     }, 3_000);
   });
-  await Promise.race([proc.status, killOnTimeout]);
+  await Promise.race([exited, killOnTimeout]);
   if (killTimer !== undefined) clearTimeout(killTimer);
-  await proc.status.catch(() => {});
+  await exited;
 }
 
-function pipeToBuffer(
-  stream: ReadableStream<Uint8Array>,
-  buf: string[],
-  prefix: string,
-  echo: boolean
-): void {
-  const decoder = new TextDecoder();
-  const reader = stream.getReader();
-  (async () => {
-    try {
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) return;
-        const text = decoder.decode(value, { stream: true });
-        buf.push(text);
-        if (buf.length > 4_000) buf.splice(0, buf.length - 2_000);
-        if (echo) {
-          await Deno.stderr.write(new TextEncoder().encode(`[${prefix}] ${text}`));
-        }
-      }
-    } catch {
-      /* stream cancelled */
-    }
-  })();
+function pipeToBuffer(stream: Readable, buf: string[], prefix: string, echo: boolean): void {
+  stream.setEncoding("utf8");
+  stream.on("data", (text: string) => {
+    buf.push(text);
+    if (buf.length > 4_000) buf.splice(0, buf.length - 2_000);
+    if (echo) process.stderr.write(`[${prefix}] ${text}`);
+  });
 }
 
 export async function startStack(opts: StartStackOptions): Promise<TestStack> {
   const startupTimeoutMs = opts.startupTimeoutMs ?? 30_000;
-  const coverageDir = opts.coverageDir ?? Deno.env.get("DENO_COVERAGE_DIR");
+  const coverageDir = opts.coverageDir ?? process.env.COVERAGE_DIR;
 
   const pg = await startEphemeralPostgres();
   let rp: ManagedRedpanda | null = null;
@@ -412,25 +391,15 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
         ...(opts.perServiceEnv?.[name] ?? {}),
       };
 
-      const args = ["run", "--allow-all"];
-      if (coverageDir) {
-        // All subprocesses write to the same directory; Deno coverage
-        // profiles use random per-process filenames so they don't collide.
-        args.push(`--coverage=${coverageDir}`);
-      }
-      args.push(desc.entrypoint);
-      const cmd = new Deno.Command("deno", {
-        args,
+      const child = spawn(process.execPath, [desc.entrypoint], {
         cwd: REPO_ROOT,
-        env,
-        stdout: "piped",
-        stderr: "piped",
+        env: coverageDir ? { ...env, NODE_V8_COVERAGE: coverageDir } : env,
+        stdio: ["ignore", "pipe", "pipe"],
       });
-      const process = cmd.spawn();
       const log: string[] = [];
-      pipeToBuffer(process.stdout, log, name, opts.verbose ?? false);
-      pipeToBuffer(process.stderr, log, name, opts.verbose ?? false);
-      running.push({ name, process, port: desc.port, log });
+      pipeToBuffer(child.stdout, log, name, opts.verbose ?? false);
+      pipeToBuffer(child.stderr, log, name, opts.verbose ?? false);
+      running.push({ name, process: child, port: desc.port, log });
       urls[name] = `http://localhost:${desc.port}`;
     }
 
@@ -474,9 +443,7 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
       .map((svc) => `=== ${svc.name} (port ${svc.port}) ===\n${svc.log.join("").slice(-2000)}`)
       .join("\n");
     if (captured) {
-      await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs at startup failure ---\n${captured}\n`)
-      );
+      process.stderr.write(`\n--- service logs at startup failure ---\n${captured}\n`);
     }
     await teardown();
     throw err;

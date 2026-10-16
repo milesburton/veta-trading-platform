@@ -2,7 +2,6 @@
 **/build/**
 **/node_modules/**
 **/coverage/**
-**/.deno/**
 **/db/
 **/*.db
 **/*.db-journal

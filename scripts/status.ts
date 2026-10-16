@@ -1,12 +1,13 @@
-#!/usr/bin/env -S deno run --allow-run --allow-env
+#!/usr/bin/env node
 /**
  * VETA Service Status Dashboard
  * Live terminal UI showing supervisord service states, grouped by tier.
  * Refresh every 2 s. Press q / Ctrl-C to quit.
  *
- * Usage:  deno run --allow-run --allow-env scripts/status.ts
+ * Usage:  node scripts/status.ts
  *   or    svc-ui  (fish alias)
  */
+import { runCommand } from "../backend/src/lib/process.ts";
 
 const CONF = new URL("../supervisord.conf", import.meta.url).pathname;
 const CTL = ["supervisorctl", "-c", CONF];
@@ -110,13 +111,7 @@ interface SvcInfo {
 async function fetchStatus(): Promise<Map<string, SvcInfo>> {
   const map = new Map<string, SvcInfo>();
   try {
-    const proc = new Deno.Command(CTL[0], {
-      args: [...CTL.slice(1), "status"],
-      stdout: "piped",
-      stderr: "null",
-    });
-    const { stdout } = await proc.output();
-    const text = new TextDecoder().decode(stdout);
+    const { stdout: text } = await runCommand(CTL[0], [...CTL.slice(1), "status"]);
     for (const line of text.split("\n")) {
       if (!line.trim()) continue;
       // Format: "program-name     STATE     pid 12345, uptime 0:01:23"
@@ -320,7 +315,7 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
 }
 
 async function main() {
-  const once = Deno.args.includes("--once");
+  const once = process.argv.slice(2).includes("--once");
 
   // One-shot snapshot mode (used in login banner, no raw mode, no clear)
   if (once) {
@@ -340,20 +335,20 @@ async function main() {
 
   let running = true;
 
-  await Deno.stdout.write(new TextEncoder().encode(A.hide));
+  process.stdout.write(A.hide);
 
   const restore = () => {
-    Deno.stdout.writeSync(new TextEncoder().encode(`${A.show + A.reset}\n`));
+    process.stdout.write(`${A.show + A.reset}\n`);
   };
 
-  Deno.addSignalListener("SIGINT", () => {
+  process.on("SIGINT", () => {
     restore();
-    Deno.exit(0);
+    process.exit(0);
   });
 
-  try {
-    Deno.stdin.setRaw(true);
-  } catch {
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+  } else {
     // not a TTY (piped / CI) — just run once and exit
     const status = await fetchStatus();
     console.log(render(status, 0));
@@ -361,25 +356,24 @@ async function main() {
     return;
   }
 
-  const stdinReader = Deno.stdin.readable.getReader();
+  const keys: number[] = [];
+  let wake: (() => void) | undefined;
+  process.stdin.on("data", (chunk: Buffer) => {
+    keys.push(chunk[0]);
+    wake?.();
+  });
 
   let tick = 0;
 
   let status = await fetchStatus();
-  await Deno.stdout.write(new TextEncoder().encode(render(status, tick)));
+  process.stdout.write(render(status, tick));
 
   const readKey = async (): Promise<boolean> => {
-    try {
-      const { value } = await stdinReader.read();
-      if (!value) return false;
-      const ch = value[0];
-      if (ch === 113 || ch === 81 || ch === 27 || ch === 3) {
-        return false;
-      }
-    } catch {
-      return false;
+    while (keys.length === 0) {
+      await new Promise<void>((resolve) => (wake = resolve));
     }
-    return true;
+    const ch = keys.shift();
+    return !(ch === 113 || ch === 81 || ch === 27 || ch === 3);
   };
 
   while (running) {
@@ -397,11 +391,11 @@ async function main() {
     }
 
     status = await fetchStatus();
-    await Deno.stdout.write(new TextEncoder().encode(render(status, tick)));
+    process.stdout.write(render(status, tick));
   }
 
   restore();
-  stdinReader.cancel();
+  process.stdin.pause();
 }
 
 main();

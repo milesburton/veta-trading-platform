@@ -7,16 +7,16 @@ sidebar:
 
 ## Development environment
 
-The project uses a **Dev Container**. Open the repository in VS Code or JetBrains and accept the "Reopen in Container" prompt. This sets up Deno, Node, PostgreSQL, Redpanda, and all dependencies automatically.
+The project uses a **Dev Container**. Open the repository in VS Code or JetBrains and accept the "Reopen in Container" prompt. This sets up Node, PostgreSQL, Redpanda, and all dependencies automatically.
 
 ## Code standards
 
-- **TypeScript everywhere**: Deno for backend, Vite and React for frontend.
+- **TypeScript everywhere**: Node for backend, Vite and React for frontend.
 - **No comments in code**: the codebase should be self-documenting. Exceptions: `oxlint-disable` and `eslint-disable` directives, and the two docs-linking markers described below (`// docs: /path/` references and `// #region docs:name` / `// #endregion docs:name` region markers).
   If a piece of code has non-obvious rationale that a future reader genuinely needs (a workaround for a specific bug, a subtle invariant, why a value was chosen), write that explanation as a docs page instead of a comment, and leave a single-line reference in the code pointing at it, e.g. `// docs: /development/testing/k6-load-testing/`. Use `<Source>` (see [Source References](/veta-trading-platform/development/source-references/)) on the docs side to link back to the exact file or region, so the pair stays in sync and the build fails if either side drifts.
 - **Functional where possible**: pure functions with explicit inputs and outputs over mutable module-level state.
 - **Single source of truth**: shared types in `backend/src/types/`, shared utilities in `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`.
-- **Import map aliases**: use `@veta/http`, `@veta/messaging`, `@veta/types/orders` etc. instead of relative paths like `../lib/http.ts`.
+- **Import map aliases**: use `#veta/http`, `#veta/messaging`, `#veta/types/orders` etc. instead of relative paths like `../lib/http.ts`.
 - **Filename casing**: `backend/src/**` module files use kebab-case (`market-data-service.ts`). `frontend/src/**` module files use camelCase (`panelRegistry.ts`); React components stay PascalCase (`DashboardContext.tsx`). Test files keep the base filename's casing with a `.test.ts(x)` / `.spec.ts` / `.unit.test.ts` suffix.
 
 ### Known false-positive lint suppressions
@@ -28,9 +28,9 @@ The project uses a **Dev Container**. Open the repository in VS Code or JetBrain
 The pre-commit hook (`.husky/pre-commit`) runs these checks in order:
 
 1. Verify clean working directory.
-2. Backend lint (`deno lint`).
-3. Backend type-check (`deno task check`).
-4. Backend unit tests (`deno task test`).
+2. Backend lint (Oxlint).
+3. Backend type-check (`npm run check`).
+4. Backend unit tests (`npm run test:backend`).
 5. Frontend lint and format check (Oxlint, Oxfmt, all files).
 6. Frontend type-check (tsc, all files).
 7. Frontend unit tests (Vitest).
@@ -91,7 +91,7 @@ AI assistant used for targeted code generation, particularly in the frontend Red
 
 ### GitHub Copilot
 
-AI completion assistant used for inline code suggestions across both the backend Deno code and the frontend React/Vitest test files. Particularly useful for boilerplate test setup and Zod schema definitions.
+AI completion assistant used for inline code suggestions across both the backend Node code and the frontend React/Vitest test files. Particularly useful for boilerplate test setup and Zod schema definitions.
 
 ### nVidia Spark (DeepSeek R1)
 

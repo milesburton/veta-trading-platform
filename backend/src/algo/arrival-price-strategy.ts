@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * ARRIVAL PRICE (Implementation Shortfall) order algorithm
  *
@@ -13,24 +13,27 @@ import "@veta/bootstrap";
  * Subscribes to: orders.routed, orders.filled
  * Publishes to:  orders.child, orders.expired, algo.heartbeat
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
 import {
   FillEventSchema,
-  FillEvent,
+  type FillEvent,
   RoutedOrderSchema,
   type RoutedOrder,
-} from "@veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+} from "#veta/schemas/orders";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startExpirySweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
-const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5023;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.ARRIVAL_PRICE_ALGO_PORT) || 5023;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const VERSION = process.env.COMMIT_SHA || "dev";
 const ALGO = "ARRIVAL_PRICE" as const;
 
 /** Target interval between slices at urgency=50 (one slice every 5s). */
@@ -68,8 +71,13 @@ interface ActiveAP {
 /** Active AP orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveAP>();
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
-const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "arrival-price-algo");
+const IDLE_TIMEOUT_MS =
+  Number(process.env.ARRIVAL_PRICE_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
+const idleExit = armAlgoIdleExit(
+  IDLE_TIMEOUT_MS,
+  () => activeOrders.size === 0,
+  "arrival-price-algo"
+);
 
 await createTypedConsumer("ap-algo-routed", [
   {

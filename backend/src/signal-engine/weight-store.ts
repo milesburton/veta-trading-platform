@@ -1,5 +1,5 @@
-import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import type { FeatureName } from "@veta/types/intelligence";
+import type { Pool } from "#veta/db";
+import type { FeatureName } from "#veta/types/intelligence";
 
 export type WeightMap = Record<FeatureName, number>;
 

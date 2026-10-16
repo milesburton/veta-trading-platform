@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import { boxMuller, hashSeed, makeLcg, monteCarlo } from "../analytics/monte-carlo.ts";
 import type { OptionType } from "../analytics/types.ts";
 
@@ -31,7 +32,7 @@ function assertNonNegativeQuantiles(result: ReturnType<typeof runMonteCarlo>) {
   assert(result.p95 >= 0);
 }
 
-Deno.test("[monte-carlo] makeLcg generates valid random numbers", () => {
+test("[monte-carlo] makeLcg generates valid random numbers", () => {
   const rand = makeLcg(12_345);
   const values = Array.from({ length: 100 }, () => rand());
 
@@ -42,7 +43,7 @@ Deno.test("[monte-carlo] makeLcg generates valid random numbers", () => {
   assertAlmostEquals(makeLcg(12_345)(), makeLcg(12_345)());
 });
 
-Deno.test("[monte-carlo] hashSeed generates valid seeds", () => {
+test("[monte-carlo] hashSeed generates valid seeds", () => {
   const seed1 = hashSeed(SEED_KEY);
   const seed2 = hashSeed(SEED_KEY);
   const seed3 = hashSeed("different-key");
@@ -51,7 +52,7 @@ Deno.test("[monte-carlo] hashSeed generates valid seeds", () => {
   assert(seed1 !== seed3);
 });
 
-Deno.test("[monte-carlo] boxMuller generates normal samples", () => {
+test("[monte-carlo] boxMuller generates normal samples", () => {
   const rand = makeLcg(12_345);
   const samples = Array.from({ length: 1000 }, () => boxMuller(rand(), rand()));
 
@@ -60,7 +61,7 @@ Deno.test("[monte-carlo] boxMuller generates normal samples", () => {
   }
 });
 
-Deno.test("[monte-carlo] monteCarlo returns ordered quantiles", () => {
+test("[monte-carlo] monteCarlo returns ordered quantiles", () => {
   const result = runMonteCarlo("call");
   assertNonNegativeQuantiles(result);
 
@@ -70,7 +71,7 @@ Deno.test("[monte-carlo] monteCarlo returns ordered quantiles", () => {
   assert(result.p75 <= result.p95);
 });
 
-Deno.test("[monte-carlo] monteCarlo deterministic results", () => {
+test("[monte-carlo] monteCarlo deterministic results", () => {
   const result1 = runMonteCarlo("call");
   const result2 = runMonteCarlo("call");
 
@@ -82,12 +83,12 @@ Deno.test("[monte-carlo] monteCarlo deterministic results", () => {
 });
 
 for (const optionType of ["call", "put"] as const) {
-  Deno.test(`[monte-carlo] ${optionType} option returns non-negative quantiles`, () => {
+  test(`[monte-carlo] ${optionType} option returns non-negative quantiles`, () => {
     assertNonNegativeQuantiles(runMonteCarlo(optionType));
   });
 }
 
-Deno.test("[monte-carlo] intrinsic edge cases collapse all percentiles", () => {
+test("[monte-carlo] intrinsic edge cases collapse all percentiles", () => {
   const cases = [
     { label: "zero time", result: runMonteCarlo("call", SPOT, STRIKE, 0) },
     {
@@ -105,12 +106,12 @@ Deno.test("[monte-carlo] intrinsic edge cases collapse all percentiles", () => {
   }
 });
 
-Deno.test("[monte-carlo] edge case - high volatility", () => {
+test("[monte-carlo] edge case - high volatility", () => {
   const result = runMonteCarlo("call", SPOT, STRIKE, TIME, RATE, 1.0);
   assertNonNegativeQuantiles(result);
 });
 
-Deno.test("[monte-carlo] different path counts return valid results", () => {
+test("[monte-carlo] different path counts return valid results", () => {
   const result1 = runMonteCarlo("call");
   const result2 = runMonteCarlo("call", SPOT, STRIKE, TIME, RATE, VOL, 2000);
 
@@ -118,7 +119,7 @@ Deno.test("[monte-carlo] different path counts return valid results", () => {
   assertNonNegativeQuantiles(result2);
 });
 
-Deno.test("[monte-carlo] antithetic variates reduce variance", () => {
+test("[monte-carlo] antithetic variates reduce variance", () => {
   const result = runMonteCarlo("call");
   assertNonNegativeQuantiles(result);
 });

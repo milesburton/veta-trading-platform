@@ -12,7 +12,7 @@ The script runs `curl` inside the gateway container, because the gateway port is
 sudo apt-get install -y jq
 ```
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `VETA_GATEWAY_CONTAINER` | `veta-gateway-1` | Container to query |
-| `VETA_PLATFORM_URL` | `http://localhost` | URL shown in the banner |
+| Variable                 | Default            | Purpose                 |
+| ------------------------ | ------------------ | ----------------------- |
+| `VETA_GATEWAY_CONTAINER` | `veta-gateway-1`   | Container to query      |
+| `VETA_PLATFORM_URL`      | `http://localhost` | URL shown in the banner |

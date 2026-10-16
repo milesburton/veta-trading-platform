@@ -34,7 +34,7 @@ export function nextBookRandom(): number {
 
 // fallow-ignore-next-line unused-export
 export function __applyEnvSeedForTests(): void {
-  const envSeed = Deno.env.get("MARKET_SIM_SEED");
+  const envSeed = process.env.MARKET_SIM_SEED;
   if (envSeed && envSeed.length > 0) {
     const parsed = Number(envSeed);
     if (Number.isFinite(parsed)) seedRng(parsed | 0);

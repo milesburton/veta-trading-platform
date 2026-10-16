@@ -1,4 +1,4 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 import type { AuthResult } from "./context.ts";
 
 const AUTH_CACHE_TTL_MS = 60_000;

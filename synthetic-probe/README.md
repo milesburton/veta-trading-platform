@@ -1,6 +1,6 @@
 # Synthetic probe
 
-Deno binary that probes `https://veta.mnetcs.com/` every 60 s from the
+Node script that probes `https://veta.mnetcs.com/` every 60 s from the
 OVH edge box. Detects user-visible outages and alerts via webhook on
 3 consecutive failures.
 
@@ -10,9 +10,8 @@ OVH edge box. Detects user-visible outages and alerts via webhook on
 ## One-time install (on OVH)
 
 ```bash
-# Prereq: Deno + unzip
-sudo apt-get install -y unzip
-sudo curl -fsSL https://deno.land/install.sh | sudo DENO_INSTALL=/usr/local sh
+# Prereq: Node.js 24 or later (see https://nodejs.org/en/download)
+node --version
 
 # Dedicated user + dirs
 sudo useradd -r -s /usr/sbin/nologin -d /opt/veta-probe veta-probe

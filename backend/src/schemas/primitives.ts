@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type {
   AssetClass,
   Desk,
@@ -5,8 +6,7 @@ import type {
   OrderSide,
   OrderStatus,
   Strategy,
-} from "@veta/primitives";
-import { z } from "@veta/zod";
+} from "#veta/primitives";
 
 export type {
   AssetClass,
@@ -15,7 +15,7 @@ export type {
   OrderSide,
   OrderStatus,
   Strategy,
-} from "@veta/primitives";
+} from "#veta/primitives";
 
 export const OrderSideSchema = z.enum(["BUY", "SELL"]) satisfies z.ZodType<OrderSide>;
 

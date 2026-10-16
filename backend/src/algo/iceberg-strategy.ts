@@ -1,4 +1,4 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * ICEBERG order algorithm
  *
@@ -11,20 +11,23 @@ import "@veta/bootstrap";
  * Subscribes to: orders.routed, orders.filled
  * Publishes to:  orders.child, orders.expired, algo.heartbeat
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
-import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
-import { armAlgoIdleExit, serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createProducer, createTypedConsumer } from "#veta/messaging";
+import type { FillEvent, RoutedOrder } from "#veta/schemas/orders";
+import { FillEventSchema, RoutedOrderSchema } from "#veta/schemas/orders";
+import {
+  armAlgoIdleExit,
+  serveAlgoHealth,
+  startExpirySweep,
+  subscribeNewsSignals,
+} from "./common-http.ts";
 import { capToDepth } from "./depth-cap.ts";
 
-const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5021;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.ICEBERG_ALGO_PORT) || 5021;
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 logger.info(`Starting on port ${PORT}`);
 
@@ -54,7 +57,7 @@ interface ActiveIceberg {
 
 const activeOrders = new Map<string, ActiveIceberg>();
 
-const IDLE_TIMEOUT_MS = Number(Deno.env.get("ICEBERG_ALGO_IDLE_TIMEOUT_SECONDS") ?? "300") * 1_000;
+const IDLE_TIMEOUT_MS = Number(process.env.ICEBERG_ALGO_IDLE_TIMEOUT_SECONDS ?? "300") * 1_000;
 const idleExit = armAlgoIdleExit(IDLE_TIMEOUT_MS, () => activeOrders.size === 0, "iceberg-algo");
 
 await createTypedConsumer("iceberg-algo-routed", [

@@ -1,6 +1,6 @@
 -- Migration 0001: Initial schema — journal, fix_archive, users
 -- Idempotent: all CREATE statements use IF NOT EXISTS
--- Run via: deno run --allow-all backend/db/migrate.ts
+-- Run via: node backend/db/migrate.ts
 
 BEGIN;
 

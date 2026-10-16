@@ -1,6 +1,6 @@
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 // fallow-ignore-file complexity
-
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { loginAsVerified } from "./test-helpers.ts";
 
 const GATEWAY_URL = "http://localhost:5011";
@@ -64,7 +64,7 @@ async function deleteScenario(token: string, scenarioId: string): Promise<void> 
   await res.body?.cancel();
 }
 
-Deno.test({
+test({
   name: "scenarios: same seed produces identical fills across three runs",
   async fn() {
     const token = await loginAsVerified("alice");
@@ -113,7 +113,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+test({
   name: "scenarios: different seeds produce different fills",
   async fn() {
     const token = await loginAsVerified("alice");

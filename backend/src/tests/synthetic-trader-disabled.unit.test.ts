@@ -1,4 +1,6 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { spawn } from "node:child_process";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 
 const SCRIPT = new URL("../synthetic-trader/synthetic-trader.ts", import.meta.url).pathname;
 const PORT = 59_431;
@@ -14,10 +16,10 @@ async function waitForHealth(): Promise<Response> {
   throw new Error("synthetic-trader did not start serving /health");
 }
 
-Deno.test("[synthetic-trader-disabled] serves health and opens no upstream connections", async () => {
-  const child = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--allow-all", SCRIPT],
+test("[synthetic-trader-disabled] serves health and opens no upstream connections", async () => {
+  const child = spawn(process.execPath, [SCRIPT], {
     env: {
+      ...process.env,
       SYNTHETIC_TRADER_ENABLED: "false",
       SYNTHETIC_TRADER_PORT: String(PORT),
       GATEWAY_WS_URL: "ws://127.0.0.1:1/ws/gateway",
@@ -25,9 +27,12 @@ Deno.test("[synthetic-trader-disabled] serves health and opens no upstream conne
       MARKET_SIM_HOST: "127.0.0.1",
       MARKET_SIM_PORT: "1",
     },
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let output = "";
+  child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
+  child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
+  const exited = new Promise<void>((resolve) => child.on("close", () => resolve()));
 
   try {
     const res = await waitForHealth();
@@ -37,8 +42,7 @@ Deno.test("[synthetic-trader-disabled] serves health and opens no upstream conne
     child.kill("SIGTERM");
   }
 
-  const { stdout, stderr } = await child.output();
-  const output = new TextDecoder().decode(stdout) + new TextDecoder().decode(stderr);
+  await exited;
   assert(output.includes("disabled, serving health endpoint only"), output);
   assert(!output.includes("failed to refresh prices"), output);
   assert(!output.includes("socket"), output);

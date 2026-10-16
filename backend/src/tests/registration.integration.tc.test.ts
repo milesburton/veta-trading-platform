@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 /**
  * Registration archetype persistence (testcontainers).
  *
@@ -9,12 +11,11 @@
  *
  * Gated behind RUN_TESTCONTAINERS=1.
  */
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { getTraderArchetype } from "@veta/trader-archetypes";
+import { getTraderArchetype } from "#veta/trader-archetypes";
 import { pkce } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 10_000) => AbortSignal.timeout(ms);
 
 const PASSWORD = "register-test-passcode";
@@ -67,7 +68,7 @@ async function loginWithPassword(us: string, username: string): Promise<string> 
   return match[1];
 }
 
-Deno.test({
+test({
   name: "registration (testcontainers): archetype persists to trading_limits",
   ignore: !SHOULD_RUN,
   async fn(t) {

@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import type { MsgProducer } from "@veta/messaging";
+import { logger } from "#veta/logger";
+import type { MsgProducer } from "#veta/messaging";
 
 export interface LoadAgentConfig {
   ratePerSecond: number;
@@ -78,8 +78,8 @@ export class LoadAgent {
     lastTickAt: null,
     lastError: null,
   };
-  #intervalId: number | null = null;
-  #autoStopId: number | null = null;
+  #intervalId: ReturnType<typeof setInterval> | null = null;
+  #autoStopId: ReturnType<typeof setTimeout> | null = null;
   #orderCounter = 0;
 
   constructor(deps: LoadAgentDeps) {

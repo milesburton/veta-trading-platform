@@ -1,4 +1,4 @@
-import type { LlmPolicy } from "@veta/types/llm-advisory";
+import type { LlmPolicy } from "#veta/types/llm-advisory";
 import type { JobStore } from "./job-store.ts";
 
 export async function computeContextHash(parts: string[]): Promise<string> {

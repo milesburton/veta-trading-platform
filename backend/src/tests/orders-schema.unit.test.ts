@@ -1,5 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import {
   FillEventSchema,
   OrderCancelledSchema,
@@ -13,7 +13,7 @@ import {
   RoutedOrderSchema,
 } from "../schemas/orders.ts";
 
-Deno.test("[orders-schema] OrderNewSchema accepts minimal GUI submission", () => {
+test("[orders-schema] OrderNewSchema accepts minimal GUI submission", () => {
   const result = OrderNewSchema.safeParse({
     clientOrderId: "client-1",
     userId: "user-1",
@@ -25,7 +25,7 @@ Deno.test("[orders-schema] OrderNewSchema accepts minimal GUI submission", () =>
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] OrderNewSchema accepts RFQ-style submission with orderId + desk", () => {
+test("[orders-schema] OrderNewSchema accepts RFQ-style submission with orderId + desk", () => {
   const result = OrderNewSchema.safeParse({
     orderId: "order-1",
     clientOrderId: "client-1",
@@ -42,7 +42,7 @@ Deno.test("[orders-schema] OrderNewSchema accepts RFQ-style submission with orde
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] OrderNewSchema rejects missing userId", () => {
+test("[orders-schema] OrderNewSchema rejects missing userId", () => {
   const result = OrderNewSchema.safeParse({
     asset: "AAPL",
     side: "BUY",
@@ -56,7 +56,7 @@ Deno.test("[orders-schema] OrderNewSchema rejects missing userId", () => {
   }
 });
 
-Deno.test("[orders-schema] OrderNewSchema rejects invalid side", () => {
+test("[orders-schema] OrderNewSchema rejects invalid side", () => {
   const result = OrderNewSchema.safeParse({
     userId: "u1",
     asset: "AAPL",
@@ -66,7 +66,7 @@ Deno.test("[orders-schema] OrderNewSchema rejects invalid side", () => {
   assert(!result.success);
 });
 
-Deno.test("[orders-schema] OrderNewSchema rejects zero/negative quantity", () => {
+test("[orders-schema] OrderNewSchema rejects zero/negative quantity", () => {
   assert(
     !OrderNewSchema.safeParse({
       userId: "u1",
@@ -85,7 +85,7 @@ Deno.test("[orders-schema] OrderNewSchema rejects zero/negative quantity", () =>
   );
 });
 
-Deno.test("[orders-schema] OrderSubmittedSchema accepts full OMS payload", () => {
+test("[orders-schema] OrderSubmittedSchema accepts full OMS payload", () => {
   const result = OrderSubmittedSchema.safeParse({
     orderId: "order-1",
     clientOrderId: "client-1",
@@ -105,7 +105,7 @@ Deno.test("[orders-schema] OrderSubmittedSchema accepts full OMS payload", () =>
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] RoutedOrderSchema extends submitted with routedAt", () => {
+test("[orders-schema] RoutedOrderSchema extends submitted with routedAt", () => {
   const result = RoutedOrderSchema.safeParse({
     orderId: "order-1",
     userId: "user-1",
@@ -118,7 +118,7 @@ Deno.test("[orders-schema] RoutedOrderSchema extends submitted with routedAt", (
   assert(result.success);
 });
 
-Deno.test("[orders-schema] RoutedOrderSchema rejects without routedAt", () => {
+test("[orders-schema] RoutedOrderSchema rejects without routedAt", () => {
   const result = RoutedOrderSchema.safeParse({
     orderId: "order-1",
     userId: "user-1",
@@ -130,7 +130,7 @@ Deno.test("[orders-schema] RoutedOrderSchema rejects without routedAt", () => {
   assert(!result.success);
 });
 
-Deno.test("[orders-schema] OrderChildSchema accepts base limit algo payload", () => {
+test("[orders-schema] OrderChildSchema accepts base limit algo payload", () => {
   const result = OrderChildSchema.safeParse({
     childId: "child-1",
     parentOrderId: "order-1",
@@ -145,7 +145,7 @@ Deno.test("[orders-schema] OrderChildSchema accepts base limit algo payload", ()
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] OrderChildSchema accepts VWAP-specific payload", () => {
+test("[orders-schema] OrderChildSchema accepts VWAP-specific payload", () => {
   const result = OrderChildSchema.safeParse({
     childId: "child-1",
     parentOrderId: "order-1",
@@ -163,7 +163,7 @@ Deno.test("[orders-schema] OrderChildSchema accepts VWAP-specific payload", () =
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] OrderChildSchema accepts momentum-specific payload", () => {
+test("[orders-schema] OrderChildSchema accepts momentum-specific payload", () => {
   const result = OrderChildSchema.safeParse({
     childId: "child-1",
     parentOrderId: "order-1",
@@ -179,7 +179,7 @@ Deno.test("[orders-schema] OrderChildSchema accepts momentum-specific payload", 
   assert(result.success);
 });
 
-Deno.test("[orders-schema] FillEventSchema accepts full EMS payload", () => {
+test("[orders-schema] FillEventSchema accepts full EMS payload", () => {
   const result = FillEventSchema.safeParse({
     execId: "exec-1",
     childId: "child-1",
@@ -210,7 +210,7 @@ Deno.test("[orders-schema] FillEventSchema accepts full EMS payload", () => {
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] FillEventSchema accepts minimal RFQ fill", () => {
+test("[orders-schema] FillEventSchema accepts minimal RFQ fill", () => {
   const result = FillEventSchema.safeParse({
     execId: "exec-1",
     childId: "child-1",
@@ -224,7 +224,7 @@ Deno.test("[orders-schema] FillEventSchema accepts minimal RFQ fill", () => {
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] FillEventSchema rejects zero filledQty", () => {
+test("[orders-schema] FillEventSchema rejects zero filledQty", () => {
   const result = FillEventSchema.safeParse({
     childId: "c",
     parentOrderId: "p",
@@ -237,7 +237,7 @@ Deno.test("[orders-schema] FillEventSchema rejects zero filledQty", () => {
   assert(!result.success);
 });
 
-Deno.test("[orders-schema] OrderRejectedSchema requires reason + userId", () => {
+test("[orders-schema] OrderRejectedSchema requires reason + userId", () => {
   assert(
     OrderRejectedSchema.safeParse({
       clientOrderId: "client-1",
@@ -255,7 +255,7 @@ Deno.test("[orders-schema] OrderRejectedSchema requires reason + userId", () => 
   );
 });
 
-Deno.test("[orders-schema] OrderCancelledSchema accepts kill-switch cancellation", () => {
+test("[orders-schema] OrderCancelledSchema accepts kill-switch cancellation", () => {
   const result = OrderCancelledSchema.safeParse({
     clientOrderId: "client-1",
     userId: "user-1",
@@ -270,7 +270,7 @@ Deno.test("[orders-schema] OrderCancelledSchema accepts kill-switch cancellation
   assert(result.success, JSON.stringify(result));
 });
 
-Deno.test("[orders-schema] OrderKillCommandSchema accepts each scope", () => {
+test("[orders-schema] OrderKillCommandSchema accepts each scope", () => {
   for (const scope of ["all", "user", "algo", "market", "symbol"] as const) {
     const result = OrderKillCommandSchema.safeParse({
       scope,
@@ -284,7 +284,7 @@ Deno.test("[orders-schema] OrderKillCommandSchema accepts each scope", () => {
   }
 });
 
-Deno.test("[orders-schema] OrderKillCommandSchema rejects unknown scope", () => {
+test("[orders-schema] OrderKillCommandSchema rejects unknown scope", () => {
   const result = OrderKillCommandSchema.safeParse({
     scope: "universe",
     issuedBy: "admin",
@@ -294,7 +294,7 @@ Deno.test("[orders-schema] OrderKillCommandSchema rejects unknown scope", () => 
   assert(!result.success);
 });
 
-Deno.test("[orders-schema] OrderResumeCommandSchema accepts optional resumeAt", () => {
+test("[orders-schema] OrderResumeCommandSchema accepts optional resumeAt", () => {
   assert(
     OrderResumeCommandSchema.safeParse({
       scope: "user",
@@ -316,7 +316,7 @@ Deno.test("[orders-schema] OrderResumeCommandSchema accepts optional resumeAt", 
   );
 });
 
-Deno.test("[orders-schema] OrderKillAuditSchema requires cancelledCount + ids", () => {
+test("[orders-schema] OrderKillAuditSchema requires cancelledCount + ids", () => {
   const result = OrderKillAuditSchema.safeParse({
     scope: "user",
     targetUserId: "u1",
@@ -338,7 +338,7 @@ Deno.test("[orders-schema] OrderKillAuditSchema requires cancelledCount + ids", 
   assert(!missing.success);
 });
 
-Deno.test("[orders-schema] OrderKillCommandSchema parsed data strips unknown fields", () => {
+test("[orders-schema] OrderKillCommandSchema parsed data strips unknown fields", () => {
   const result = OrderKillCommandSchema.safeParse({
     scope: "symbol",
     scopeValue: "AAPL",

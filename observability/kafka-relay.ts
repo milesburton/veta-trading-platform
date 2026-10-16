@@ -1,3 +1,4 @@
+import { serveFetch } from "#veta/http";
 /**
  * kafka-relay — minimal Kafka → stdout relay for LGTM observability stack.
  *
@@ -9,11 +10,10 @@
  * service) so the frontend ServiceHealthPanel continues to resolve it.
  */
 
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer } from "../backend/src/lib/messaging.ts";
 
-const PORT = Number(Deno.env.get("KAFKA_RELAY_PORT")) || 5007;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.KAFKA_RELAY_PORT) || 5007;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 // ── Kafka topic groups (same as old observability-server.ts) ──────────────────
 
@@ -88,7 +88,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-Deno.serve({ port: PORT }, async (req: Request) => {
+serveFetch({ port: PORT }, async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }

@@ -12,7 +12,7 @@ The documentation is automatically generated using a script that parses the gate
 
 ```bash
 # Run the documentation generator
-deno run --allow-read --allow-write backend/scripts/generate-api-docs.ts
+node backend/scripts/generate-api-docs.ts
 ```
 
 ## Services

@@ -1,4 +1,4 @@
-import { z } from "@veta/zod";
+import { z } from "zod";
 
 export const ScenarioSpecSchema = z.object({
   seed: z.number().int(),

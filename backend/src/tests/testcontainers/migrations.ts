@@ -1,4 +1,4 @@
-import { join } from "https://deno.land/std@0.210.0/path/mod.ts";
+import { join } from "node:path";
 import { runMigrations as run } from "../../../db/runMigrations.ts";
 
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;

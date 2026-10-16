@@ -1,12 +1,11 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { replayPool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
+import "#veta/bootstrap";
+import { replayPool } from "#veta/db";
+import { corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
 import { clampLimit, isForeignKeyViolation, parseOffset } from "./replay-helpers.ts";
 
-const PORT = Number(Deno.env.get("REPLAY_PORT")) || 5_031;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.REPLAY_PORT) || 5_031;
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 async function getConfig(): Promise<Response> {
   const client = await replayPool.connect();
@@ -167,10 +166,9 @@ async function deleteSessionChunks(sessionId: string): Promise<Response> {
 async function deleteSession(sessionId: string): Promise<Response> {
   const client = await replayPool.connect();
   try {
-    const result = await client.queryArray(
-      "DELETE FROM replay.sessions WHERE id = $1",
-      [sessionId],
-    );
+    const result = await client.queryArray("DELETE FROM replay.sessions WHERE id = $1", [
+      sessionId,
+    ]);
     if (result.rowCount === 0) {
       return json({ error: "session not found" }, 404);
     }
@@ -181,7 +179,7 @@ async function deleteSession(sessionId: string): Promise<Response> {
     if (isForeignKeyViolation(err)) {
       return json(
         { error: "session has retained chunks; delete chunks first or contact compliance" },
-        409,
+        409
       );
     }
     throw err;
@@ -190,7 +188,7 @@ async function deleteSession(sessionId: string): Promise<Response> {
   }
 }
 
-Deno.serve({ port: PORT }, async (req) => {
+serveFetch({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") {
     return corsOptions();
   }

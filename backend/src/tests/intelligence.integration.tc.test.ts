@@ -1,10 +1,10 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 // fallow-ignore-file complexity
-
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 const T = (ms = 10_000) => AbortSignal.timeout(ms);
 
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
@@ -41,7 +41,7 @@ const SERVICES = [
   "gateway",
 ] as const;
 
-Deno.test({
+test({
   name: "intelligence pipeline (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {
@@ -154,7 +154,7 @@ Deno.test({
         const score = signal?.score as number;
         assert(score >= -1 && score <= 1);
         assert(["long", "short", "neutral"].includes(signal?.direction as string));
-        assert(Array.isArray(signal?.factors) && (signal?.factors as unknown[]).length === 7);
+        assert(Array.isArray(signal?.factors) && (signal.factors as unknown[]).length === 7);
       });
 
       await t.step("market-data-adapters returns seeded events", async () => {

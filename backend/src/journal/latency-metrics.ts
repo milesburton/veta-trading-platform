@@ -1,4 +1,4 @@
-import { journalPool } from "@veta/db";
+import { journalPool } from "#veta/db";
 
 export interface StageStats {
   count: number;

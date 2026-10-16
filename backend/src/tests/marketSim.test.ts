@@ -1,4 +1,5 @@
-import { assertEquals, assertNotEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals, assertNotEquals } from "#veta/test-assert";
 import { isUsEquityRegularSession, parseAllowOutOfHours } from "../market-sim/market-hours.ts";
 import {
   advanceRegime,
@@ -31,7 +32,7 @@ function runSequence(seed: number, ticks: number, asset = "AAPL"): number[] {
   return out;
 }
 
-Deno.test("US regular session observes New York time and weekends", () => {
+test("US regular session observes New York time and weekends", () => {
   assertEquals(isUsEquityRegularSession(new Date("2026-07-30T13:29:00Z")), false);
   assertEquals(isUsEquityRegularSession(new Date("2026-07-30T13:30:00Z")), true);
   assertEquals(isUsEquityRegularSession(new Date("2026-07-30T19:00:00Z")), true);
@@ -40,16 +41,16 @@ Deno.test("US regular session observes New York time and weekends", () => {
   assertEquals(isUsEquityRegularSession(new Date("2026-08-01T15:00:00Z")), false);
 });
 
-// isUsEquityRegularSession now delegates to @veta/trading-calendar's
+// isUsEquityRegularSession now delegates to #veta/trading-calendar's
 // resolveCurrentSession (ADR 0003 Phase 1), so it is holiday-aware where
 // the old hand-rolled weekday/09:30-16:00 check was not.
-Deno.test("US regular session observes exchange holidays", () => {
+test("US regular session observes exchange holidays", () => {
   // 2026-01-01 is a US_EQUITY_CALENDAR holiday, otherwise a Thursday during
   // regular hours.
   assertEquals(isUsEquityRegularSession(new Date("2026-01-01T15:00:00Z")), false);
 });
 
-Deno.test("out-of-hours startup setting defaults off and accepts true aliases", () => {
+test("out-of-hours startup setting defaults off and accepts true aliases", () => {
   assertEquals(parseAllowOutOfHours(undefined), false);
   assertEquals(parseAllowOutOfHours(""), false);
   assertEquals(parseAllowOutOfHours("true"), true);
@@ -59,27 +60,27 @@ Deno.test("out-of-hours startup setting defaults off and accepts true aliases", 
   assertEquals(parseAllowOutOfHours("maybe"), false);
 });
 
-Deno.test("seeded price sequence is deterministic", () => {
+test("seeded price sequence is deterministic", () => {
   const a = runSequence(42, 100);
   const b = runSequence(42, 100);
   assertEquals(a, b);
 });
 
-Deno.test("different seeds produce different price sequences", () => {
+test("different seeds produce different price sequences", () => {
   const a = runSequence(42, 100);
   const b = runSequence(7, 100);
   assertNotEquals(a, b);
   seedRng(null);
 });
 
-Deno.test("generatePrice returns a positive number for a known asset", () => {
+test("generatePrice returns a positive number for a known asset", () => {
   refreshSectorShocks();
   const price = generatePrice("AAPL");
   assertEquals(typeof price, "number");
   assertEquals(price > 0, true);
 });
 
-Deno.test("generatePrice never returns zero or negative (price floor holds)", () => {
+test("generatePrice never returns zero or negative (price floor holds)", () => {
   refreshSectorShocks();
   for (let i = 0; i < 1_000; i++) {
     refreshSectorShocks();
@@ -88,7 +89,7 @@ Deno.test("generatePrice never returns zero or negative (price floor holds)", ()
   }
 });
 
-Deno.test("generatePrice updates marketData in place", () => {
+test("generatePrice updates marketData in place", () => {
   refreshSectorShocks();
   const asset = "MSFT";
   generatePrice(asset);
@@ -96,7 +97,7 @@ Deno.test("generatePrice updates marketData in place", () => {
   assertEquals(marketData[asset] > 0, true);
 });
 
-Deno.test("generatePrice per-tick move is much smaller than daily volatility", () => {
+test("generatePrice per-tick move is much smaller than daily volatility", () => {
   refreshSectorShocks();
   const asset = "AAPL";
   const TICKS = 500;
@@ -115,7 +116,7 @@ Deno.test("generatePrice per-tick move is much smaller than daily volatility", (
   );
 });
 
-Deno.test("a new anchor price is reached gradually, without a jump", () => {
+test("a new anchor price is reached gradually, without a jump", () => {
   seedRng(7);
   resetRegime();
   const asset = "AAPL";
@@ -137,7 +138,7 @@ Deno.test("a new anchor price is reached gradually, without a jump", () => {
   seedPrice(asset, 100);
 });
 
-Deno.test("prewarmPrices moves prices away from their initial values", () => {
+test("prewarmPrices moves prices away from their initial values", () => {
   const before: Record<string, number> = { ...marketData };
   prewarmPrices(1_000);
   const movedCount = Object.keys(marketData).filter(
@@ -146,7 +147,7 @@ Deno.test("prewarmPrices moves prices away from their initial values", () => {
   assertEquals(movedCount > 0, true);
 });
 
-Deno.test("prewarmPrices produces meaningful intraday spread after a full warm-up", () => {
+test("prewarmPrices produces meaningful intraday spread after a full warm-up", () => {
   prewarmPrices(28_080);
   const sample = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL", "AMD", "JPM", "NFLX"];
   for (const sym of sample) {
@@ -158,7 +159,7 @@ Deno.test("prewarmPrices produces meaningful intraday spread after a full warm-u
   );
 });
 
-Deno.test("snapshotOpenPrices captures current marketData into openPrices", () => {
+test("snapshotOpenPrices captures current marketData into openPrices", () => {
   prewarmPrices(100);
   snapshotOpenPrices();
   for (const sym of Object.keys(marketData)) {
@@ -166,7 +167,7 @@ Deno.test("snapshotOpenPrices captures current marketData into openPrices", () =
   }
 });
 
-Deno.test("openPrices remain stable after further price moves", () => {
+test("openPrices remain stable after further price moves", () => {
   prewarmPrices(50);
   snapshotOpenPrices();
   const snapshot: Record<string, number> = { ...openPrices };
@@ -178,7 +179,7 @@ Deno.test("openPrices remain stable after further price moves", () => {
   assertNotEquals(changed, 0);
 });
 
-Deno.test("resetPriceEngine with prewarmTicks=0 restores anchor prices without prewarming", async () => {
+test("resetPriceEngine with prewarmTicks=0 restores anchor prices without prewarming", async () => {
   seedRng(99);
   seedPrice("AAPL", 100);
   for (let i = 0; i < 50; i++) generatePrice("AAPL");
@@ -189,7 +190,7 @@ Deno.test("resetPriceEngine with prewarmTicks=0 restores anchor prices without p
   assertNotEquals(marketData.AAPL, beforeReset);
 });
 
-Deno.test("resetPriceEngine default prewarm moves prices further from anchor than prewarmTicks=0", async () => {
+test("resetPriceEngine default prewarm moves prices further from anchor than prewarmTicks=0", async () => {
   seedRng(42);
   await resetPriceEngine({ prewarmTicks: 0 });
   const anchorPrice = marketData.AAPL;
@@ -204,7 +205,7 @@ Deno.test("resetPriceEngine default prewarm moves prices further from anchor tha
   }
 });
 
-Deno.test("generatePrice price floor holds against extreme downward shocks", async () => {
+test("generatePrice price floor holds against extreme downward shocks", async () => {
   await resetPriceEngine({ prewarmTicks: 0 });
   seedPrice("AAPL", 100);
   seedRng(7);
@@ -213,7 +214,7 @@ Deno.test("generatePrice price floor holds against extreme downward shocks", asy
   if (p <= 0) throw new Error(`floor breached: got ${p}`);
 });
 
-Deno.test("isPrewarmInProgress is true only while an async prewarm is running", async () => {
+test("isPrewarmInProgress is true only while an async prewarm is running", async () => {
   assertEquals(isPrewarmInProgress(), false);
   const running = prewarmPricesAsync(400);
   assertEquals(isPrewarmInProgress(), true);
@@ -221,7 +222,7 @@ Deno.test("isPrewarmInProgress is true only while an async prewarm is running", 
   assertEquals(isPrewarmInProgress(), false);
 });
 
-Deno.test("isPrewarmInProgress stays true until every overlapping prewarm finishes", async () => {
+test("isPrewarmInProgress stays true until every overlapping prewarm finishes", async () => {
   const long = prewarmPricesAsync(1_000);
   const short = prewarmPricesAsync(200);
   await short;
@@ -230,7 +231,7 @@ Deno.test("isPrewarmInProgress stays true until every overlapping prewarm finish
   assertEquals(isPrewarmInProgress(), false);
 });
 
-Deno.test("warmUpPrices holds ticks back until journal seeding finishes", async () => {
+test("warmUpPrices holds ticks back until journal seeding finishes", async () => {
   let release: () => void = () => {};
   const seeding = new Promise<void>((resolve) => (release = resolve));
   let seedStarted = false;
@@ -245,7 +246,7 @@ Deno.test("warmUpPrices holds ticks back until journal seeding finishes", async 
   assertEquals(isPrewarmInProgress(), false);
 });
 
-Deno.test("warmUpPrices releases ticks when seeding fails", async () => {
+test("warmUpPrices releases ticks when seeding fails", async () => {
   await warmUpPrices(0, () => Promise.reject(new Error("journal down"))).catch(() => {});
   assertEquals(isPrewarmInProgress(), false);
 });

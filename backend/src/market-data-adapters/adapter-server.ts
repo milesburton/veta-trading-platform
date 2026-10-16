@@ -1,18 +1,17 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { intelligencePool } from "@veta/db";
-import { json, serveJsonService } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createProducer } from "@veta/messaging";
-import type { MarketAdapterEvent } from "@veta/types/intelligence";
+import "#veta/bootstrap";
+import { intelligencePool } from "#veta/db";
+import { json, serveJsonService } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createProducer } from "#veta/messaging";
+import type { MarketAdapterEvent } from "#veta/types/intelligence";
 import { armIdleExit } from "../shared/idle-exit.ts";
 import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
 import { createMarketEventStore } from "./market-event-store.ts";
 
-const PORT = Number(Deno.env.get("MARKET_DATA_ADAPTERS_PORT")) || 5_016;
-const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000";
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.MARKET_DATA_ADAPTERS_PORT) || 5_016;
+const MARKET_SIM_URL = process.env.MARKET_SIM_URL || "http://localhost:5000";
+const VERSION = process.env.COMMIT_SHA || "dev";
 
 const eventStore = createMarketEventStore(intelligencePool);
 
@@ -91,7 +90,7 @@ setInterval(
 
 // The weekly seed job above is short-lived and doesn't need to touch() idleExit.
 const IDLE_TIMEOUT_MS =
-  Number(Deno.env.get("MARKET_DATA_ADAPTERS_IDLE_TIMEOUT_SECONDS") ?? "600") * 1_000;
+  Number(process.env.MARKET_DATA_ADAPTERS_IDLE_TIMEOUT_SECONDS ?? "600") * 1_000;
 const idleExit = armIdleExit(IDLE_TIMEOUT_MS);
 
 serveJsonService({

@@ -8,7 +8,7 @@ secrets:
   # Mounted as a file, never as a container environment variable. Once
   # OpenBao holds GITHUB_TICKETING_TOKEN_SECRET, the deploy adds
   # deploy/openbao/compose.secrets.yml, which sources it from there instead
-  # of the legacy host file (root:1993 mode 0640, 1993 being the deno group).
+  # of the legacy host file (root:1993 mode 0640, 1993 being the service group).
   github_ticketing_token:
     file: ./secrets/github_ticketing_token
 
@@ -71,7 +71,7 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
       - "traefik.http.routers.frontend.priority=1"
 
-  # This helper shares the Deno base image and supplies its own command in
+  # This helper shares the Node base image and supplies its own command in
   # compose.yml. Giving it a published production image prevents image-only
   # homelab deployments from depending on a locally built veta-discord-bot.
   discord-bot:
@@ -577,7 +577,7 @@ services:
       - "traefik.http.services.risk-engine.loadbalancer.server.port=5032"
       - "traefik.http.routers.risk-engine.priority=10"
 
-  # Gateway is the platform's CPU bottleneck under load — Deno is single-
+  # Gateway is the platform's CPU bottleneck under load — Node is single-
   # threaded and one replica pegs at one core. Scale horizontally with
   # `docker compose ... up -d --scale gateway=N` (or set GATEWAY_REPLICAS
   # in the deploy environment; deploy.sh wires it up).

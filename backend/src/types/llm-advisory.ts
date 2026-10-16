@@ -11,13 +11,16 @@ export type LlmTriggerMode =
   | "scheduled-batch"
   | "event-driven";
 
-export enum AdvisoryTriggerReason {
-  HIGH_CONVICTION_SIGNAL = "HIGH_CONVICTION_SIGNAL",
-  RECOMMENDATION_CHANGED = "RECOMMENDATION_CHANGED",
-  SCENARIO_RUN = "SCENARIO_RUN",
-  UI_REQUEST = "UI_REQUEST",
-  STALENESS_REFRESH = "STALENESS_REFRESH",
-}
+export const AdvisoryTriggerReason = {
+  HIGH_CONVICTION_SIGNAL: "HIGH_CONVICTION_SIGNAL",
+  RECOMMENDATION_CHANGED: "RECOMMENDATION_CHANGED",
+  SCENARIO_RUN: "SCENARIO_RUN",
+  UI_REQUEST: "UI_REQUEST",
+  STALENESS_REFRESH: "STALENESS_REFRESH",
+} as const;
+
+export type AdvisoryTriggerReason =
+  (typeof AdvisoryTriggerReason)[keyof typeof AdvisoryTriggerReason];
 
 export interface LlmJob {
   id: string;

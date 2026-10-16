@@ -1,4 +1,4 @@
-import { z } from "@veta/zod";
+import { z } from "zod";
 
 export const ParseTicketRequestSchema = z.object({
   input: z.string().min(1).max(200),

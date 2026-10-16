@@ -1,4 +1,4 @@
-import type { TradingCalendar } from "@veta/trading-calendar";
+import type { TradingCalendar } from "#veta/trading-calendar";
 
 export const US_EQUITY_CALENDAR: TradingCalendar = {
   exchangeMic: "XNAS",

@@ -1,5 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { applyExprGroup, applySort, evalExprGroup, evalOp } from "../lib/grid-query.ts";
 import type { ExprGroup } from "../types/grid-query.ts";
 
@@ -38,72 +38,72 @@ const rows = [
   },
 ];
 
-Deno.test("[gridQuery/evalOp] = string match (case-insensitive)", () => {
+test("[gridQuery/evalOp] = string match (case-insensitive)", () => {
   assert(evalOp("BUY", "=", "buy"));
   assert(!evalOp("BUY", "=", "SELL"));
 });
 
-Deno.test("[gridQuery/evalOp] = numeric match", () => {
+test("[gridQuery/evalOp] = numeric match", () => {
   assert(evalOp(100, "=", 100));
   assert(!evalOp(100, "=", 200));
 });
 
-Deno.test("[gridQuery/evalOp] != string", () => {
+test("[gridQuery/evalOp] != string", () => {
   assert(evalOp("BUY", "!=", "SELL"));
   assert(!evalOp("BUY", "!=", "buy"));
 });
 
-Deno.test("[gridQuery/evalOp] > numeric", () => {
+test("[gridQuery/evalOp] > numeric", () => {
   assert(evalOp(200, ">", 100));
   assert(!evalOp(100, ">", 200));
 });
 
-Deno.test("[gridQuery/evalOp] < numeric", () => {
+test("[gridQuery/evalOp] < numeric", () => {
   assert(evalOp(50, "<", 100));
   assert(!evalOp(100, "<", 50));
 });
 
-Deno.test("[gridQuery/evalOp] >= numeric", () => {
+test("[gridQuery/evalOp] >= numeric", () => {
   assert(evalOp(100, ">=", 100));
   assert(evalOp(101, ">=", 100));
   assert(!evalOp(99, ">=", 100));
 });
 
-Deno.test("[gridQuery/evalOp] <= numeric", () => {
+test("[gridQuery/evalOp] <= numeric", () => {
   assert(evalOp(100, "<=", 100));
   assert(evalOp(99, "<=", 100));
   assert(!evalOp(101, "<=", 100));
 });
 
-Deno.test("[gridQuery/evalOp] contains (case-insensitive)", () => {
+test("[gridQuery/evalOp] contains (case-insensitive)", () => {
   assert(evalOp("AAPL INC", "contains", "aapl"));
   assert(!evalOp("MSFT", "contains", "aapl"));
 });
 
-Deno.test("[gridQuery/evalOp] starts_with", () => {
+test("[gridQuery/evalOp] starts_with", () => {
   assert(evalOp("AAPL", "starts_with", "AA"));
   assert(!evalOp("AAPL", "starts_with", "PL"));
 });
 
-Deno.test("[gridQuery/evalOp] ends_with", () => {
+test("[gridQuery/evalOp] ends_with", () => {
   assert(evalOp("AAPL", "ends_with", "PL"));
   assert(!evalOp("AAPL", "ends_with", "AA"));
 });
 
-Deno.test("[gridQuery/evalOp] between inclusive", () => {
+test("[gridQuery/evalOp] between inclusive", () => {
   assert(evalOp(50, "between", [10, 100]));
   assert(evalOp(10, "between", [10, 100]));
   assert(evalOp(100, "between", [10, 100]));
   assert(!evalOp(101, "between", [10, 100]));
 });
 
-Deno.test("[gridQuery/evalOp] in array (case-insensitive)", () => {
+test("[gridQuery/evalOp] in array (case-insensitive)", () => {
   assert(evalOp("filled", "in", ["filled", "executing"]));
   assert(evalOp("FILLED", "in", ["filled"]));
   assert(!evalOp("queued", "in", ["filled", "executing"]));
 });
 
-Deno.test("[gridQuery/evalOp] is_null — null, undefined, empty string", () => {
+test("[gridQuery/evalOp] is_null — null, undefined, empty string", () => {
   assert(evalOp(null, "is_null", ""));
   assert(evalOp(undefined, "is_null", ""));
   assert(evalOp("", "is_null", ""));
@@ -111,21 +111,21 @@ Deno.test("[gridQuery/evalOp] is_null — null, undefined, empty string", () => 
   assert(!evalOp(0, "is_null", ""));
 });
 
-Deno.test("[gridQuery/evalOp] is_not_null", () => {
+test("[gridQuery/evalOp] is_not_null", () => {
   assert(evalOp("alice", "is_not_null", ""));
   assert(evalOp(0, "is_not_null", ""));
   assert(!evalOp(null, "is_not_null", ""));
   assert(!evalOp("", "is_not_null", ""));
 });
 
-Deno.test("[gridQuery/evalExprGroup] empty group passes every row", () => {
+test("[gridQuery/evalExprGroup] empty group passes every row", () => {
   const g: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
   for (const row of rows) {
     assert(evalExprGroup(row, g), `row ${row.id} should pass empty group`);
   }
 });
 
-Deno.test("[gridQuery/evalExprGroup] AND group — all rules must match", () => {
+test("[gridQuery/evalExprGroup] AND group — all rules must match", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -142,7 +142,7 @@ Deno.test("[gridQuery/evalExprGroup] AND group — all rules must match", () => 
   ); // AAPL BUY 10000
 });
 
-Deno.test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
+test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -156,7 +156,7 @@ Deno.test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
   assertEquals(result.map((r) => r.id).sort(), ["1", "4"]);
 });
 
-Deno.test("[gridQuery/evalExprGroup] nested AND containing OR sub-group", () => {
+test("[gridQuery/evalExprGroup] nested AND containing OR sub-group", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -184,7 +184,7 @@ Deno.test("[gridQuery/evalExprGroup] nested AND containing OR sub-group", () => 
   assertEquals(result.map((r) => r.id).sort(), ["1", "4"]);
 });
 
-Deno.test("[gridQuery/evalExprGroup] nested OR containing AND sub-group", () => {
+test("[gridQuery/evalExprGroup] nested OR containing AND sub-group", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -212,7 +212,7 @@ Deno.test("[gridQuery/evalExprGroup] nested OR containing AND sub-group", () => 
   assertEquals(result.map((r) => r.id).sort(), ["3", "4"]);
 });
 
-Deno.test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", () => {
+test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -231,7 +231,7 @@ Deno.test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", (
   assertEquals(result.map((r) => r.id).sort(), ["2", "4"]);
 });
 
-Deno.test("[gridQuery/evalExprGroup] is_not_null on userId", () => {
+test("[gridQuery/evalExprGroup] is_not_null on userId", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -250,7 +250,7 @@ Deno.test("[gridQuery/evalExprGroup] is_not_null on userId", () => {
   assertEquals(result.map((r) => r.id).sort(), ["1", "3"]);
 });
 
-Deno.test("[gridQuery/evalExprGroup] between on quantity", () => {
+test("[gridQuery/evalExprGroup] between on quantity", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -269,7 +269,7 @@ Deno.test("[gridQuery/evalExprGroup] between on quantity", () => {
   assertEquals(result.map((r) => r.id).sort(), ["1", "2", "3"]);
 });
 
-Deno.test("[gridQuery/evalExprGroup] starts_with on asset", () => {
+test("[gridQuery/evalExprGroup] starts_with on asset", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -291,7 +291,7 @@ Deno.test("[gridQuery/evalExprGroup] starts_with on asset", () => {
   ); // AAPL
 });
 
-Deno.test("[gridQuery/applySort] ascending by quantity", () => {
+test("[gridQuery/applySort] ascending by quantity", () => {
   const sorted = applySort([...rows], "quantity", "asc");
   assertEquals(
     sorted.map((r) => r.id),
@@ -299,7 +299,7 @@ Deno.test("[gridQuery/applySort] ascending by quantity", () => {
   );
 });
 
-Deno.test("[gridQuery/applySort] descending by quantity", () => {
+test("[gridQuery/applySort] descending by quantity", () => {
   const sorted = applySort([...rows], "quantity", "desc");
   assertEquals(
     sorted.map((r) => r.id),
@@ -307,7 +307,7 @@ Deno.test("[gridQuery/applySort] descending by quantity", () => {
   );
 });
 
-Deno.test("[gridQuery/applySort] ascending by string field (asset)", () => {
+test("[gridQuery/applySort] ascending by string field (asset)", () => {
   const sorted = applySort([...rows], "asset", "asc");
   assertEquals(
     sorted.map((r) => r.asset),
@@ -315,31 +315,31 @@ Deno.test("[gridQuery/applySort] ascending by string field (asset)", () => {
   );
 });
 
-Deno.test("[gridQuery/applySort] null field returns input unchanged", () => {
+test("[gridQuery/applySort] null field returns input unchanged", () => {
   const original = [...rows];
   const sorted = applySort(original, null, "asc");
   assertEquals(sorted, original);
 });
 
-Deno.test("[gridQuery/applySort] null dir returns input unchanged", () => {
+test("[gridQuery/applySort] null dir returns input unchanged", () => {
   const original = [...rows];
   const sorted = applySort(original, "quantity", null);
   assertEquals(sorted, original);
 });
 
-Deno.test("[gridQuery/applySort] does not mutate input array", () => {
+test("[gridQuery/applySort] does not mutate input array", () => {
   const original = [...rows];
   applySort(original, "quantity", "asc");
   assertEquals(original[0].id, "1"); // input order unchanged
 });
 
-Deno.test("[gridQuery/applyExprGroup] empty group returns all rows", () => {
+test("[gridQuery/applyExprGroup] empty group returns all rows", () => {
   const g: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
   const result = applyExprGroup([...rows], g);
   assertEquals(result.length, rows.length);
 });
 
-Deno.test("[gridQuery/applyExprGroup] no match returns empty array", () => {
+test("[gridQuery/applyExprGroup] no match returns empty array", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",

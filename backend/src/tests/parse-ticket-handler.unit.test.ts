@@ -1,5 +1,6 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import type { ILlmProvider, LlmProviderResponse } from "@veta/types/llm-advisory";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
+import type { ILlmProvider, LlmProviderResponse } from "#veta/types/llm-advisory";
 import { handleParseTicket } from "../llm-advisory/parse-ticket-handler.ts";
 
 interface FakeProviderOpts {
@@ -35,7 +36,7 @@ function jsonRequest(body: unknown): Request {
   });
 }
 
-Deno.test("handleParseTicket — happy path returns parsed intent", async () => {
+test("handleParseTicket — happy path returns parsed intent", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl @ 200" }), {
     provider: makeProvider(),
   });
@@ -47,7 +48,7 @@ Deno.test("handleParseTicket — happy path returns parsed intent", async () => 
   assertEquals(body.intent.limitPrice, 200);
 });
 
-Deno.test("handleParseTicket — rejects empty / oversize input with 400", async () => {
+test("handleParseTicket — rejects empty / oversize input with 400", async () => {
   const empty = await handleParseTicket(jsonRequest({ input: "" }), { provider: makeProvider() });
   assertEquals(empty.status, 400);
   await empty.body?.cancel();
@@ -59,7 +60,7 @@ Deno.test("handleParseTicket — rejects empty / oversize input with 400", async
   await oversize.body?.cancel();
 });
 
-Deno.test("handleParseTicket — returns 503 when provider not available", async () => {
+test("handleParseTicket — returns 503 when provider not available", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({ available: false }),
   });
@@ -68,7 +69,7 @@ Deno.test("handleParseTicket — returns 503 when provider not available", async
   assertEquals(body.error, "llm_unavailable");
 });
 
-Deno.test("handleParseTicket — returns 503 when provider throws", async () => {
+test("handleParseTicket — returns 503 when provider throws", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({
       generate: () => Promise.reject(new Error("boom")),
@@ -79,7 +80,7 @@ Deno.test("handleParseTicket — returns 503 when provider throws", async () => 
   assertEquals(body.error, "llm_generate_failed");
 });
 
-Deno.test("handleParseTicket — strips markdown fences from model output", async () => {
+test("handleParseTicket — strips markdown fences from model output", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl @ 200" }), {
     provider: makeProvider({
       generate: () =>
@@ -97,7 +98,7 @@ Deno.test("handleParseTicket — strips markdown fences from model output", asyn
   assertEquals(body.intent.symbol, "AAPL");
 });
 
-Deno.test("handleParseTicket — returns 422 on schema-mismatched response", async () => {
+test("handleParseTicket — returns 422 on schema-mismatched response", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({
       generate: () =>
@@ -113,7 +114,7 @@ Deno.test("handleParseTicket — returns 422 on schema-mismatched response", asy
   assertEquals(res.status, 422);
 });
 
-Deno.test("handleParseTicket — returns 422 when model emits explicit error", async () => {
+test("handleParseTicket — returns 422 when model emits explicit error", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "hedge half my book" }), {
     provider: makeProvider({
       generate: () =>
@@ -131,7 +132,7 @@ Deno.test("handleParseTicket — returns 422 when model emits explicit error", a
   assertEquals(body.error, "unparseable");
 });
 
-Deno.test("handleParseTicket — returns 422 when symbol not in allowed list", async () => {
+test("handleParseTicket — returns 422 when symbol not in allowed list", async () => {
   const res = await handleParseTicket(
     jsonRequest({ input: "buy 500 unknownsym", symbols: ["AAPL", "MSFT"] }),
     {
@@ -152,7 +153,7 @@ Deno.test("handleParseTicket — returns 422 when symbol not in allowed list", a
   assertEquals(body.error, "unknown_symbol");
 });
 
-Deno.test("handleParseTicket — passes through symbol when in allowed list", async () => {
+test("handleParseTicket — passes through symbol when in allowed list", async () => {
   const res = await handleParseTicket(
     jsonRequest({ input: "buy 500 aapl", symbols: ["AAPL", "MSFT"] }),
     {
@@ -171,7 +172,7 @@ Deno.test("handleParseTicket — passes through symbol when in allowed list", as
   assertEquals(res.status, 200);
 });
 
-Deno.test("handleParseTicket — sanitises control chars from input before prompt", async () => {
+test("handleParseTicket — sanitises control chars from input before prompt", async () => {
   let receivedPrompt = "";
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl\n\rmalicious" }), {
     provider: makeProvider({
@@ -191,7 +192,7 @@ Deno.test("handleParseTicket — sanitises control chars from input before promp
   assert(!receivedPrompt.includes("\n\r"), "control chars must be stripped from prompt");
 });
 
-Deno.test("handleParseTicket — rejects invalid JSON body with 400", async () => {
+test("handleParseTicket — rejects invalid JSON body with 400", async () => {
   const req = new Request("http://x/parse-ticket", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

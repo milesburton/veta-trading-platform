@@ -55,7 +55,6 @@
     "vscode": {
       "settings": {
         "terminal.integrated.defaultProfile.linux": "fish",
-        "deno.path": "/home/deno/.deno/bin/deno",
         "security.workspace.trust.startupPrompt": "never",
         "extensions.autoUpdate": false,
         "extensions.autoCheckUpdates": false
@@ -66,7 +65,6 @@
         "anthropic.claude-code",
         "saoudrizwan.claude-dev",
         "ZooCodeOrganization.zoo-code",
-        "denoland.vscode-deno",
         "foxundermoon.shell-format",
         "eamodio.gitlens",
         "ms-azuretools.vscode-docker",

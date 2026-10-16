@@ -1,16 +1,14 @@
-import "@veta/bootstrap";
+import "#veta/bootstrap";
 /**
  * Dark Pool ATS (Alternative Trading System).
  * See platform/dark-pool for midpoint matching, residual handling, and
  * the pre-trade transparency policy.
  */
-
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
-import { settlementDate } from "@veta/settlement";
+import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createMarketSimClient } from "#veta/market-client";
+import { createConsumer, createProducer } from "#veta/messaging";
+import { settlementDate } from "#veta/settlement";
 import {
   buildFixExecution,
   buildOrdersFilled,
@@ -19,15 +17,15 @@ import {
   type SymbolPool,
 } from "./dark-pool-matching.ts";
 
-const PORT = Number(Deno.env.get("DARK_POOL_PORT")) || 5_027;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const MATCH_CYCLE_MS = Number(Deno.env.get("MATCH_CYCLE_MS")) || 500;
-const EXPIRY_SWEEP_MS = Number(Deno.env.get("EXPIRY_SWEEP_MS")) || 2_000;
-const ORDER_TIMEOUT_MS = Number(Deno.env.get("ORDER_TIMEOUT_MS")) || 30_000;
-const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK")) || 10_000;
-const RESIDUAL_ACTION = Deno.env.get("RESIDUAL_ACTION") || "reroute";
+const PORT = Number(process.env.DARK_POOL_PORT) || 5_027;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const MATCH_CYCLE_MS = Number(process.env.MATCH_CYCLE_MS) || 500;
+const EXPIRY_SWEEP_MS = Number(process.env.EXPIRY_SWEEP_MS) || 2_000;
+const ORDER_TIMEOUT_MS = Number(process.env.ORDER_TIMEOUT_MS) || 30_000;
+const DARK_POOL_MIN_BLOCK = Number(process.env.DARK_POOL_MIN_BLOCK) || 10_000;
+const RESIDUAL_ACTION = process.env.RESIDUAL_ACTION || "reroute";
 
 interface RoutedOrder {
   orderId: string;
@@ -126,7 +124,6 @@ consumer?.onMessage((_topic, raw) => {
     `Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`
   );
 });
-
 
 async function runMatchCycle(): Promise<void> {
   const tick = marketClient.getLatest();
@@ -263,7 +260,7 @@ logger.info(
   `Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`
 );
 
-Deno.serve({ port: PORT }, (req) => {
+serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
 
   if (req.method === "OPTIONS") return corsOptions();

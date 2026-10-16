@@ -31,7 +31,7 @@ client → gateway HTTP → orders.new bus → OMS → orders.routed → algo
 
 Each scenario submits N orders (LIMIT strategy, ±2% of mid price) round-robined across 4 trader accounts, paced at ~5 orders/sec/user to stay under per-user rate limits. After publication completes, percentiles are read from `journal /metrics/latency`, which joins event timestamps per `orderId` to compute stage-by-stage durations.
 
-The runner used for this dataset is a Deno harness that drives `gateway POST /load-test` then queries `journal /metrics/latency`. A k6-driven equivalent (`k6/baseline-limit.js`) is now committed for reproducibility; see [k6/README.md](https://github.com/milesburton/veta-trading-platform/tree/main/k6) for instructions.
+The runner used for this dataset is a harness that drives `gateway POST /load-test` then queries `journal /metrics/latency`. A k6-driven equivalent (`k6/baseline-limit.js`) is now committed for reproducibility; see [k6/README.md](https://github.com/milesburton/veta-trading-platform/tree/main/k6) for instructions.
 
 **Configuration during this run:**
 

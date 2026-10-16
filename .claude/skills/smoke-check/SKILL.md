@@ -12,7 +12,7 @@ the five layers against the running stack.
 Walk the layers in order and **stop at the first failing layer** — a later layer rarely
 passes when an earlier one is broken:
 
-1. **Fleet** — `deno run --allow-run --allow-env scripts/status.ts --once`. Core services
+1. **Fleet** — `node scripts/status.ts --once`. Core services
    must be running; idle-safe groups may be down unless the change touches them.
 2. **Gateway HTTP** — `curl -sf http://localhost/api/gateway/health` should return
    `status:"ok"`.

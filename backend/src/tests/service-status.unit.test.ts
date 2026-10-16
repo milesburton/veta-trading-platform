@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import type { ServiceSpec } from "../../../shared/serviceRegistry.ts";
 import {
   buildServicesStatus,
@@ -26,28 +27,28 @@ function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status });
 }
 
-Deno.test("[probe] a 2xx becomes ok with its body", async () => {
+test("[probe] a 2xx becomes ok with its body", async () => {
   const result = await probe("http://x/health", 1_000, () =>
     Promise.resolve(jsonResponse(200, { version: "abc" }))
   );
   assertEquals(result, { kind: "ok", body: { version: "abc" } });
 });
 
-Deno.test("[probe] a non-2xx keeps its status and body", async () => {
+test("[probe] a non-2xx keeps its status and body", async () => {
   const result = await probe("http://x/health", 1_000, () =>
     Promise.resolve(jsonResponse(503, { status: "starting" }))
   );
   assertEquals(result, { kind: "http", status: 503, body: { status: "starting" } });
 });
 
-Deno.test("[probe] a non-JSON body is treated as empty", async () => {
+test("[probe] a non-JSON body is treated as empty", async () => {
   const result = await probe("http://x/health", 1_000, () =>
     Promise.resolve(new Response("OK", { status: 200 }))
   );
   assertEquals(result, { kind: "ok", body: {} });
 });
 
-Deno.test("[probe] a network failure is unreachable, whether refused or a DNS failure", async () => {
+test("[probe] a network failure is unreachable, whether refused or a DNS failure", async () => {
   for (const message of [
     "Connection refused (os error 111)",
     "dns error: failed to lookup address",
@@ -59,14 +60,14 @@ Deno.test("[probe] a network failure is unreachable, whether refused or a DNS fa
   }
 });
 
-Deno.test("[probe] a timeout is reported as timeout", async () => {
+test("[probe] a timeout is reported as timeout", async () => {
   const result = await probe("http://x/health", 1_000, () =>
     Promise.reject(new DOMException("Signal timed out.", "TimeoutError"))
   );
   assertEquals(result, { kind: "timeout" });
 });
 
-Deno.test("[pollServices] classifies each target and strips status fields from meta", async () => {
+test("[pollServices] classifies each target and strips status fields from meta", async () => {
   const fetchFn = (url: string) =>
     url.startsWith("http://up")
       ? Promise.resolve(
@@ -93,7 +94,7 @@ Deno.test("[pollServices] classifies each target and strips status fields from m
   );
 });
 
-Deno.test("[buildServicesStatus] lists the gateway first and only frontend-visible services", async () => {
+test("[buildServicesStatus] lists the gateway first and only frontend-visible services", async () => {
   const entries = await pollServices(
     [
       { spec: spec({ id: "a", composeName: "a" }), url: "http://a" },
@@ -117,7 +118,7 @@ Deno.test("[buildServicesStatus] lists the gateway first and only frontend-visib
   assertEquals(payload.checkedAt, 7);
 });
 
-Deno.test("[toHealthFlags] counts ok and standby as up, everything else as down", async () => {
+test("[toHealthFlags] counts ok and standby as up, everything else as down", async () => {
   const fetchFn = (url: string) =>
     url === "http://ok"
       ? Promise.resolve(jsonResponse(200, {}))
@@ -134,7 +135,7 @@ Deno.test("[toHealthFlags] counts ok and standby as up, everything else as down"
   assertEquals(toHealthFlags(entries), { ok: true, standby: true, error: false });
 });
 
-Deno.test("[withoutMeta] keeps every service but drops its meta", async () => {
+test("[withoutMeta] keeps every service but drops its meta", async () => {
   const entries = await pollServices(
     [{ spec: spec({ id: "a" }), url: "http://a" }],
     1_000,
@@ -142,8 +143,11 @@ Deno.test("[withoutMeta] keeps every service but drops its meta", async () => {
     () => 1
   );
   const payload = withoutMeta(buildServicesStatus("sha", entries, 1));
-  assertEquals(payload.services.map((s) => [s.id, s.meta]), [
-    ["gateway", {}],
-    ["a", {}],
-  ]);
+  assertEquals(
+    payload.services.map((s) => [s.id, s.meta]),
+    [
+      ["gateway", {}],
+      ["a", {}],
+    ]
+  );
 });

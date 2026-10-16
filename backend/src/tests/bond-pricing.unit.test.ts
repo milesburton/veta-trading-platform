@@ -1,7 +1,8 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { priceBond } from "../analytics/bond-pricing.ts";
 
-Deno.test("[bond-pricing] priceBond returns valid results", () => {
+test("[bond-pricing] priceBond returns valid results", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 20, // 10 years, semi-annual
@@ -20,7 +21,7 @@ Deno.test("[bond-pricing] priceBond returns valid results", () => {
   assert(result.computedAt !== undefined);
 });
 
-Deno.test("[bond-pricing] bond price is reasonable", () => {
+test("[bond-pricing] bond price is reasonable", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -36,7 +37,7 @@ Deno.test("[bond-pricing] bond price is reasonable", () => {
   assert(result.price > 1000);
 });
 
-Deno.test("[bond-pricing] zero coupon bond", () => {
+test("[bond-pricing] zero coupon bond", () => {
   const result = priceBond({
     couponRate: 0,
     totalPeriods: 20,
@@ -49,7 +50,7 @@ Deno.test("[bond-pricing] zero coupon bond", () => {
   assert(result.price < 1000);
 });
 
-Deno.test("[bond-pricing] edge case - zero yield", () => {
+test("[bond-pricing] edge case - zero yield", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -62,7 +63,7 @@ Deno.test("[bond-pricing] edge case - zero yield", () => {
   assert(result.price > 1000);
 });
 
-Deno.test("[bond-pricing] edge case - zero periods", () => {
+test("[bond-pricing] edge case - zero periods", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 0,
@@ -78,7 +79,7 @@ Deno.test("[bond-pricing] edge case - zero periods", () => {
   assertEquals(result.dv01, 0);
 });
 
-Deno.test("[bond-pricing] cash flows are computed correctly", () => {
+test("[bond-pricing] cash flows are computed correctly", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 4, // 2 years
@@ -99,7 +100,7 @@ Deno.test("[bond-pricing] cash flows are computed correctly", () => {
   assert(result.cashFlows[3].cf > 1000); // Includes principal
 });
 
-Deno.test("[bond-pricing] duration is positive", () => {
+test("[bond-pricing] duration is positive", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -112,7 +113,7 @@ Deno.test("[bond-pricing] duration is positive", () => {
   assert(result.modifiedDuration >= 0);
 });
 
-Deno.test("[bond-pricing] convexity is positive", () => {
+test("[bond-pricing] convexity is positive", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -125,7 +126,7 @@ Deno.test("[bond-pricing] convexity is positive", () => {
   assert(result.convexity >= 0);
 });
 
-Deno.test("[bond-pricing] dv01 is positive", () => {
+test("[bond-pricing] dv01 is positive", () => {
   const result = priceBond({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -138,7 +139,7 @@ Deno.test("[bond-pricing] dv01 is positive", () => {
   assert(result.dv01 >= 0);
 });
 
-Deno.test("[bond-pricing] different face values", () => {
+test("[bond-pricing] different face values", () => {
   const result1 = priceBond({
     couponRate: 0.05,
     totalPeriods: 20,
@@ -162,7 +163,7 @@ Deno.test("[bond-pricing] different face values", () => {
   assert(result1.dv01 > result2.dv01);
 });
 
-Deno.test("[bond-pricing] returns computedAt timestamp", () => {
+test("[bond-pricing] returns computedAt timestamp", () => {
   const before = Date.now();
   const result = priceBond({
     couponRate: 0.05,

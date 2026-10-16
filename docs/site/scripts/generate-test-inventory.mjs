@@ -8,8 +8,12 @@ const docsSiteRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(docsSiteRoot, "..", "..");
 const outputPath = path.resolve(docsSiteRoot, "src/data/test-inventory.json");
 
-const denoJson = JSON.parse(
-  fs.readFileSync(path.join(repoRoot, "deno.json"), "utf8"),
+const unitExcludes = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, "vitest.exclude.json"), "utf8"),
+);
+const integrationConfig = fs.readFileSync(
+  path.join(repoRoot, "vitest.integration.config.ts"),
+  "utf8",
 );
 
 function extractFilesFromTask(taskCmd) {
@@ -18,15 +22,12 @@ function extractFilesFromTask(taskCmd) {
   return [...new Set(matches)];
 }
 
-function ignoredBasenameMatchers(taskCmd) {
-  const raw = taskCmd?.match(/--ignore='([^']*)'/)?.[1] ?? "";
-  return raw
-    .split(",")
-    .filter(Boolean)
+function ignoredBasenameMatchers(globs) {
+  return globs
     .map((glob) => {
       const base = glob.replace(/^\*\*\//, "");
       if (base.includes("/")) {
-        throw new Error(`Unsupported --ignore pattern in deno.json: ${glob}`);
+        throw new Error(`Unsupported exclude pattern in vitest.exclude.json: ${glob}`);
       }
       const body = base
         .split("*")
@@ -46,12 +47,12 @@ function walkBackendTests(dir) {
   });
 }
 
-function countDenoTests(absPath) {
+function countBackendTests(absPath) {
   if (!fs.existsSync(absPath)) return 0;
   const content = fs.readFileSync(absPath, "utf8");
-  const denoTest = (content.match(/\bDeno\.test\s*\(/g) ?? []).length;
+  const testCalls = (content.match(/(?<![\w.$])test\s*\(/g) ?? []).length;
   const tStep = (content.match(/\bt\.step\s*\(/g) ?? []).length;
-  return denoTest + tStep;
+  return testCalls + tStep;
 }
 
 function walkFrontendTests(dir) {
@@ -92,19 +93,19 @@ function backendSuite(taskCmd) {
   let cases = 0;
   const perFile = {};
   for (const rel of files) {
-    const c = countDenoTests(path.join(repoRoot, rel));
+    const c = countBackendTests(path.join(repoRoot, rel));
     cases += c;
     perFile[path.basename(rel)] = c;
   }
   return { files: files.length, cases, perFile };
 }
 
-function backendUnitSuite(taskCmd) {
-  const ignored = ignoredBasenameMatchers(taskCmd);
+function backendUnitSuite(excludeGlobs) {
+  const ignored = ignoredBasenameMatchers(excludeGlobs);
   const counted = walkBackendTests(path.join(repoRoot, "backend"))
     .filter((full) => !ignored.some((re) => re.test(path.basename(full))))
     .sort()
-    .map((full) => [path.basename(full), countDenoTests(full)]);
+    .map((full) => [path.basename(full), countBackendTests(full)]);
   return {
     files: counted.length,
     cases: counted.reduce((sum, [, c]) => sum + c, 0),
@@ -112,11 +113,14 @@ function backendUnitSuite(taskCmd) {
   };
 }
 
-const backendUnit = backendUnitSuite(denoJson.tasks?.["test:unit"]);
-const backendIntegration = backendSuite(denoJson.tasks?.["test:integration"]);
-const backendSmoke = backendSuite(denoJson.tasks?.["test:smoke"]);
+const backendUnit = backendUnitSuite(unitExcludes);
+const backendIntegration = backendSuite(integrationConfig);
+const backendSmoke = backendSuite(undefined);
 const backendTestcontainers = backendSuite(
-  denoJson.tasks?.["test:testcontainers"],
+  walkBackendTests(path.join(repoRoot, "backend/src/tests"))
+    .filter((full) => /\.tc\.test\.ts$|testcontainers\.[^/]*\.test\.ts$/.test(full))
+    .map((full) => path.relative(repoRoot, full))
+    .join(" "),
 );
 
 const frontendTestRoot = path.join(repoRoot, "frontend/src");

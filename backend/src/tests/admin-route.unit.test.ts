@@ -1,14 +1,15 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 import { LoadAgent } from "../gateway/load-agent.ts";
 import { handleAdminRoute, testTraderIds } from "../gateway/routes/admin.ts";
 
 const realFetch = globalThis.fetch;
-const realLoadTestUserIds = Deno.env.get("LOAD_TEST_USER_IDS");
+const realLoadTestUserIds = process.env.LOAD_TEST_USER_IDS;
 
 function restoreEnv() {
-  if (realLoadTestUserIds === undefined) Deno.env.delete("LOAD_TEST_USER_IDS");
-  else Deno.env.set("LOAD_TEST_USER_IDS", realLoadTestUserIds);
+  if (realLoadTestUserIds === undefined) delete process.env["LOAD_TEST_USER_IDS"];
+  else process.env["LOAD_TEST_USER_IDS"] = realLoadTestUserIds;
 }
 
 function makeFakeProducer() {
@@ -18,10 +19,7 @@ function makeFakeProducer() {
   } as unknown as GatewayContext["producer"];
 }
 
-function makeContext(
-  role = "trader",
-  overrides: Partial<GatewayContext> = {}
-): GatewayContext {
+function makeContext(role = "trader", overrides: Partial<GatewayContext> = {}): GatewayContext {
   const ctx: Record<string, unknown> = {
     requireAuth: (_req: Request) =>
       Promise.resolve({ user: { id: "u-1", name: "Test User", role, avatar_emoji: "🧪" } }),
@@ -46,8 +44,8 @@ function unauthContext(): GatewayContext {
   return ctx as unknown as GatewayContext;
 }
 
-Deno.test("testTraderIds parses a comma-separated env var, trimming whitespace", () => {
-  Deno.env.set("LOAD_TEST_USER_IDS", " u-1, u-2 ,u-3");
+test("testTraderIds parses a comma-separated env var, trimming whitespace", () => {
+  process.env["LOAD_TEST_USER_IDS"] = " u-1, u-2 ,u-3";
   try {
     assertEquals(testTraderIds(), ["u-1", "u-2", "u-3"]);
   } finally {
@@ -55,8 +53,8 @@ Deno.test("testTraderIds parses a comma-separated env var, trimming whitespace",
   }
 });
 
-Deno.test("testTraderIds returns an empty array when unset", () => {
-  Deno.env.delete("LOAD_TEST_USER_IDS");
+test("testTraderIds returns an empty array when unset", () => {
+  delete process.env["LOAD_TEST_USER_IDS"];
   try {
     assertEquals(testTraderIds(), []);
   } finally {
@@ -64,12 +62,12 @@ Deno.test("testTraderIds returns an empty array when unset", () => {
   }
 });
 
-Deno.test("handleAdminRoute returns null for unrecognised paths", () => {
+test("handleAdminRoute returns null for unrecognised paths", () => {
   const result = handleAdminRoute(new Request("http://localhost/nope"), "/nope", makeContext());
   assertEquals(result, null);
 });
 
-Deno.test("handleAdminRoute returns null for a recognised path with the wrong method", () => {
+test("handleAdminRoute returns null for a recognised path with the wrong method", () => {
   const result = handleAdminRoute(
     new Request("http://localhost/load-test", { method: "GET" }),
     "/load-test",
@@ -78,7 +76,7 @@ Deno.test("handleAdminRoute returns null for a recognised path with the wrong me
   assertEquals(result, null);
 });
 
-Deno.test("handleAdminRoute dispatches GET /admin/market-hours", async () => {
+test("handleAdminRoute dispatches GET /admin/market-hours", async () => {
   const fetchSpy = () =>
     Promise.resolve(new Response(JSON.stringify({ assetClasses: {} }), { status: 200 }));
   globalThis.fetch = fetchSpy as typeof fetch;
@@ -96,7 +94,7 @@ Deno.test("handleAdminRoute dispatches GET /admin/market-hours", async () => {
   }
 });
 
-Deno.test("handleAdminRoute dispatches POST /load-gen/start, /status, /stop", async () => {
+test("handleAdminRoute dispatches POST /load-gen/start, /status, /stop", async () => {
   const ctx = makeContext("oncall");
 
   const startResult = handleAdminRoute(
@@ -127,7 +125,7 @@ Deno.test("handleAdminRoute dispatches POST /load-gen/start, /status, /stop", as
   assertEquals(stopRes.status, 200);
 });
 
-Deno.test("/load-gen/start returns 409 on a double-start", async () => {
+test("/load-gen/start returns 409 on a double-start", async () => {
   const ctx = makeContext("oncall");
   const first = await handleAdminRoute(
     new Request("http://localhost/load-gen/start", { method: "POST" }),
@@ -147,7 +145,7 @@ Deno.test("/load-gen/start returns 409 on a double-start", async () => {
   ctx.loadAgent.stop({ userId: "u-1", role: "oncall" });
 });
 
-Deno.test("/admin/market-hours rejects non-admin roles", async () => {
+test("/admin/market-hours rejects non-admin roles", async () => {
   const result = handleAdminRoute(
     new Request("http://localhost/admin/market-hours"),
     "/admin/market-hours",
@@ -158,7 +156,7 @@ Deno.test("/admin/market-hours rejects non-admin roles", async () => {
   assertEquals(res.status, 403);
 });
 
-Deno.test("/load-gen/start rejects roles below admin/oncall", async () => {
+test("/load-gen/start rejects roles below admin/oncall", async () => {
   const result = handleAdminRoute(
     new Request("http://localhost/load-gen/start", { method: "POST" }),
     "/load-gen/start",
@@ -169,7 +167,7 @@ Deno.test("/load-gen/start rejects roles below admin/oncall", async () => {
   assertEquals(res.status, 403);
 });
 
-Deno.test("/load-gen/status rejects an unauthenticated request", async () => {
+test("/load-gen/status rejects an unauthenticated request", async () => {
   const result = handleAdminRoute(
     new Request("http://localhost/load-gen/status"),
     "/load-gen/status",
@@ -180,7 +178,7 @@ Deno.test("/load-gen/status rejects an unauthenticated request", async () => {
   assertEquals(res.status, 401);
 });
 
-Deno.test("/admin/market-hours returns 502 when market-sim is unreachable", async () => {
+test("/admin/market-hours returns 502 when market-sim is unreachable", async () => {
   globalThis.fetch = (() => Promise.reject(new Error("connection refused"))) as typeof fetch;
   try {
     const result = handleAdminRoute(
@@ -196,7 +194,7 @@ Deno.test("/admin/market-hours returns 502 when market-sim is unreachable", asyn
   }
 });
 
-Deno.test("/market-hours lets any authenticated role read the market-hours mode", async () => {
+test("/market-hours lets any authenticated role read the market-hours mode", async () => {
   globalThis.fetch = (() =>
     Promise.resolve(
       new Response(JSON.stringify({ assetClasses: {} }), { status: 200 })
@@ -214,7 +212,7 @@ Deno.test("/market-hours lets any authenticated role read the market-hours mode"
   }
 });
 
-Deno.test("/market-hours rejects an unauthenticated request", async () => {
+test("/market-hours rejects an unauthenticated request", async () => {
   const res = await handleAdminRoute(
     new Request("http://localhost/market-hours"),
     "/market-hours",
@@ -224,7 +222,7 @@ Deno.test("/market-hours rejects an unauthenticated request", async () => {
   assertEquals(res.status, 401);
 });
 
-Deno.test("/market-hours is read-only", () => {
+test("/market-hours is read-only", () => {
   const result = handleAdminRoute(
     new Request("http://localhost/market-hours", { method: "PUT", body: "{}" }),
     "/market-hours",
@@ -233,7 +231,7 @@ Deno.test("/market-hours is read-only", () => {
   assertEquals(result, null);
 });
 
-Deno.test("/admin/market-hours PUT stamps the admin's id over any client-supplied updatedBy", async () => {
+test("/admin/market-hours PUT stamps the admin's id over any client-supplied updatedBy", async () => {
   let forwarded: unknown;
   globalThis.fetch = ((_url: string, init?: RequestInit) => {
     forwarded = JSON.parse(String(init?.body));
@@ -256,7 +254,7 @@ Deno.test("/admin/market-hours PUT stamps the admin's id over any client-supplie
   }
 });
 
-Deno.test("/admin/market-hours PUT rejects a non-object body without calling market-sim", async () => {
+test("/admin/market-hours PUT rejects a non-object body without calling market-sim", async () => {
   let called = false;
   globalThis.fetch = (() => {
     called = true;

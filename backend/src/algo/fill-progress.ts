@@ -1,4 +1,4 @@
-import { z } from "@veta/zod";
+import { z } from "zod";
 
 export const OrderProgressSchema = z.object({
   orderId: z.string(),
@@ -34,11 +34,11 @@ export interface TrackedOrder {
 
 export type OrderOutcome = "working" | "complete" | "expired";
 
-export const CHILD_SETTLE_MS = Number(Deno.env.get("ALGO_CHILD_SETTLE_MS")) || 3_000;
+export const CHILD_SETTLE_MS = Number(process.env.ALGO_CHILD_SETTLE_MS) || 3_000;
 
 export function journalBaseUrl(): string {
-  const host = Deno.env.get("JOURNAL_HOST") ?? "localhost";
-  const port = Deno.env.get("JOURNAL_PORT") ?? "5009";
+  const host = process.env.JOURNAL_HOST ?? "localhost";
+  const port = process.env.JOURNAL_PORT ?? "5009";
   return `http://${host}:${port}`;
 }
 

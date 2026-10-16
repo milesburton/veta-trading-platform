@@ -1,5 +1,6 @@
-import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { assert, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
+import { Pool } from "#veta/db";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertGreater } from "#veta/test-assert";
 import { createJobStore } from "../llm-advisory/job-store.ts";
 import type {
   AdvisoryNote,
@@ -12,7 +13,7 @@ import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
 function baseJob(overrides: Partial<Omit<LlmJob, "id">> = {}): Omit<LlmJob, "id"> {
   return {
@@ -88,7 +89,7 @@ function baseResponseAudit(jobId: string): Omit<LlmResponseAudit, "id"> {
   };
 }
 
-Deno.test({
+test({
   name: "[job-store] full lifecycle against a real Postgres instance",
   ignore: !SHOULD_RUN,
   async fn(t) {

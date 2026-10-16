@@ -1,5 +1,5 @@
 x-otel-common: &otel-common
-  OTEL_DENO: "true"
+  OTEL_ENABLED: "true"
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-http://host.docker.internal:4318}
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${VITE_DEPLOYMENT:-local}

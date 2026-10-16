@@ -1,4 +1,6 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { readFileSync } from "node:fs";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
@@ -15,10 +17,10 @@ function composeServiceNames(composeText: string): Set<string> {
   return new Set([...body.matchAll(/^ {2}([a-zA-Z0-9_-]+):\s*$/gm)].map((m) => m[1]));
 }
 
-Deno.test("[compose] every registry service has a compose service of the same name", () => {
+test("[compose] every registry service has a compose service of the same name", () => {
   const defined = new Set(
     COMPOSE_FILES.flatMap((file) => [
-      ...composeServiceNames(Deno.readTextFileSync(`${REPO_ROOT}${file}`)),
+      ...composeServiceNames(readFileSync(`${REPO_ROOT}${file}`, "utf8")),
     ])
   );
   const missing = SERVICE_REGISTRY.map((s) => s.composeName).filter((name) => !defined.has(name));

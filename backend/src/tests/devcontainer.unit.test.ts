@@ -1,5 +1,8 @@
-import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@0.217";
-import { parse as parseJsonc } from "jsr:@std/jsonc@0.224";
+import { readFile, stat } from "node:fs/promises";
+import { parse as parseJsonc } from "jsonc-parser";
+import { test } from "#veta/test";
+import { assert, assertEquals, assertStringIncludes } from "#veta/test-assert";
+import { runCommand } from "../lib/process.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const DEVCONTAINER_JSON = `${REPO_ROOT}.devcontainer/devcontainer.json`;
@@ -13,20 +16,20 @@ type DevcontainerConfig = {
 };
 
 async function loadDevcontainer(): Promise<DevcontainerConfig> {
-  const raw = await Deno.readTextFile(DEVCONTAINER_JSON);
+  const raw = await readFile(DEVCONTAINER_JSON, "utf8");
   return parseJsonc(raw) as DevcontainerConfig;
 }
 
-Deno.test("[devcontainer] devcontainer.json parses as valid JSONC", async () => {
+test("[devcontainer] devcontainer.json parses as valid JSONC", async () => {
   const cfg = await loadDevcontainer();
   if (!cfg.workspaceFolder) {
     throw new Error("workspaceFolder must be set");
   }
 });
 
-Deno.test("[devcontainer] post-start.sh has no hardcoded workspace path that diverges from workspaceFolder", async () => {
+test("[devcontainer] post-start.sh has no hardcoded workspace path that diverges from workspaceFolder", async () => {
   const cfg = await loadDevcontainer();
-  const script = await Deno.readTextFile(POST_START_SH);
+  const script = await readFile(POST_START_SH, "utf8");
   const workspace = cfg.workspaceFolder;
 
   const match = script.match(/^workspace_dir=["']?([^"'$\n]+)["']?/m);
@@ -51,27 +54,17 @@ Deno.test("[devcontainer] post-start.sh has no hardcoded workspace path that div
   }
 });
 
-Deno.test("[devcontainer] post-start.sh is syntactically valid bash", async () => {
-  const cmd = new Deno.Command("bash", { args: ["-n", POST_START_SH] });
-  const { code, stderr } = await cmd.output();
-  assertEquals(
-    code,
-    0,
-    `bash -n reported syntax errors in post-start.sh:\n${new TextDecoder().decode(stderr)}`
-  );
+test("[devcontainer] post-start.sh is syntactically valid bash", async () => {
+  const { code, stderr } = await runCommand("bash", ["-n", POST_START_SH]);
+  assertEquals(code, 0, `bash -n reported syntax errors in post-start.sh:\n${stderr}`);
 });
 
-Deno.test("[devcontainer] post-create.sh is syntactically valid bash", async () => {
-  const cmd = new Deno.Command("bash", { args: ["-n", POST_CREATE_SH] });
-  const { code, stderr } = await cmd.output();
-  assertEquals(
-    code,
-    0,
-    `bash -n reported syntax errors in post-create.sh:\n${new TextDecoder().decode(stderr)}`
-  );
+test("[devcontainer] post-create.sh is syntactically valid bash", async () => {
+  const { code, stderr } = await runCommand("bash", ["-n", POST_CREATE_SH]);
+  assertEquals(code, 0, `bash -n reported syntax errors in post-create.sh:\n${stderr}`);
 });
 
-Deno.test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so the script does not need to hardcode it", async () => {
+test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so the script does not need to hardcode it", async () => {
   const cfg = await loadDevcontainer();
   const cmd = cfg.postStartCommand ?? "";
   assertStringIncludes(
@@ -81,7 +74,7 @@ Deno.test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so 
   );
 });
 
-Deno.test("[devcontainer] postCreateCommand does not use husky's deprecated 'install <dir>' form", async () => {
+test("[devcontainer] postCreateCommand does not use husky's deprecated 'install <dir>' form", async () => {
   const cfg = await loadDevcontainer();
   const cmd = cfg.postCreateCommand ?? "";
   assertStringIncludes(
@@ -101,7 +94,7 @@ Deno.test("[devcontainer] postCreateCommand does not use husky's deprecated 'ins
   );
 });
 
-Deno.test("[devcontainer] postCreateCommand and postStartCommand reference paths that exist", async () => {
+test("[devcontainer] postCreateCommand and postStartCommand reference paths that exist", async () => {
   const cfg = await loadDevcontainer();
   const checks = [
     {
@@ -120,7 +113,7 @@ Deno.test("[devcontainer] postCreateCommand and postStartCommand reference paths
       if (!cmd.includes(p)) continue;
       const fullPath = `${REPO_ROOT}${p}`;
       try {
-        await Deno.stat(fullPath);
+        await stat(fullPath);
       } catch {
         throw new Error(`${hook} references "${p}" but ${fullPath} does not exist`);
       }

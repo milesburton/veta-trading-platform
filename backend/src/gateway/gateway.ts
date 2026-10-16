@@ -1,13 +1,12 @@
-import "@veta/bootstrap";
-// fallow-ignore-file unused-file
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { serveDir } from "jsr:@std/http@1.0.25/file-server";
-import { getCookieToken } from "@veta/auth";
-import { decodePathSegment } from "@veta/http";
-import { logger, registerLogSink } from "@veta/logger";
-import { createConsumer, createProducer } from "@veta/messaging";
-import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
+import "#veta/bootstrap";
+import { getCookieToken } from "#veta/auth";
+import { decodePathSegment, serveFetch } from "#veta/http";
+import { logger, registerLogSink } from "#veta/logger";
+import { createConsumer, createProducer } from "#veta/messaging";
+import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+// fallow-ignore-file unused-file
+import { serveDir } from "../lib/static-files.ts";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
@@ -48,8 +47,8 @@ import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system
 import { getTicketingHealth, startTicketingHealthMonitor } from "./ticketing.ts";
 import { proxyWithWake } from "./wake.ts";
 
-const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const PORT = Number(process.env.GATEWAY_PORT) || 5_011;
+const VERSION = process.env.COMMIT_SHA || "dev";
 const STARTED_AT = Date.now();
 
 startTicketingHealthMonitor();
@@ -58,55 +57,55 @@ registerLogSink((level, msg, raw) => {
   recordLogLine({ service: "gateway", level, message: msg }, raw);
 });
 
-const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
-const USER_SERVICE_URL = `http://${Deno.env.get("USER_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
-const ANALYTICS_URL = `http://${Deno.env.get("ANALYTICS_HOST") ?? "localhost"}:${Deno.env.get("ANALYTICS_PORT") ?? "5014"}`;
-const MARKET_DATA_URL = `http://${Deno.env.get("MARKET_DATA_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
-const FEATURE_ENGINE_URL = `http://${Deno.env.get("FEATURE_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("FEATURE_ENGINE_PORT") ?? "5017"}`;
-const SIGNAL_ENGINE_URL = `http://${Deno.env.get("SIGNAL_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("SIGNAL_ENGINE_PORT") ?? "5018"}`;
-const RECOMMENDATION_ENGINE_URL = `http://${Deno.env.get("RECOMMENDATION_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RECOMMENDATION_ENGINE_PORT") ?? "5019"}`;
-const SCENARIO_ENGINE_URL = `http://${Deno.env.get("SCENARIO_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("SCENARIO_ENGINE_PORT") ?? "5020"}`;
-const LLM_ADVISORY_URL = `http://${Deno.env.get("LLM_ADVISORY_HOST") ?? "localhost"}:${Deno.env.get("LLM_ADVISORY_PORT") ?? "5024"}`;
-const LLM_WORKER_URL = `http://${Deno.env.get("LLM_WORKER_HOST") ?? "localhost"}:${Deno.env.get("LLM_WORKER_PORT") ?? "5033"}`;
-const EMS_URL = `http://${Deno.env.get("EMS_HOST") ?? "localhost"}:${Deno.env.get("EMS_PORT") ?? "5001"}`;
-const OMS_URL = `http://${Deno.env.get("OMS_HOST") ?? "localhost"}:${Deno.env.get("OMS_PORT") ?? "5002"}`;
-const LIMIT_ALGO_URL = `http://${Deno.env.get("LIMIT_ALGO_HOST") ?? "localhost"}:${Deno.env.get("LIMIT_ALGO_PORT") ?? "5003"}`;
-const TWAP_ALGO_URL = `http://${Deno.env.get("TWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("TWAP_ALGO_PORT") ?? "5004"}`;
-const POV_ALGO_URL = `http://${Deno.env.get("POV_ALGO_HOST") ?? "localhost"}:${Deno.env.get("POV_ALGO_PORT") ?? "5005"}`;
-const VWAP_ALGO_URL = `http://${Deno.env.get("VWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`;
-const KAFKA_RELAY_URL = `http://${Deno.env.get("KAFKA_RELAY_HOST") ?? "localhost"}:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`;
-const FIX_ARCHIVE_URL = `http://${Deno.env.get("FIX_ARCHIVE_HOST") ?? "localhost"}:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`;
-const FIX_EXCHANGE_HEALTH_URL = `http://${Deno.env.get("FIX_EXCHANGE_HOST") ?? "localhost"}:${
-  Number(Deno.env.get("FIX_EXCHANGE_PORT") ?? "9880") - 1
+const MARKET_SIM_URL = `http://${process.env.MARKET_SIM_HOST ?? "localhost"}:${process.env.MARKET_SIM_PORT ?? "5000"}`;
+const JOURNAL_URL = `http://${process.env.JOURNAL_HOST ?? "localhost"}:${process.env.JOURNAL_PORT ?? "5009"}`;
+const USER_SERVICE_URL = `http://${process.env.USER_SERVICE_HOST ?? "localhost"}:${process.env.USER_SERVICE_PORT ?? "5008"}`;
+const ANALYTICS_URL = `http://${process.env.ANALYTICS_HOST ?? "localhost"}:${process.env.ANALYTICS_PORT ?? "5014"}`;
+const MARKET_DATA_URL = `http://${process.env.MARKET_DATA_HOST ?? "localhost"}:${process.env.MARKET_DATA_PORT ?? "5015"}`;
+const FEATURE_ENGINE_URL = `http://${process.env.FEATURE_ENGINE_HOST ?? "localhost"}:${process.env.FEATURE_ENGINE_PORT ?? "5017"}`;
+const SIGNAL_ENGINE_URL = `http://${process.env.SIGNAL_ENGINE_HOST ?? "localhost"}:${process.env.SIGNAL_ENGINE_PORT ?? "5018"}`;
+const RECOMMENDATION_ENGINE_URL = `http://${process.env.RECOMMENDATION_ENGINE_HOST ?? "localhost"}:${process.env.RECOMMENDATION_ENGINE_PORT ?? "5019"}`;
+const SCENARIO_ENGINE_URL = `http://${process.env.SCENARIO_ENGINE_HOST ?? "localhost"}:${process.env.SCENARIO_ENGINE_PORT ?? "5020"}`;
+const LLM_ADVISORY_URL = `http://${process.env.LLM_ADVISORY_HOST ?? "localhost"}:${process.env.LLM_ADVISORY_PORT ?? "5024"}`;
+const LLM_WORKER_URL = `http://${process.env.LLM_WORKER_HOST ?? "localhost"}:${process.env.LLM_WORKER_PORT ?? "5033"}`;
+const EMS_URL = `http://${process.env.EMS_HOST ?? "localhost"}:${process.env.EMS_PORT ?? "5001"}`;
+const OMS_URL = `http://${process.env.OMS_HOST ?? "localhost"}:${process.env.OMS_PORT ?? "5002"}`;
+const LIMIT_ALGO_URL = `http://${process.env.LIMIT_ALGO_HOST ?? "localhost"}:${process.env.LIMIT_ALGO_PORT ?? "5003"}`;
+const TWAP_ALGO_URL = `http://${process.env.TWAP_ALGO_HOST ?? "localhost"}:${process.env.TWAP_ALGO_PORT ?? "5004"}`;
+const POV_ALGO_URL = `http://${process.env.POV_ALGO_HOST ?? "localhost"}:${process.env.POV_ALGO_PORT ?? "5005"}`;
+const VWAP_ALGO_URL = `http://${process.env.VWAP_ALGO_HOST ?? "localhost"}:${process.env.VWAP_ALGO_PORT ?? "5006"}`;
+const KAFKA_RELAY_URL = `http://${process.env.KAFKA_RELAY_HOST ?? "localhost"}:${process.env.KAFKA_RELAY_PORT ?? "5007"}`;
+const FIX_ARCHIVE_URL = `http://${process.env.FIX_ARCHIVE_HOST ?? "localhost"}:${process.env.FIX_ARCHIVE_PORT ?? "5012"}`;
+const FIX_EXCHANGE_HEALTH_URL = `http://${process.env.FIX_EXCHANGE_HOST ?? "localhost"}:${
+  Number(process.env.FIX_EXCHANGE_PORT ?? "9880") - 1
 }`;
-const ICEBERG_ALGO_URL = `http://${Deno.env.get("ICEBERG_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ICEBERG_ALGO_PORT") ?? "5021"}`;
-const SNIPER_ALGO_URL = `http://${Deno.env.get("SNIPER_ALGO_HOST") ?? "localhost"}:${Deno.env.get("SNIPER_ALGO_PORT") ?? "5022"}`;
-const ARRIVAL_PRICE_ALGO_URL = `http://${Deno.env.get("ARRIVAL_PRICE_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ARRIVAL_PRICE_ALGO_PORT") ?? "5023"}`;
-const MOMENTUM_ALGO_URL = `http://${Deno.env.get("MOMENTUM_ALGO_HOST") ?? "localhost"}:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`;
-const IS_ALGO_URL = `http://${Deno.env.get("IS_ALGO_HOST") ?? "localhost"}:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`;
-const DARK_POOL_URL = `http://${Deno.env.get("DARK_POOL_HOST") ?? "localhost"}:${Deno.env.get("DARK_POOL_PORT") ?? "5027"}`;
-const CCP_SERVICE_URL = `http://${Deno.env.get("CCP_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("CCP_SERVICE_PORT") ?? "5028"}`;
-const RFQ_SERVICE_URL = `http://${Deno.env.get("RFQ_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("RFQ_SERVICE_PORT") ?? "5029"}`;
-const PRODUCT_SERVICE_URL = `http://${Deno.env.get("PRODUCT_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("PRODUCT_SERVICE_PORT") ?? "5030"}`;
-const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
-const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
-const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
-const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
-const DISCORD_BOT_URL = `http://${Deno.env.get("DISCORD_BOT_HOST") ?? "localhost"}:${Deno.env.get("DISCORD_BOT_PORT") ?? "5034"}`;
-const SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_PORT") ?? "5043"}`;
-const SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_PORT") ?? "5036"}`;
-const SYNTHETIC_TRADER_FX_ELECTRONIC_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_FX_ELECTRONIC_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_FX_ELECTRONIC_PORT") ?? "5037"}`;
-const SYNTHETIC_TRADER_FX_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_FX_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_FX_HIGH_TOUCH_PORT") ?? "5038"}`;
-const SYNTHETIC_TRADER_FI_VOICE_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_FI_VOICE_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_FI_VOICE_PORT") ?? "5039"}`;
-const SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_PORT") ?? "5040"}`;
-const SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_PORT") ?? "5041"}`;
-const SYNTHETIC_TRADER_COMMODITIES_VOICE_URL = `http://${Deno.env.get("SYNTHETIC_TRADER_COMMODITIES_VOICE_HOST") ?? "localhost"}:${Deno.env.get("SYNTHETIC_TRADER_COMMODITIES_VOICE_PORT") ?? "5042"}`;
-const POSTGRES_HEALTH_URL = `http://${Deno.env.get("POSTGRES_HEALTH_HOST") ?? "localhost"}:${Deno.env.get("POSTGRES_HEALTH_PORT") ?? "8100"}`;
-const REDPANDA_ADMIN_URL = `http://${Deno.env.get("REDPANDA_ADMIN_HOST") ?? "localhost"}:${Deno.env.get("REDPANDA_ADMIN_PORT") ?? "9644"}`;
-const OLLAMA_URL = `http://${Deno.env.get("OLLAMA_HOST") ?? "localhost"}:${Deno.env.get("OLLAMA_PORT") ?? "11434"}`;
-const GRAFANA_URL = `http://${Deno.env.get("GRAFANA_HOST") ?? "localhost"}:${Deno.env.get("GRAFANA_PORT") ?? "3000"}`;
-const PROMETHEUS_URL = `http://${Deno.env.get("PROMETHEUS_HOST") ?? "localhost"}:${Deno.env.get("PROMETHEUS_PORT") ?? "9090"}`;
+const ICEBERG_ALGO_URL = `http://${process.env.ICEBERG_ALGO_HOST ?? "localhost"}:${process.env.ICEBERG_ALGO_PORT ?? "5021"}`;
+const SNIPER_ALGO_URL = `http://${process.env.SNIPER_ALGO_HOST ?? "localhost"}:${process.env.SNIPER_ALGO_PORT ?? "5022"}`;
+const ARRIVAL_PRICE_ALGO_URL = `http://${process.env.ARRIVAL_PRICE_ALGO_HOST ?? "localhost"}:${process.env.ARRIVAL_PRICE_ALGO_PORT ?? "5023"}`;
+const MOMENTUM_ALGO_URL = `http://${process.env.MOMENTUM_ALGO_HOST ?? "localhost"}:${process.env.MOMENTUM_ALGO_PORT ?? "5025"}`;
+const IS_ALGO_URL = `http://${process.env.IS_ALGO_HOST ?? "localhost"}:${process.env.IS_ALGO_PORT ?? "5026"}`;
+const DARK_POOL_URL = `http://${process.env.DARK_POOL_HOST ?? "localhost"}:${process.env.DARK_POOL_PORT ?? "5027"}`;
+const CCP_SERVICE_URL = `http://${process.env.CCP_SERVICE_HOST ?? "localhost"}:${process.env.CCP_SERVICE_PORT ?? "5028"}`;
+const RFQ_SERVICE_URL = `http://${process.env.RFQ_SERVICE_HOST ?? "localhost"}:${process.env.RFQ_SERVICE_PORT ?? "5029"}`;
+const PRODUCT_SERVICE_URL = `http://${process.env.PRODUCT_SERVICE_HOST ?? "localhost"}:${process.env.PRODUCT_SERVICE_PORT ?? "5030"}`;
+const NEWS_AGGREGATOR_URL = `http://${process.env.NEWS_AGGREGATOR_HOST ?? "localhost"}:${process.env.NEWS_AGGREGATOR_PORT ?? "5013"}`;
+const FIX_GATEWAY_URL = `http://${process.env.FIX_GATEWAY_HOST ?? "localhost"}:${process.env.FIX_GATEWAY_PORT ?? "9881"}`;
+const REPLAY_URL = `http://${process.env.REPLAY_HOST ?? "localhost"}:${process.env.REPLAY_PORT ?? "5031"}`;
+const RISK_ENGINE_URL = `http://${process.env.RISK_ENGINE_HOST ?? "localhost"}:${process.env.RISK_ENGINE_PORT ?? "5032"}`;
+const DISCORD_BOT_URL = `http://${process.env.DISCORD_BOT_HOST ?? "localhost"}:${process.env.DISCORD_BOT_PORT ?? "5034"}`;
+const SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_URL = `http://${process.env.SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_EQUITY_HIGH_TOUCH_PORT ?? "5043"}`;
+const SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_URL = `http://${process.env.SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_EQUITY_LOW_TOUCH_PORT ?? "5036"}`;
+const SYNTHETIC_TRADER_FX_ELECTRONIC_URL = `http://${process.env.SYNTHETIC_TRADER_FX_ELECTRONIC_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_FX_ELECTRONIC_PORT ?? "5037"}`;
+const SYNTHETIC_TRADER_FX_HIGH_TOUCH_URL = `http://${process.env.SYNTHETIC_TRADER_FX_HIGH_TOUCH_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_FX_HIGH_TOUCH_PORT ?? "5038"}`;
+const SYNTHETIC_TRADER_FI_VOICE_URL = `http://${process.env.SYNTHETIC_TRADER_FI_VOICE_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_FI_VOICE_PORT ?? "5039"}`;
+const SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_URL = `http://${process.env.SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_DERIVATIVES_HIGH_TOUCH_PORT ?? "5040"}`;
+const SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_URL = `http://${process.env.SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_DERIVATIVES_LOW_TOUCH_PORT ?? "5041"}`;
+const SYNTHETIC_TRADER_COMMODITIES_VOICE_URL = `http://${process.env.SYNTHETIC_TRADER_COMMODITIES_VOICE_HOST ?? "localhost"}:${process.env.SYNTHETIC_TRADER_COMMODITIES_VOICE_PORT ?? "5042"}`;
+const POSTGRES_HEALTH_URL = `http://${process.env.POSTGRES_HEALTH_HOST ?? "localhost"}:${process.env.POSTGRES_HEALTH_PORT ?? "8100"}`;
+const REDPANDA_ADMIN_URL = `http://${process.env.REDPANDA_ADMIN_HOST ?? "localhost"}:${process.env.REDPANDA_ADMIN_PORT ?? "9644"}`;
+const OLLAMA_URL = `http://${process.env.OLLAMA_HOST ?? "localhost"}:${process.env.OLLAMA_PORT ?? "11434"}`;
+const GRAFANA_URL = `http://${process.env.GRAFANA_HOST ?? "localhost"}:${process.env.GRAFANA_PORT ?? "3000"}`;
+const PROMETHEUS_URL = `http://${process.env.PROMETHEUS_HOST ?? "localhost"}:${process.env.PROMETHEUS_PORT ?? "9090"}`;
 
 const SVC_PROXY: Record<string, string> = {
   "market-sim": MARKET_SIM_URL,
@@ -126,7 +125,7 @@ const SVC_PROXY: Record<string, string> = {
   "news-aggregator": NEWS_AGGREGATOR_URL,
   analytics: ANALYTICS_URL,
   "market-data": MARKET_DATA_URL,
-  "market-data-adapters": `http://${Deno.env.get("MARKET_DATA_ADAPTERS_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
+  "market-data-adapters": `http://${process.env.MARKET_DATA_ADAPTERS_HOST ?? "localhost"}:${process.env.MARKET_DATA_ADAPTERS_PORT ?? "5016"}`,
   "feature-engine": FEATURE_ENGINE_URL,
   "signal-engine": SIGNAL_ENGINE_URL,
   "recommendation-engine": RECOMMENDATION_ENGINE_URL,
@@ -276,7 +275,7 @@ const SVC_MIN_ROLES: Record<string, Set<string>> = {
 // #endregion docs:svc-min-roles
 
 const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
+  (process.env.CORS_ALLOWED_ORIGINS ?? "http://localhost:5173,http://localhost:3000")
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
@@ -297,24 +296,23 @@ function corsHeaders(req: Request): Record<string, string> {
   return headers;
 }
 
-const RATE_LIMIT_ENABLED = (Deno.env.get("RATE_LIMIT_ENABLED") ?? "true").toLowerCase() !== "false";
+const RATE_LIMIT_ENABLED = (process.env.RATE_LIMIT_ENABLED ?? "true").toLowerCase() !== "false";
 
 const ipLimiter = new RateLimiter({
-  capacity: Number(Deno.env.get("RATE_LIMIT_IP_CAPACITY")) || 60,
-  refillPerSecond: Number(Deno.env.get("RATE_LIMIT_IP_REFILL")) || 30,
+  capacity: Number(process.env.RATE_LIMIT_IP_CAPACITY) || 60,
+  refillPerSecond: Number(process.env.RATE_LIMIT_IP_REFILL) || 30,
 });
 
 const userLimiter = new RateLimiter({
-  capacity: Number(Deno.env.get("RATE_LIMIT_USER_CAPACITY")) || 240,
-  refillPerSecond: Number(Deno.env.get("RATE_LIMIT_USER_REFILL")) || 120,
+  capacity: Number(process.env.RATE_LIMIT_USER_CAPACITY) || 240,
+  refillPerSecond: Number(process.env.RATE_LIMIT_USER_REFILL) || 120,
 });
 
 // docs: /reference/api-gateway/
-const PUBLIC_GUEST_TRADING =
-  (Deno.env.get("PUBLIC_GUEST_TRADING") ?? "false").toLowerCase() === "true";
+const PUBLIC_GUEST_TRADING = (process.env.PUBLIC_GUEST_TRADING ?? "false").toLowerCase() === "true";
 const guestSubmitLimiter = new RateLimiter({
-  capacity: Number(Deno.env.get("GUEST_SUBMIT_CAPACITY")) || 10,
-  refillPerSecond: Number(Deno.env.get("GUEST_SUBMIT_REFILL")) || 1,
+  capacity: Number(process.env.GUEST_SUBMIT_CAPACITY) || 10,
+  refillPerSecond: Number(process.env.GUEST_SUBMIT_REFILL) || 1,
 });
 
 const RATE_LIMIT_BYPASS_PATHS = new Set(["/health", "/ready", "/services/status", "/metrics"]);
@@ -325,7 +323,7 @@ function isWebSocketUpgrade(req: Request): boolean {
 
 const validateToken = makeValidateToken(USER_SERVICE_URL);
 
-const CSRF_ENFORCE = (Deno.env.get("CSRF_ENFORCE") ?? "true").toLowerCase() !== "false";
+const CSRF_ENFORCE = (process.env.CSRF_ENFORCE ?? "true").toLowerCase() !== "false";
 
 function isCsrfSafeMethod(method: string): boolean {
   return method === "GET" || method === "HEAD" || method === "OPTIONS";
@@ -408,7 +406,7 @@ async function requireAuth(
 }
 
 // docs: /reference/api-gateway/
-const ACCESS_WARN_THROTTLE_MS = Number(Deno.env.get("ACCESS_WARN_THROTTLE_MS")) || 1000;
+const ACCESS_WARN_THROTTLE_MS = Number(process.env.ACCESS_WARN_THROTTLE_MS) || 1000;
 const accessWarnState = new Map<string, ThrottleEntry>();
 
 /** Publish a user.access event to the bus (best-effort, never throws). */
@@ -468,7 +466,7 @@ function startConsumers(): void {
       broadcastAll({ event: "marketUpdate", data: value });
     });
   });
-  const MARKET_SIM_WS = `ws://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+  const MARKET_SIM_WS = `ws://${process.env.MARKET_SIM_HOST ?? "localhost"}:${process.env.MARKET_SIM_PORT ?? "5000"}`;
   // docs: /reference/api-gateway/
   const connectWsFallback = () => {
     const ws = new WebSocket(MARKET_SIM_WS);
@@ -650,8 +648,8 @@ await startConsumers();
 // docs: /reference/api-gateway/
 const HEALTH_REFRESH_MS = 5_000;
 
-let upgradeInProgress = Deno.env.get("UPGRADE_IN_PROGRESS") === "true";
-let upgradeMessage: string | null = Deno.env.get("UPGRADE_MESSAGE") ?? null;
+let upgradeInProgress = process.env.UPGRADE_IN_PROGRESS === "true";
+let upgradeMessage: string | null = process.env.UPGRADE_MESSAGE ?? null;
 
 let cachedEntries: ServiceStatusEntry[] | null = null;
 let cachedHealth: Record<string, boolean> | null = null;
@@ -715,11 +713,11 @@ function resolveDailySummaryHourUtc(raw: string | undefined): number {
 
 startDailySummary({
   version: VERSION,
-  environment: Deno.env.get("VETA_ENV") ?? "dev",
+  environment: process.env.VETA_ENV ?? "dev",
   startedAt: STARTED_AT,
   getStats: () => platformStats.snapshot(),
   getServices: () => (cachedEntries ? toHealthFlags(cachedEntries) : null),
-  hourUtc: resolveDailySummaryHourUtc(Deno.env.get("DISCORD_DAILY_SUMMARY_HOUR_UTC")),
+  hourUtc: resolveDailySummaryHourUtc(process.env.DISCORD_DAILY_SUMMARY_HOUR_UTC),
   sender: sendDailySummary,
 });
 
@@ -765,7 +763,7 @@ function makeLoadAgent(): LoadAgent {
   });
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
@@ -794,7 +792,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({
         version: VERSION,
-        environment: Deno.env.get("VETA_ENV") ?? "dev",
+        environment: process.env.VETA_ENV ?? "dev",
         startedAt: STARTED_AT,
         uptimeMs: Date.now() - STARTED_AT,
         services: cachedEntries ? toHealthFlags(cachedEntries) : {},
@@ -950,7 +948,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ws/market-sim") {
-    return makeMarketSimWsProxy(req, Number(Deno.env.get("MARKET_SIM_PORT") ?? "5000"));
+    return makeMarketSimWsProxy(req, Number(process.env.MARKET_SIM_PORT ?? "5000"));
   }
 
   const wsResponse = await handleWebSocketRoute(req, path, gatewayContext, { validateToken });
@@ -1082,7 +1080,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  const frontendDist = Deno.env.get("FRONTEND_DIST");
+  const frontendDist = process.env.FRONTEND_DIST;
   if (frontendDist && req.method === "GET") {
     const res = await serveDir(req, { fsRoot: frontendDist, quiet: true });
     if (res.status !== 404) return res;

@@ -1,7 +1,7 @@
 // FIXT 1.1 / FIX 4.4 session state machine
 // Manages logon, heartbeat, sequence numbers, resend requests, and gap-fill.
 
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 import { EncryptMethod, MsgType, Tag } from "./fix-dictionary.ts";
 import { decode, encode, utcTimestamp, validateChecksum } from "./fix-parser.ts";
 

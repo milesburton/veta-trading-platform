@@ -1,5 +1,5 @@
-import { journalPool } from "@veta/db";
-import { logger } from "@veta/logger";
+import { journalPool } from "#veta/db";
+import { logger } from "#veta/logger";
 
 const TICKS_PER_MINUTE = 240;
 export const MAX_CANDLES = 120;

@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import {
   BOOK_MATERIAL_BPS,
   buildTickDiff,
@@ -19,7 +20,7 @@ async function flushMicrotasks(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-Deno.test("single-flight publisher bounds slow downstream sends", async () => {
+test("single-flight publisher bounds slow downstream sends", async () => {
   let resolveSend!: () => void;
   const sent: number[] = [];
   const publish = createSingleFlightPublisher<number>((value) => {
@@ -42,7 +43,7 @@ Deno.test("single-flight publisher bounds slow downstream sends", async () => {
   assertEquals(sent, [1, 3]);
 });
 
-Deno.test("single-flight publisher recovers when send throws synchronously", async () => {
+test("single-flight publisher recovers when send throws synchronously", async () => {
   const publish = createSingleFlightPublisher<number>((value) => {
     if (value === 1) throw new Error("boom");
     return Promise.resolve();
@@ -80,7 +81,7 @@ function makePayload(prices: Record<string, number>): TickPayload {
   };
 }
 
-Deno.test("first publish emits a full snapshot", () => {
+test("first publish emits a full snapshot", () => {
   const state = createTickDiffState();
   const payload = makePayload({ AAPL: 190, MSFT: 400 });
 
@@ -94,7 +95,7 @@ Deno.test("first publish emits a full snapshot", () => {
   assertEquals(nextState.lastFullSnapshotAt, 1_000);
 });
 
-Deno.test("identical follow-up tick produces an empty diff", () => {
+test("identical follow-up tick produces an empty diff", () => {
   const state = createTickDiffState();
   const payload = makePayload({ AAPL: 190, MSFT: 400 });
 
@@ -105,7 +106,7 @@ Deno.test("identical follow-up tick produces an empty diff", () => {
   assert(isEmptyDiff(diff));
 });
 
-Deno.test("only moved symbols appear in subsequent diff", () => {
+test("only moved symbols appear in subsequent diff", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 190, MSFT: 400, GOOG: 170 });
   const { nextState: afterFull } = buildTickDiff(initial, state, 1_000);
@@ -121,7 +122,7 @@ Deno.test("only moved symbols appear in subsequent diff", () => {
   assert(diff.orderBook?.GOOG === undefined);
 });
 
-Deno.test("sub-epsilon noise does not trigger a diff entry", () => {
+test("sub-epsilon noise does not trigger a diff entry", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 190.0 });
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -133,7 +134,7 @@ Deno.test("sub-epsilon noise does not trigger a diff entry", () => {
   assert(isEmptyDiff(diff));
 });
 
-Deno.test("marketMinute change is emitted on its own", () => {
+test("marketMinute change is emitted on its own", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 190 });
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -146,7 +147,7 @@ Deno.test("marketMinute change is emitted on its own", () => {
   assert(diff.prices === undefined);
 });
 
-Deno.test("sessionPhase change is emitted on its own", () => {
+test("sessionPhase change is emitted on its own", () => {
   const state = createTickDiffState();
   const { nextState } = buildTickDiff(makePayload({ AAPL: 190 }), state, 1_000);
 
@@ -158,7 +159,7 @@ Deno.test("sessionPhase change is emitted on its own", () => {
   assert(diff.prices === undefined);
 });
 
-Deno.test("periodic full snapshot fires after the interval elapses", () => {
+test("periodic full snapshot fires after the interval elapses", () => {
   const state = createTickDiffState();
   const payload = makePayload({ AAPL: 190 });
 
@@ -170,7 +171,7 @@ Deno.test("periodic full snapshot fires after the interval elapses", () => {
   assertEquals(diff.prices, { AAPL: 190 });
 });
 
-Deno.test("a newly-introduced symbol always appears in the diff", () => {
+test("a newly-introduced symbol always appears in the diff", () => {
   const state = createTickDiffState();
   const { nextState } = buildTickDiff(makePayload({ AAPL: 190 }), state, 1_000);
 
@@ -218,7 +219,7 @@ function seededRng(seed: number): () => number {
   };
 }
 
-Deno.test("realistic 287-symbol stream stays well under the alert bandwidth budget", () => {
+test("realistic 287-symbol stream stays well under the alert bandwidth budget", () => {
   const rng = seededRng(1);
   let prices = makeUniverse(SYMBOL_COUNT);
   let state = createTickDiffState();
@@ -294,7 +295,7 @@ function applyDiff(consumer: ConsumerState, diff: ReturnType<typeof buildTickDif
   if (diff.sessionPhase !== undefined) consumer.sessionPhase = diff.sessionPhase;
 }
 
-Deno.test("consumer state after applying diffs matches full-snapshot state for every field", () => {
+test("consumer state after applying diffs matches full-snapshot state for every field", () => {
   const rng = seededRng(42);
   let prices = makeUniverse(50);
   let state = createTickDiffState();
@@ -336,7 +337,7 @@ Deno.test("consumer state after applying diffs matches full-snapshot state for e
   assertEquals(consumer.sessionPhase, payload.sessionPhase);
 });
 
-Deno.test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () => {
+test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 100 });
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -360,7 +361,7 @@ Deno.test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () 
   );
 });
 
-Deno.test("volumes diff is independent of price movement", () => {
+test("volumes diff is independent of price movement", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 100 });
   initial.volumes = { AAPL: 1000 };
@@ -388,7 +389,7 @@ function makePayloadWithVenues(
   return { ...payload, venueBooks };
 }
 
-Deno.test("first publish includes venueBooks for every venue in the full snapshot", () => {
+test("first publish includes venueBooks for every venue in the full snapshot", () => {
   const state = createTickDiffState();
   const payload = makePayloadWithVenues({ AAPL: 190 }, ["XNAS", "XNYS"]);
 
@@ -399,7 +400,7 @@ Deno.test("first publish includes venueBooks for every venue in the full snapsho
   assert(diff.venueBooks?.XNYS?.AAPL !== undefined);
 });
 
-Deno.test("venueBooks is emitted per-venue around the BOOK_MATERIAL_BPS gate boundary", () => {
+test("venueBooks is emitted per-venue around the BOOK_MATERIAL_BPS gate boundary", () => {
   const state = createTickDiffState();
   const initial = makePayloadWithVenues({ AAPL: 100 }, ["XNAS", "XNYS"]);
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -423,7 +424,7 @@ Deno.test("venueBooks is emitted per-venue around the BOOK_MATERIAL_BPS gate bou
   assert(aboveDiff.venueBooks?.XNYS?.AAPL !== undefined);
 });
 
-Deno.test("venueBooks diff only includes symbols that moved, per venue", () => {
+test("venueBooks diff only includes symbols that moved, per venue", () => {
   const state = createTickDiffState();
   const initial = makePayloadWithVenues({ AAPL: 100, MSFT: 400 }, ["XNAS"]);
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -438,7 +439,7 @@ Deno.test("venueBooks diff only includes symbols that moved, per venue", () => {
   assert(diff.venueBooks?.XNAS?.MSFT === undefined);
 });
 
-Deno.test("payload without venueBooks never adds a venueBooks key to the diff", () => {
+test("payload without venueBooks never adds a venueBooks key to the diff", () => {
   const state = createTickDiffState();
   const payload = makePayload({ AAPL: 190 });
   const { nextState } = buildTickDiff(payload, state, 1_000);
@@ -449,7 +450,7 @@ Deno.test("payload without venueBooks never adds a venueBooks key to the diff", 
   assert(diff.venueBooks === undefined);
 });
 
-Deno.test("buildTickDiff never produces a full snapshot more often than the configured interval", () => {
+test("buildTickDiff never produces a full snapshot more often than the configured interval", () => {
   const rng = seededRng(7);
   let prices = makeUniverse(30);
   let state = createTickDiffState();
@@ -472,7 +473,7 @@ Deno.test("buildTickDiff never produces a full snapshot more often than the conf
   }
 });
 
-Deno.test("symbolsNeedingFreshBook returns every symbol before the first full snapshot", () => {
+test("symbolsNeedingFreshBook returns every symbol before the first full snapshot", () => {
   const state = createTickDiffState();
   const prices = { AAPL: 190, MSFT: 400, GOOG: 170 };
 
@@ -481,7 +482,7 @@ Deno.test("symbolsNeedingFreshBook returns every symbol before the first full sn
   assertEquals(new Set(needed), new Set(["AAPL", "MSFT", "GOOG"]));
 });
 
-Deno.test("symbolsNeedingFreshBook only returns symbols that moved past BOOK_MATERIAL_BPS", () => {
+test("symbolsNeedingFreshBook only returns symbols that moved past BOOK_MATERIAL_BPS", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 100, MSFT: 400 });
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -495,7 +496,7 @@ Deno.test("symbolsNeedingFreshBook only returns symbols that moved past BOOK_MAT
   assertEquals(needed, ["AAPL"]);
 });
 
-Deno.test("symbolsNeedingFreshBook returns every symbol again once the full-snapshot interval elapses", () => {
+test("symbolsNeedingFreshBook returns every symbol again once the full-snapshot interval elapses", () => {
   const state = createTickDiffState();
   const initial = makePayload({ AAPL: 100, MSFT: 400 });
   const { nextState } = buildTickDiff(initial, state, 1_000);
@@ -506,7 +507,7 @@ Deno.test("symbolsNeedingFreshBook returns every symbol again once the full-snap
   assertEquals(new Set(needed), new Set(["AAPL", "MSFT"]));
 });
 
-Deno.test("symbolsNeedingFreshBook includes a symbol if any venue's book is stale even when orderBook's is not", () => {
+test("symbolsNeedingFreshBook includes a symbol if any venue's book is stale even when orderBook's is not", () => {
   const state = createTickDiffState();
 
   const { nextState: afterFull } = buildTickDiff(
@@ -538,7 +539,7 @@ function fakeSocket(bufferedAmount = 0): FakeSocket {
   return { bufferedAmount, sent, send: (data) => void sent.push(data) };
 }
 
-Deno.test("fanOutTick sends the tick to sockets under the buffer limit", () => {
+test("fanOutTick sends the tick to sockets under the buffer limit", () => {
   const a = fakeSocket();
   const b = fakeSocket(10);
 
@@ -550,7 +551,7 @@ Deno.test("fanOutTick sends the tick to sockets under the buffer limit", () => {
   assertEquals(result.failed, []);
 });
 
-Deno.test("fanOutTick skips a socket over the buffer limit and marks it lagging", () => {
+test("fanOutTick skips a socket over the buffer limit and marks it lagging", () => {
   const slow = fakeSocket(101);
   const fast = fakeSocket();
 
@@ -562,7 +563,7 @@ Deno.test("fanOutTick skips a socket over the buffer limit and marks it lagging"
   assert(!result.lagging.has(fast));
 });
 
-Deno.test("fanOutTick resyncs a drained lagging socket with one shared snapshot", () => {
+test("fanOutTick resyncs a drained lagging socket with one shared snapshot", () => {
   const a = fakeSocket();
   const b = fakeSocket();
   const fresh = fakeSocket();
@@ -586,21 +587,32 @@ Deno.test("fanOutTick resyncs a drained lagging socket with one shared snapshot"
   assertEquals(result.lagging.size, 0);
 });
 
-Deno.test("fanOutTick does not build a snapshot when no lagging socket has drained", () => {
+test("fanOutTick does not build a snapshot when no lagging socket has drained", () => {
   const slow = fakeSocket(500);
   let builds = 0;
 
-  const result = fanOutTick([slow], "tick", new Set([slow]), () => {
-    builds++;
-    return "snapshot";
-  }, 100);
+  const result = fanOutTick(
+    [slow],
+    "tick",
+    new Set([slow]),
+    () => {
+      builds++;
+      return "snapshot";
+    },
+    100
+  );
 
   assertEquals(builds, 0);
   assert(result.lagging.has(slow));
 });
 
-Deno.test("fanOutTick reports sockets whose send throws", () => {
-  const broken = { bufferedAmount: 0, send: () => { throw new Error("closed"); } };
+test("fanOutTick reports sockets whose send throws", () => {
+  const broken = {
+    bufferedAmount: 0,
+    send: () => {
+      throw new Error("closed");
+    },
+  };
   const ok = fakeSocket();
 
   const result = fanOutTick([broken, ok], "tick", new Set(), () => "snapshot", 100);
@@ -609,13 +621,13 @@ Deno.test("fanOutTick reports sockets whose send throws", () => {
   assertEquals(ok.sent, ["tick"]);
 });
 
-Deno.test("parseMarketFeed defaults to the full feed and accepts prices", () => {
+test("parseMarketFeed defaults to the full feed and accepts prices", () => {
   assertEquals(parseMarketFeed(new URL("ws://sim:5000/")), "full");
   assertEquals(parseMarketFeed(new URL("ws://sim:5000/?feed=prices")), "prices");
   assertEquals(parseMarketFeed(new URL("ws://sim:5000/?feed=books")), "full");
 });
 
-Deno.test("forFeed strips both book fields from the prices feed only", () => {
+test("forFeed strips both book fields from the prices feed only", () => {
   const diff = {
     prices: { AAPL: 1 },
     marketMinute: 3,
@@ -626,22 +638,34 @@ Deno.test("forFeed strips both book fields from the prices feed only", () => {
   assertEquals(forFeed(diff, "prices"), { prices: { AAPL: 1 }, marketMinute: 3 });
 });
 
-Deno.test("forFeed leaves a books-only diff empty on the prices feed", () => {
+test("forFeed leaves a books-only diff empty on the prices feed", () => {
   const diff = { orderBook: { AAPL: { bids: [], asks: [], mid: 1, ts: 0 } } };
   assertEquals(isEmptyDiff(forFeed(diff, "prices")), true);
   assertEquals(isEmptyDiff(forFeed(diff, "full")), false);
 });
 
-Deno.test("lagThresholdBytes leaves room for a snapshot larger than the floor", () => {
+test("lagThresholdBytes leaves room for a snapshot larger than the floor", () => {
   assertEquals(lagThresholdBytes(0), MAX_CLIENT_BUFFERED_BYTES);
   assertEquals(lagThresholdBytes(60_000), MAX_CLIENT_BUFFERED_BYTES);
   assertEquals(lagThresholdBytes(11_000_000), 22_000_000);
 });
 
-Deno.test("fanOutTick does not mark a socket lagging while a snapshot under the threshold drains", () => {
+test("fanOutTick does not mark a socket lagging while a snapshot under the threshold drains", () => {
   const snapshotBytes = 11_000_000;
-  const draining = { bufferedAmount: snapshotBytes, sent: [] as string[], send(d: string) { this.sent.push(d); } };
-  const result = fanOutTick([draining], "tick", new Set(), () => "snapshot", lagThresholdBytes(snapshotBytes));
+  const draining = {
+    bufferedAmount: snapshotBytes,
+    sent: [] as string[],
+    send(d: string) {
+      this.sent.push(d);
+    },
+  };
+  const result = fanOutTick(
+    [draining],
+    "tick",
+    new Set(),
+    () => "snapshot",
+    lagThresholdBytes(snapshotBytes)
+  );
   assertEquals(result.lagging.size, 0);
   assertEquals(draining.sent, ["tick"]);
 });

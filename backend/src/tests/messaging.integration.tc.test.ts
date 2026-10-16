@@ -1,17 +1,20 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { vi } from "vitest";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";
 
-const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
+const SHOULD_RUN = process.env.RUN_TESTCONTAINERS === "1";
 
-Deno.test({
+test({
   name: "[messaging] full producer + consumer roundtrip against real Redpanda",
   ignore: !SHOULD_RUN,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn(t) {
     const rp = await startEphemeralRedpanda();
-    Deno.env.set("REDPANDA_BROKERS", rp.brokers);
-    const messaging = await import(`../lib/messaging.ts?broker=${encodeURIComponent(rp.brokers)}`);
+    process.env["REDPANDA_BROKERS"] = rp.brokers;
+    vi.resetModules();
+    const messaging = await import("../lib/messaging.ts");
 
     const topic = `test-roundtrip-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -76,7 +79,7 @@ Deno.test({
         });
         await new Promise((r) => setTimeout(r, 3000));
 
-        const { Kafka } = await import("npm:kafkajs@2.2.4");
+        const { Kafka } = await import("kafkajs");
         const raw = new Kafka({ clientId: "raw", brokers: [rp.brokers] });
         const rawProducer = raw.producer();
         await rawProducer.connect();

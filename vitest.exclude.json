@@ -1,0 +1,8 @@
+[
+  "**/*.tc.test.ts",
+  "**/integration.test.ts",
+  "**/*.integration.test.ts",
+  "**/*.http.test.ts",
+  "**/load.test.ts",
+  "**/testcontainers.*.test.ts"
+]

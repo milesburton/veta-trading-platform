@@ -1,8 +1,8 @@
+import type { BondDef } from "../../../shared/bondUniverseTypes.ts";
 // docs: /platform/market-simulator/
 // #region docs:bond-universe-shared
 import { CURATED_BONDS } from "../../../shared/curatedBonds.ts";
 import { GENERATED_BONDS } from "../../../shared/generatedBondUniverse.ts";
-import type { BondDef } from "../../../shared/bondUniverseTypes.ts";
 
 export type { BondDef };
 

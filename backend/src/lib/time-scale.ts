@@ -1,4 +1,4 @@
-export const TIME_SCALE = Number(Deno.env.get("TIME_SCALE")) || 60;
+export const TIME_SCALE = Number(process.env.TIME_SCALE) || 60;
 
 export const TRADING_DAY_MINUTES = 390;
 

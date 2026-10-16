@@ -7,7 +7,7 @@
     "dev": "vp dev --port 5173",
     "build": "tsc && vp build",
     "preview": "vp preview",
-    "new:panel": "deno run --allow-read --allow-write scripts/new-panel.ts",
+    "new:panel": "node scripts/new-panel.ts",
     "lint": "vp lint -c .oxlintrc.json src/ && vp fmt -c .oxfmtrc.json --check src/",
     "lint:fix": "vp lint -c .oxlintrc.json --fix src/ && vp fmt -c .oxfmtrc.json src/",
     "lint:full": "npm run lint && npm run test:coverage",

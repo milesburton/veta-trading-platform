@@ -1,13 +1,58 @@
-import {
-  Oid,
-  Pool,
-  type ClientOptions,
-  type Decoders,
-} from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { createParams } from "https://deno.land/x/postgres@v0.19.3/connection/connection_params.ts";
+import pg from "pg";
+
+const INT8_OID = 20;
+
+pg.types.setTypeParser(INT8_OID, (value: string) => BigInt(value));
+
+export interface QueryResult<Row> {
+  rows: Row[];
+  rowCount: number | null;
+}
+
+export interface PooledClient {
+  queryArray<Row extends unknown[] = unknown[]>(
+    sql: string,
+    args?: unknown[]
+  ): Promise<QueryResult<Row>>;
+  queryObject<Row = Record<string, unknown>>(
+    sql: string,
+    args?: unknown[]
+  ): Promise<QueryResult<Row>>;
+  release(): void;
+}
+
+function wrapClient(client: pg.PoolClient): PooledClient {
+  return {
+    async queryArray<Row extends unknown[] = unknown[]>(sql: string, args?: unknown[]) {
+      const result = await client.query({ text: sql, values: args, rowMode: "array" });
+      return { rows: result.rows as Row[], rowCount: result.rowCount };
+    },
+    async queryObject<Row = Record<string, unknown>>(sql: string, args?: unknown[]) {
+      const result = await client.query(sql, args);
+      return { rows: result.rows as Row[], rowCount: result.rowCount };
+    },
+    release: () => client.release(),
+  };
+}
+
+export class Pool {
+  private readonly inner: pg.Pool;
+
+  constructor(connectionString: string, size: number, _lazy = true) {
+    this.inner = new pg.Pool({ connectionString, max: size });
+  }
+
+  async connect(): Promise<PooledClient> {
+    return wrapClient(await this.inner.connect());
+  }
+
+  end(): Promise<void> {
+    return this.inner.end();
+  }
+}
 
 function resolveUrl(serviceKey: string): string {
-  const url = Deno.env.get(`${serviceKey}_DATABASE_URL`) ?? Deno.env.get("DATABASE_URL");
+  const url = process.env[`${serviceKey}_DATABASE_URL`] ?? process.env.DATABASE_URL;
   if (!url) {
     throw new Error(`DATABASE_URL is required (set ${serviceKey}_DATABASE_URL or DATABASE_URL)`);
   }
@@ -34,29 +79,9 @@ const SPECS: PoolSpec[] = [
 
 const cache: Record<string, Pool> = {};
 
-const floatDecoders: Decoders = {
-  [Oid.float8]: (value: string) => Number.parseFloat(value),
-  [Oid.float8_array]: (value: string, _oid: number, parseArray) =>
-    parseArray(value, (entry) => Number.parseFloat(entry)),
-};
-
-function poolOptionsFromUrl(url: string): ClientOptions {
-  const params = createParams(url);
-  return {
-    ...params,
-    controls: {
-      ...params.controls,
-      decoders: {
-        ...params.controls?.decoders,
-        ...floatDecoders,
-      },
-    },
-  };
-}
-
 function getPool(key: string, size: number, lazy: boolean): Pool {
   if (!cache[key]) {
-    cache[key] = new Pool(poolOptionsFromUrl(resolveUrl(key)), size, lazy);
+    cache[key] = new Pool(resolveUrl(key), size, lazy);
   }
   return cache[key];
 }

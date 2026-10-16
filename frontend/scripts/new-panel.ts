@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write
+#!/usr/bin/env node
 /**
  * Scaffolds a new dashboard panel.
  *
@@ -9,13 +9,16 @@
  * (layoutModels.ts), which is a design choice rather than boilerplate.
  *
  * Usage:
- *   deno run -A frontend/scripts/new-panel.ts <panel-id> "<Title>" [--desc "..."]
- *   deno task new:panel <panel-id> "<Title>"
+ *   node frontend/scripts/new-panel.ts <panel-id> "<Title>" [--desc "..."]
+ *   npm run new:panel -- <panel-id> "<Title>"
  *
  * Re-running with the same id is a no-op (idempotent), so it is safe to retry.
  */
 
-const ROOT = new URL("../", import.meta.url).pathname;
+import { readFile, stat, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const REGISTRY = `${ROOT}src/components/dashboard/panelRegistry.ts`;
 const COMPONENTS = `${ROOT}src/components/dashboard/panelComponents.ts`;
 const PICKER = `${ROOT}src/components/ComponentPicker.tsx`;
@@ -38,12 +41,12 @@ function parseArgs(argv: string[]): Args {
   }
   const [id, title] = positional;
   if (!id || !title) {
-    console.error('Usage: deno task new:panel <panel-id> "<Title>" [--desc "<description>"]');
-    Deno.exit(1);
+    console.error('Usage: npm run new:panel -- <panel-id> "<Title>" [--desc "<description>"]');
+    process.exit(1);
   }
   if (!/^[a-z][a-z0-9-]*$/.test(id)) {
     console.error(`Panel id must be kebab-case (got: ${id})`);
-    Deno.exit(1);
+    process.exit(1);
   }
   return { id, title, description: description || title };
 }
@@ -172,16 +175,16 @@ describe("${name}", () => {
 
 async function writeIfAbsent(path: string, contents: string): Promise<void> {
   try {
-    await Deno.stat(path);
+    await stat(path);
     console.log(`  ${path.replace(ROOT, "")} already exists — skipping`);
   } catch {
-    await Deno.writeTextFile(path, contents);
+    await writeFile(path, contents);
     console.log(`  created ${path.replace(ROOT, "")}`);
   }
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs(Deno.args);
+  const args = parseArgs(process.argv.slice(2));
   const name = componentName(args.id);
 
   console.log(`Scaffolding panel "${args.id}" (${name})`);
@@ -189,16 +192,16 @@ async function main(): Promise<void> {
   await writeIfAbsent(`${ROOT}src/components/${name}.tsx`, componentTemplate(args));
   await writeIfAbsent(`${ROOT}src/components/__tests__/${name}.test.tsx`, testTemplate(args));
 
-  const registry = await Deno.readTextFile(REGISTRY);
-  await Deno.writeTextFile(REGISTRY, patchRegistry(registry, args));
+  const registry = await readFile(REGISTRY, "utf8");
+  await writeFile(REGISTRY, patchRegistry(registry, args));
   console.log("  patched panelRegistry.ts");
 
-  const components = await Deno.readTextFile(COMPONENTS);
-  await Deno.writeTextFile(COMPONENTS, patchComponents(components, args));
+  const components = await readFile(COMPONENTS, "utf8");
+  await writeFile(COMPONENTS, patchComponents(components, args));
   console.log("  patched panelComponents.ts");
 
-  const picker = await Deno.readTextFile(PICKER);
-  await Deno.writeTextFile(PICKER, patchPicker(picker, args));
+  const picker = await readFile(PICKER, "utf8");
+  await writeFile(PICKER, patchPicker(picker, args));
   console.log("  patched ComponentPicker.tsx");
 
   console.log("\nNext steps (not automated — these are design choices):");

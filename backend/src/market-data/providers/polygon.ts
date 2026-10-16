@@ -3,10 +3,10 @@
  * Key: POLYGON_KEY (https://polygon.io — free tier: 15-min delayed)
  */
 
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 import type { CachedQuote, ProviderDef } from "./types.ts";
 
-const POLYGON_KEY = Deno.env.get("POLYGON_KEY") ?? "";
+const POLYGON_KEY = process.env.POLYGON_KEY ?? "";
 const PROV = { provider: "polygon" };
 
 async function fetchPolygonLastTrade(symbol: string): Promise<CachedQuote | null> {

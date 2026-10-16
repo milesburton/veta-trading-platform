@@ -1,5 +1,5 @@
-import { logger } from "@veta/logger";
-import type { MarketAdapterEvent } from "@veta/types/intelligence";
+import { logger } from "#veta/logger";
+import type { MarketAdapterEvent } from "#veta/types/intelligence";
 
 interface MacroTemplate {
   headline: string;
@@ -99,7 +99,7 @@ async function fetchFinnhubEconomic(apiKey: string): Promise<MarketAdapterEvent[
 }
 
 export async function seedEconomicEvents(): Promise<MarketAdapterEvent[]> {
-  const apiKey = Deno.env.get("FINNHUB_KEY");
+  const apiKey = process.env.FINNHUB_KEY;
 
   if (apiKey) {
     const events = await fetchFinnhubEconomic(apiKey);

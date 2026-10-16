@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Wrapper for `deno test ...` runs that need Testcontainers.
+# Wrapper for test runs that need Testcontainers.
 #
 # What this does:
 # - Runs a socat sidecar that proxies tcp://<bridge>:2375 → /var/run/docker.sock
-#   and points DOCKER_HOST at it. Deno's node:http polyfill cannot write to a
-#   Unix socket (Symbol(Deno.internal.rid) gap), so dockerode (used by
+#   and points DOCKER_HOST at it. The tests reach Docker over TCP rather than the
+#   Unix socket, so dockerode (used by
 #   testcontainers) needs the TCP path on every Linux Docker host — local dev
 #   containers, Codespaces, and GitHub Actions runners alike.
 # - Sets TESTCONTAINERS_HOST_OVERRIDE to the Docker bridge gateway. On a dev

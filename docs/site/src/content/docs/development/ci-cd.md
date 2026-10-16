@@ -55,9 +55,9 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (one Docker
 
 ### lint-and-test (~30 seconds)
 
-- `deno lint`: backend lint
-- `deno task check`: type-check the service entry points
-- `deno task test:coverage`: backend unit tests with lcov output
+- `npm run lint:backend`: backend lint (Oxlint)
+- `npm run check`: type-check the service entry points
+- `npm run test:coverage`: backend unit tests with lcov output
 - Generates `docs/badges/backend-tests.json` with test count
 
 ### frontend (~70 seconds)
@@ -70,14 +70,14 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (one Docker
 ### integration (~15 minutes)
 
 - Installs backend dependencies
-- Runs `deno task test:testcontainers:coverage`, which gives every `.tc.test.ts` suite its own ephemeral Postgres, Redpanda and service set (see [Testcontainers](/veta-trading-platform/development/testing/testcontainers/))
+- Runs `npm run test:testcontainers:coverage`, which gives every `.tc.test.ts` suite its own ephemeral Postgres, Redpanda and service set (see [Testcontainers](/veta-trading-platform/development/testing/testcontainers/))
 - Retries the suite up to three times, because the ephemeral broker occasionally misses its start-up health window; a genuine failure fails every attempt and fails the job
 - Generates an lcov report for the testcontainers run (uploaded on `main`)
 - On `main`, generates `docs/badges/integration-tests.json` and `docs/badges/smoke-tests.json`
 
 This job runs on a self-hosted runner (`runs-on: [self-hosted, homelab]`) rather than a GitHub-hosted one. This repository is public on a personal (non-org) account, so GitHub-hosted larger runners aren't purchasable, and the testcontainers stack needs more than the standard 2-core hosted runner comfortably provides. The runner is an ephemeral Docker container on a homelab box (fresh container per job, `network_mode: host` so it can reach the Docker daemon the same way the wrapper script expects), scoped so it only ever runs for same-repo PRs and pushes to `main`, never a pull request from a fork.
 
-That homelab box also runs the full production VETA stack around the clock, so it isn't idle spare capacity the way a GitHub-hosted VM is. `backend/src/tests/smoke.full.tc.test.ts` sets its startup/test timeouts from a `TC_TIMEOUT_SCALE` env var (default `1`, everywhere else unchanged) so cold-starting 15 to 30 Deno subprocesses per test group has enough headroom under that background load; this job sets `TC_TIMEOUT_SCALE=3`. See [Testcontainers integration tests](/development/testing/testcontainers/) for more on that variable.
+That homelab box also runs the full production VETA stack around the clock, so it isn't idle spare capacity the way a GitHub-hosted VM is. `backend/src/tests/smoke.full.tc.test.ts` sets its startup/test timeouts from a `TC_TIMEOUT_SCALE` env var (default `1`, everywhere else unchanged) so cold-starting 15 to 30 Node subprocesses per test group has enough headroom under that background load; this job sets `TC_TIMEOUT_SCALE=3`. See [Testcontainers integration tests](/development/testing/testcontainers/) for more on that variable.
 
 The runner and production are kept apart at the CPU level with systemd slices. The runner's Docker daemon uses `ci.slice` as its default cgroup parent, so the runner and every testcontainer it starts share one slice. Production compose services opt into `veta.slice` via `cgroup_parent: ${VETA_CGROUP_PARENT:-}`. Both slices can use every CPU; production has twenty times the CPU weight, and `ci.slice` is capped at four CPUs' worth, so CI only uses spare time. The slices are not pinned to CPU IDs, because the host's online CPU set is not contiguous and can change on restart. With `VETA_CGROUP_PARENT` unset, as it is in development and on hosted runners, compose behaves as before. Per-container `cpus:` limits alone were not enough: they cap each container but not the total, so a full integration run could still saturate the box. Setup steps are in `scripts/homelab-systemd/README.md`. A host that previously had `AllowedCPUs` set on these slices needs a one-time migration: on systemd 252, installing slice files without the key does not clear the live cpuset, so run `systemctl set-property --runtime <slice> AllowedCPUs=0-<last CPU>` for each slice once, using the host's highest CPU number.
 
@@ -97,7 +97,7 @@ The runner and production are kept apart at the CPU level with systemd slices. T
   `ci.yml`, one entry per service, each pointing at that service's own `docker/<name>/Dockerfile`
 
 Adding a new service means adding it to **this matrix**, not just `compose.yml`. A new
-service wired into `compose.yml`/`deno.json`/`supervisord.conf` but left out of this matrix
+service wired into `compose.yml`/`package.json`/`supervisord.conf` but left out of this matrix
 never gets an image built or published at all, which is silent in CI (nothing fails; the
 matrix simply has one fewer entry than it should) and only surfaces on the server, where
 `docker compose up -d` fails on that one missing image. Because compose brings the stack up
@@ -157,9 +157,9 @@ Every CI run on `main` generates JSON badge files committed to `docs/badges/`:
 
 | Badge | Source | Format |
 | --- | --- | --- |
-| Backend tests | `deno task test:coverage` output | `"230 passed"` |
+| Backend tests | `npm run test:coverage` output | `"230 passed"` |
 | Frontend tests | `npm run test:coverage` output | `"797 passed"` |
-| Integration tests | `deno task test:testcontainers` output | `"87 passed"` |
+| Integration tests | `npm run test:testcontainers` output | `"87 passed"` |
 | Smoke tests | `smoke.tc.test.ts` + `smoke.full.tc.test.ts` run output | `"67 passed"` |
 | E2E tests | Playwright output | `"89 passed"` |
 | Coverage | `coverage-summary.json` | `"42.5%"` |
@@ -196,9 +196,9 @@ GitHub Actions is the source of truth for merge gates, but the same checks can b
 
 ```bash
 # Backend checks
-deno task lint
-deno task check
-deno task test
+npm run lint:backend
+npm run check
+npm run test:backend
 
 # Frontend checks
 cd frontend
@@ -253,7 +253,7 @@ Mitigations like retry wrappers, throttles, or version pins added under incident
 
 If the status page is clean and the failures correlate with a specific PR or service, the failure is real. Common patterns:
 
-- **One service consistently fails to build but others pass**: check that service's `Dockerfile` and the runtime dependencies in `deno.json` or `frontend/package.json` haven't drifted.
+- **One service consistently fails to build but others pass**: check that service's `Dockerfile` and the runtime dependencies in the root `package.json` or `frontend/package.json` haven't drifted.
 - **`Detect changed paths` fails with a JSON parse error**: the `paths-filter` step never ran and `fromJSON(...)` saw an empty string. Check the preceding `actions/checkout` step.
 - **`Deploy gate` Playwright test times out at 60s**: usually CI runner slowness, but check the trace artifact under `gate-diagnostics` for what state the page actually reached. Real backend regressions show up as Playwright passing but the test asserting wrong content; CI-load failures show the dashboard rendered but the test gave up.
 - **`Publish *-algo :latest (gated)` fails after `Deploy gate` passed**: a GHCR push flake. Rerun. If it persists across reruns, check whether GHCR has the previous image tag (rare cache-state issue).

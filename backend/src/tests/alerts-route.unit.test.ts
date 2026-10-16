@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
 import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
@@ -49,7 +50,7 @@ function unauthContext(): GatewayContext {
   return makeGatewayUnauthContext({ includeUserServiceUrl: true });
 }
 
-Deno.test("[alerts-route] returns null for paths it does not handle", async () => {
+test("[alerts-route] returns null for paths it does not handle", async () => {
   const ctx = makeContext();
   const res = await handleAlertsRoute(
     new Request("http://gw/other", { method: "GET" }),
@@ -59,7 +60,7 @@ Deno.test("[alerts-route] returns null for paths it does not handle", async () =
   assertEquals(res, null);
 });
 
-Deno.test("[alerts-route] returns null for unknown method on /alerts", async () => {
+test("[alerts-route] returns null for unknown method on /alerts", async () => {
   const ctx = makeContext();
   const res = await handleAlertsRoute(
     new Request("http://gw/alerts", { method: "DELETE" }),
@@ -69,7 +70,7 @@ Deno.test("[alerts-route] returns null for unknown method on /alerts", async () 
   assertEquals(res, null);
 });
 
-Deno.test("[alerts-route] GET /alerts proxies to user-service with the user id", async () => {
+test("[alerts-route] GET /alerts proxies to user-service with the user id", async () => {
   const ctx = makeContext();
   const f = captureFetch(() => new Response(JSON.stringify([{ id: "a" }]), { status: 200 }));
   try {
@@ -89,7 +90,7 @@ Deno.test("[alerts-route] GET /alerts proxies to user-service with the user id",
   }
 });
 
-Deno.test("[alerts-route] GET /alerts returns 401 when auth fails", async () => {
+test("[alerts-route] GET /alerts returns 401 when auth fails", async () => {
   const ctx = unauthContext();
   const f = captureFetch(() => new Response("never", { status: 200 }));
   try {
@@ -106,13 +107,13 @@ Deno.test("[alerts-route] GET /alerts returns 401 when auth fails", async () => 
   }
 });
 
-Deno.test("[alerts-route] POST /alerts forwards body + invokes downstream notifiers", async () => {
-  const prevWebhook = Deno.env.get("DISCORD_WEBHOOK_URL");
-  const prevToken = Deno.env.get("GITHUB_TICKETING_TOKEN");
-  const prevRepo = Deno.env.get("GITHUB_TICKETING_REPO");
-  Deno.env.delete("DISCORD_WEBHOOK_URL");
-  Deno.env.delete("GITHUB_TICKETING_TOKEN");
-  Deno.env.delete("GITHUB_TICKETING_REPO");
+test("[alerts-route] POST /alerts forwards body + invokes downstream notifiers", async () => {
+  const prevWebhook = process.env.DISCORD_WEBHOOK_URL;
+  const prevToken = process.env.GITHUB_TICKETING_TOKEN;
+  const prevRepo = process.env.GITHUB_TICKETING_REPO;
+  delete process.env["DISCORD_WEBHOOK_URL"];
+  delete process.env["GITHUB_TICKETING_TOKEN"];
+  delete process.env["GITHUB_TICKETING_REPO"];
 
   const ctx = makeContext();
   const body = JSON.stringify({
@@ -143,13 +144,13 @@ Deno.test("[alerts-route] POST /alerts forwards body + invokes downstream notifi
     assertEquals(sent, body);
   } finally {
     f.restore();
-    if (prevWebhook !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", prevWebhook);
-    if (prevToken !== undefined) Deno.env.set("GITHUB_TICKETING_TOKEN", prevToken);
-    if (prevRepo !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", prevRepo);
+    if (prevWebhook !== undefined) process.env["DISCORD_WEBHOOK_URL"] = prevWebhook;
+    if (prevToken !== undefined) process.env["GITHUB_TICKETING_TOKEN"] = prevToken;
+    if (prevRepo !== undefined) process.env["GITHUB_TICKETING_REPO"] = prevRepo;
   }
 });
 
-Deno.test("[alerts-route] POST /alerts with invalid JSON body still forwards and returns response", async () => {
+test("[alerts-route] POST /alerts with invalid JSON body still forwards and returns response", async () => {
   const ctx = makeContext();
   const f = captureFetch(() => new Response("ok", { status: 201 }));
   try {
@@ -169,7 +170,7 @@ Deno.test("[alerts-route] POST /alerts with invalid JSON body still forwards and
   }
 });
 
-Deno.test("[alerts-route] POST /alerts with non-object body still forwards", async () => {
+test("[alerts-route] POST /alerts with non-object body still forwards", async () => {
   const ctx = makeContext();
   const f = captureFetch(() => new Response("ok", { status: 201 }));
   try {
@@ -185,7 +186,7 @@ Deno.test("[alerts-route] POST /alerts with non-object body still forwards", asy
   }
 });
 
-Deno.test("[alerts-route] POST /alerts returns 401 when auth fails (no downstream call)", async () => {
+test("[alerts-route] POST /alerts returns 401 when auth fails (no downstream call)", async () => {
   const ctx = unauthContext();
   const f = captureFetch(() => new Response("never", { status: 200 }));
   try {
@@ -202,7 +203,7 @@ Deno.test("[alerts-route] POST /alerts returns 401 when auth fails (no downstrea
   }
 });
 
-Deno.test("[alerts-route] PUT /alerts/dismiss-all proxies to user-service", async () => {
+test("[alerts-route] PUT /alerts/dismiss-all proxies to user-service", async () => {
   const ctx = makeContext();
   const f = captureFetch(() => new Response("{}", { status: 200 }));
   try {
@@ -220,7 +221,7 @@ Deno.test("[alerts-route] PUT /alerts/dismiss-all proxies to user-service", asyn
   }
 });
 
-Deno.test("[alerts-route] PUT /alerts/dismiss-all returns 401 when auth fails", async () => {
+test("[alerts-route] PUT /alerts/dismiss-all returns 401 when auth fails", async () => {
   const ctx = unauthContext();
   const res = await handleAlertsRoute(
     new Request("http://gw/alerts/dismiss-all", { method: "PUT" }),
@@ -231,7 +232,7 @@ Deno.test("[alerts-route] PUT /alerts/dismiss-all returns 401 when auth fails", 
   assertEquals(res.status, 401);
 });
 
-Deno.test("[alerts-route] PUT /alerts/:id/dismiss proxies to user-service with the alert id", async () => {
+test("[alerts-route] PUT /alerts/:id/dismiss proxies to user-service with the alert id", async () => {
   const ctx = makeContext();
   const f = captureFetch(() => new Response("{}", { status: 200 }));
   try {
@@ -249,7 +250,7 @@ Deno.test("[alerts-route] PUT /alerts/:id/dismiss proxies to user-service with t
   }
 });
 
-Deno.test("[alerts-route] PUT /alerts/:id/dismiss returns 401 when auth fails", async () => {
+test("[alerts-route] PUT /alerts/:id/dismiss returns 401 when auth fails", async () => {
   const ctx = unauthContext();
   const res = await handleAlertsRoute(
     new Request("http://gw/alerts/abc/dismiss", { method: "PUT" }),
@@ -260,7 +261,7 @@ Deno.test("[alerts-route] PUT /alerts/:id/dismiss returns 401 when auth fails", 
   assertEquals(res.status, 401);
 });
 
-Deno.test("[alerts-route] PUT /alerts/:id/dismiss returns null for non-PUT method", async () => {
+test("[alerts-route] PUT /alerts/:id/dismiss returns null for non-PUT method", async () => {
   const ctx = makeContext();
   const res = await handleAlertsRoute(
     new Request("http://gw/alerts/abc/dismiss", { method: "GET" }),
@@ -270,7 +271,7 @@ Deno.test("[alerts-route] PUT /alerts/:id/dismiss returns null for non-PUT metho
   assertEquals(res, null);
 });
 
-Deno.test("[alerts-route] forwards user-service 5xx status as-is", async () => {
+test("[alerts-route] forwards user-service 5xx status as-is", async () => {
   const ctx = makeContext();
   const f = captureFetch(() => new Response("downstream broke", { status: 502 }));
   try {
@@ -286,7 +287,7 @@ Deno.test("[alerts-route] forwards user-service 5xx status as-is", async () => {
   }
 });
 
-Deno.test("[alerts-route] returns 502 with error body when fetch throws", async () => {
+test("[alerts-route] returns 502 with error body when fetch throws", async () => {
   const ctx = makeContext();
   globalThis.fetch = ((_url: string) =>
     Promise.reject(new Error("connect ETIMEDOUT"))) as typeof fetch;

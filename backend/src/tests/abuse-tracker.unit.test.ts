@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import { type AbuseConfig, AbuseTracker } from "../gateway/abuse-tracker.ts";
 
 const TIGHT: AbuseConfig = {
@@ -13,14 +14,14 @@ function fakeSocket(): object {
   return { tag: Math.random() };
 }
 
-Deno.test("under per-socket threshold returns ok", () => {
+test("under per-socket threshold returns ok", () => {
   const tracker = new AbuseTracker(TIGHT);
   const sock = fakeSocket();
   assertEquals(tracker.recordRateLimited(sock, "alice", 1000).kind, "ok");
   assertEquals(tracker.recordRateLimited(sock, "alice", 1100).kind, "ok");
 });
 
-Deno.test("hitting per-socket threshold returns forceClose", () => {
+test("hitting per-socket threshold returns forceClose", () => {
   const tracker = new AbuseTracker(TIGHT);
   const sock = fakeSocket();
   tracker.recordRateLimited(sock, "alice", 1000);
@@ -29,7 +30,7 @@ Deno.test("hitting per-socket threshold returns forceClose", () => {
   assertEquals(d.kind, "forceClose");
 });
 
-Deno.test("rate-limited frames outside the window do not count", () => {
+test("rate-limited frames outside the window do not count", () => {
   const tracker = new AbuseTracker(TIGHT);
   const sock = fakeSocket();
   tracker.recordRateLimited(sock, "alice", 1000);
@@ -39,7 +40,7 @@ Deno.test("rate-limited frames outside the window do not count", () => {
   assertEquals(d.kind, "ok");
 });
 
-Deno.test("force-closes are counted per user across sockets", () => {
+test("force-closes are counted per user across sockets", () => {
   const tracker = new AbuseTracker(TIGHT);
   for (let i = 0; i < 3; i++) {
     const sock = fakeSocket();
@@ -52,7 +53,7 @@ Deno.test("force-closes are counted per user across sockets", () => {
   assertEquals(decision.kind, "blockUser");
 });
 
-Deno.test("user backoff expires after userBackoffMs", () => {
+test("user backoff expires after userBackoffMs", () => {
   const tracker = new AbuseTracker(TIGHT);
   for (let i = 0; i < 2; i++) {
     const sock = fakeSocket();
@@ -65,13 +66,13 @@ Deno.test("user backoff expires after userBackoffMs", () => {
   assertEquals(tracker.upgradeDecision("alice", 15_000).kind, "ok");
 });
 
-Deno.test("user with no history is not blocked", () => {
+test("user with no history is not blocked", () => {
   const tracker = new AbuseTracker(TIGHT);
   assertEquals(tracker.upgradeDecision("never-seen", 1000).kind, "ok");
   assertEquals(tracker.upgradeDecision(null, 1000).kind, "ok");
 });
 
-Deno.test("anonymous sockets share a single user bucket", () => {
+test("anonymous sockets share a single user bucket", () => {
   const tracker = new AbuseTracker(TIGHT);
   // Trigger two force-closes against anon sockets — should now block anon.
   for (let i = 0; i < 2; i++) {
@@ -83,7 +84,7 @@ Deno.test("anonymous sockets share a single user bucket", () => {
   assertEquals(tracker.upgradeDecision(null, 1500).kind, "blockUser");
 });
 
-Deno.test("authenticated user's force-closes do not affect anonymous", () => {
+test("authenticated user's force-closes do not affect anonymous", () => {
   const tracker = new AbuseTracker(TIGHT);
   for (let i = 0; i < 3; i++) {
     const sock = fakeSocket();
@@ -95,7 +96,7 @@ Deno.test("authenticated user's force-closes do not affect anonymous", () => {
   assertEquals(tracker.upgradeDecision(null, 1500).kind, "ok");
 });
 
-Deno.test("old force-closes age out of the user window", () => {
+test("old force-closes age out of the user window", () => {
   const tracker = new AbuseTracker(TIGHT);
   // One force-close at t=1000, second at t=10_000 (outside 5s window from t=1000)
   for (let pass = 0; pass < 2; pass++) {
@@ -109,7 +110,7 @@ Deno.test("old force-closes age out of the user window", () => {
   }
 });
 
-Deno.test("forgetSocket prevents memory growth", () => {
+test("forgetSocket prevents memory growth", () => {
   const tracker = new AbuseTracker(TIGHT);
   const sock = fakeSocket();
   tracker.recordRateLimited(sock, "alice", 1000);

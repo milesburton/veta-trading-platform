@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import { priceFan } from "../analytics/price-fan.ts";
 
 const SPOT = 100;
@@ -44,16 +45,16 @@ for (const { label, steps, seedKey } of [
   },
   { label: "edge case - zero steps", steps: 0, seedKey: "zero-steps" },
 ] as const) {
-  Deno.test(`[price-fan] ${label}`, () => {
+  test(`[price-fan] ${label}`, () => {
     assertEquals(runPriceFan(steps, seedKey).length, steps);
   });
 }
 
-Deno.test("[price-fan] returns valid price quantiles", () => {
+test("[price-fan] returns valid price quantiles", () => {
   assertOrderedQuantiles();
 });
 
-Deno.test("[price-fan] deterministic results with same seed", () => {
+test("[price-fan] deterministic results with same seed", () => {
   const result1 = runPriceFan(5, "same-seed");
   const result2 = runPriceFan(5, "same-seed");
 
@@ -70,7 +71,7 @@ Deno.test("[price-fan] deterministic results with same seed", () => {
   }
 });
 
-Deno.test("[price-fan] different seeds produce different results", () => {
+test("[price-fan] different seeds produce different results", () => {
   const result1 = runPriceFan(5, "seed-1");
   const result2 = runPriceFan(5, "seed-2");
 
@@ -78,7 +79,7 @@ Deno.test("[price-fan] different seeds produce different results", () => {
   assert(result2.length > 0);
 });
 
-Deno.test("[price-fan] edge case - zero volatility", () => {
+test("[price-fan] edge case - zero volatility", () => {
   const result = runPriceFan(5, "zero-sigma", 0);
 
   for (const step of result) {
@@ -86,7 +87,7 @@ Deno.test("[price-fan] edge case - zero volatility", () => {
   }
 });
 
-Deno.test("[price-fan] returns correct time steps", () => {
+test("[price-fan] returns correct time steps", () => {
   const result = runPriceFan(3, "test-time");
 
   assertEquals(result[0].tSecs, STEP_SECS);
@@ -94,7 +95,7 @@ Deno.test("[price-fan] returns correct time steps", () => {
   assertEquals(result[2].tSecs, STEP_SECS * 3);
 });
 
-Deno.test("[price-fan] p50 should be around the expected drift", () => {
+test("[price-fan] p50 should be around the expected drift", () => {
   const result = runPriceFan(5, "test-drift");
   assertOrderedQuantiles();
   assert(result[4].p50 > 0);

@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import {
   DEFAULT_EXPIRIES_SECS,
   generateStrikes,
@@ -46,11 +47,11 @@ function assertBaseRecommendation(
   assertEquals(result.scoringMode, scoringMode);
 }
 
-Deno.test("[recommendation-engine] scoreOption returns valid recommendation", () => {
+test("[recommendation-engine] scoreOption returns valid recommendation", () => {
   assertBaseRecommendation(scoreCall(), "rule-based");
 });
 
-Deno.test("[recommendation-engine] scoreOption keeps delta in the expected range", () => {
+test("[recommendation-engine] scoreOption keeps delta in the expected range", () => {
   const callResult = scoreCall();
   const putResult = scorePut();
 
@@ -60,13 +61,13 @@ Deno.test("[recommendation-engine] scoreOption keeps delta in the expected range
   assert(putResult.greeks.delta <= 0);
 });
 
-Deno.test("[recommendation-engine] scoreOption returns score in valid range", () => {
+test("[recommendation-engine] scoreOption returns score in valid range", () => {
   const result = scoreCall();
   assert(result.score >= -100);
   assert(result.score <= 100);
 });
 
-Deno.test("[recommendation-engine] scoreOptionWithSignal returns valid recommendation", () => {
+test("[recommendation-engine] scoreOptionWithSignal returns valid recommendation", () => {
   const result = scoreOptionWithSignal("call", SPOT, STRIKE, TIME, RATE, VOL, BASE_SIGNAL);
 
   assertBaseRecommendation(result, "signal-driven");
@@ -77,7 +78,7 @@ Deno.test("[recommendation-engine] scoreOptionWithSignal returns valid recommend
   assert(result.topFactors.length > 0);
 });
 
-Deno.test("[recommendation-engine] generateStrikes returns valid strike prices", () => {
+test("[recommendation-engine] generateStrikes returns valid strike prices", () => {
   const strikes = generateStrikes(SPOT);
 
   assert(Array.isArray(strikes));
@@ -92,13 +93,13 @@ Deno.test("[recommendation-engine] generateStrikes returns valid strike prices",
   }
 });
 
-Deno.test("[recommendation-engine] generateStrikes works across spot ranges", () => {
+test("[recommendation-engine] generateStrikes works across spot ranges", () => {
   for (const spot of [25, 500]) {
     assert(generateStrikes(spot).length > 0);
   }
 });
 
-Deno.test("[recommendation-engine] DEFAULT_EXPIRIES_SECS has correct format", () => {
+test("[recommendation-engine] DEFAULT_EXPIRIES_SECS has correct format", () => {
   assert(Array.isArray(DEFAULT_EXPIRIES_SECS));
   assert(DEFAULT_EXPIRIES_SECS.length > 0);
 
@@ -108,7 +109,7 @@ Deno.test("[recommendation-engine] DEFAULT_EXPIRIES_SECS has correct format", ()
   }
 });
 
-Deno.test("[recommendation-engine] scoreOption handles extreme moneyness and volatility", () => {
+test("[recommendation-engine] scoreOption handles extreme moneyness and volatility", () => {
   assert(scoreCall(200).greeks.delta > 0.9);
   assert(scoreCall(50).greeks.delta < 0.1);
   assertEquals(scoreCall(SPOT, STRIKE, TIME, RATE, 0.5).impliedVol, 0.5);

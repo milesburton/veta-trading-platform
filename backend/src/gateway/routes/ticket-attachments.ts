@@ -1,5 +1,5 @@
-import { json, jsonError, parseBody } from "@veta/http";
-import { z } from "@veta/zod";
+import { z } from "zod";
+import { json, jsonError, parseBody } from "#veta/http";
 import { isAllowedAttachmentType } from "../../../../shared/attachmentTypes.ts";
 import { type GatewayContext, isResponse } from "../context.ts";
 
@@ -22,15 +22,15 @@ interface MinioConfig {
 }
 
 function readMinioConfig(): MinioConfig | null {
-  const endpoint = Deno.env.get("MINIO_ENDPOINT");
-  const publicBaseUrl = Deno.env.get("MINIO_PUBLIC_URL");
-  const accessKey = Deno.env.get("MINIO_ROOT_USER");
-  const secretKey = Deno.env.get("MINIO_ROOT_PASSWORD");
+  const endpoint = process.env.MINIO_ENDPOINT;
+  const publicBaseUrl = process.env.MINIO_PUBLIC_URL;
+  const accessKey = process.env.MINIO_ROOT_USER;
+  const secretKey = process.env.MINIO_ROOT_PASSWORD;
   if (!endpoint || !publicBaseUrl || !accessKey || !secretKey) return null;
   return {
     endpoint,
     publicBaseUrl,
-    bucket: Deno.env.get("MINIO_BUCKET") ?? "ticket-attachments",
+    bucket: process.env.MINIO_BUCKET ?? "ticket-attachments",
     accessKey,
     secretKey,
     region: "us-east-1",
@@ -148,7 +148,10 @@ export async function handleTicketAttachmentsRoute(
     return jsonError("file exceeds 10MB limit", 413);
   }
   if (!isAllowedAttachmentType(contentType)) {
-    return jsonError("only PNG, JPEG, GIF, WebP, MP4, WebM and QuickTime attachments are supported", 400);
+    return jsonError(
+      "only PNG, JPEG, GIF, WebP, MP4, WebM and QuickTime attachments are supported",
+      400
+    );
   }
 
   const objectKey = `${authResult.user.id}/${crypto.randomUUID()}-${sanitizeFileName(fileName)}`;

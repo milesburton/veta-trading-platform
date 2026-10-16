@@ -1,15 +1,14 @@
-import "@veta/bootstrap";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json, parseBody } from "@veta/http";
-import { logger } from "@veta/logger";
-import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
+import "#veta/bootstrap";
+import { corsOptions, json, parseBody, serveFetch } from "#veta/http";
+import { logger } from "#veta/logger";
+import { createConsumer, createProducer, type MsgProducer } from "#veta/messaging";
 import {
   CheckRequestSchema,
   type RiskConfig,
   RiskConfigUpdateSchema,
   TestPositionSchema,
   TestTickSchema,
-} from "@veta/schemas/risk";
+} from "#veta/schemas/risk";
 import {
   type AssetMeta,
   type Position,
@@ -21,16 +20,16 @@ import {
 } from "./checks.ts";
 import { createConfigStore } from "./config-store.ts";
 
-const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
-const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const TEST_MODE = Deno.env.get("RISK_ENGINE_TEST_MODE") === "1";
+const PORT = Number(process.env.RISK_ENGINE_PORT) || 5_032;
+const VERSION = process.env.COMMIT_SHA || "dev";
+const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
+const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const TEST_MODE = process.env.RISK_ENGINE_TEST_MODE === "1";
 // Startup override for market-hours enforcement, distinct from the
 // hot-reloadable PUT /config toggle — mainly useful for wall-clock-sensitive
 // test environments (e.g. testcontainers integration suites) that don't
 // want every order gated by real-world market hours by default.
-const MARKET_HOURS_ENFORCED_ENV = Deno.env.get("RISK_ENGINE_MARKET_HOURS_ENFORCED");
+const MARKET_HOURS_ENFORCED_ENV = process.env.RISK_ENGINE_MARKET_HOURS_ENFORCED;
 
 const config: RiskConfig = {
   fatFingerPct: 5.0,
@@ -45,9 +44,8 @@ const config: RiskConfig = {
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
   selfCrossEnabled: true,
-  marketHoursEnforced: MARKET_HOURS_ENFORCED_ENV === undefined
-    ? true
-    : MARKET_HOURS_ENFORCED_ENV === "true",
+  marketHoursEnforced:
+    MARKET_HOURS_ENFORCED_ENV === undefined ? true : MARKET_HOURS_ENFORCED_ENV === "true",
 };
 
 const configStore = createConfigStore(config);
@@ -405,7 +403,7 @@ createProducer("risk-engine")
     logger.warn("producer init failed", { err: err as Error });
   });
 
-Deno.serve({ port: PORT }, async (req) => {
+serveFetch({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") {
     return corsOptions();
   }

@@ -1,6 +1,8 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { walk } from "jsr:@std/fs@1.0.0";
-import { relative } from "jsr:@std/path@1.0.0";
+import { readFile } from "node:fs/promises";
+import { relative } from "node:path";
+import { walk } from "#veta/fs-walk";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 
 const SRC_ROOT = new URL("../", import.meta.url).pathname;
 
@@ -17,16 +19,14 @@ const ORDERS_SUBMITTED_PRODUCERS = new Set<string>(["oms/oms-server.ts"]);
 async function findProducers(topic: string): Promise<Set<string>> {
   const found = new Set<string>();
   const escaped = topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(
-    String.raw`producer\s*[?]?\.send\s*\(\s*["']${escaped}["']`
-  );
+  const pattern = new RegExp(String.raw`producer\s*[?]?\.send\s*\(\s*["']${escaped}["']`);
 
   for await (const entry of walk(SRC_ROOT, {
     exts: [".ts"],
     skip: [/tests/, /node_modules/, /\.test\.ts$/],
   })) {
     if (!entry.isFile) continue;
-    const text = await Deno.readTextFile(entry.path);
+    const text = await readFile(entry.path, "utf8");
     if (pattern.test(text)) {
       const rel = relative(SRC_ROOT, entry.path);
       found.add(rel);
@@ -35,7 +35,7 @@ async function findProducers(topic: string): Promise<Set<string>> {
   return found;
 }
 
-Deno.test("risk-bypass: every producer of orders.new is on the allowlist", async () => {
+test("risk-bypass: every producer of orders.new is on the allowlist", async () => {
   const found = await findProducers("orders.new");
   const unexpected = [...found].filter((f) => !ORDERS_NEW_PRODUCERS.has(f));
   assertEquals(
@@ -53,7 +53,7 @@ Deno.test("risk-bypass: every producer of orders.new is on the allowlist", async
   }
 });
 
-Deno.test("risk-bypass: only oms/oms-server.ts produces orders.submitted", async () => {
+test("risk-bypass: only oms/oms-server.ts produces orders.submitted", async () => {
   const found = await findProducers("orders.submitted");
   const unexpected = [...found].filter((f) => !ORDERS_SUBMITTED_PRODUCERS.has(f));
   assertEquals(

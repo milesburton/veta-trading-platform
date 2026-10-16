@@ -1,7 +1,7 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 
-const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
+const BASE = process.env.VETA_BASE_URL ?? "http://localhost";
 
 function svcUrl(localPort: number, prodPath: string): string {
   if (BASE === "http://localhost") return `${BASE}:${localPort}`;
@@ -15,7 +15,7 @@ export const USER_SVC_URL = svcUrl(5008, "/api/user-service");
 export const ARCHIVE_URL = svcUrl(5012, "/api/fix-archive");
 const OAUTH_CLIENT_ID = "veta-automation";
 const OAUTH_REDIRECT_URI = "postmessage";
-const OAUTH_PASSWORD = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
+const OAUTH_PASSWORD = process.env.OAUTH2_SHARED_SECRET ?? "veta-dev-passcode";
 
 export const GATEWAY_WS_URL =
   BASE === "http://localhost"
@@ -32,12 +32,14 @@ export function makeAsyncConnect<TClient>(factory: () => TClient): () => Promise
 }
 
 // fallow-ignore-next-line unused-export, complexity
-export function makeGatewayAuthContext(options: {
-  role?: string;
-  name?: string;
-  includeLimits?: boolean;
-  includeUserServiceUrl?: boolean;
-} = {}): GatewayContext {
+export function makeGatewayAuthContext(
+  options: {
+    role?: string;
+    name?: string;
+    includeLimits?: boolean;
+    includeUserServiceUrl?: boolean;
+  } = {}
+): GatewayContext {
   const role = options.role ?? "trader";
   const name = options.name ?? "Test User";
 
@@ -69,9 +71,11 @@ export function makeGatewayAuthContext(options: {
 }
 
 // fallow-ignore-next-line unused-export
-export function makeGatewayUnauthContext(options: {
-  includeUserServiceUrl?: boolean;
-} = {}): GatewayContext {
+export function makeGatewayUnauthContext(
+  options: {
+    includeUserServiceUrl?: boolean;
+  } = {}
+): GatewayContext {
   const ctx: Record<string, unknown> = {
     requireAuth: (_req: Request) =>
       Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),

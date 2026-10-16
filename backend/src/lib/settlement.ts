@@ -1,8 +1,8 @@
-import type { Desk } from "@veta/primitives";
-import { isHoliday } from "@veta/trading-calendar";
-import { SIFMA_BOND_CALENDAR, US_EQUITY_CALENDAR } from "@veta/market-calendars";
+import { SIFMA_BOND_CALENDAR, US_EQUITY_CALENDAR } from "#veta/market-calendars";
+import type { Desk } from "#veta/primitives";
+import { isHoliday } from "#veta/trading-calendar";
 
-export type { Desk } from "@veta/primitives";
+export type { Desk } from "#veta/primitives";
 
 const SETTLEMENT_DAYS: Record<Desk, number> = {
   equity: 2,

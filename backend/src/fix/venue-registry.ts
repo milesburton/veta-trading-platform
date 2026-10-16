@@ -1,7 +1,7 @@
 // Backend port of frontend/src/domain/market/venue-capabilities.ts's
 // VENUE_REGISTRY, scoped to the fields a FIX NewOrderSingle can actually
 // express (ExDestination -> venue, OrdType Market/Limit, OrderQty). The
-// Deno backend and Vite frontend build separately, so this is a
+// Node backend and Vite frontend build separately, so this is a
 // duplicated literal kept in sync via a drift-guard test, per the same
 // pattern ADR 0003 Phase 1 uses for the trading calendar.
 
@@ -28,13 +28,55 @@ export interface FixVenueCapabilities {
 }
 
 export const FIX_VENUE_REGISTRY: Record<RegisteredVenueMIC, FixVenueCapabilities> = {
-  XNAS: { mic: "XNAS", name: "Nasdaq", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
-  XNYS: { mic: "XNYS", name: "NYSE", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
-  ARCX: { mic: "ARCX", name: "Cboe/ARCA", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
-  BATS: { mic: "BATS", name: "Cboe/BZX", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
-  EDGX: { mic: "EDGX", name: "Cboe EDGX", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
-  IEX: { mic: "IEX", name: "IEX", supportsMarketOrders: false, supportsLimitOrders: true, isDark: false },
-  MEMX: { mic: "MEMX", name: "Members Exchange", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
+  XNAS: {
+    mic: "XNAS",
+    name: "Nasdaq",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  XNYS: {
+    mic: "XNYS",
+    name: "NYSE",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  ARCX: {
+    mic: "ARCX",
+    name: "Cboe/ARCA",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  BATS: {
+    mic: "BATS",
+    name: "Cboe/BZX",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  EDGX: {
+    mic: "EDGX",
+    name: "Cboe EDGX",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  IEX: {
+    mic: "IEX",
+    name: "IEX",
+    supportsMarketOrders: false,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  MEMX: {
+    mic: "MEMX",
+    name: "Members Exchange",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
   DARK1: {
     mic: "DARK1",
     name: "Internal Dark Pool",
@@ -43,9 +85,27 @@ export const FIX_VENUE_REGISTRY: Record<RegisteredVenueMIC, FixVenueCapabilities
     isDark: true,
     minQuantity: 10_000,
   },
-  RFQ: { mic: "RFQ", name: "Request for Quote", supportsMarketOrders: false, supportsLimitOrders: true, isDark: false },
-  EBS: { mic: "EBS", name: "EBS (FX)", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
-  XCME: { mic: "XCME", name: "CME", supportsMarketOrders: true, supportsLimitOrders: true, isDark: false },
+  RFQ: {
+    mic: "RFQ",
+    name: "Request for Quote",
+    supportsMarketOrders: false,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  EBS: {
+    mic: "EBS",
+    name: "EBS (FX)",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
+  XCME: {
+    mic: "XCME",
+    name: "CME",
+    supportsMarketOrders: true,
+    supportsLimitOrders: true,
+    isDark: false,
+  },
 };
 
 export function isRegisteredVenue(mic: string): mic is RegisteredVenueMIC {
@@ -86,7 +146,10 @@ export function validateVenueRouting(
     return { ok: false, reason: `${venue.name} does not support limit orders` };
   }
   if (venue.minQuantity !== undefined && orderQty < venue.minQuantity) {
-    return { ok: false, reason: `${venue.name} requires a minimum quantity of ${venue.minQuantity}` };
+    return {
+      ok: false,
+      reason: `${venue.name} requires a minimum quantity of ${venue.minQuantity}`,
+    };
   }
   return { ok: true };
 }

@@ -1,4 +1,4 @@
-import { logger } from "@veta/logger";
+import { logger } from "#veta/logger";
 
 export interface TokenClientConfig {
   userServiceUrl: string;
@@ -39,7 +39,7 @@ async function deriveChallenge(verifier: string): Promise<string> {
 
 export class TokenClient {
   #config: Required<TokenClientConfig>;
-  #timer: number | undefined;
+  #timer: ReturnType<typeof setInterval> | undefined;
 
   constructor(config: TokenClientConfig) {
     this.#config = {
@@ -69,7 +69,9 @@ export class TokenClient {
       }),
     });
     if (!authorizeRes.ok) {
-      throw new Error(`oauth/authorize failed: ${authorizeRes.status} ${await authorizeRes.text()}`);
+      throw new Error(
+        `oauth/authorize failed: ${authorizeRes.status} ${await authorizeRes.text()}`
+      );
     }
     const { code } = (await authorizeRes.json()) as AuthorizeResponse;
 

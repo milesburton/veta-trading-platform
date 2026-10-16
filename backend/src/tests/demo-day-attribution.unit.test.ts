@@ -1,5 +1,6 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { FakeTime } from "jsr:@std/testing@0.217/time";
+import { FakeTime } from "#veta/fake-time";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleDemoDay, testTraderIds } from "../gateway/routes/admin.ts";
 
@@ -35,8 +36,8 @@ function stubMarketSim() {
     )) as typeof fetch;
 }
 
-Deno.test("[demo-day] orders are attributed to a trader persona, never the admin", async () => {
-  Deno.env.set("LOAD_TEST_USER_IDS", "alice,bob");
+test("[demo-day] orders are attributed to a trader persona, never the admin", async () => {
+  process.env["LOAD_TEST_USER_IDS"] = "alice,bob";
   stubMarketSim();
   // Most demo-day orders are emitted on staggered setTimeout timers, so use
   // fake time to flush them deterministically after the handler returns.
@@ -61,12 +62,12 @@ Deno.test("[demo-day] orders are attributed to a trader persona, never the admin
   } finally {
     time.restore();
     globalThis.fetch = realFetch;
-    Deno.env.delete("LOAD_TEST_USER_IDS");
+    delete process.env["LOAD_TEST_USER_IDS"];
   }
 });
 
-Deno.test("[demo-day] refuses to run without trader personas configured", async () => {
-  Deno.env.delete("LOAD_TEST_USER_IDS");
+test("[demo-day] refuses to run without trader personas configured", async () => {
+  delete process.env["LOAD_TEST_USER_IDS"];
   stubMarketSim();
   try {
     const { ctx, orders } = makeCtx("admin");
@@ -81,11 +82,11 @@ Deno.test("[demo-day] refuses to run without trader personas configured", async 
   }
 });
 
-Deno.test("[demo-day] testTraderIds parses the env list", () => {
-  Deno.env.set("LOAD_TEST_USER_IDS", " alice , bob ,, dave ");
+test("[demo-day] testTraderIds parses the env list", () => {
+  process.env["LOAD_TEST_USER_IDS"] = " alice , bob ,, dave ";
   try {
     assertEquals(testTraderIds(), ["alice", "bob", "dave"]);
   } finally {
-    Deno.env.delete("LOAD_TEST_USER_IDS");
+    delete process.env["LOAD_TEST_USER_IDS"];
   }
 });

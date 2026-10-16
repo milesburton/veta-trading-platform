@@ -1,3 +1,5 @@
+import { logger } from "#veta/logger";
+import { test } from "#veta/test";
 /**
  * Integration tests for the Market Intelligence pipeline.
  *
@@ -21,9 +23,7 @@
  *  9. Gateway proxy routes for intelligence are accessible (with auth)
  * 10. Signal direction is consistent with the reported score
  */
-
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
-import { logger } from "@veta/logger";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 import { loginAs } from "./test-helpers.ts";
 
 const FEATURE_ENGINE_URL = "http://localhost:5017";
@@ -44,19 +44,19 @@ async function getJson<T>(url: string, headers?: HeadersInit): Promise<T> {
 
 // ── Service health ────────────────────────────────────────────────────────────
 
-Deno.test("[intelligence] feature-engine is healthy", async () => {
+test("[intelligence] feature-engine is healthy", async () => {
   const health = await getJson<{ status: string; service: string }>(`${FEATURE_ENGINE_URL}/health`);
   assertEquals(health.status, "ok");
   assertEquals(health.service, "feature-engine");
 });
 
-Deno.test("[intelligence] signal-engine is healthy", async () => {
+test("[intelligence] signal-engine is healthy", async () => {
   const health = await getJson<{ status: string; service: string }>(`${SIGNAL_ENGINE_URL}/health`);
   assertEquals(health.status, "ok");
   assertEquals(health.service, "signal-engine");
 });
 
-Deno.test("[intelligence] market-data-adapters is healthy", async () => {
+test("[intelligence] market-data-adapters is healthy", async () => {
   const health = await getJson<{ status: string; service: string; eventCount: number }>(
     `${MARKET_DATA_URL}/health`
   );
@@ -65,7 +65,7 @@ Deno.test("[intelligence] market-data-adapters is healthy", async () => {
   assert(health.eventCount >= 0, "eventCount should be non-negative");
 });
 
-Deno.test("[intelligence] scenario-engine is healthy", async () => {
+test("[intelligence] scenario-engine is healthy", async () => {
   const health = await getJson<{ status: string; service: string }>(
     `${SCENARIO_ENGINE_URL}/health`
   );
@@ -75,7 +75,7 @@ Deno.test("[intelligence] scenario-engine is healthy", async () => {
 
 // ── Default weights invariants ────────────────────────────────────────────────
 
-Deno.test("[intelligence] signal-engine default weights: abs-sum=1.0, realisedVol<0, all 7 keys present", async () => {
+test("[intelligence] signal-engine default weights: abs-sum=1.0, realisedVol<0, all 7 keys present", async () => {
   const weights = await getJson<Record<string, number>>(`${SIGNAL_ENGINE_URL}/weights`);
 
   const expectedKeys = [
@@ -103,7 +103,7 @@ Deno.test("[intelligence] signal-engine default weights: abs-sum=1.0, realisedVo
 
 // ── Weight round-trip ─────────────────────────────────────────────────────────
 
-Deno.test("[intelligence] PUT /weights round-trips a single weight change", async () => {
+test("[intelligence] PUT /weights round-trips a single weight change", async () => {
   const original = await getJson<Record<string, number>>(`${SIGNAL_ENGINE_URL}/weights`);
 
   const patched = { ...original, newsVelocity: original.newsVelocity + 0.01 };
@@ -131,7 +131,7 @@ Deno.test("[intelligence] PUT /weights round-trips a single weight change", asyn
 
 // ── Feature-engine data ───────────────────────────────────────────────────────
 
-Deno.test("[intelligence] feature-engine returns all 7 feature fields for a tracked symbol", async () => {
+test("[intelligence] feature-engine returns all 7 feature fields for a tracked symbol", async () => {
   const expectedFields = [
     "momentum",
     "relativeVolume",
@@ -167,7 +167,7 @@ Deno.test("[intelligence] feature-engine returns all 7 feature fields for a trac
 
 // ── Signal data ───────────────────────────────────────────────────────────────
 
-Deno.test("[intelligence] signal-engine returns a well-formed Signal for a tracked symbol", async () => {
+test("[intelligence] signal-engine returns a well-formed Signal for a tracked symbol", async () => {
   const deadline = Date.now() + 45_000;
   let signal: Record<string, unknown> | null = null;
 
@@ -200,7 +200,7 @@ Deno.test("[intelligence] signal-engine returns a well-formed Signal for a track
   );
 });
 
-Deno.test("[intelligence] signal direction is consistent with score", async () => {
+test("[intelligence] signal direction is consistent with score", async () => {
   const deadline = Date.now() + 45_000;
   let signal: { score: number; direction: string } | null = null;
 
@@ -227,7 +227,7 @@ Deno.test("[intelligence] signal direction is consistent with score", async () =
 
 // ── Scenario engine ───────────────────────────────────────────────────────────
 
-Deno.test("[intelligence] scenario: positive momentum shock increases signal score", async () => {
+test("[intelligence] scenario: positive momentum shock increases signal score", async () => {
   const body = {
     symbol: "AAPL",
     shocks: [{ factor: "momentum", delta: 0.08 }],
@@ -261,7 +261,7 @@ Deno.test("[intelligence] scenario: positive momentum shock increases signal sco
   );
 });
 
-Deno.test("[intelligence] scenario: negative sentiment shock decreases signal score", async () => {
+test("[intelligence] scenario: negative sentiment shock decreases signal score", async () => {
   const body = {
     symbol: "AAPL",
     shocks: [{ factor: "sentimentDelta", delta: -1.0 }],
@@ -295,7 +295,7 @@ Deno.test("[intelligence] scenario: negative sentiment shock decreases signal sc
 
 // ── Market-data-adapters ──────────────────────────────────────────────────────
 
-Deno.test("[intelligence] market-data-adapters returns seeded events with valid structure", async () => {
+test("[intelligence] market-data-adapters returns seeded events with valid structure", async () => {
   const events = await getJson<
     Array<{
       id: string;
@@ -320,7 +320,7 @@ Deno.test("[intelligence] market-data-adapters returns seeded events with valid 
 
 // ── Gateway proxy routes ──────────────────────────────────────────────────────
 
-Deno.test("[intelligence] gateway proxies GET /intelligence/weights with auth", async () => {
+test("[intelligence] gateway proxies GET /intelligence/weights with auth", async () => {
   const token = await loginAs("alice");
   const res = await fetch(`${GATEWAY_URL}/intelligence/weights`, {
     headers: { cookie: `veta_user=${token}` },
@@ -331,7 +331,7 @@ Deno.test("[intelligence] gateway proxies GET /intelligence/weights with auth", 
   assertEquals(Object.keys(weights).length, 7, "should return 7 weights");
 });
 
-Deno.test("[intelligence] gateway proxies GET /intelligence/signals with auth", async () => {
+test("[intelligence] gateway proxies GET /intelligence/signals with auth", async () => {
   const token = await loginAs("alice");
   const res = await fetch(`${GATEWAY_URL}/intelligence/signals`, {
     headers: { cookie: `veta_user=${token}` },

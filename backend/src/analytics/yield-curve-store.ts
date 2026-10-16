@@ -1,4 +1,4 @@
-import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import type { Pool } from "#veta/db";
 import type { NelsonSiegelParams } from "./types.ts";
 
 export interface YieldCurveStore {

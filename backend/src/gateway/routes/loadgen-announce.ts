@@ -1,5 +1,5 @@
 // fallow-ignore-file unused-file
-import { CORS_HEADERS } from "@veta/http";
+import { CORS_HEADERS } from "#veta/http";
 import type { GatewayContext } from "../context.ts";
 import {
   type LoadgenAnnouncement,
@@ -34,7 +34,7 @@ export async function handleLoadgenAnnounceRoute(
   if (path !== "/loadgen-announce") return null;
   if (req.method !== "POST") return null;
 
-  const expected = Deno.env.get("LOADGEN_ANNOUNCE_TOKEN") ?? "";
+  const expected = process.env.LOADGEN_ANNOUNCE_TOKEN ?? "";
   if (expected.length === 0) {
     // docs: /development/testing/loadgen/
     return null;

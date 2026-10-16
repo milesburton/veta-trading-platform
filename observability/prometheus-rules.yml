@@ -91,7 +91,7 @@ groups:
           summary: "{{ $labels.job }} heap above 3 GiB — imminent OOM"
           description: |
             v8js_memory_heap_size_bytes is {{ $value | humanize }}.
-            Deno usually OOMs around 4 GiB without --max-old-space-size.
+            Node usually OOMs around 4 GiB without --max-old-space-size.
             Restart the container and capture a heap snapshot via
             chrome://inspect before it dies on its own.
 

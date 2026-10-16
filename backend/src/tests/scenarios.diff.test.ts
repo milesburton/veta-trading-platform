@@ -1,4 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { diffOutcome } from "../scenarios/diff.ts";
 import type { ScenarioActual, ScenarioExpected } from "../scenarios/types.ts";
 
@@ -12,13 +13,13 @@ const baseActual: ScenarioActual = {
   durationMs: 12_000,
 };
 
-Deno.test("diff: null expected → matched, no fields", () => {
+test("diff: null expected → matched, no fields", () => {
   const d = diffOutcome(null, baseActual);
   assertEquals(d.matched, true);
   assertEquals(d.fields, {});
 });
 
-Deno.test("diff: exact match on all expected fields", () => {
+test("diff: exact match on all expected fields", () => {
   const expected: ScenarioExpected = {
     fillCount: 5,
     totalFilled: 1_000,
@@ -31,7 +32,7 @@ Deno.test("diff: exact match on all expected fields", () => {
   assertEquals(d.fields.totalFilled?.withinTolerance, true);
 });
 
-Deno.test("diff: mismatch outside tolerance is flagged", () => {
+test("diff: mismatch outside tolerance is flagged", () => {
   const expected: ScenarioExpected = {
     fillCount: 5,
     totalFilled: 1_000,
@@ -44,7 +45,7 @@ Deno.test("diff: mismatch outside tolerance is flagged", () => {
   assertEquals(d.fields.avgFillPriceBps?.withinTolerance, false);
 });
 
-Deno.test("diff: mismatch within tolerance still matches", () => {
+test("diff: mismatch within tolerance still matches", () => {
   const expected: ScenarioExpected = {
     fillCount: 4,
     totalFilled: 1_000,
@@ -55,7 +56,7 @@ Deno.test("diff: mismatch within tolerance still matches", () => {
   assertEquals(d.fields.fillCount?.withinTolerance, true);
 });
 
-Deno.test("diff: only checks fields that are specified in expected", () => {
+test("diff: only checks fields that are specified in expected", () => {
   const expected: ScenarioExpected = { fillCount: 5 };
   const d = diffOutcome(expected, baseActual);
   assertEquals(Object.keys(d.fields), ["fillCount"]);

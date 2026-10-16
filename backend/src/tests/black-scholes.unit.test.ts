@@ -1,4 +1,5 @@
-import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertAlmostEquals, assertEquals } from "#veta/test-assert";
 import { blackScholes, normCdf, normPdf } from "../analytics/black-scholes.ts";
 import type { OptionType } from "../analytics/types.ts";
 
@@ -49,7 +50,7 @@ function assertDeltaPredicate(
   assert(predicate(priceOption(optionType, spot).greeks.delta), label);
 }
 
-Deno.test("[black-scholes] normCdf returns valid values", () => {
+test("[black-scholes] normCdf returns valid values", () => {
   assertEquals(normCdf(-Infinity), 0);
   assertEquals(normCdf(Infinity), 1);
 
@@ -64,7 +65,7 @@ Deno.test("[black-scholes] normCdf returns valid values", () => {
   }
 });
 
-Deno.test("[black-scholes] normPdf returns valid values", () => {
+test("[black-scholes] normPdf returns valid values", () => {
   assert(normPdf(0) > 0);
   assertEquals(normPdf(Infinity), 0);
   assertEquals(normPdf(-Infinity), 0);
@@ -72,12 +73,12 @@ Deno.test("[black-scholes] normPdf returns valid values", () => {
 });
 
 for (const optionType of ["call", "put"] as const) {
-  Deno.test(`[black-scholes] ${optionType} option pricing`, () => {
+  test(`[black-scholes] ${optionType} option pricing`, () => {
     assertCommonGreeks(optionType);
   });
 }
 
-Deno.test("[black-scholes] edge cases return intrinsic value", () => {
+test("[black-scholes] edge cases return intrinsic value", () => {
   const cases = [
     {
       label: "zero time",
@@ -99,7 +100,7 @@ Deno.test("[black-scholes] edge cases return intrinsic value", () => {
   }
 });
 
-Deno.test("[black-scholes] deep moneyness pushes delta to expected extremes", () => {
+test("[black-scholes] deep moneyness pushes delta to expected extremes", () => {
   const cases = [
     {
       label: "deep ITM call",
@@ -132,7 +133,7 @@ Deno.test("[black-scholes] deep moneyness pushes delta to expected extremes", ()
   }
 });
 
-Deno.test("[black-scholes] greek sign checks remain sane", () => {
+test("[black-scholes] greek sign checks remain sane", () => {
   const callGreeks = priceOption("call").greeks;
   const putGreeks = priceOption("put").greeks;
 

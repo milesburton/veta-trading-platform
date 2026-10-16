@@ -1,14 +1,15 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { decideAccessLog, type ThrottleEntry } from "../gateway/access-log-throttle.ts";
 
-Deno.test("decideAccessLog: first event for a key always emits", () => {
+test("decideAccessLog: first event for a key always emits", () => {
   const state = new Map<string, ThrottleEntry>();
   const decision = decideAccessLog(state, "auth_failure:bad_token", 1_000, 1_000);
   assertEquals(decision.shouldEmit, true);
   assertEquals(decision.suppressedSince, 0);
 });
 
-Deno.test("decideAccessLog: events within throttle window are suppressed", () => {
+test("decideAccessLog: events within throttle window are suppressed", () => {
   const state = new Map<string, ThrottleEntry>();
   decideAccessLog(state, "auth_failure:bad_token", 1000, 1000);
   const second = decideAccessLog(state, "auth_failure:bad_token", 1500, 1000);
@@ -17,7 +18,7 @@ Deno.test("decideAccessLog: events within throttle window are suppressed", () =>
   assertEquals(third.shouldEmit, false);
 });
 
-Deno.test("decideAccessLog: next emit after throttle reports suppressed count", () => {
+test("decideAccessLog: next emit after throttle reports suppressed count", () => {
   const state = new Map<string, ThrottleEntry>();
   decideAccessLog(state, "auth_failure:bad_token", 0, 1000);
   decideAccessLog(state, "auth_failure:bad_token", 100, 1000);
@@ -28,7 +29,7 @@ Deno.test("decideAccessLog: next emit after throttle reports suppressed count", 
   assertEquals(afterWindow.suppressedSince, 3);
 });
 
-Deno.test("decideAccessLog: independent keys throttle independently", () => {
+test("decideAccessLog: independent keys throttle independently", () => {
   const state = new Map<string, ThrottleEntry>();
   decideAccessLog(state, "auth_failure:bad_token", 0, 1000);
   const otherFirst = decideAccessLog(state, "auth_failure:csrf", 100, 1000);
@@ -37,7 +38,7 @@ Deno.test("decideAccessLog: independent keys throttle independently", () => {
   assertEquals(sameKey.shouldEmit, false);
 });
 
-Deno.test("decideAccessLog: resets suppressed counter after an emit", () => {
+test("decideAccessLog: resets suppressed counter after an emit", () => {
   const state = new Map<string, ThrottleEntry>();
   decideAccessLog(state, "auth_failure:bad_token", 0, 1000);
   decideAccessLog(state, "auth_failure:bad_token", 100, 1000);

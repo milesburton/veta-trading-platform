@@ -1,4 +1,5 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assert, assertEquals } from "#veta/test-assert";
 import {
   createRuntimeConfigStore,
   deriveSubsystemState,
@@ -49,7 +50,7 @@ function makeFakePool(): FakePool {
   };
 }
 
-Deno.test("[runtime-config-store] caches getConfig within TTL", async () => {
+test("[runtime-config-store] caches getConfig within TTL", async () => {
   const pool = makeFakePool();
   const nowMs = 1_000_000;
   const store = await createRuntimeConfigStore(
@@ -67,7 +68,7 @@ Deno.test("[runtime-config-store] caches getConfig within TTL", async () => {
   assertEquals(pool.__selectCount() - baseSelects, 1, "only one SELECT during TTL window");
 });
 
-Deno.test("[runtime-config-store] refreshes after TTL expires", async () => {
+test("[runtime-config-store] refreshes after TTL expires", async () => {
   const pool = makeFakePool();
   let nowMs = 1_000_000;
   const store = await createRuntimeConfigStore(
@@ -88,7 +89,7 @@ Deno.test("[runtime-config-store] refreshes after TTL expires", async () => {
   assertEquals(pool.__selectCount() - baseSelects, 2, "refetches at +1100ms");
 });
 
-Deno.test("[runtime-config-store] updateConfig invalidates the cache with the new value", async () => {
+test("[runtime-config-store] updateConfig invalidates the cache with the new value", async () => {
   const pool = makeFakePool();
   const nowMs = 1_000_000;
   const store = await createRuntimeConfigStore(
@@ -115,7 +116,7 @@ Deno.test("[runtime-config-store] updateConfig invalidates the cache with the ne
   assert(selectsAfterUpdate > baseSelects, "updateConfig did a fresh fetch");
 });
 
-Deno.test("[runtime-config-store] cacheTtlMs=0 disables the cache", async () => {
+test("[runtime-config-store] cacheTtlMs=0 disables the cache", async () => {
   const pool = makeFakePool();
   const store = await createRuntimeConfigStore(
     pool as unknown as Parameters<typeof createRuntimeConfigStore>[0],
@@ -128,7 +129,7 @@ Deno.test("[runtime-config-store] cacheTtlMs=0 disables the cache", async () => 
   assertEquals(pool.__selectCount() - baseSelects, 3, "every call hits the DB when cache is off");
 });
 
-Deno.test("[runtime-config-store] missing row falls back to a fresh default config", async () => {
+test("[runtime-config-store] missing row falls back to a fresh default config", async () => {
   const pool = makeFakePool();
   pool.__setRow(null);
   const t0 = 5_000_000;
@@ -144,7 +145,7 @@ Deno.test("[runtime-config-store] missing row falls back to a fresh default conf
   assertEquals(cfg.updatedAt, t0);
 });
 
-Deno.test("[runtime-config-store] resolveEffectivePolicy overlays runtime enabled/workerEnabled/triggerMode onto base", () => {
+test("[runtime-config-store] resolveEffectivePolicy overlays runtime enabled/workerEnabled/triggerMode onto base", () => {
   const base: LlmPolicy = {
     enabled: false,
     workerEnabled: false,
@@ -201,30 +202,30 @@ function policyFor(enabled: boolean, minRefreshMinutes = 5): LlmPolicy {
   };
 }
 
-Deno.test("[runtime-config-store] deriveSubsystemState: disabled when policy.enabled=false", () => {
+test("[runtime-config-store] deriveSubsystemState: disabled when policy.enabled=false", () => {
   assertEquals(deriveSubsystemState(policyFor(false), 5, null, null), "disabled");
 });
 
-Deno.test("[runtime-config-store] deriveSubsystemState: error when last error within 30s", () => {
+test("[runtime-config-store] deriveSubsystemState: error when last error within 30s", () => {
   assertEquals(deriveSubsystemState(policyFor(true), 0, Date.now() - 5_000, null), "error");
 });
 
-Deno.test("[runtime-config-store] deriveSubsystemState: active when pendingJobs > 0", () => {
+test("[runtime-config-store] deriveSubsystemState: active when pendingJobs > 0", () => {
   assertEquals(deriveSubsystemState(policyFor(true), 2, null, null), "active");
 });
 
-Deno.test("[runtime-config-store] deriveSubsystemState: cooldown when last activity inside minRefresh window", () => {
+test("[runtime-config-store] deriveSubsystemState: cooldown when last activity inside minRefresh window", () => {
   assertEquals(deriveSubsystemState(policyFor(true, 5), 0, null, Date.now() - 60_000), "cooldown");
 });
 
-Deno.test("[runtime-config-store] deriveSubsystemState: armed when none of the conditions apply", () => {
+test("[runtime-config-store] deriveSubsystemState: armed when none of the conditions apply", () => {
   assertEquals(deriveSubsystemState(policyFor(true, 1), 0, null, null), "armed");
 });
 
-Deno.test("[runtime-config-store] deriveSubsystemState: armed when last error is old (>30s)", () => {
+test("[runtime-config-store] deriveSubsystemState: armed when last error is old (>30s)", () => {
   assertEquals(deriveSubsystemState(policyFor(true), 0, Date.now() - 120_000, null), "armed");
 });
 
-Deno.test("[runtime-config-store] deriveSubsystemState: armed when last activity is older than minRefresh", () => {
+test("[runtime-config-store] deriveSubsystemState: armed when last activity is older than minRefresh", () => {
   assertEquals(deriveSubsystemState(policyFor(true, 1), 0, null, Date.now() - 5 * 60_000), "armed");
 });

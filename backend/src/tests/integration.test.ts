@@ -1,3 +1,5 @@
+import { test } from "#veta/test";
+import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
  * Integration tests — require backend services to be running.
  *
@@ -7,8 +9,6 @@
  * These tests verify that internal health endpoints and bus-adjacent
  * behaviour are correct.
  */
-
-import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { loginAs } from "./test-helpers.ts";
 
 const GATEWAY_URL = "http://localhost:5011";
@@ -35,13 +35,13 @@ async function assertAlgoHealth(url: string): Promise<void> {
 
 // ── OPTIONS preflight (CORS) ──────────────────────────────────────────────────
 
-Deno.test("[cors] OMS OPTIONS returns 204", async () => {
+test("[cors] OMS OPTIONS returns 204", async () => {
   const res = await fetch(OMS_URL, { method: "OPTIONS", signal: t() });
   assertEquals(res.status, 204);
   await res.body?.cancel();
 });
 
-Deno.test("[cors] gateway OPTIONS returns 204", async () => {
+test("[cors] gateway OPTIONS returns 204", async () => {
   const res = await fetch(GATEWAY_URL, { method: "OPTIONS", signal: t() });
   assertEquals(res.status, 204);
   await res.body?.cancel();
@@ -51,7 +51,7 @@ Deno.test("[cors] gateway OPTIONS returns 204", async () => {
 // Note: /assets, /candles, /orders require auth via the gateway.
 // We test the upstream services directly to verify data availability.
 
-Deno.test("[market-sim] /assets returns asset list with AAPL", async () => {
+test("[market-sim] /assets returns asset list with AAPL", async () => {
   const res = await fetch(`${MARKET_URL}/assets`, { signal: t() });
   assertEquals(res.status, 200);
   const assets = (await res.json()) as { symbol: string }[];
@@ -59,7 +59,7 @@ Deno.test("[market-sim] /assets returns asset list with AAPL", async () => {
   assertExists(assets.find((a) => a.symbol === "AAPL"));
 });
 
-Deno.test("[journal] /candles returns array", async () => {
+test("[journal] /candles returns array", async () => {
   const res = await fetch(`${JOURNAL_URL}/candles?instrument=AAPL&interval=1m&limit=5`, {
     signal: t(),
   });
@@ -67,7 +67,7 @@ Deno.test("[journal] /candles returns array", async () => {
   assert(Array.isArray(await res.json()));
 });
 
-Deno.test("[journal] /orders returns array", async () => {
+test("[journal] /orders returns array", async () => {
   const res = await fetch(`${JOURNAL_URL}/orders?limit=5`, { signal: t() });
   assertEquals(res.status, 200);
   assert(Array.isArray(await res.json()));
@@ -75,7 +75,7 @@ Deno.test("[journal] /orders returns array", async () => {
 
 // ── Market data ───────────────────────────────────────────────────────────────
 
-Deno.test("[market] /assets returns enriched fields", async () => {
+test("[market] /assets returns enriched fields", async () => {
   const res = await fetch(`${MARKET_URL}/assets`, { signal: t() });
   assertEquals(res.status, 200);
   const assets = (await res.json()) as {
@@ -92,19 +92,19 @@ Deno.test("[market] /assets returns enriched fields", async () => {
 
 // ── Algo health: pending/active counts ───────────────────────────────────────
 
-Deno.test("[limit-algo] health includes pending count", async () => {
+test("[limit-algo] health includes pending count", async () => {
   await assertAlgoHealth(`${LIMIT_URL}/health`);
 });
 
-Deno.test("[pov-algo] health includes activeOrders count", async () => {
+test("[pov-algo] health includes activeOrders count", async () => {
   await assertAlgoHealth(`${POV_URL}/health`);
 });
 
-Deno.test("[vwap-algo] health includes activeOrders count", async () => {
+test("[vwap-algo] health includes activeOrders count", async () => {
   await assertAlgoHealth(`${VWAP_URL}/health`);
 });
 
-Deno.test("[twap-algo] health is ok", async () => {
+test("[twap-algo] health is ok", async () => {
   const res = await fetch(`${TWAP_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
   assertEquals(((await res.json()) as { status: string }).status, "ok");
@@ -112,14 +112,14 @@ Deno.test("[twap-algo] health is ok", async () => {
 
 // ── FIX Archive ───────────────────────────────────────────────────────────────
 
-Deno.test("[fix-archive] /executions?symbol=AAPL returns filtered array", async () => {
+test("[fix-archive] /executions?symbol=AAPL returns filtered array", async () => {
   const res = await fetch(`${ARCHIVE_URL}/executions?symbol=AAPL&limit=5`, { signal: t() });
   assertEquals(res.status, 200);
   const body = await res.json();
   assert(Array.isArray(body));
 });
 
-Deno.test("[fix-archive] /executions/:nonexistent returns 404", async () => {
+test("[fix-archive] /executions/:nonexistent returns 404", async () => {
   const res = await fetch(`${ARCHIVE_URL}/executions/NONEXISTENT-EXEC`, { signal: t() });
   assertEquals(res.status, 404);
   await res.body?.cancel();
@@ -127,7 +127,7 @@ Deno.test("[fix-archive] /executions/:nonexistent returns 404", async () => {
 
 // ── Gateway: order submission via WebSocket ───────────────────────────────────
 
-Deno.test("[gateway] WS connects and responds to submitOrder within 5s", async () => {
+test("[gateway] WS connects and responds to submitOrder within 5s", async () => {
   // Gateway requires a valid session cookie to submit orders.
   // In CI without a live user-service session, the gateway returns an
   // error event rather than orderAck — both confirm the WS message pipeline works.
@@ -183,13 +183,13 @@ Deno.test("[gateway] WS connects and responds to submitOrder within 5s", async (
 
 // ── OMS: health only (no longer accepts HTTP order submission) ────────────────
 
-Deno.test("[oms] health is ok", async () => {
+test("[oms] health is ok", async () => {
   const res = await fetch(`${OMS_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
   assertEquals(((await res.json()) as { status: string }).status, "ok");
 });
 
-Deno.test("[oms] POST / returns 404 (order submission moved to bus)", async () => {
+test("[oms] POST / returns 404 (order submission moved to bus)", async () => {
   const res = await fetch(OMS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -204,7 +204,7 @@ Deno.test("[oms] POST / returns 404 (order submission moved to bus)", async () =
 
 const EMPTY_FILTER_EXPR = { kind: "group", id: "root", join: "AND", rules: [] };
 
-Deno.test("[grid/query] POST /grid/query without auth returns 401", async () => {
+test("[grid/query] POST /grid/query without auth returns 401", async () => {
   const res = await fetch(`${GATEWAY_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -222,7 +222,7 @@ Deno.test("[grid/query] POST /grid/query without auth returns 401", async () => 
   await res.body?.cancel();
 });
 
-Deno.test("[grid/query] POST /grid/query with malformed body returns 400", async () => {
+test("[grid/query] POST /grid/query with malformed body returns 400", async () => {
   // Direct to journal (bypassing gateway auth for this structural test)
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
@@ -234,7 +234,7 @@ Deno.test("[grid/query] POST /grid/query with malformed body returns 400", async
   await res.body?.cancel();
 });
 
-Deno.test("[grid/query] POST /grid/query direct to journal returns correct shape", async () => {
+test("[grid/query] POST /grid/query direct to journal returns correct shape", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -259,13 +259,13 @@ Deno.test("[grid/query] POST /grid/query direct to journal returns correct shape
 
 // ── Shared workspaces ─────────────────────────────────────────────────────────
 
-Deno.test("[shared-workspaces] GET /shared-workspaces without auth returns 401", async () => {
+test("[shared-workspaces] GET /shared-workspaces without auth returns 401", async () => {
   const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, { signal: t() });
   assertEquals(res.status, 401);
   await res.body?.cancel();
 });
 
-Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async () => {
+test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async () => {
   const aliceCookie = `veta_user=${await loginAs("alice")}`;
   const bobCookie = `veta_user=${await loginAs("bob")}`;
 
@@ -320,7 +320,7 @@ Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async (
   assert(!afterList.find((e) => e.id === id), "Deleted workspace should not appear in list");
 });
 
-Deno.test("[shared-workspaces] GET /:id returns model JSON", async () => {
+test("[shared-workspaces] GET /:id returns model JSON", async () => {
   const aliceCookie = `veta_user=${await loginAs("alice")}`;
   const model = { global: {}, layout: { type: "row", children: [] } };
 

@@ -1,12 +1,13 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { classifyRequestSource } from "../gateway/request-source.ts";
 
-Deno.test("k6 user-agent is classified as loadgen", () => {
+test("k6 user-agent is classified as loadgen", () => {
   assertEquals(classifyRequestSource("k6/0.55.0"), "loadgen");
   assertEquals(classifyRequestSource("k6/1.0.0-rc"), "loadgen");
 });
 
-Deno.test("non-k6 user-agents are unclassified", () => {
+test("non-k6 user-agents are unclassified", () => {
   assertEquals(
     classifyRequestSource("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"),
     undefined
@@ -17,13 +18,13 @@ Deno.test("non-k6 user-agents are unclassified", () => {
   assertEquals(classifyRequestSource("Mozilla/5.0 k6/0.55.0"), undefined);
 });
 
-Deno.test("missing user-agent is undefined (no source claim)", () => {
+test("missing user-agent is undefined (no source claim)", () => {
   assertEquals(classifyRequestSource(null), undefined);
   assertEquals(classifyRequestSource(undefined), undefined);
   assertEquals(classifyRequestSource(""), undefined);
 });
 
-Deno.test("classifier never returns 'loadgen' on suspicious-looking UAs", () => {
+test("classifier never returns 'loadgen' on suspicious-looking UAs", () => {
   // A real attacker isn't going to advertise k6 in their UA, but we should
   // still treat this as a false positive (and the classifier handles it
   // because it's a noise filter, not an auth signal).

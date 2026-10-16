@@ -31,7 +31,7 @@ AI-assisted work.
 
 ## Pre-commit hooks and testing
 
-- The pre-commit hook runs `deno task check` and unit tests. If it regenerates
+- The pre-commit hook runs `npm run check` and unit tests. If it regenerates
   lockfiles or test-inventory.json, these changes are expected and should be staged.
 - When amending a commit after review feedback, re-run pre-commit: it ensures
   consistency and catches new issues.

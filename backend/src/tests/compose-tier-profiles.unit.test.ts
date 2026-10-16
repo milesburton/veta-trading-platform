@@ -1,4 +1,6 @@
-import { assertEquals } from "jsr:@std/assert@0.217";
+import { readFileSync } from "node:fs";
+import { test } from "#veta/test";
+import { assertEquals } from "#veta/test-assert";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
@@ -30,11 +32,11 @@ function parseServiceProfiles(composeText: string): Map<string, string[]> {
 }
 
 function readServiceBlocks(): Map<string, string[]> {
-  const composeText = Deno.readTextFileSync(COMPOSE_PATH);
+  const composeText = readFileSync(COMPOSE_PATH, "utf8");
   return parseServiceProfiles(composeText);
 }
 
-Deno.test("[compose] every Tier 0 registry service has no profiles key (always starts)", () => {
+test("[compose] every Tier 0 registry service has no profiles key (always starts)", () => {
   const blocks = readServiceBlocks();
   const offenders: string[] = [];
   for (const svc of SERVICE_REGISTRY) {
@@ -52,7 +54,7 @@ Deno.test("[compose] every Tier 0 registry service has no profiles key (always s
   );
 });
 
-Deno.test("[compose] every Tier 1/2/3 registry service carries the on-demand profile", () => {
+test("[compose] every Tier 1/2/3 registry service carries the on-demand profile", () => {
   const blocks = readServiceBlocks();
   const offenders: string[] = [];
   for (const svc of SERVICE_REGISTRY) {
@@ -70,11 +72,9 @@ Deno.test("[compose] every Tier 1/2/3 registry service carries the on-demand pro
   );
 });
 
-Deno.test("[compose] the 8 synthetic traders are gated behind on-demand, not started by default", () => {
+test("[compose] the 8 synthetic traders are gated behind on-demand, not started by default", () => {
   const blocks = readServiceBlocks();
-  const synthetic = [...blocks.entries()].filter(([name]) =>
-    name.startsWith("synthetic-trader-")
-  );
+  const synthetic = [...blocks.entries()].filter(([name]) => name.startsWith("synthetic-trader-"));
   assertEquals(synthetic.length, 8, "expected exactly 8 synthetic-trader-* compose blocks");
   for (const [name, profiles] of synthetic) {
     assertEquals(
@@ -85,7 +85,7 @@ Deno.test("[compose] the 8 synthetic traders are gated behind on-demand, not sta
   }
 });
 
-Deno.test("[compose] risk-engine and fix-exchange have no profiles key (Tier 0, always-on)", () => {
+test("[compose] risk-engine and fix-exchange have no profiles key (Tier 0, always-on)", () => {
   const blocks = readServiceBlocks();
   for (const name of ["risk-engine", "fix-exchange"]) {
     const profiles = blocks.get(name);

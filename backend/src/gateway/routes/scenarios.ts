@@ -1,5 +1,5 @@
-import { CORS_HEADERS } from "@veta/http";
-import { logger } from "@veta/logger";
+import { CORS_HEADERS } from "#veta/http";
+import { logger } from "#veta/logger";
 import { runScenario } from "../../scenarios/orchestrator.ts";
 import { ScenarioCreateSchema, ScenarioUpdateSchema } from "../../scenarios/schema.ts";
 import {
