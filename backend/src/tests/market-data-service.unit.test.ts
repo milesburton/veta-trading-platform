@@ -77,7 +77,7 @@ async function call(method: string, path: string, body?: unknown) {
     new Request(`http://md${path}`, {
       method,
       body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
-    }),
+    })
   );
 }
 
@@ -135,7 +135,7 @@ test("[market-data] lists sources with their configuration and state", async () 
   const sources = await (await call("GET", "/sources")).json();
   assertEquals(
     sources.map((s: { id: string }) => s.id),
-    ["synthetic", "alpha-vantage", "tiingo", "polygon"],
+    ["synthetic", "alpha-vantage", "tiingo", "polygon"]
   );
   const byId = Object.fromEntries(sources.map((s: { id: string }) => [s.id, s]));
   assertEquals(byId.synthetic.active, true);
