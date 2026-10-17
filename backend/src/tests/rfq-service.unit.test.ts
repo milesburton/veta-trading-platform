@@ -67,7 +67,7 @@ async function call(method: string, path: string, body?: unknown) {
     new Request(`http://rfq${path}`, {
       method,
       body: body === undefined ? undefined : JSON.stringify(body),
-    }),
+    })
   );
 }
 
@@ -182,7 +182,7 @@ test("[rfq-service] manual execution picks the requested dealer quote", async ()
 
   assertEquals(
     (await call("POST", `/rfq/${pending.rfqId}/execute`, { dealerId: "NOPE" })).status,
-    404,
+    404
   );
   const ok = await call("POST", `/rfq/${pending.rfqId}/execute`, { dealerId });
   assertEquals(ok.status, 200);
@@ -246,7 +246,7 @@ test("[rfq-service] sell-side RFQ flows from request through markup to a confirm
 
   assertEquals(
     (await call("PUT", `/rfq/sellside/${id}/markup`, { salesUserId: "s-2", markupBps: 10 })).status,
-    403,
+    403
   );
   const marked = await (
     await call("PUT", `/rfq/sellside/${id}/markup`, { salesUserId: "s-1", markupBps: 10 })
@@ -256,7 +256,7 @@ test("[rfq-service] sell-side RFQ flows from request through markup to a confirm
 
   assertEquals(
     (await call("PUT", `/rfq/sellside/${id}/confirm`, { clientUserId: "c-2" })).status,
-    403,
+    403
   );
   captured.sent.length = 0;
   const confirmed = await (
