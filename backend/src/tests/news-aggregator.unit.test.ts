@@ -78,7 +78,7 @@ async function call(method: string, path: string, body?: unknown) {
     new Request(`http://news${path}`, {
       method,
       body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
-    }),
+    })
   );
 }
 
@@ -91,7 +91,7 @@ beforeAll(async () => {
       return Promise.resolve(
         captured.assetsOk.value
           ? new Response(JSON.stringify([{ symbol: "AAPL" }, { symbol: "MSFT" }]))
-          : new Response("{}", { status: 500 }),
+          : new Response("{}", { status: 500 })
       );
     }
     return Promise.resolve(new Response(JSON.stringify(feedFor(url) ?? { status: "error" })));
@@ -115,7 +115,7 @@ test("[news] loads symbols and ingests general and symbol specific feeds", async
       ["yahoo-finance", true],
       ["marketwatch", true],
       ["investing-com", true],
-    ],
+    ]
   );
 });
 
@@ -142,7 +142,7 @@ test("[news] publishes the feed, signal and normalised events for each new item"
   assertEquals(topics, new Set(["news.feed", "news.signal", "news.events.normalised"]));
 
   const normalised = captured.sent.find(
-    (s) => s.topic === "news.events.normalised" && String(s.payload.headline).includes("MSFT"),
+    (s) => s.topic === "news.events.normalised" && String(s.payload.headline).includes("MSFT")
   );
   assertEquals(normalised?.payload.tickers, ["MSFT"]);
   assertEquals(normalised?.payload.relevanceScore, 0.8);
@@ -195,7 +195,7 @@ test("[news] creates sources with validation and rejects duplicates", async () =
   });
   assertEquals(
     (await call("POST", "/sources", { label: "Reuters Wire", rssTemplate: "x" })).status,
-    409,
+    409
   );
 
   const symbolOnly = await call("POST", "/sources", { label: "!!!", rssTemplate: "https://s" });
