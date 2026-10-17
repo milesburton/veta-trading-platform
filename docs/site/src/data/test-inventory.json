@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 144,
-      "cases": 1613,
+      "files": 145,
+      "cases": 1622,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -84,6 +84,7 @@
         "matching-engine.unit.test.ts": 14,
         "messaging.test.ts": 19,
         "monte-carlo.unit.test.ts": 10,
+        "news-aggregator.unit.test.ts": 9,
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
         "oms.test.ts": 16,
