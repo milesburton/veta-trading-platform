@@ -89,7 +89,9 @@ export async function handleScenariosRoute(
       const denied = requireTrader(auth.user.role);
       if (denied) return denied;
       const ok = await deleteScenario(auth.user.id, id);
-      return ok ? json(204, {}) : json(404, { error: "Not found" });
+      return ok
+        ? new Response(null, { status: 204, headers: CORS_HEADERS })
+        : json(404, { error: "Not found" });
     }
     return json(405, { error: "Method not allowed" });
   }
