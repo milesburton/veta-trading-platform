@@ -112,7 +112,7 @@ test("[ccp] novates a fill, queues settlement and posts initial margin", async (
 
   assertEquals(
     captured.sent.map((s) => s.topic),
-    ["ccp.novation", "ccp.settlement.queued", "ccp.margin"],
+    ["ccp.novation", "ccp.settlement.queued", "ccp.margin"]
   );
   const novation = captured.sent[0].payload;
   assertEquals(novation.ccpCounterparty, "VETA-CCP");
@@ -159,7 +159,7 @@ test("[ccp] lists pending settlements, filtered by user and by date", async () =
   assertEquals(all.total, 3);
   assertEquals(
     all.obligations.map((o: { settlementDate: string }) => o.settlementDate),
-    ["2026-10-17", "2026-10-18", "2099-01-01"],
+    ["2026-10-17", "2026-10-18", "2099-01-01"]
   );
   assertEquals((await json("/ccp/settlements?userId=u-2")).total, 1);
 
@@ -180,7 +180,7 @@ test("[ccp] mark to market calls variation margin when losses breach maintenance
   await vi.advanceTimersByTimeAsync(10_000);
 
   const call = captured.sent.find(
-    (s) => s.topic === "ccp.margin" && s.payload.type === "variation",
+    (s) => s.topic === "ccp.margin" && s.payload.type === "variation"
   );
   assertEquals(call?.payload.userId, "u-1");
   assertEquals(call?.payload.unrealisedPnl, -1_500);
@@ -195,7 +195,7 @@ test("[ccp] mark to market stays quiet when prices hold", async () => {
   assertEquals(
     captured.sent.filter((s) => s.payload.userId === "u-1" && s.payload.type === "variation")
       .length,
-    0,
+    0
   );
 });
 

@@ -89,7 +89,7 @@ test("[dark-pool] serves health and preflight and rejects unknown routes", async
   assertEquals(await health.json(), { service: "dark-pool", version: "dev", status: "ok" });
   assertEquals(
     (await captured.handler(new Request("http://dp/x", { method: "OPTIONS" }))).status,
-    204,
+    204
   );
   assertEquals((await captured.handler(new Request("http://dp/x"))).status, 404);
 });
@@ -119,7 +119,7 @@ test("[dark-pool] matches crossing orders at the midpoint and publishes the exec
 
   assertEquals(
     captured.sent.map((s) => s.topic),
-    ["dark.execution", "orders.filled", "orders.filled", "fix.execution", "fix.execution"],
+    ["dark.execution", "orders.filled", "orders.filled", "fix.execution", "fix.execution"]
   );
   assertEquals(captured.sent[0].payload.midPrice, 100);
   assertEquals(captured.sent[0].payload.matchedQty, 20_000);
@@ -166,7 +166,7 @@ test("[dark-pool] expires timed out residuals when configured to", async () => {
   assertEquals(expired?.payload.remainingQty, 20_000);
   assertEquals(
     captured.sent.some((s) => s.topic === "orders.routed"),
-    false,
+    false
   );
 });
 
