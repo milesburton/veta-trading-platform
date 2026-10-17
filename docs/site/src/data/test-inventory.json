@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 141,
-      "cases": 1583,
+      "files": 142,
+      "cases": 1595,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -102,6 +102,7 @@
         "request-source.unit.test.ts": 4,
         "rfq-math.unit.test.ts": 19,
         "rfq-sellside-transitions.unit.test.ts": 12,
+        "rfq-service.unit.test.ts": 12,
         "risk-bypass.test.ts": 2,
         "risk-checks.unit.test.ts": 38,
         "risk-schema.unit.test.ts": 20,
