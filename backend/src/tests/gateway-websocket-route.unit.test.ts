@@ -86,7 +86,7 @@ function upgradeRequest(cookie?: string, headers: Record<string, string> = {}) {
 async function connect(
   h: Harness,
   validate: (token: string) => Promise<AuthResult | null>,
-  cookie?: string,
+  cookie?: string
 ): Promise<FakeSocket> {
   const res = await h.route.handleWebSocketRoute(upgradeRequest(cookie), "/ws", h.ctx, {
     validateToken: validate,
@@ -121,7 +121,7 @@ test("[ws-route] ignores other paths and demands an upgrade header", async () =>
   const deps = { validateToken: () => Promise.resolve(null) };
   assertEquals(
     await h.route.handleWebSocketRoute(new Request("http://gw/x"), "/x", h.ctx, deps),
-    null,
+    null
   );
   const res = await h.route.handleWebSocketRoute(new Request("http://gw/ws"), "/ws", h.ctx, deps);
   assertEquals(res?.status, 426);
@@ -243,7 +243,7 @@ test("[ws-route] killOrders requires an authenticated admin or trader and a live
   await message(viewer, "killOrders");
   assertEquals(
     (lastSent(viewer) as { data: { message: string } }).data.message.includes("admin"),
-    true,
+    true
   );
 
   const trader = await connect(h, () => Promise.resolve(authFor("trader")), "veta_user=t");
@@ -272,7 +272,7 @@ test("[ws-route] resumeOrders is admin only", async () => {
   await message(trader, "resumeOrders");
   assertEquals(
     (lastSent(trader) as { data: { message: string } }).data.message,
-    "Resume requires admin role",
+    "Resume requires admin role"
   );
 
   const admin = await connect(h, () => Promise.resolve(authFor("admin", "u-9")), "veta_user=t");
@@ -304,7 +304,7 @@ test("[ws-route] cancel, hold and unhold publish one command per order and broad
       [
         [topic, "o-1"],
         [topic, "o-2"],
-      ],
+      ]
     );
     assertEquals(lastSent(trader).event, ack);
   }
@@ -326,7 +326,7 @@ test("[ws-route] order management rejects anonymous users, unsuitable roles and 
   await message(viewer, "holdOrders", { orderIds: ["o-1"] });
   assertEquals(
     (lastSent(viewer) as { data: { message: string } }).data.message,
-    "viewer cannot manage orders",
+    "viewer cannot manage orders"
   );
 
   const trader = await connect(h, () => Promise.resolve(authFor("trader")), "veta_user=t");
