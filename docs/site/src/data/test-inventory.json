@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 134,
-      "cases": 1516,
+      "files": 136,
+      "cases": 1542,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -51,7 +51,9 @@
         "frontend-image-files.unit.test.ts": 1,
         "gateway-logs-route.unit.test.ts": 7,
         "gateway-proxied-routes.unit.test.ts": 17,
+        "gateway-system-status.unit.test.ts": 8,
         "gateway-wake.unit.test.ts": 9,
+        "gateway-websocket-route.unit.test.ts": 18,
         "grafana-renderer.unit.test.ts": 13,
         "grid-query.test.ts": 31,
         "http.unit.test.ts": 15,
