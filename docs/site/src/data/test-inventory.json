@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 148,
-      "cases": 1665,
+      "files": 150,
+      "cases": 1709,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -18,6 +18,7 @@
         "algo-fill-progress.unit.test.ts": 13,
         "algo-idle-exit.unit.test.ts": 5,
         "algo.unit.test.ts": 44,
+        "analytics-server.unit.test.ts": 16,
         "analytics.unit.test.ts": 22,
         "apply-shocks.unit.test.ts": 7,
         "black-scholes.unit.test.ts": 6,
@@ -90,6 +91,7 @@
         "news-aggregator.unit.test.ts": 9,
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
+        "oms-server.unit.test.ts": 28,
         "oms.test.ts": 16,
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,
