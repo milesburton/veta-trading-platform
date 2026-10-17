@@ -228,15 +228,22 @@ test("[feature-engine] backs off when the store rejects a batch, then retries an
   h.store.insertBatch.mockReset();
   h.store.insertBatch.mockRejectedValue(new Error("db down"));
   tick({ AAPL: 103 });
+  h.published.length = 0;
   await flush(250);
   assertEquals(h.store.insertBatch.mock.calls.length, 1);
+  assertEquals(h.published.length, 0);
 
   await flush(250);
   assertEquals(h.store.insertBatch.mock.calls.length, 2);
+  assertEquals(h.published.length, 0);
 
   h.store.insertBatch.mockResolvedValue(undefined);
   await flush(1_000);
   assertEquals(h.store.insertBatch.mock.calls.length, 3);
+  assertEquals(
+    published().map((f) => f.symbol),
+    ["AAPL"]
+  );
 
   await flush(1_000);
   assertEquals(h.store.insertBatch.mock.calls.length, 3);
