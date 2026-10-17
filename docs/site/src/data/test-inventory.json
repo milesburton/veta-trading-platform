@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 145,
-      "cases": 1622,
+      "files": 146,
+      "cases": 1638,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -78,6 +78,7 @@
         "margin-math.unit.test.ts": 21,
         "market-data-adapter-events.unit.test.ts": 8,
         "market-data-providers.unit.test.ts": 19,
+        "market-data-service.unit.test.ts": 16,
         "market-hours-by-asset-class.unit.test.ts": 15,
         "market-sim-client.unit.test.ts": 19,
         "marketSim.test.ts": 21,
