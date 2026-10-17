@@ -15,7 +15,7 @@ export const marketHoursUpdateSchema = z.object({
 
 export type MarketHoursUpdate = z.infer<typeof marketHoursUpdateSchema>;
 
-const storedAllowOutOfHoursSchema = z.record(assetClassSchema, z.boolean());
+const storedAllowOutOfHoursSchema = z.partialRecord(assetClassSchema, z.boolean());
 
 export function applyMarketHoursUpdate(
   current: Record<AssetClass, boolean>,

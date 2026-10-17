@@ -7,7 +7,7 @@ export const ScenarioSpecSchema = z.object({
   quantity: z.number().int().positive(),
   limitPrice: z.number().positive(),
   strategy: z.string().min(1).max(32),
-  algoParams: z.record(z.unknown()).optional(),
+  algoParams: z.record(z.string(), z.unknown()).optional(),
   durationMs: z
     .number()
     .int()

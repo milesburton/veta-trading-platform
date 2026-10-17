@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const PricesSchema = z.record(z.number());
+const PricesSchema = z.record(z.string(), z.number());
 
 export type DailyNotionalDecision =
   | { allowed: true; total: number }
