@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createServer } from "node:net";
 import { FakeTime } from "#veta/fake-time";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
@@ -10,6 +11,18 @@ import {
   startJournalProgressSweep,
 } from "../algo/common-http.ts";
 import type { OrderProgress, TrackedOrder } from "../algo/fill-progress.ts";
+
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(0, () => {
+      const address = probe.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      probe.close(() => resolve(port));
+    });
+  });
+}
 
 interface Sent {
   topic: string;
@@ -62,7 +75,7 @@ test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const port = 59_432;
+    const port = await freePort();
     let active = 3;
     serveAlgoHealth(port, "twap-algo", "abc123", () => active);
 
