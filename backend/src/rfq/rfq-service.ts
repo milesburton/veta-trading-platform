@@ -559,7 +559,7 @@ serveFetch({ port: PORT }, async (req) => {
 
   // GET /rfq/:id — fetch a single RFQ
   const matchGet = path.match(/^\/rfq\/([^/]+)$/);
-  if (matchGet && req.method === "GET") {
+  if (matchGet && matchGet[1] !== "sellside" && req.method === "GET") {
     const rfq = rfqStore.get(matchGet[1]);
     if (!rfq) return jsonError("Not found", 404);
     return json(rfq);
