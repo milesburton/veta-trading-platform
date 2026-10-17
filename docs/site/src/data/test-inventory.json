@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 134,
-      "cases": 1516,
+      "files": 136,
+      "cases": 1534,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -23,6 +23,7 @@
         "black-scholes.unit.test.ts": 6,
         "bond-pricing.unit.test.ts": 11,
         "bug-report-route.unit.test.ts": 14,
+        "ccp-service.unit.test.ts": 11,
         "compose-mem-limits.unit.test.ts": 1,
         "compose-registry-coverage.unit.test.ts": 1,
         "compose-restart-policies.unit.test.ts": 1,
@@ -30,6 +31,7 @@
         "credentials.unit.test.ts": 8,
         "daily-summary.unit.test.ts": 23,
         "dark-pool-matching.unit.test.ts": 12,
+        "dark-pool-server.unit.test.ts": 7,
         "data-depth-cache.unit.test.ts": 3,
         "demo-day-attribution.unit.test.ts": 3,
         "devcontainer.unit.test.ts": 7,
