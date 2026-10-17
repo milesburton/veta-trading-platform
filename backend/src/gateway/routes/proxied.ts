@@ -78,7 +78,7 @@ export async function handleProxiedRoutes(
     if (!canSeeAll && !url.searchParams.has("userId")) {
       url.searchParams.set("userId", auth.user.id);
     }
-    return proxyGet(`${ctx.urls.journal}/orders${url.search}`, req);
+    return proxyGet(`${ctx.urls.journal}/orders`, req, url.search);
   }
 
   // ── Dark pool / CCP ──────────────────────────────────────────
@@ -200,7 +200,7 @@ export async function handleProxiedRoutes(
       qs.set("userId", auth.user.id);
       qs.set("userRole", "external-client");
     }
-    return proxyGet(`${ctx.urls.productService}/products?${qs.toString()}`, req);
+    return proxyGet(`${ctx.urls.productService}/products`, req, qs.toString());
   }
   if (path === "/products/stats" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);

@@ -55,10 +55,13 @@ export async function proxyPut(
   }
 }
 
-export async function proxyGet(internalUrl: string, req: Request): Promise<Response> {
-  const src = new URL(req.url);
+export async function proxyGet(
+  internalUrl: string,
+  req: Request,
+  search?: string
+): Promise<Response> {
   const target = new URL(internalUrl);
-  target.search = src.search;
+  target.search = search ?? new URL(req.url).search;
   try {
     const res = await fetch(target.toString(), {
       method: req.method,
