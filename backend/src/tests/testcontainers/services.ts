@@ -7,6 +7,7 @@ import { startEphemeralRedpanda } from "./redpanda.ts";
 import type { ManagedPostgres, ManagedRedpanda } from "./types.ts";
 
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
+const EXIT_ON_SIGTERM = new URL("../../test-support/exit-on-sigterm.ts", import.meta.url).pathname;
 
 export type ServiceName =
   | "market-sim"
@@ -391,7 +392,8 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
         ...(opts.perServiceEnv?.[name] ?? {}),
       };
 
-      const child = spawn(process.execPath, [desc.entrypoint], {
+      const nodeArgs = coverageDir ? ["--import", EXIT_ON_SIGTERM, desc.entrypoint] : [desc.entrypoint];
+      const child = spawn(process.execPath, nodeArgs, {
         cwd: REPO_ROOT,
         env: coverageDir ? { ...env, NODE_V8_COVERAGE: coverageDir } : env,
         stdio: ["ignore", "pipe", "pipe"],

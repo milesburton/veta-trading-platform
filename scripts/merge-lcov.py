@@ -4,7 +4,10 @@
 Naive concatenation double-counts every line in files that appear in
 more than one input, which deflates the resulting percentage. This
 merger combines per-line hit counts with max() and emits a single
-LCOV record per source file.
+LCOV record per source file. The first input defines which
+lines exist for each file it covers, because different V8 converters
+disagree on what counts as an executable line; later inputs only add
+hits to those lines.
 
 Usage:
   scripts/merge-lcov.py unit.lcov tc.lcov ... > combined.lcov
@@ -34,11 +37,16 @@ def parse(path):
 
 def merge(paths):
     merged = {}
-    for p in paths:
+    canonical = {}
+    for index, p in enumerate(paths):
         for sf, lines in parse(p).items():
             if sf not in merged:
                 merged[sf] = defaultdict(int)
+            if index == 0:
+                canonical[sf] = set(lines)
             for ln, hits in lines.items():
+                if index > 0 and sf in canonical and ln not in canonical[sf]:
+                    continue
                 merged[sf][ln] = max(merged[sf][ln], hits)
     return merged
 
