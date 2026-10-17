@@ -53,18 +53,6 @@ const JOURNAL_URL = `http://${process.env.JOURNAL_HOST ?? "localhost"}:${
 /** Minimum block size for dark pool routing (shares). */
 const DARK_POOL_MIN_BLOCK = Number(process.env.DARK_POOL_MIN_BLOCK ?? "10000");
 
-const KNOWN_STRATEGIES = new Set([
-  "LIMIT",
-  "TWAP",
-  "POV",
-  "VWAP",
-  "ICEBERG",
-  "SNIPER",
-  "ARRIVAL_PRICE",
-  "IS",
-  "MOMENTUM",
-]);
-
 type MarketType = "lit" | "dark" | "otc";
 
 interface TradingLimits {
@@ -416,17 +404,6 @@ consumer?.onMessage(async (_topic, raw) => {
   if (desk === "fi") strategy = "LIMIT"; // bonds always LIMIT internally
 
   if (needsStrategyCheck) {
-    if (!KNOWN_STRATEGIES.has(strategy)) {
-      await producer
-        ?.send("orders.rejected", {
-          clientOrderId: order.clientOrderId,
-          userId: order.userId,
-          reason: `Unknown strategy: ${strategy}`,
-          ts: Date.now(),
-        })
-        .catch(() => {});
-      return;
-    }
     if (!limits.allowed_strategies.includes(strategy)) {
       await producer
         ?.send("orders.rejected", {
