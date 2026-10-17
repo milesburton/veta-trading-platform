@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 134,
-      "cases": 1516,
+      "files": 136,
+      "cases": 1543,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -63,9 +63,11 @@
         "journal.test.ts": 10,
         "lib.unit.test.ts": 17,
         "llm-dedupe.test.ts": 13,
+        "llm-orchestrator.unit.test.ts": 17,
         "llm-pg-retry.unit.test.ts": 6,
         "llm-policy.test.ts": 20,
         "llm-providers.unit.test.ts": 5,
+        "llm-worker.unit.test.ts": 10,
         "load-agent.test.ts": 8,
         "loadgen-announce.unit.test.ts": 14,
         "logger.unit.test.ts": 17,
