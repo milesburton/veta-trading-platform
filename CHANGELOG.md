@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.8](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.7...veta-trading-platform-v1.88.8) (2026-10-17)
+
+
+### Bug Fixes
+
+* **ci:** quote the post-deploy probe condition so the workflow parses ([#895](https://github.com/milesburton/veta-trading-platform/issues/895)) ([10ba1ed](https://github.com/milesburton/veta-trading-platform/commit/10ba1ed59910266fca1e3630b002224b3d41bf2f))
+
 ## [1.88.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.6...veta-trading-platform-v1.88.7) (2026-10-17)
 
 
