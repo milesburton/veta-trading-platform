@@ -30,3 +30,5 @@ compose.gate.yml
 frontend/playwright-gate-report/
 .claude/settings.local.json
 .private-network-denylist
+coverage-tc/
+coverage-tc.lcov
