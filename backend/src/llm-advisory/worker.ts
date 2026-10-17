@@ -286,11 +286,6 @@ outer: while (true) {
       await new Promise((r) => setTimeout(r, 2_000));
       const next = await store.claimNextJob(sessionId);
       if (next) {
-        if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
-          await store.updateJobStatus(next.id, "queued");
-          exitReason = "max-jobs-per-session";
-          break outer;
-        }
         logger.info(`Processing job ${next.id} for ${next.symbol} (${next.triggerReason})`);
         await processJob(next.id);
         continue outer;
