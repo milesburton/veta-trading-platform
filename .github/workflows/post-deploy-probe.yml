@@ -50,7 +50,7 @@ jobs:
   changes:
     name: Detect deployable changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(main): release')
     outputs:
       docker: ${{ steps.filter.outputs.docker }}
     steps:
