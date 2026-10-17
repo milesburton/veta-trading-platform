@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.6...veta-trading-platform-v1.88.7) (2026-10-17)
+
+
+### Bug Fixes
+
+* **ci:** skip the post-deploy probe on release-please version commits ([#893](https://github.com/milesburton/veta-trading-platform/issues/893)) ([e82698c](https://github.com/milesburton/veta-trading-platform/commit/e82698cbe85f6d9b855737a0a8082d17c4ba2377))
+
 ## [1.88.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.5...veta-trading-platform-v1.88.6) (2026-10-16)
 
 
