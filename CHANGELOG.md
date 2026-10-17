@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.9](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.8...veta-trading-platform-v1.88.9) (2026-10-17)
+
+
+### Bug Fixes
+
+* **ci:** capture testcontainers service coverage and merge it with unit coverage ([#898](https://github.com/milesburton/veta-trading-platform/issues/898)) ([7a1f2d1](https://github.com/milesburton/veta-trading-platform/commit/7a1f2d170347273fb09c938b2cbe0a7b93044700))
+
 ## [1.88.8](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.7...veta-trading-platform-v1.88.8) (2026-10-17)
 
 
