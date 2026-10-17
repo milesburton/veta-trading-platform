@@ -46,8 +46,8 @@ beforeEach(() => {
         upstreams.push(s);
         return s;
       },
-      { OPEN: 1 },
-    ),
+      { OPEN: 1 }
+    )
   );
 });
 
@@ -116,7 +116,7 @@ test("[system-status] the market-sim proxy relays frames both ways while open", 
   client.current = downstream;
   const res = makeMarketSimWsProxy(
     new Request("http://gw/ws/market", { headers: { upgrade: "websocket" } }),
-    5123,
+    5123
   );
   assertEquals(res.status, 200);
   const upstream = upstreams[0];
@@ -140,7 +140,7 @@ test("[system-status] closing either side closes the other, and send failures ar
   client.current = downstream;
   makeMarketSimWsProxy(
     new Request("http://gw/ws/market", { headers: { upgrade: "websocket" } }),
-    5000,
+    5000
   );
   const upstream = upstreams[0];
 
