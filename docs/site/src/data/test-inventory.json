@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 150,
-      "cases": 1709,
+      "files": 153,
+      "cases": 1748,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -36,6 +36,7 @@
         "data-depth-cache.unit.test.ts": 3,
         "demo-day-attribution.unit.test.ts": 3,
         "devcontainer.unit.test.ts": 7,
+        "discord-bot-dispatch.unit.test.ts": 17,
         "discord-bot.unit.test.ts": 56,
         "discord-notifier.unit.test.ts": 18,
         "docs-drift.unit.test.ts": 10,
@@ -113,6 +114,7 @@
         "rfq-service.unit.test.ts": 12,
         "risk-bypass.test.ts": 2,
         "risk-checks.unit.test.ts": 38,
+        "risk-engine-server.unit.test.ts": 14,
         "risk-schema.unit.test.ts": 20,
         "rng.test.ts": 9,
         "runtime-config-store.test.ts": 13,
@@ -131,6 +133,7 @@
         "synthetic-trader-decision.unit.test.ts": 10,
         "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-disabled.unit.test.ts": 1,
+        "synthetic-trader-enabled.unit.test.ts": 8,
         "synthetic-trader-gateway-socket.unit.test.ts": 4,
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-payloads.unit.test.ts": 13,
