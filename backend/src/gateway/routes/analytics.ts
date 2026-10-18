@@ -140,6 +140,11 @@ export async function handleAnalyticsRoute(
   }
 
   // ── Advisory ─────────────────────────────────────────────────
+  if (path === "/advisory/jobs" && req.method === "GET") {
+    const auth = await ctx.requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${LLM_ADVISORY_URL}/jobs`, req);
+  }
   const advisoryNoteMatch = path.match(/^\/advisory\/([^/]+)$/);
   if (advisoryNoteMatch && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
@@ -159,11 +164,6 @@ export async function handleAnalyticsRoute(
         body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
       })
     );
-  }
-  if (path === "/advisory/jobs" && req.method === "GET") {
-    const auth = await ctx.requireAuth(req);
-    if (isResponse(auth)) return auth;
-    return proxyGet(`${LLM_ADVISORY_URL}/jobs`, req);
   }
   if (path === "/advisory/admin/state" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
