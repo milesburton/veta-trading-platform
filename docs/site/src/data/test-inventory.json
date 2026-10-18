@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 144,
-      "cases": 1613,
+      "files": 146,
+      "cases": 1638,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -78,12 +78,14 @@
         "margin-math.unit.test.ts": 21,
         "market-data-adapter-events.unit.test.ts": 8,
         "market-data-providers.unit.test.ts": 19,
+        "market-data-service.unit.test.ts": 16,
         "market-hours-by-asset-class.unit.test.ts": 15,
         "market-sim-client.unit.test.ts": 19,
         "marketSim.test.ts": 21,
         "matching-engine.unit.test.ts": 14,
         "messaging.test.ts": 19,
         "monte-carlo.unit.test.ts": 10,
+        "news-aggregator.unit.test.ts": 9,
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
         "oms.test.ts": 16,
