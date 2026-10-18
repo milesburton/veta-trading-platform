@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.10](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.9...veta-trading-platform-v1.88.10) (2026-10-18)
+
+
+### Bug Fixes
+
+* **ci:** make the post-deploy probe wait for CI before polling for the new commit ([#914](https://github.com/milesburton/veta-trading-platform/issues/914)) ([b9841f1](https://github.com/milesburton/veta-trading-platform/commit/b9841f13b4f9f740ee4c1ff2f8e26f8dbf4f6663)), closes [#913](https://github.com/milesburton/veta-trading-platform/issues/913)
+
 ## [1.88.9](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.8...veta-trading-platform-v1.88.9) (2026-10-17)
 
 
