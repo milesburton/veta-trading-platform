@@ -196,6 +196,8 @@ async function flushFeatures(): Promise<void> {
         nextRetryInMs: delay,
       });
     }
+    flushInFlight = false;
+    return;
   }
 
   if (producer) {
