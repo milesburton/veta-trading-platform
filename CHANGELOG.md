@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.11](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.10...veta-trading-platform-v1.88.11) (2026-10-23)
+
+
+### Bug Fixes
+
+* **discord-bot:** skip MOTD repost when already posted in channel ([#923](https://github.com/milesburton/veta-trading-platform/issues/923)) ([45f32c9](https://github.com/milesburton/veta-trading-platform/commit/45f32c93cded893b501a5d969fddbab046940581))
+
 ## [1.88.10](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.9...veta-trading-platform-v1.88.10) (2026-10-18)
 
 
