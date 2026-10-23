@@ -134,15 +134,14 @@ test("[discord-dispatch] records the bot identity on READY and ignores unrelated
   assertEquals(say().at(-1)?.includes("filed as"), true);
 });
 
-test("[discord-dispatch] welcomes new members and posts the MOTD", async () => {
+test("[discord-dispatch] welcomes new members without reposting the MOTD", async () => {
   const bot = await load();
   const ws = connectBot(bot);
   dispatch(ws, "GUILD_MEMBER_ADD", { user: { id: "77" } });
   await flush();
   const posts = say();
-  assertEquals(posts.length, 2);
+  assertEquals(posts.length, 1);
   assert(posts[0].includes("<@77>"));
-  assert(posts[1].includes("Raise."));
 });
 
 test("[discord-dispatch] skips the MOTD when disabled and ignores member events without a user", async () => {
@@ -257,7 +256,7 @@ test("[discord-dispatch] falls back to the in-app button when filing fails", asy
   await flush();
   assertEquals(
     say().filter((m) => m.includes("couldn't file that ticket automatically")).length,
-    2
+    2,
   );
 });
 

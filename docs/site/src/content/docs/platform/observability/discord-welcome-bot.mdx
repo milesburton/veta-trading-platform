@@ -97,7 +97,7 @@ The message is static aside from the member mention. Implementation in [`backend
 
 ## Message of the day
 
-Alongside the welcome message, a second, non-personalised message posts on every join and again on a fixed interval (`DISCORD_MOTD_INTERVAL_MS`, default 24 hours), so members who don't happen to catch the welcome message still see how to use the bot:
+A separate, non-personalised message posts once per interval (`DISCORD_MOTD_INTERVAL_MS`, default 24 hours), not on member joins, so members who don't happen to catch the welcome message still see how to use the bot:
 
 ```
 📌 VETA quick guide
@@ -107,7 +107,7 @@ Type `Raise. <what's wrong>` or @mention this bot with a description to file a b
 💻 Trade on the real platform: https://veta.mnetcs.com
 ```
 
-The interval timer is armed once, in `start()`, guarded by `DISCORD_MOTD_ENABLED`; it is independent of the Gateway reconnect loop, so a dropped and re-established Gateway connection does not reset or duplicate the timer.
+The interval timer is armed once, in `start()`, guarded by `DISCORD_MOTD_ENABLED`; it is independent of the Gateway reconnect loop, so a dropped and re-established Gateway connection does not reset or duplicate the timer. Before each post the bot checks the channel's recent messages and skips the post if it already posted a MOTD within the interval, so restarts or a second instance sharing the token don't repost.
 
 ## Ticket triage
 
