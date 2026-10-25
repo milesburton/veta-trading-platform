@@ -61,7 +61,8 @@ Every deploy to prod runs this sequence:
         fails to reach healthy
 3. last-deployed-sha is bumped only on success.
 4. (Optional) The post-deploy CI probe workflow runs the same synthetic
-   probe from a GitHub runner ~6 minutes after the merge. Closes the loop on
+   probe from a GitHub runner once CI has passed and the gateway reports the
+   merged commit. Closes the loop on
    "did my merge actually break prod".
 ```
 
@@ -77,7 +78,7 @@ Source of truth for "is the platform up". Runs outside the server so it sees wha
   3. GET `/api/gateway/ready` with the cookie, expect `{"ready":true}`.
 - **Output**: one JSON line per step to journald (`journalctl -u veta-synthetic-probe.service`). No Loki shipping yet (follow-up).
 - **Alerting**: systemd `OnFailure=` invokes `alert.sh` which counts consecutive failures and POSTs a webhook on the 3rd (configurable) plus on recovery. Webhook URL in `/etc/veta-probe.env` on the edge server.
-- **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner ~6 min after every push to `main`. Three retries with 30 s spacing; fails the run on persistent failure. A third independent vantage point: if the edge server probe and the CI probe disagree, the divergence itself is signal (e.g. edge-local network issue).
+- **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner once CI has passed and the gateway reports the pushed commit, so it fires roughly half an hour after a push that changes an image. Three retries with 30 s spacing; fails the run on persistent failure. A third independent vantage point: if the edge server probe and the CI probe disagree, the divergence itself is signal (e.g. edge-local network issue).
 
 What v1 catches:
 

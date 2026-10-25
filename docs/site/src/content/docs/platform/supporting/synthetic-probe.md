@@ -106,13 +106,16 @@ resets the counter.
 ## CI mirror
 
 `.github/workflows/post-deploy-probe.yml` runs the same probe binary from
-a GitHub Actions runner after every push to `main`. It:
+a GitHub Actions runner after a push to `main`. It skips release-please version
+commits and pushes that change nothing a Docker image is built from. Otherwise it:
 
-1. Waits ~6 minutes for the server auto-pull timer to pick up the commit
-   and roll out the new images.
-2. Runs `synthetic-probe/probe.ts` against the deployment URL with
+1. Waits for CI on the commit to finish. Images are published only when CI passes, so
+   the probe is skipped if CI fails or is cancelled.
+2. Polls the gateway `/health` endpoint until its reported commit SHA matches the
+   merged commit, which means the server auto-pull timer has rolled out the new images.
+3. Runs `synthetic-probe/probe.ts` against the deployment URL with
    up to 3 retries (30 s apart) to absorb deploy jitter.
-3. Fails the workflow on persistent failure, so the standard GH email goes
+4. Fails the workflow on persistent failure, so the standard GH email goes
    out.
 
 This is a **third independent vantage point** on top of (a) the edge server probe
