@@ -64,9 +64,9 @@ avoided for the reasons given in the homelab systemd README.
 - Triage still competes with the trading services for CPU, only with a larger weight. The
   failure handling above is what makes a slow model acceptable: reporters get the fallback
   reply within seconds instead of silence.
-- The bot's health endpoint should report triage provider reachability separately from the
-  Discord gateway connection, because a connected gateway says nothing about whether
-  tickets can be filed.
+- The bot's health endpoint reports triage provider reachability (`triage.reachable`)
+  separately from the Discord gateway connection, because a connected gateway says nothing
+  about whether tickets can be filed.
 - The `ollama` container is shared with llm-advisory, so the allocation also applies to
   that service. The `discord-bot` service no longer waits for it to be healthy.
 - Moving to the GPU host later, or switching to the Anthropic provider is a configuration
