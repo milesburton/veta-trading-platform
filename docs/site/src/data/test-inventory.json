@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 158,
-      "cases": 1785,
+      "files": 159,
+      "cases": 1788,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -71,6 +71,7 @@
         "journal-candles.unit.test.ts": 2,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
+        "lib-process.unit.test.ts": 2,
         "lib.unit.test.ts": 17,
         "llm-dedupe.test.ts": 13,
         "llm-orchestrator.unit.test.ts": 17,
@@ -91,7 +92,7 @@
         "matching-engine.unit.test.ts": 14,
         "messaging.test.ts": 19,
         "monte-carlo.unit.test.ts": 10,
-        "news-aggregator.unit.test.ts": 9,
+        "news-aggregator.unit.test.ts": 10,
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
         "oms-server.unit.test.ts": 28,

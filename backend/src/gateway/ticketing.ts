@@ -57,6 +57,7 @@ interface GithubIssueSearchHit {
 
 const GH_API = "https://api.github.com";
 const DEDUPE_WINDOW_MS = 60 * 60 * 1000;
+const TOKEN_PATTERN = /^[A-Za-z0-9_]{20,255}$/;
 const DEFAULT_TICKETING_REPO = "milesburton/veta-trading-platform";
 
 function readTokenEnv(): string | null {
@@ -68,7 +69,7 @@ function readTokenEnv(): string | null {
   } catch {
     token = (process.env.GITHUB_TICKETING_TOKEN ?? "").trim();
   }
-  if (token.length < 20) return null;
+  if (!TOKEN_PATTERN.test(token)) return null;
   if (token.includes("REPLACE_ME")) return null;
   return token;
 }
