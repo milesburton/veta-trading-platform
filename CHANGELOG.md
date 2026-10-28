@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.14](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.13...veta-trading-platform-v1.88.14) (2026-10-28)
+
+
+### Bug Fixes
+
+* **security:** clear remaining CodeQL alerts in Discord bot, process runner and tests ([#942](https://github.com/milesburton/veta-trading-platform/issues/942)) ([27a8e07](https://github.com/milesburton/veta-trading-platform/commit/27a8e07337478b17a8d2fea48b5e37464c883c39))
+
 ## [1.88.13](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.12...veta-trading-platform-v1.88.13) (2026-10-28)
 
 
