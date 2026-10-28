@@ -320,7 +320,7 @@ test("rejects a URL that shares the public URL's string prefix but not its origi
     const hostnames = (issueBody.body.match(/https?:\/\/[^\s)"']+/g) ?? []).map(
       (u: string) => new URL(u).hostname
     );
-    assertEquals(hostnames.includes("evil.com"), false);
+    assertEquals(hostnames, []);
   } finally {
     f.restore();
     restoreEnv();
