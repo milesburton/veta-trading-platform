@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.88.13](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.12...veta-trading-platform-v1.88.13) (2026-10-28)
+
+
+### Bug Fixes
+
+* **security:** harden news feed URLs, ticketing token and command execution ([70a15ce](https://github.com/milesburton/veta-trading-platform/commit/70a15ced6af0610809b55604050b04bda024e2d8))
+* **security:** validate feed URLs, ticketing token shape and spawned commands ([7dcd310](https://github.com/milesburton/veta-trading-platform/commit/7dcd310a6875d3534fe060a8f4b3bf99f7bde7e5))
+
 ## [1.88.12](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.11...veta-trading-platform-v1.88.12) (2026-10-28)
 
 
