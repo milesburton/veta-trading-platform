@@ -163,7 +163,11 @@ test("[discord-dispatch] files a ticket for a raised bug and replies with the li
   const report = h.ticket.mock.calls[0][0];
   assertEquals(report.kind, "bug");
   assertEquals(report.title, "Blotter crashes");
-  assert(/https:\/\/discord\.com\/channels\/555\//.test(report.description));
+  assert(
+    report.description
+      .split(/\s+/)
+      .some((t: string) => t.startsWith("https://discord.com/channels/555/"))
+  );
   assertEquals(say(), ["✅ <@42> filed as https://github.com/o/r/issues/1"]);
 });
 
@@ -256,7 +260,7 @@ test("[discord-dispatch] falls back to the in-app button when filing fails", asy
   await flush();
   assertEquals(
     say().filter((m) => m.includes("couldn't file that ticket automatically")).length,
-    2,
+    2
   );
 });
 

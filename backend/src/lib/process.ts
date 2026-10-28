@@ -6,18 +6,24 @@ export interface CommandResult {
   stderr: string;
 }
 
-const ALLOWED_COMMANDS: ReadonlySet<string> = new Set(["supervisorctl", "df", "docker", "bash"]);
+const ALLOWED_COMMANDS: Readonly<Record<string, string>> = {
+  supervisorctl: "supervisorctl",
+  df: "df",
+  docker: "docker",
+  bash: "bash",
+};
 
 export function runCommand(
   command: string,
   args: string[] = [],
   options: { env?: NodeJS.ProcessEnv; cwd?: string } = {}
 ): Promise<CommandResult> {
-  if (!ALLOWED_COMMANDS.has(command)) {
+  const binary = Object.hasOwn(ALLOWED_COMMANDS, command) ? ALLOWED_COMMANDS[command] : undefined;
+  if (binary === undefined) {
     return Promise.reject(new Error(`command not permitted: ${command}`));
   }
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const child = spawn(binary, args, {
       env: options.env ?? process.env,
       cwd: options.cwd,
       stdio: ["ignore", "pipe", "pipe"],

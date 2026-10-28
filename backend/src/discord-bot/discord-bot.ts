@@ -454,7 +454,7 @@ async function postChannelMessage(channelId: string, content: string): Promise<b
   try {
     const res = await retryTransient(
       () =>
-        fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+        fetch(`${DISCORD_API}/channels/${BigInt(channelId).toString()}/messages`, {
           method: "POST",
           headers: {
             Authorization: `Bot ${BOT_TOKEN}`,
@@ -617,7 +617,7 @@ async function motdAlreadyPosted(channelId: string): Promise<boolean> {
     return true;
   }
   try {
-    const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=50`, {
+    const res = await fetch(`${DISCORD_API}/channels/${BigInt(channelId).toString()}/messages?limit=50`, {
       headers: { Authorization: `Bot ${BOT_TOKEN}` },
       signal: AbortSignal.timeout(10_000),
     });
