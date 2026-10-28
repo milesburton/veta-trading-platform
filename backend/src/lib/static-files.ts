@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -22,6 +22,16 @@ const CONTENT_TYPES: Record<string, string> = {
   ".wasm": "application/wasm",
 };
 
+async function readFileOrIndex(target: string): Promise<{ path: string; body: Buffer<ArrayBuffer> }> {
+  try {
+    return { path: target, body: await readFile(target) };
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "EISDIR") throw err;
+    const indexPath = join(target, "index.html");
+    return { path: indexPath, body: await readFile(indexPath) };
+  }
+}
+
 export async function serveDir(
   req: Request,
   options: { fsRoot: string; quiet?: boolean }
@@ -36,17 +46,15 @@ export async function serveDir(
     return new Response("Bad Request", { status: 400 });
   }
   const root = normalize(options.fsRoot);
-  let target = normalize(join(root, pathname));
+  const target = normalize(join(root, pathname));
   if (target !== root && !target.startsWith(root + sep)) {
     return new Response("Not Found", { status: 404 });
   }
   try {
-    const info = await stat(target);
-    if (info.isDirectory()) target = join(target, "index.html");
-    const body = await readFile(target);
+    const { path, body } = await readFileOrIndex(target);
     return new Response(req.method === "HEAD" ? null : body, {
       headers: {
-        "content-type": CONTENT_TYPES[extname(target).toLowerCase()] ?? "application/octet-stream",
+        "content-type": CONTENT_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream",
         "content-length": String(body.length),
       },
     });

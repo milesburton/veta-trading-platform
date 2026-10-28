@@ -15,7 +15,7 @@
  * Re-running with the same id is a no-op (idempotent), so it is safe to retry.
  */
 
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -74,18 +74,18 @@ function patchRegistry(src: string, a: Args): string {
     console.log(`  panelRegistry.ts already has "${a.id}" — skipping`);
     return src;
   }
-  const title = a.title.replace(/"/g, '\\"');
-  const desc = a.description.replace(/"/g, '\\"');
+  const title = JSON.stringify(a.title);
+  const desc = JSON.stringify(a.description);
 
   let out = src;
   out = insertBefore(out, "] as const;", `  "${a.id}",\n`);
   out = out.replace(
     /(export const PANEL_TITLES: Record<PanelId, string> = \{\n)/,
-    `$1  "${a.id}": "${title}",\n`
+    `$1  "${a.id}": ${title},\n`
   );
   out = out.replace(
     /(export const PANEL_DESCRIPTIONS: Record<PanelId, string> = \{\n)/,
-    `$1  "${a.id}": "${desc}",\n`
+    `$1  "${a.id}": ${desc},\n`
   );
   out = out.replace(
     /(export const PANEL_CHANNEL_CAPS: Record<PanelId, \{ out: boolean; in: boolean \}> = \{\n)/,
@@ -103,10 +103,10 @@ function patchPicker(src: string, a: Args): string {
     console.log(`  ComponentPicker.tsx already has "${a.id}" — skipping`);
     return src;
   }
-  const desc = a.description.replace(/"/g, '\\"');
+  const desc = JSON.stringify(a.description);
   return src.replace(
     /(const PANEL_DESCRIPTIONS: Record<PanelId, string> = \{\n)/,
-    `$1  "${a.id}": "${desc}",\n`
+    `$1  "${a.id}": ${desc},\n`
   );
 }
 
@@ -175,11 +175,11 @@ describe("${name}", () => {
 
 async function writeIfAbsent(path: string, contents: string): Promise<void> {
   try {
-    await stat(path);
-    console.log(`  ${path.replace(ROOT, "")} already exists — skipping`);
-  } catch {
-    await writeFile(path, contents);
+    await writeFile(path, contents, { flag: "wx" });
     console.log(`  created ${path.replace(ROOT, "")}`);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+    console.log(`  ${path.replace(ROOT, "")} already exists — skipping`);
   }
 }
 

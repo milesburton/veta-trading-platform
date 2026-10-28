@@ -447,7 +447,7 @@ async function handleMessageCreate(data: unknown): Promise<void> {
 }
 
 async function postChannelMessage(channelId: string, content: string): Promise<boolean> {
-  if (!isDiscordSnowflake(channelId)) {
+  if (!SNOWFLAKE_PATTERN.test(channelId)) {
     logger.error("refusing to post to non-snowflake channel id", { channelId });
     return false;
   }
@@ -612,6 +612,10 @@ export function hasRecentMotd(
 }
 
 async function motdAlreadyPosted(channelId: string): Promise<boolean> {
+  if (!SNOWFLAKE_PATTERN.test(channelId)) {
+    logger.error("refusing to read non-snowflake channel id", { channelId });
+    return true;
+  }
   try {
     const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=50`, {
       headers: { Authorization: `Bot ${BOT_TOKEN}` },

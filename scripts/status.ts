@@ -333,8 +333,6 @@ async function main() {
     return;
   }
 
-  let running = true;
-
   process.stdout.write(A.hide);
 
   const restore = () => {
@@ -376,7 +374,7 @@ async function main() {
     return !(ch === 113 || ch === 81 || ch === 27 || ch === 3);
   };
 
-  while (running) {
+  while (true) {
     tick++;
     const refreshDelay = new Promise<"timeout">((r) => setTimeout(() => r("timeout"), REFRESH_MS));
     const keyPress = readKey().then((keepGoing) =>
@@ -386,7 +384,6 @@ async function main() {
     const result = await Promise.race([refreshDelay, keyPress]);
 
     if (result === "quit") {
-      running = false;
       break;
     }
 

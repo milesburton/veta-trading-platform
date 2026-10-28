@@ -163,7 +163,7 @@ test("[discord-dispatch] files a ticket for a raised bug and replies with the li
   const report = h.ticket.mock.calls[0][0];
   assertEquals(report.kind, "bug");
   assertEquals(report.title, "Blotter crashes");
-  assert(report.description.includes("https://discord.com/channels/555/"));
+  assert(/https:\/\/discord\.com\/channels\/555\//.test(report.description));
   assertEquals(say(), ["✅ <@42> filed as https://github.com/o/r/issues/1"]);
 });
 

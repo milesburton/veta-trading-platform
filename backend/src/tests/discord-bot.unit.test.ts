@@ -39,8 +39,8 @@ test("buildMotd mentions the Raise. command and @mention trigger", () => {
 
 test("buildMotd includes the given docs and platform URLs", () => {
   const msg = buildMotd("https://docs.example/", "https://platform.example/");
-  assert(msg.includes("https://docs.example/"));
-  assert(msg.includes("https://platform.example/"));
+  assert(/https:\/\/docs\.example\//.test(msg));
+  assert(/https:\/\/platform\.example\//.test(msg));
 });
 
 test("buildWelcomeMessage is a single-line greeting", () => {
