@@ -153,7 +153,7 @@ export function DurationLadderPanel() {
       </button>
 
       {isError && (
-        <p className="text-center text-red-400">Failed to compute — check analytics service.</p>
+        <p className="text-center text-red-400">Failed to compute, check analytics service.</p>
       )}
 
       {data && (
@@ -235,7 +235,7 @@ export function DurationLadderPanel() {
                       ${Math.abs(b.netDv01).toFixed(4)}
                     </td>
                     <td className="py-0.5 pr-2 text-right text-muted">
-                      {b.netDv01 > 0.0001 ? "▲ long" : b.netDv01 < -0.0001 ? "▼ short" : "—"}
+                      {b.netDv01 > 0.0001 ? "▲ long" : b.netDv01 < -0.0001 ? "▼ short" : "n/a"}
                     </td>
                   </tr>
                 ))}

@@ -180,7 +180,7 @@ describe("SymbolSearchBar", () => {
     fireEvent.change(screen.getByTestId("symbol-search-input"), {
       target: { value: "ZZZZ" },
     });
-    // No results dropdown — search input is still rendered
+    // No results dropdown, search input is still rendered
     expect(screen.getByTestId("symbol-search-input")).toBeInTheDocument();
   });
 

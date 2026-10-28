@@ -1,5 +1,5 @@
 /**
- * ElectronMockServer — lightweight HTTP + WebSocket mock gateway for Electron E2E tests.
+ * ElectronMockServer, lightweight HTTP + WebSocket mock gateway for Electron E2E tests.
  *
  * Playwright's page.route() interception does NOT work for Electron renderer processes
  * loading from file:// URLs. This server runs in the test process and replicates the
@@ -149,7 +149,7 @@ export class ElectronMockServer {
       return;
     }
 
-    // /api/gateway/candles — the chart panel shows a "Connecting to market…"
+    // /api/gateway/candles, the chart panel shows a "Connecting to market…"
     // overlay until it has >= 2 candle bars, so an empty array leaves the
     // chart perpetually loading in the screenshot. Return a short synthetic
     // OHLC series (flat OhlcCandle[], matching the real endpoint).

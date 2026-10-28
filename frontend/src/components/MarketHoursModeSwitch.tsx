@@ -28,7 +28,7 @@ export function MarketHoursModeSwitch({ config, disabled, onChange }: MarketHour
       <div>
         <div className="text-secondary font-medium">Mode</div>
         <div className="text-[10px] text-muted mt-1">
-          {mode ? MODE_DESCRIPTIONS[mode] : "—"} Saved across restarts.
+          {mode ? MODE_DESCRIPTIONS[mode] : "n/a"} Saved across restarts.
         </div>
       </div>
       <fieldset

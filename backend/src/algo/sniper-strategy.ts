@@ -33,7 +33,7 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT, { f
 marketClient.start();
 
 const producer = await createProducer("sniper-algo").catch((err) => {
-  logger.warn("Redpanda unavailable — orders will not be published", { err });
+  logger.warn("Redpanda unavailable, orders will not be published", { err });
   return null;
 });
 
@@ -64,7 +64,7 @@ interface ActiveSniper {
   filledQty: number;
   costBasis: number;
   sliceCount: number;
-  cooldownUntil: number; // ms — no routing before this timestamp
+  cooldownUntil: number; // ms, no routing before this timestamp
 }
 
 /** Active sniper orders, keyed by orderId. */

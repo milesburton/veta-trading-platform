@@ -3,7 +3,7 @@
  *
  * Prices a bond as the present value of its coupon and principal cash flows
  * using continuous compounding. Computes modified duration, convexity, and DV01
- * via closed-form weighted sums — no numerical differentiation required.
+ * via closed-form weighted sums, no numerical differentiation required.
  */
 
 import type { BondPriceRequest, BondPriceResponse } from "./types.ts";

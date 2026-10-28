@@ -24,7 +24,7 @@ binding on `:18443` and the tunnel cannot reconnect for ~2 hours. See
 [edge/sshd/README.md](./sshd/README.md) for the full diagnosis.
 
 The first request to `https://veta.mnetcs.com/` triggers an HTTP-01
-challenge — port 80 must be reachable from the internet (which it is
+challenge, port 80 must be reachable from the internet (which it is
 on this box's public IP). The cert is cached in the `letsencrypt`
 Docker volume and renews automatically.
 
@@ -40,7 +40,7 @@ sudo docker compose pull && sudo docker compose up -d   # image bump
 ## Verifying the chain end-to-end
 
 ```bash
-# 1. SSH tunnel up — port 18443 listening on loopback
+# 1. SSH tunnel up: port 18443 listening on loopback
 sudo ss -tlnp | grep :18443
 
 # 2. Edge Traefik reaches the tunnel

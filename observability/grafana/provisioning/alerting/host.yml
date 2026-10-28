@@ -12,7 +12,7 @@ apiVersion: 1
 # Out of scope for this file (still Prometheus-only, not Discord-routed):
 #   - the `memory` group (ServiceMemoryGrowth/High/Critical)
 #   - the `frontend-memory` group (FrontendHeapHigh/Critical)
-# Migrating those is a follow-up — they need the same per-rule
+# Migrating those is a follow-up: they need the same per-rule
 # Grafana provisioning shape and were left out of PR #338 to keep
 # the scope tight on the disk-fill incident pipeline.
 
@@ -106,11 +106,11 @@ groups:
         execErrState: Alerting
         for: 1m
         annotations:
-          summary: Host disk above 92% — imminent outage
+          summary: Host disk above 92%, imminent outage
           description: |
             disk_used_percent is above 92%. Docker exec, healthchecks,
             and Traefik label reads start failing around 95%. Truncate
-            the largest container log immediately — find its log path
+            the largest container log immediately, find its log path
             with `docker inspect <container> | jq -r '.[0].LogPath'`,
             then `sudo truncate -s 0` the resulting file.
         labels:
@@ -259,7 +259,7 @@ groups:
           summary: "{{ $labels.redpanda_topic }} producing >512 KiB/s for 30m"
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >512 KiB/s
-            sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the
+            sustained, that's ~1.5 GiB/hour, ~36 GiB/day. At the
             cluster default retention.bytes=1 GiB and
             log_retention_ms=24h, the partition will hit the byte cap
             and start tombstoning. This rate also signals upstream
@@ -313,7 +313,7 @@ groups:
         execErrState: Error
         for: 10m
         annotations:
-          summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s — disk-fill imminent"
+          summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s, disk-fill imminent"
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >2 MiB/s. That's
             ~7 GiB/hour. Per-partition retention.bytes will tombstone,

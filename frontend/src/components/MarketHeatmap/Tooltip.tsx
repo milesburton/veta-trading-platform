@@ -40,7 +40,7 @@ export function OtherTooltip({
       style={{ left: position.left, top: position.top, width: position.width }}
       aria-live="polite"
     >
-      <div className="font-bold text-primary text-sm mb-0.5">{data.sector} — Other</div>
+      <div className="font-bold text-primary text-sm mb-0.5">{data.sector}, Other</div>
       <div className="text-label text-[10px] mb-1">
         {data.otherCount} stocks too small to display
       </div>

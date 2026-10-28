@@ -316,7 +316,7 @@ describe("applyCfRules", () => {
         style: { bg: "bg-emerald-900/40" },
       },
     ];
-    // row 0 matches both — first rule wins
+    // row 0 matches both, first rule wins
     const { rowClasses } = applyCfRules(rows[0] as Row, rules);
     expect(rowClasses).toContain("bg-blue-900/40");
     expect(rowClasses).not.toContain("bg-emerald-900/40");

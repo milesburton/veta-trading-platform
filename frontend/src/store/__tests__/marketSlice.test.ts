@@ -497,14 +497,14 @@ describe("candlesSeeded", () => {
         candles: { "1m": serverCandles1m, "5m": [] },
       })
     );
-    // Server bars win outright — live pre-seed ticks discarded
+    // Server bars win outright, live pre-seed ticks discarded
     expect(state.candleHistory.AAPL["1m"]).toHaveLength(2);
     expect(state.candleHistory.AAPL["1m"][1].time).toBe(bucket + 60_000);
   });
 
   it("excludes live ticks that overlap with server bars", () => {
     const overlappingLive: OhlcCandle = {
-      time: bucket + 60_000, // same time as last server bar — should be excluded
+      time: bucket + 60_000, // same time as last server bar, should be excluded
       open: 999,
       high: 999,
       low: 999,
@@ -545,7 +545,7 @@ describe("candlesSeeded", () => {
   });
 });
 
-// ─── setAssets — candlesReady pre-marking ─────────────────────────────────────
+// ─── setAssets, candlesReady pre-marking ─────────────────────────────────────
 
 describe("setAssets candlesReady", () => {
   it("initialises candlesReady[symbol] = false (chart waits for candlesSeeded)", () => {
@@ -631,7 +631,7 @@ describe("orderBookUpdated", () => {
   });
 });
 
-describe("tickReceived — sessionOpen", () => {
+describe("tickReceived, sessionOpen", () => {
   const tick = (prices: Record<string, number>, state = initialState) =>
     reducer(state, tickReceived({ prices, ts: Date.now() }));
 

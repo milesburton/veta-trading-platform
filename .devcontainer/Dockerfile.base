@@ -6,7 +6,7 @@
 # The app .devcontainer/Dockerfile inherits FROM this image.
 # =============================================================================
 
-# Redpanda binaries — copied into the dev container so services can publish/consume
+# Redpanda binaries: copied into the dev container so services can publish/consume
 FROM redpandadata/redpanda:v24.3.6 AS redpanda-src
 
 FROM ubuntu:22.04
@@ -62,7 +62,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
     apt-get update && apt-get install -y gh && rm -rf /var/lib/apt/lists/* || true
 
-# Install Docker CLI + Compose plugin (socket passthrough — no daemon needed)
+# Install Docker CLI + Compose plugin (socket passthrough: no daemon needed)
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
       | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
@@ -79,7 +79,7 @@ COPY --from=redpanda-src /opt/redpanda/libexec/rpk /usr/local/bin/rpk
 RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk && \
     mkdir -p /var/lib/redpanda/data /etc/redpanda /opt/redpanda && \
     ln -s /usr/local/lib/redpanda /opt/redpanda/lib
-# Do NOT set LD_LIBRARY_PATH globally — Redpanda ships its own libc.so.6 which
+# Do NOT set LD_LIBRARY_PATH globally: Redpanda ships its own libc.so.6 which
 # breaks any shell that loads it at startup. The /opt/redpanda/lib symlink
 # satisfies the binary's PT_INTERP without needing LD_LIBRARY_PATH at all.
 
@@ -113,7 +113,7 @@ WORKDIR /home/veta
 RUN mkdir -p /home/veta/.config/fish
 
 # Copy Fish shell config (MOTD, aliases, supervisord shortcuts).
-# Edit .devcontainer/config.fish to update — the Dockerfile just copies it.
+# Edit .devcontainer/config.fish to update: the Dockerfile just copies it.
 COPY --chown=veta:veta config.fish /home/veta/.config/fish/config.fish
 
 # Set Fish as the default shell

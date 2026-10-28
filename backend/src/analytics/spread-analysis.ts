@@ -115,7 +115,7 @@ export function computeSpreadAnalysis(req: SpreadAnalysisRequest): SpreadAnalysi
     face,
   });
 
-  // Build raw cash flow schedule (without PV — we'll discount differently for Z-spread)
+  // Build raw cash flow schedule (without PV, we'll discount differently for Z-spread)
   const couponPerPeriod = (couponRate * face) / periodsPerYear;
   const cashFlows: { t: number; cf: number }[] = Array.from(
     {

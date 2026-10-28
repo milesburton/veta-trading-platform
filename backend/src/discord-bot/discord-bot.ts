@@ -119,7 +119,7 @@ export interface WelcomePostDecision {
   message?: string;
 }
 
-/** Pure decision: given a GUILD_MEMBER_ADD payload and config, should we post — and what? */
+/** Pure decision: given a GUILD_MEMBER_ADD payload and config, should we post, and what? */
 export function decideWelcomePost(data: unknown, welcomeChannelId: string): WelcomePostDecision {
   const member = (data ?? {}) as GuildMemberAddPayload;
   if (!welcomeChannelId || !member.user) return { shouldPost: false };
@@ -553,7 +553,7 @@ export function connect(gatewayUrl: string, opts: { reconnect?: boolean } = {}):
     try {
       payload = JSON.parse(event.data as string) as GatewayEnvelope;
     } catch {
-      logger.warn("malformed gateway frame — ignoring");
+      logger.warn("malformed gateway frame, ignoring");
       return;
     }
     if (typeof payload.s === "number") sequence = payload.s;

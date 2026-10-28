@@ -27,7 +27,7 @@ const runtimeConfig = await createRuntimeConfigStore(llmAdvisoryPool);
 const effectivePolicy = resolveEffectivePolicy(basePolicy, await runtimeConfig.getConfig());
 
 if (!isWorkerAllowed(effectivePolicy)) {
-  logger.info("LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
+  logger.info("LLM_ENABLED or LLM_WORKER_ENABLED is false, exiting");
   process.exit(0);
 }
 
@@ -48,7 +48,7 @@ const provider = buildProvider();
 
 const available = await provider.isAvailable();
 if (!available) {
-  logger.warn(`Provider '${effectivePolicy.provider}' is not available — exiting`);
+  logger.warn(`Provider '${effectivePolicy.provider}' is not available, exiting`);
   process.exit(0);
 }
 
@@ -270,7 +270,7 @@ const sessionStart = Date.now();
 outer: while (true) {
   if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
     exitReason = "max-jobs-per-session";
-    logger.info(`Reached max jobs per session (${MAX_JOBS_PER_SESSION}) — exiting`);
+    logger.info(`Reached max jobs per session (${MAX_JOBS_PER_SESSION}), exiting`);
     break;
   }
 
@@ -278,8 +278,8 @@ outer: while (true) {
   if (!job) {
     logger.info(
       IDLE_TIMEOUT_MS > 0
-        ? `Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`
-        : `Queue empty — waiting for new jobs`
+        ? `Queue empty, waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`
+        : `Queue empty, waiting for new jobs`
     );
     const deadline = Date.now() + IDLE_TIMEOUT_MS;
     while (isIdleWindowOpen(IDLE_TIMEOUT_MS, deadline, Date.now())) {
@@ -292,7 +292,7 @@ outer: while (true) {
       }
     }
     exitReason = "idle-timeout";
-    logger.info(`Idle timeout reached — exiting`);
+    logger.info(`Idle timeout reached, exiting`);
     break;
   }
 

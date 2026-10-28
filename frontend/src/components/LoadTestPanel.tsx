@@ -29,7 +29,7 @@ export function LoadTestPanel() {
               Load Test
             </span>
             <span className="text-[10px] text-subtle">
-              Admin only — injects bulk orders into the live pipeline
+              Admin only, injects bulk orders into the live pipeline
             </span>
           </div>
         </div>
@@ -70,7 +70,7 @@ export function LoadTestPanel() {
         error.value =
           data?.error ?? `Request failed with status ${(err as { status: number }).status}`;
       } else {
-        error.value = "Network error — request failed";
+        error.value = "Network error, request failed";
       }
     }
   }
@@ -83,7 +83,7 @@ export function LoadTestPanel() {
             Load Test
           </span>
           <span className="text-[10px] text-subtle">
-            Admin only — injects bulk orders into the live pipeline
+            Admin only, injects bulk orders into the live pipeline
           </span>
         </div>
       </div>

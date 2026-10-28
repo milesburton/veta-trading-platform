@@ -124,10 +124,10 @@ function ExecutionsSection() {
                   <td className="px-3 py-1 text-label">{ordStatusLabel(e.ordStatus)}</td>
                   <td className="px-3 py-1 text-right tabular-nums text-default">{e.cumQty}</td>
                   <td className="px-3 py-1 text-right tabular-nums text-default">
-                    {e.avgPx > 0 ? e.avgPx.toFixed(4) : "—"}
+                    {e.avgPx > 0 ? e.avgPx.toFixed(4) : "n/a"}
                   </td>
                   <td className="px-3 py-1 text-muted font-mono text-[10px]">
-                    {e.counterparty ?? "—"}
+                    {e.counterparty ?? "n/a"}
                   </td>
                 </tr>
               ))}

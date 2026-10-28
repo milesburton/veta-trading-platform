@@ -35,11 +35,11 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: Host disk above 92% — imminent outage
+          summary: Host disk above 92%, imminent outage
           description: |
             disk_used_percent is {{ $value }}%. Docker exec, healthchecks,
             and Traefik label reads start failing around 95%. Truncate the
-            largest container log immediately — find its log path with
+            largest container log immediately, find its log path with
             `docker inspect <container> | jq -r '.[0].LogPath'`, then
             `sudo truncate -s 0` the resulting file.
 
@@ -88,7 +88,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "{{ $labels.job }} heap above 3 GiB — imminent OOM"
+          summary: "{{ $labels.job }} heap above 3 GiB, imminent OOM"
           description: |
             v8js_memory_heap_size_bytes is {{ $value | humanize }}.
             Node usually OOMs around 4 GiB without --max-old-space-size.
@@ -107,7 +107,7 @@ groups:
           description: |
             frontend_memory_heap_used_max_bytes is {{ $value | humanize }}.
             At least one live browser session is sitting on >2 GiB heap.
-            Similar pattern to the Firefox 13 GB leak on 2026-05-18 —
+            Similar pattern to the Firefox 13 GB leak on 2026-05-18,
             check for new unbounded growth in Redux slices.
 
       - alert: FrontendHeapCritical
@@ -116,7 +116,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: Browser heap above 4 GiB — likely frozen tab imminent
+          summary: Browser heap above 4 GiB, likely frozen tab imminent
           description: |
             frontend_memory_heap_used_max_bytes is {{ $value | humanize }}.
             At 4 GiB Firefox typically starts swapping. Get the user to
@@ -153,14 +153,14 @@ groups:
           summary: "{{ $labels.redpanda_topic }} producing >512 KiB/s for 30m"
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >512 KiB/s
-            sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
+            sustained, that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
             default retention.bytes=1 GiB and log_retention_ms=24h the
             partition will hit the byte cap and start tombstoning, but
             this rate also signals upstream spam. Past incident
             (2026-05-19): loadgen produced 322k duplicate AAPL orders/hr
             that all rejected to orders.rejected. Check producer
             identity and message content before assuming it's organic.
-            The market.* topics are excluded — they're high-frequency
+            The market.* topics are excluded, they're high-frequency
             by design (market-sim produces ~700 KiB/s of ticks at steady
             state).
 
@@ -176,7 +176,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s for 10m — disk-fill imminent"
+          summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s for 10m, disk-fill imminent"
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >2 MiB/s.
             That's ~7 GiB/hour. Per-partition retention.bytes will

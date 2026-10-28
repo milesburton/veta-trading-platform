@@ -45,14 +45,14 @@ tests:
               summary: "orders.new producing >512 KiB/s for 30m"
               description: |
                 Topic orders.new is taking writes at >512 KiB/s
-                sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
+                sustained, that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
                 default retention.bytes=1 GiB and log_retention_ms=24h the
                 partition will hit the byte cap and start tombstoning, but
                 this rate also signals upstream spam. Past incident
                 (2026-05-19): loadgen produced 322k duplicate AAPL orders/hr
                 that all rejected to orders.rejected. Check producer
                 identity and message content before assuming it's organic.
-                The market.* topics are excluded — they're high-frequency
+                The market.* topics are excluded, they're high-frequency
                 by design (market-sim produces ~700 KiB/s of ticks at steady
                 state).
 
@@ -102,7 +102,7 @@ tests:
               redpanda_topic: orders.new
               severity: critical
             exp_annotations:
-              summary: "orders.new producing >2 MiB/s for 10m — disk-fill imminent"
+              summary: "orders.new producing >2 MiB/s for 10m, disk-fill imminent"
               description: |
                 Topic orders.new is taking writes at >2 MiB/s.
                 That's ~7 GiB/hour. Per-partition retention.bytes will
@@ -237,11 +237,11 @@ tests:
               alertname: DiskUsageCritical
               severity: critical
             exp_annotations:
-              summary: "Host disk above 92% — imminent outage"
+              summary: "Host disk above 92%, imminent outage"
               description: |
                 disk_used_percent is 94%. Docker exec, healthchecks,
                 and Traefik label reads start failing around 95%. Truncate the
-                largest container log immediately — find its log path with
+                largest container log immediately, find its log path with
                 `docker inspect <container> | jq -r '.[0].LogPath'`, then
                 `sudo truncate -s 0` the resulting file.
 

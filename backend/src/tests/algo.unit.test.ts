@@ -353,7 +353,7 @@ test("[is] slice quantities sum to totalQty", () => {
     assertEquals(
       sliceQtys.reduce((a, b) => a + b, 0),
       100,
-      `urgency=${urgency} — qty mismatch`
+      `urgency=${urgency}, qty mismatch`
     );
   }
 });
@@ -393,7 +393,7 @@ test("[is] urgency clamped: 0 and 1 do not crash and still sum correctly", () =>
     assertEquals(
       sliceQtys.reduce((a, b) => a + b, 0),
       50,
-      `urgency=${urgency} — qty mismatch`
+      `urgency=${urgency}, qty mismatch`
     );
   }
 });

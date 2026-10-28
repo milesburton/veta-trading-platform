@@ -351,7 +351,7 @@ export function ProductBuilderPanel() {
                 weightOk ? "text-emerald-400" : "text-red-400"
               }`}
             >
-              Total: {totalWeight.toFixed(1)}%{!weightOk && " — must equal 100%"}
+              Total: {totalWeight.toFixed(1)}%{!weightOk && ", must equal 100%"}
             </span>
           </div>
         )}

@@ -1,15 +1,15 @@
 export const TIF_OPTIONS = [
-  { value: "DAY", label: "DAY", title: "Day order — expires at market close" },
+  { value: "DAY", label: "DAY", title: "Day order, expires at market close" },
   { value: "GTC", label: "GTC", title: "Good Till Cancelled" },
   {
     value: "IOC",
     label: "IOC",
-    title: "Immediate Or Cancel — fill what you can instantly",
+    title: "Immediate Or Cancel, fill what you can instantly",
   },
   {
     value: "FOK",
     label: "FOK",
-    title: "Fill Or Kill — all or nothing immediately",
+    title: "Fill Or Kill, all or nothing immediately",
   },
 ] as const;
 

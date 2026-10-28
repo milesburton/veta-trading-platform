@@ -41,7 +41,7 @@ export function QuickTradeBar() {
 
   function send() {
     if (!regexIntent) {
-      flash.value = { kind: "err", msg: "Couldn't parse — try: buy 500 aapl @ 200 twap 30m" };
+      flash.value = { kind: "err", msg: "Couldn't parse, try: buy 500 aapl @ 200 twap 30m" };
       return;
     }
     openOrderTicketWindow(ticketSize, regexIntent);
@@ -70,9 +70,9 @@ export function QuickTradeBar() {
     } catch (err) {
       const status = (err as { status?: number }).status;
       if (status === 503) {
-        flash.value = { kind: "err", msg: "AI is offline — try the shorthand grammar instead" };
+        flash.value = { kind: "err", msg: "AI is offline, try the shorthand grammar instead" };
       } else if (status === 422) {
-        flash.value = { kind: "err", msg: "AI couldn't parse that — rephrase or use shorthand" };
+        flash.value = { kind: "err", msg: "AI couldn't parse that, rephrase or use shorthand" };
       } else {
         flash.value = { kind: "err", msg: "AI request failed" };
       }
@@ -120,8 +120,8 @@ export function QuickTradeBar() {
           if (flash.value) flash.value = null;
         }}
         onKeyDown={onKeyDown}
-        placeholder="buy 500 aapl @ 200 twap 30m — or describe in natural language"
-        aria-label="Quick trade — natural-language order entry"
+        placeholder="buy 500 aapl @ 200 twap 30m, or describe in natural language"
+        aria-label="Quick trade, natural-language order entry"
         className="flex-1 bg-surface border border-panel rounded px-3 py-1 text-sm font-mono text-primary placeholder:text-subtle focus:outline-none focus:border-emerald-600"
         autoComplete="off"
         spellCheck={false}

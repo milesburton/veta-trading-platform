@@ -1,7 +1,7 @@
 import "#veta/bootstrap";
 import { createServer, type Socket } from "node:net";
 import { serveFetch } from "#veta/http";
-// FIX 4.4 Exchange — TCP listener on port 9880 (internal only)
+// FIX 4.4 Exchange, TCP listener on port 9880 (internal only)
 // Accepts FIX sessions from fix-gateway, processes NewOrderSingle messages,
 // and returns ExecutionReports using simulated fills from the market-sim.
 import { logger } from "#veta/logger";
@@ -49,7 +49,7 @@ interface SessionRegistryEntry {
 const sessionRegistry = new Map<string, SessionRegistryEntry>();
 
 const producer = await createProducer("fix-exchange").catch((err) => {
-  logger.warn("Redpanda unavailable — executions will not be published to fix.execution", { err });
+  logger.warn("Redpanda unavailable, executions will not be published to fix.execution", { err });
   return null;
 });
 
@@ -69,7 +69,7 @@ async function handleConnection(conn: Socket): Promise<void> {
   // Working orders for this connection, keyed by the ClOrdID the client
   // submitted them under. Cancel/replace requests reference an order by
   // its original ClOrdID (OrigClOrdID), so this is what makes those
-  // requests actionable — without it, a cancel arriving mid-fill-loop had
+  // requests actionable, without it, a cancel arriving mid-fill-loop had
   // nothing to look up and was silently dropped. Removed on full fill,
   // cancel, or reject.
   interface OpenOrder {
@@ -97,7 +97,7 @@ async function handleConnection(conn: Socket): Promise<void> {
 
   const session = new FixSession({
     senderCompID: "EXCHANGE",
-    // Placeholder until Logon resolves the real counterparty — every
+    // Placeholder until Logon resolves the real counterparty, every
     // connection today comes through fix-gateway's single TCP bridge, so
     // this default preserves prior behavior for a Logon that (for
     // whatever reason) never arrives.
@@ -151,7 +151,7 @@ async function handleConnection(conn: Socket): Promise<void> {
     // HandlInst is read and logged for visibility but not enforced: this
     // simulator only ever auto-executes, so a client requesting manual
     // handling (HandlInst=2) gets the same auto-executed behavior as
-    // automated handling (HandlInst=1) — no separate manual-handling path
+    // automated handling (HandlInst=1), no separate manual-handling path
     // exists to route to.
     const handlInst = tags.get(Tag.HandlInst);
     const account = tags.get(Tag.Account);
@@ -193,7 +193,7 @@ async function handleConnection(conn: Socket): Promise<void> {
     // Session-hours gate (ADR 0003 Phase 6). sessionPhase is broadcast by
     // market-sim on the same tick stream this file already connects to, so
     // no new connection or Kafka consumer is needed. This closes only the
-    // session-hours gap on the FIX side — it does not route the order
+    // session-hours gap on the FIX side, it does not route the order
     // through risk-engine or OMS (see fix-protocol docs' known gaps).
     const sessionPhase = marketClient.getLatest().sessionPhase;
     if (!isMarketOpenForOrderEntry(sessionPhase)) {
@@ -201,12 +201,12 @@ async function handleConnection(conn: Socket): Promise<void> {
       return;
     }
 
-    // Pre-trade risk check (FIX remediation plan Phase 3, Option B — see
+    // Pre-trade risk check (FIX remediation plan Phase 3, Option B, see
     // ADR 0004). Calls risk-engine's existing POST /check directly rather
     // than routing through orders.new/OMS; that fuller integration is a
     // separately-scoped, larger change. SenderCompID stands in for userId
     // since FIX sessions authenticate as a counterparty, not an
-    // individual platform user — Account (if sent) identifies a
+    // individual platform user, Account (if sent) identifies a
     // sub-account within that counterparty but isn't itself a risk
     // identity today.
     if (RISK_ENGINE_ENABLED) {
@@ -267,7 +267,7 @@ async function handleConnection(conn: Socket): Promise<void> {
     const latencyMs = 10 + Math.floor(Math.random() * 40);
     await new Promise((r) => setTimeout(r, latencyMs));
 
-    // A cancel may have arrived while we were "at the exchange" above —
+    // A cancel may have arrived while we were "at the exchange" above,
     // check before touching the market at all.
     if (openOrder.canceled) return;
 
@@ -328,7 +328,7 @@ async function handleConnection(conn: Socket): Promise<void> {
 
       // execType/ordStatus "2" (not the dictionary's ExecType.Fill="F") to
       // match the value the other fix.execution producers (ems-server.ts,
-      // rfq-service.ts, dark-pool-server.ts) already send for a full fill —
+      // rfq-service.ts, dark-pool-server.ts) already send for a full fill,
       // fix-archive stores whatever arrives untyped, so consistency across
       // producers matters more than matching this file's own wire-facing
       // ExecType constant.
@@ -463,7 +463,7 @@ async function handleConnection(conn: Socket): Promise<void> {
       return;
     }
 
-    // Re-key under the replacement ClOrdID, per FIX convention — a
+    // Re-key under the replacement ClOrdID, per FIX convention, a
     // subsequent cancel/replace on this order references the new ID, not
     // the original one.
     openOrders.delete(origClOrdId);
@@ -495,7 +495,7 @@ async function handleConnection(conn: Socket): Promise<void> {
     ]);
   }
 
-  // Read loop — reassemble SOH-delimited FIX messages from the TCP stream
+  // Read loop, reassemble SOH-delimited FIX messages from the TCP stream
   try {
     for await (const chunk of conn) {
       buffer += chunk as string;

@@ -443,7 +443,7 @@ describe("StatusBar – alert button interactions", () => {
     renderWithStore(store);
     const btn = screen.getByTestId("alert-bell-btn");
     fireEvent.click(btn);
-    // Drawer is now open — simply ensure no throw
+    // Drawer is now open, simply ensure no throw
     expect(btn).toBeInTheDocument();
   });
 
@@ -459,7 +459,7 @@ describe("StatusBar – alert button interactions", () => {
 describe("StatusBar – stale and dead feeds", () => {
   it("shows stale indicator when feeds are between stale and dead thresholds", () => {
     const store = makeStore(true);
-    // Set feed lastSeenAt to ~7s ago — between FEED_STALE_MS=5000 and FEED_DEAD_MS=15000
+    // Set feed lastSeenAt to ~7s ago, between FEED_STALE_MS=5000 and FEED_DEAD_MS=15000
     const now = Date.now();
     store.dispatch({ type: "feed/feedReceived", payload: "market" });
     // Manually patch state via reducer-like dispatch

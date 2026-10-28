@@ -159,7 +159,7 @@ describe("versionWatchMiddleware – backend service version tracking", () => {
   it("ignores dev/placeholder versions", () => {
     const { dispatched, invoke } = createHarness();
     invoke(makeHealthFulfilled("EMS", "dev"));
-    invoke(makeHealthFulfilled("EMS", "—"));
+    invoke(makeHealthFulfilled("EMS", "n/a"));
     expect(dispatched.some((a) => setUpdateAvailable.match(a as { type: string }))).toBe(false);
   });
 });

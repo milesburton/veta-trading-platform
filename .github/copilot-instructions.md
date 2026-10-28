@@ -5,7 +5,7 @@ existing, documented conventions. Full detail: [Contributing](https://milesburto
 
 ## Style rules already enforced, do not flag these as new findings
 
-- No em-dashes (`—`) anywhere in code, comments, docs, or commit messages.
+- No em-dashes (U+2014) anywhere in code, comments, docs, or commit messages.
   Use commas, periods, or restructure the sentence.
 - No inline or block comments in application code. The codebase is meant
   to be self-documenting through naming and structure. Exceptions:

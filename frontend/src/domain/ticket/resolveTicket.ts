@@ -25,7 +25,7 @@ import type {
  * Pure, deterministic ticket resolution.
  *
  * Given the same TicketContext, always returns the same TicketResolution.
- * Zero side-effects, no DOM/React dependencies — portable to any runtime.
+ * Zero side-effects, no DOM/React dependencies, portable to any runtime.
  */
 export function resolveTicket(ctx: TicketContext): TicketResolution {
   const { instrument, draft, limits } = ctx;

@@ -418,7 +418,7 @@ function PlatformStatusContent() {
             ))}
             {stats.lastCritical && (
               <div className="text-[10px] text-muted pt-1 font-mono">
-                last critical {relativeTime(now, stats.lastCritical.ts)} —{" "}
+                last critical {relativeTime(now, stats.lastCritical.ts)},{" "}
                 <span className="text-red-400">{stats.lastCritical.source}</span>{" "}
                 {stats.lastCritical.message.slice(0, 60)}
               </div>

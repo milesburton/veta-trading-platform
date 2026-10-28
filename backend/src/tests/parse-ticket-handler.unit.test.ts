@@ -36,7 +36,7 @@ function jsonRequest(body: unknown): Request {
   });
 }
 
-test("handleParseTicket — happy path returns parsed intent", async () => {
+test("handleParseTicket, happy path returns parsed intent", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl @ 200" }), {
     provider: makeProvider(),
   });
@@ -48,7 +48,7 @@ test("handleParseTicket — happy path returns parsed intent", async () => {
   assertEquals(body.intent.limitPrice, 200);
 });
 
-test("handleParseTicket — rejects empty / oversize input with 400", async () => {
+test("handleParseTicket, rejects empty / oversize input with 400", async () => {
   const empty = await handleParseTicket(jsonRequest({ input: "" }), { provider: makeProvider() });
   assertEquals(empty.status, 400);
   await empty.body?.cancel();
@@ -60,7 +60,7 @@ test("handleParseTicket — rejects empty / oversize input with 400", async () =
   await oversize.body?.cancel();
 });
 
-test("handleParseTicket — returns 503 when provider not available", async () => {
+test("handleParseTicket, returns 503 when provider not available", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({ available: false }),
   });
@@ -69,7 +69,7 @@ test("handleParseTicket — returns 503 when provider not available", async () =
   assertEquals(body.error, "llm_unavailable");
 });
 
-test("handleParseTicket — returns 503 when provider throws", async () => {
+test("handleParseTicket, returns 503 when provider throws", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({
       generate: () => Promise.reject(new Error("boom")),
@@ -80,7 +80,7 @@ test("handleParseTicket — returns 503 when provider throws", async () => {
   assertEquals(body.error, "llm_generate_failed");
 });
 
-test("handleParseTicket — strips markdown fences from model output", async () => {
+test("handleParseTicket, strips markdown fences from model output", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl @ 200" }), {
     provider: makeProvider({
       generate: () =>
@@ -98,7 +98,7 @@ test("handleParseTicket — strips markdown fences from model output", async () 
   assertEquals(body.intent.symbol, "AAPL");
 });
 
-test("handleParseTicket — returns 422 on schema-mismatched response", async () => {
+test("handleParseTicket, returns 422 on schema-mismatched response", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({
       generate: () =>
@@ -114,7 +114,7 @@ test("handleParseTicket — returns 422 on schema-mismatched response", async ()
   assertEquals(res.status, 422);
 });
 
-test("handleParseTicket — returns 422 when model emits explicit error", async () => {
+test("handleParseTicket, returns 422 when model emits explicit error", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "hedge half my book" }), {
     provider: makeProvider({
       generate: () =>
@@ -132,7 +132,7 @@ test("handleParseTicket — returns 422 when model emits explicit error", async 
   assertEquals(body.error, "unparseable");
 });
 
-test("handleParseTicket — returns 422 when symbol not in allowed list", async () => {
+test("handleParseTicket, returns 422 when symbol not in allowed list", async () => {
   const res = await handleParseTicket(
     jsonRequest({ input: "buy 500 unknownsym", symbols: ["AAPL", "MSFT"] }),
     {
@@ -153,7 +153,7 @@ test("handleParseTicket — returns 422 when symbol not in allowed list", async 
   assertEquals(body.error, "unknown_symbol");
 });
 
-test("handleParseTicket — passes through symbol when in allowed list", async () => {
+test("handleParseTicket, passes through symbol when in allowed list", async () => {
   const res = await handleParseTicket(
     jsonRequest({ input: "buy 500 aapl", symbols: ["AAPL", "MSFT"] }),
     {
@@ -172,7 +172,7 @@ test("handleParseTicket — passes through symbol when in allowed list", async (
   assertEquals(res.status, 200);
 });
 
-test("handleParseTicket — sanitises control chars from input before prompt", async () => {
+test("handleParseTicket, sanitises control chars from input before prompt", async () => {
   let receivedPrompt = "";
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl\n\rmalicious" }), {
     provider: makeProvider({
@@ -192,7 +192,7 @@ test("handleParseTicket — sanitises control chars from input before prompt", a
   assert(!receivedPrompt.includes("\n\r"), "control chars must be stripped from prompt");
 });
 
-test("handleParseTicket — rejects invalid JSON body with 400", async () => {
+test("handleParseTicket, rejects invalid JSON body with 400", async () => {
   const req = new Request("http://x/parse-ticket", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -30,14 +30,14 @@ const PRESET_ALERTS: {
     label: "Exchange Offline",
     severity: "CRITICAL",
     source: "service",
-    message: "FIX Exchange connection lost — no executions possible",
+    message: "FIX Exchange connection lost, no executions possible",
     detail: "TCP 9880 unreachable",
   },
   {
     label: "Kill Switch Activated",
     severity: "CRITICAL",
     source: "kill-switch",
-    message: "Kill switch activated — all orders halted",
+    message: "Kill switch activated, all orders halted",
     detail: "Issued by admin",
   },
   {
@@ -63,7 +63,7 @@ const PRESET_ALERTS: {
     label: "Service Recovered",
     severity: "INFO",
     source: "service",
-    message: "OMS recovered — order routing restored",
+    message: "OMS recovered, order routing restored",
   },
 ];
 
@@ -137,7 +137,7 @@ export function DevToolsPanel() {
     if ("data" in res) {
       tradeResult.value = `Injected ${(res.data as { submitted: number }).submitted} orders (${scenario})`;
     } else {
-      tradeResult.value = "Failed — check gateway connection";
+      tradeResult.value = "Failed, check gateway connection";
     }
   }
 
@@ -265,7 +265,7 @@ export function DevToolsPanel() {
           <SectionHeader>{`Mute Rules (${muteRules.length})`}</SectionHeader>
           {muteRules.length === 0 ? (
             <div className="text-[10px] text-subtle">
-              No mute rules — use the diamond button on alert rows to mute similar alerts
+              No mute rules, use the diamond button on alert rows to mute similar alerts
             </div>
           ) : (
             <div className="space-y-0.5">

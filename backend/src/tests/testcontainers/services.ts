@@ -152,7 +152,7 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
   },
   "fix-exchange": {
     // fix-exchange's primary port (FIX_EXCHANGE_PORT, default 9880) is a raw
-    // TCP FIX listener, not HTTP — waitForHealth needs an HTTP endpoint, so
+    // TCP FIX listener, not HTTP, waitForHealth needs an HTTP endpoint, so
     // this descriptor points at the service's separate health server on
     // FIX_EXCHANGE_PORT - 1. Tests that need the TCP port should read
     // FIX_EXCHANGE_PORT from perServiceEnv or add 1 to this port.

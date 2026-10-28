@@ -66,7 +66,7 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
           : "";
       return `${ev.algo ?? ""}${slice} ${ev.side ?? ""} ${
         ev.qty ? formatQty(ev.qty) : ""
-      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.asset, ev.price) : "—"}`;
+      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.asset, ev.price) : "n/a"}`;
     }
     case "orders.filled": {
       const impact =
@@ -80,11 +80,11 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
       return `${ev.algo ?? ""} filled ${
         ev.filledQty ? formatQty(ev.filledQty) : ""
       } ${ev.asset ?? ""}${progress} @ ${
-        ev.avgFillPrice ? formatPrice(ev.asset, ev.avgFillPrice) : "—"
+        ev.avgFillPrice ? formatPrice(ev.asset, ev.avgFillPrice) : "n/a"
       }${impact}`;
     }
     case "orders.expired":
-      return `${ev.algo ?? ""} expired ${ev.asset ?? ""} — ${
+      return `${ev.algo ?? ""} expired ${ev.asset ?? ""}, ${
         ev.filledQty ? formatQty(ev.filledQty) : "0"
       } filled`;
     case "algo.heartbeat":
@@ -92,8 +92,8 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
         return `${ev.algo ?? ""} started ${ev.asset ?? ""} × ${ev.numSlices ?? ""} slices`;
       }
       if (ev.event === "complete") {
-        return `${ev.algo ?? ""} complete ${ev.asset ?? ""} — avg ${
-          ev.avgFillPrice ? formatPrice(ev.asset, ev.avgFillPrice) : "—"
+        return `${ev.algo ?? ""} complete ${ev.asset ?? ""}, avg ${
+          ev.avgFillPrice ? formatPrice(ev.asset, ev.avgFillPrice) : "n/a"
         }`;
       }
       return `${ev.algo ?? ""} alive · ${ev.pendingOrders ?? ev.activeOrders ?? 0} active`;
@@ -280,7 +280,7 @@ export function DecisionLog() {
                   >
                     {/* Timestamp */}
                     <td className="pl-3 pr-2 py-1 text-subtle whitespace-nowrap w-20 tabular-nums">
-                      {ts ? formatTime(ts) : "—"}
+                      {ts ? formatTime(ts) : "n/a"}
                     </td>
 
                     {/* Topic badge */}

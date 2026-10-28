@@ -198,7 +198,7 @@ export function checkMarketHours(state: RiskState, req: CheckRequest): CheckHit 
     const reason = weekend ? "weekend" : holiday ? `holiday (${dateStr})` : session.phaseLabel;
     return {
       code: "MARKET_CLOSED",
-      message: `${calendar.exchangeMic} is closed (${reason}) for ${req.symbol} — market hours are ${calendar.timezone} ${String(calendar.openHour).padStart(2, "0")}:${String(calendar.openMinute).padStart(2, "0")}`,
+      message: `${calendar.exchangeMic} is closed (${reason}) for ${req.symbol}, market hours are ${calendar.timezone} ${String(calendar.openHour).padStart(2, "0")}:${String(calendar.openMinute).padStart(2, "0")}`,
     };
   }
   return null;
@@ -254,7 +254,7 @@ export function checkSelfCross(state: RiskState, req: CheckRequest): CheckHit {
   if (conflict) {
     return {
       code: "SELF_CROSS",
-      message: `Self-cross: you have a working ${oppositeSide} on ${req.symbol} (${conflict.orderId}) — submitting a ${req.side} would cross your own order`,
+      message: `Self-cross: you have a working ${oppositeSide} on ${req.symbol} (${conflict.orderId}), submitting a ${req.side} would cross your own order`,
     };
   }
   return null;

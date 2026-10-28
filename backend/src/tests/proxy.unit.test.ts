@@ -30,7 +30,7 @@ test("[proxyPost] uses presetBody instead of re-reading req.body when given", as
     return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }));
   }) as typeof fetch;
   try {
-    // A body already consumed once (as the gateway wake path does) — proxyPost
+    // A body already consumed once (as the gateway wake path does), proxyPost
     // must not try to read req.text() again, since that would throw.
     const req = new Request("http://localhost/api/analytics/quote", {
       method: "POST",
@@ -142,7 +142,7 @@ test("[proxyGet] a genuine connection-refused failure sets connectionRefused:tru
   }
 });
 
-test("[proxyGet] a timeout failure does NOT set connectionRefused — the service may just be slow, not down", async () => {
+test("[proxyGet] a timeout failure does NOT set connectionRefused, the service may just be slow, not down", async () => {
   globalThis.fetch = (() => {
     const err = new DOMException("The operation was aborted due to timeout", "TimeoutError");
     return Promise.reject(err);

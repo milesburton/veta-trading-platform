@@ -61,7 +61,7 @@ export function DemoPersonas({ onSelect, mode = "compact" }: DemoPersonasProps) 
       {isLoading && <div className="text-xs text-muted py-2">Loading personas...</div>}
       {error && (
         <div className="text-xs text-red-400 py-2">
-          Failed to load personas — demo mode may be disabled on this deployment.
+          Failed to load personas, demo mode may be disabled on this deployment.
         </div>
       )}
       {!isLoading && !error && personas.length === 0 && (
@@ -90,7 +90,7 @@ export function DemoPersonas({ onSelect, mode = "compact" }: DemoPersonasProps) 
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-panel">
           <span className="font-medium tracking-wide uppercase text-[11px] text-label">
-            Demo personas — click to sign in
+            Demo personas, click to sign in
           </span>
           <span className="text-muted text-[10px]">{personas.length} available</span>
         </div>
@@ -159,7 +159,7 @@ function PersonaCard({ persona, onSelect }: { persona: DemoPersona; onSelect: ()
             {styleLabel && <span>{styleLabel}</span>}
           </div>
           <div className="text-[11px] text-label mt-1 line-clamp-2">
-            {persona.description || "—"}
+            {persona.description || "n/a"}
           </div>
           <div className="text-[9px] text-subtle mt-1 font-mono">Sign in as {persona.id}</div>
         </div>

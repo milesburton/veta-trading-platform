@@ -245,7 +245,7 @@ export function BugReportModal({ open, onClose }: Props) {
               ✓
             </div>
             <p data-testid="bug-report-success" className="text-sm text-primary font-medium">
-              Thanks — your report is in.
+              Thanks, your report is in.
             </p>
             {discordDelivered.value && !ticketUrl.value && ticketFailureReason.value && (
               <p className="text-xs text-amber-300" data-testid="github-ticketing-warning">

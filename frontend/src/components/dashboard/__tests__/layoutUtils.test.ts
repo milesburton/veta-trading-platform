@@ -168,7 +168,7 @@ describe("wouldCreateCycleIn", () => {
 
   it("returns true when incoming equals existing outgoing", () => {
     const items = [item("a", 1, undefined)];
-    // Panel "a" already broadcasts on ch1 — setting incoming=1 creates direct cycle
+    // Panel "a" already broadcasts on ch1, setting incoming=1 creates direct cycle
     expect(wouldCreateCycleIn(1, "a", items)).toBe(true);
   });
 

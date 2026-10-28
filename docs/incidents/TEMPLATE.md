@@ -17,7 +17,7 @@
 
 ## Action items
 
-- [ ] <Specific change — code, test, runbook, monitor — with owner and target date>
+- [ ] <Specific change, code, test, runbook, monitor, with owner and target date>
 - [ ] <...>
 
 ## Related

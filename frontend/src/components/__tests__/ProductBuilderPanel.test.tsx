@@ -105,7 +105,7 @@ describe("ProductBuilderPanel", () => {
       target: { value: "0" },
     });
     fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
-    // No leg added — still empty legs list
+    // No leg added, still empty legs list
     expect(screen.getByText(/Legs/i)).toBeInTheDocument();
   });
 

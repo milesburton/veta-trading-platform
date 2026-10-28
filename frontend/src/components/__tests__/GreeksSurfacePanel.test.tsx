@@ -123,7 +123,7 @@ describe("GreeksSurfacePanel", () => {
     render(<GreeksSurfacePanel />);
     const sel = screen.getByDisplayValue("AAPL");
     fireEvent.change(sel, { target: { value: "MSFT" } });
-    // No data for MSFT — should fall through to no-data view
+    // No data for MSFT, should fall through to no-data view
     expect(screen.queryByText(/Spot/)).not.toBeInTheDocument();
   });
 

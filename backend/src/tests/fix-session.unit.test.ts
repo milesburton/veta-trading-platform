@@ -250,7 +250,7 @@ test("[fix-session] sendLogout transitions to LOGOUT_SENT and stops the heartbea
     assertEquals(logout.get(Tag.MsgType), MsgType.Logout);
     assertEquals(logout.get(Tag.Text), "bye");
 
-    // heartbeat must be stopped — advancing well past heartBtInt sends nothing more
+    // heartbeat must be stopped, advancing well past heartBtInt sends nothing more
     sent.length = 0;
     time.tick(60_000);
     assertEquals(sent.length, 0);
@@ -380,7 +380,7 @@ test("[fix-session] heartbeat timer sends a TestRequest after the configured int
     ]);
     session.handleInbound(hbAck);
 
-    // acknowledged in time — the next tick sends a fresh TestRequest, not a timeout disconnect
+    // acknowledged in time, the next tick sends a fresh TestRequest, not a timeout disconnect
     time.tick(5_000);
     assertEquals(session.sessionState, "ACTIVE");
     assertEquals(sent.length, 1);
@@ -400,7 +400,7 @@ test("[fix-session] an unanswered TestRequest triggers a heartbeat-timeout disco
     time.tick(5_000); // TestRequest sent, never acknowledged
     assertEquals(session.sessionState, "ACTIVE");
 
-    time.tick(5_000); // no Heartbeat arrived — timeout
+    time.tick(5_000); // no Heartbeat arrived, timeout
     assertEquals(session.sessionState, "DISCONNECTED");
     assertEquals(states.at(-1), "DISCONNECTED");
   } finally {

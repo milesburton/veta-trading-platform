@@ -63,7 +63,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
               startRef.current = data.startedAt;
               anchoredRef.current = true;
               // If the gateway has been running for more than BOOTING_WINDOW_MS,
-              // this is a refresh on an already-running platform — show "waiting" mode.
+              // this is a refresh on an already-running platform, show "waiting" mode.
               const age = Date.now() - data.startedAt;
               mode.value = age > BOOTING_WINDOW_MS ? "waiting" : "booting";
             }
@@ -128,10 +128,10 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
               </div>
               <div className="text-xs text-label">
                 {isBooting
-                  ? "Initialising trading services — usually takes 30–60 seconds"
-                  : "Platform is running — some services are not yet responding"}
+                  ? "Initialising trading services, usually takes 30–60 seconds"
+                  : "Platform is running, some services are not yet responding"}
               </div>
-              {/* Build info is shown once in the footer — see <BuildInfo /> below. */}
+              {/* Build info is shown once in the footer, see <BuildInfo /> below. */}
             </div>
           </div>
 

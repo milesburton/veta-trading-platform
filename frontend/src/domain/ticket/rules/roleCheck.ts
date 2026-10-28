@@ -4,9 +4,9 @@ import type { TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
 const ROLE_MESSAGES: Record<string, string> = {
   admin: "Administrators cannot submit orders. This panel is reserved for trader accounts.",
   compliance: "Compliance officers have read-only access. Order submission is disabled.",
-  sales: "Sales accounts cannot submit orders directly — use the Sales Workbench to route RFQs.",
+  sales: "Sales accounts cannot submit orders directly, use the Sales Workbench to route RFQs.",
   "external-client":
-    "External client accounts cannot submit orders directly — use the Client RFQ panel to request quotes.",
+    "External client accounts cannot submit orders directly, use the Client RFQ panel to request quotes.",
   viewer: "View-only access. Contact your administrator to request trading permissions.",
   "desk-head":
     "Desk heads have read-only oversight across the desk. Manual order entry is disabled.",
@@ -16,9 +16,9 @@ const ROLE_MESSAGES: Record<string, string> = {
 
 const STYLE_BLOCK_MESSAGES: Record<string, string> = {
   low_touch:
-    "Low-touch traders do not submit orders via the manual ticket — use the Algo Monitor workspace.",
+    "Low-touch traders do not submit orders via the manual ticket, use the Algo Monitor workspace.",
   derivatives_low_touch:
-    "Low-touch derivatives traders do not use the manual ticket — use the Algo Monitor workspace.",
+    "Low-touch derivatives traders do not use the manual ticket, use the Algo Monitor workspace.",
 };
 
 export function checkRoleLocked(ctx: TicketContext): {

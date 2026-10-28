@@ -114,7 +114,7 @@ export function OptionPricingPanel() {
   }, [currentPrice, strike]);
 
   const optionPrefill = useAppSelector((s) => s.ui.optionPrefill);
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional — consume once and clear
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional, consume once and clear
   useEffect(() => {
     if (optionPrefill) {
       strike.value = optionPrefill.strike.toFixed(2);
@@ -180,7 +180,7 @@ export function OptionPricingPanel() {
     >
       <div className="px-4 py-2.5 border-b border-panel shrink-0">
         <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
-          Option Pricing — Black-Scholes
+          Option Pricing, Black-Scholes
         </span>
       </div>
 

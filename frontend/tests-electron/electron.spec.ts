@@ -42,7 +42,7 @@ let electronApp: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
-  // Give the entire beforeAll hook 90s — Electron under xvfb in CI can be slow to start
+  // Give the entire beforeAll hook 90s, Electron under xvfb in CI can be slow to start
   test.setTimeout(90_000);
 
   // ELECTRON_RUN_AS_NODE causes the binary to start in Node.js mode and reject
@@ -137,7 +137,7 @@ test("platform is a valid value", async () => {
   expect(["darwin", "win32", "linux"]).toContain(platform);
 });
 
-// ── 5. contextIsolation — no Node.js globals in renderer ──────────────────────
+// ── 5. contextIsolation, no Node.js globals in renderer ──────────────────────
 
 test("Node.js require is not accessible in renderer (contextIsolation enforced)", async () => {
   const hasRequire = await page.evaluate(() => {

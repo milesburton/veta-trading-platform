@@ -489,7 +489,7 @@ serveFetch({ port: PORT }, (req) => {
     return json(acct);
   }
 
-  // GET /ccp/settlements — pending queue
+  // GET /ccp/settlements, pending queue
   if (path === "/ccp/settlements" && req.method === "GET") {
     const userId = url.searchParams.get("userId");
     let obligations = [...settlementQueue.values()].filter((o) => !o.settled);
@@ -498,7 +498,7 @@ serveFetch({ port: PORT }, (req) => {
     return json({ obligations, total: obligations.length });
   }
 
-  // GET /ccp/settlements/:date — obligations for a specific date
+  // GET /ccp/settlements/:date, obligations for a specific date
   const settlDateMatch = path.match(/^\/ccp\/settlements\/(\d{4}-\d{2}-\d{2})$/);
   if (settlDateMatch && req.method === "GET") {
     const userId = url.searchParams.get("userId");

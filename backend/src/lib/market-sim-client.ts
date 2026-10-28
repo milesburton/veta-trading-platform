@@ -75,7 +75,7 @@ export function parseTickFrame(raw: string): RawTickMessage | null {
 /**
  * market-sim broadcasts gated diffs (see tick-diff.ts): most ticks omit
  * fields that haven't materially changed, so incoming messages must be
- * merged into the running tick rather than replacing it wholesale — a
+ * merged into the running tick rather than replacing it wholesale, a
  * plain overwrite would flicker prices/venueBooks to empty between the
  * periodic full snapshots. A `full` message already contains every
  * symbol for every venue, so it replaces rather than merges.

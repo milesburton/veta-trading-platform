@@ -37,10 +37,10 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
               ? selected.symbol.includes("/")
                 ? currentPrice.toFixed(4)
                 : currentPrice.toFixed(2)
-              : "—"}
+              : "n/a"}
           </span>
         ) : (
-          <span className="text-xs text-subtle">—</span>
+          <span className="text-xs text-subtle">n/a</span>
         )}
       </div>
 
@@ -54,7 +54,7 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
               <button
                 type="button"
                 onMouseDown={() => onSelect(a.symbol)}
-                title={`Select ${a.symbol} — ${a.sector}`}
+                title={`Select ${a.symbol}, ${a.sector}`}
                 aria-label={`Select ${a.symbol}`}
                 data-testid={`asset-option-${a.symbol}`}
                 className="w-full text-left px-2.5 py-1.5 hover:bg-divider flex items-center justify-between"

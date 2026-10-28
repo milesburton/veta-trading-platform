@@ -63,7 +63,7 @@ export function MyPositionsPanel() {
 
       {!isLoading && positions.length === 0 && (
         <div className="flex-1 flex items-center justify-center text-muted">
-          No open positions — submit and fill orders to build a book.
+          No open positions, submit and fill orders to build a book.
         </div>
       )}
 

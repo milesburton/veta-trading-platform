@@ -35,7 +35,7 @@ describe("servicesApi – RTK Query endpoints", () => {
   });
 
   it("getSystemMetrics queries the correct URL", () => {
-    // RTK Query bakes URLs into the reducer — verify via reducerPath
+    // RTK Query bakes URLs into the reducer, verify via reducerPath
     expect(servicesApi.reducerPath).toBe("servicesApi");
     expect(servicesApi.endpoints.getSystemMetrics).toBeDefined();
   });
@@ -48,7 +48,7 @@ describe("servicesApi – RTK Query endpoints", () => {
     expect(servicesApi.endpoints.getServiceHealth).toBeDefined();
   });
 
-  // RTK Query keeps transformResponse / transformErrorResponse internal —
+  // RTK Query keeps transformResponse / transformErrorResponse internal,
   // they only run when a fetch resolves. To exercise the real transform
   // branches we spin up a minimal store, mock fetch globally, and dispatch
   // the endpoint's initiate(). The transforms then fire as part of the
@@ -114,7 +114,7 @@ describe("servicesApi – RTK Query endpoints", () => {
           { forceRefetch: true }
         )
       );
-      expect(result.data?.version).toBe("—");
+      expect(result.data?.version).toBe("n/a");
     } finally {
       fetchSpy.mockRestore();
     }
@@ -141,7 +141,7 @@ describe("servicesApi – RTK Query endpoints", () => {
       expect(errorPayload).toBeDefined();
       expect(errorPayload.name).toBe("EMS");
       expect(errorPayload.state).toBe("error");
-      expect(errorPayload.version).toBe("—");
+      expect(errorPayload.version).toBe("n/a");
       expect(errorPayload.meta).toEqual({});
       expect(errorPayload.optional).toBe(true);
       expect(errorPayload.alertOnDeployments).toEqual(["homelab"]);

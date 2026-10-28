@@ -27,4 +27,4 @@ exit
 
 Note: `verifyOAuthCredentials` in user-service prefers per-user secrets
 (`OAUTH2_USER_SECRETS`) over the shared secret. The command above
-extracts the correct per-user password — don't reuse `OAUTH2_SHARED_SECRET`.
+extracts the correct per-user password, don't reuse `OAUTH2_SHARED_SECRET`.

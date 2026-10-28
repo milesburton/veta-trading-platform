@@ -9,7 +9,7 @@ import type { OrderBookSnapshot } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-// lightweight-charts renders to canvas — stub it
+// lightweight-charts renders to canvas, stub it
 vi.mock("lightweight-charts", () => {
   const seriesStub = { setData: vi.fn(), applyOptions: vi.fn() };
   const chartStub = {
@@ -79,7 +79,7 @@ describe("MarketDepth – with data", () => {
       </Provider>
     );
     // Mid price appears in the spread indicator (title attribute) and bid levels
-    const midEl = screen.getByTitle("Mid price — midpoint between best bid and ask");
+    const midEl = screen.getByTitle("Mid price, midpoint between best bid and ask");
     expect(midEl).toHaveTextContent("180.25");
   });
 
@@ -106,11 +106,11 @@ describe("MarketDepth – with data", () => {
         <MarketDepth symbol="EUR/USD" />
       </Provider>
     );
-    const midEl = screen.getByTitle("Mid price — midpoint between best bid and ask");
+    const midEl = screen.getByTitle("Mid price, midpoint between best bid and ask");
     expect(midEl).toHaveTextContent("1.0855");
   });
 
-  it("shows an 'unavailable' spread and '—' text when bids or asks are empty", () => {
+  it("shows an 'unavailable' spread and 'n/a' text when bids or asks are empty", () => {
     const oneSided: OrderBookSnapshot = {
       mid: 180.25,
       ts: Date.now(),
@@ -124,9 +124,9 @@ describe("MarketDepth – with data", () => {
       </Provider>
     );
     const spreadEl = screen.getByTitle(
-      "Bid-ask spread — difference between best ask and best bid prices"
+      "Bid-ask spread, difference between best ask and best bid prices"
     );
-    expect(spreadEl).toHaveTextContent("—");
+    expect(spreadEl).toHaveTextContent("n/a");
   });
 });
 

@@ -82,19 +82,19 @@ const LIQ_STYLES = {
     text: "text-emerald-400",
     bg: "bg-emerald-900/30",
     label: "MAKER",
-    title: "Passive — added liquidity to the book (typically lower fees)",
+    title: "Passive, added liquidity to the book (typically lower fees)",
   },
   TAKER: {
     text: "text-amber-400",
     bg: "bg-amber-900/30",
     label: "TAKER",
-    title: "Aggressive — removed liquidity from the book",
+    title: "Aggressive, removed liquidity from the book",
   },
   CROSS: {
     text: "text-sky-400",
     bg: "bg-sky-900/30",
     label: "CROSS",
-    title: "Internal cross — matched against another internal order",
+    title: "Internal cross, matched against another internal order",
   },
 };
 
@@ -307,7 +307,7 @@ export function MarketMatch() {
         <div className="flex-1 flex items-center justify-center text-subtle text-xs">
           {filterAsset
             ? `No fills for ${filterAsset} yet`
-            : "No fills recorded yet — submit an order to see matching activity"}
+            : "No fills recorded yet, submit an order to see matching activity"}
         </div>
       ) : (
         <div className="flex-1 overflow-hidden flex flex-col">
@@ -455,7 +455,7 @@ export function MarketMatch() {
                             {liq.label}
                           </span>
                         ) : (
-                          "—"
+                          "n/a"
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-muted font-mono">
@@ -464,10 +464,10 @@ export function MarketMatch() {
                             {VENUE_FLAGS[f.venue] ?? ""} {f.venue}
                           </span>
                         ) : (
-                          "—"
+                          "n/a"
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-muted">{f.counterparty ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-muted">{f.counterparty ?? "n/a"}</td>
                       <td
                         className={`px-2 py-1.5 text-right tabular-nums text-[9px] font-semibold ${
                           f.marketImpactBps != null
@@ -481,10 +481,10 @@ export function MarketMatch() {
                       >
                         {f.marketImpactBps != null
                           ? `${f.marketImpactBps > 0 ? "+" : ""}${f.marketImpactBps.toFixed(1)}bp`
-                          : "—"}
+                          : "n/a"}
                       </td>
                       <td className="pr-3 pl-2 py-1.5 text-right tabular-nums text-subtle text-[9px]">
-                        {f.commissionUSD != null ? `$${f.commissionUSD.toFixed(2)}` : "—"}
+                        {f.commissionUSD != null ? `$${f.commissionUSD.toFixed(2)}` : "n/a"}
                       </td>
                     </tr>
                   );

@@ -29,7 +29,7 @@ export const US_EQUITY_CALENDAR: TradingCalendar = {
   },
 };
 
-// SIFMA recommended bond-market closures — deliberately diverges from the
+// SIFMA recommended bond-market closures, deliberately diverges from the
 // equity calendar: Columbus Day and Veterans Day are bond-market holidays
 // but NOT equity holidays, so this cannot be derived from US_EQUITY_CALENDAR.
 export const SIFMA_BOND_CALENDAR: TradingCalendar = {
@@ -64,7 +64,7 @@ export const SIFMA_BOND_CALENDAR: TradingCalendar = {
 };
 
 // CME/NYMEX-style near-24h trading with a daily maintenance break
-// (16:00-17:00 CT). Distinct, shorter holiday list than equity — CME does
+// (16:00-17:00 CT). Distinct, shorter holiday list than equity, CME does
 // not observe MLK Day, Presidents Day, or Columbus Day as full closures.
 export const COMMODITY_CALENDAR: TradingCalendar = {
   exchangeMic: "XCME",
@@ -106,9 +106,9 @@ export const FX_CALENDAR: TradingCalendar = {
   tradeDateRollsAtOpen: true,
 };
 
-// Dates where FX is nominally open (order entry still allowed — real FX
+// Dates where FX is nominally open (order entry still allowed, real FX
 // venues don't close for these) but liquidity is materially thinner around
-// Christmas/New Year. Deliberately NOT modeled as a TradingCalendar halt —
+// Christmas/New Year. Deliberately NOT modeled as a TradingCalendar halt,
 // these aren't closures, so checkMarketHours must not reject orders on
 // these dates. Consuming code that cares about liquidity (not just
 // open/closed) should check this set directly.
@@ -134,13 +134,13 @@ export const XLON_CALENDAR: TradingCalendar = {
     "2026-05-25", // Spring bank holiday
     "2026-08-31", // Summer bank holiday
     "2026-12-25",
-    "2026-12-28", // Boxing Day (substitute — Dec 26 falls on a Saturday)
+    "2026-12-28", // Boxing Day (substitute, Dec 26 falls on a Saturday)
   ],
   earlyCloses: {},
 };
 
 export const EURONEXT_CALENDAR: TradingCalendar = {
-  exchangeMic: "XPAR", // also covers XAMS — same trading calendar
+  exchangeMic: "XPAR", // also covers XAMS, same trading calendar
   timezone: "Europe/Paris",
   openHour: 9,
   openMinute: 0,
@@ -186,7 +186,7 @@ export const XETR_CALENDAR: TradingCalendar = {
   earlyCloses: {},
 };
 
-// Tokyo Stock Exchange — 09:00-11:30 morning session, lunch break
+// Tokyo Stock Exchange, 09:00-11:30 morning session, lunch break
 // 11:30-12:30, 12:30-15:00 afternoon session. The lunch break is modeled
 // via dailyBreaks rather than a shorter continuousMinutes window, since it
 // recurs every trading day rather than being a one-off early close.
@@ -250,7 +250,7 @@ const EXCHANGE_CALENDARS: Record<string, TradingCalendar> = {
 /**
  * Resolve the calendar that applies to a given order/instrument. Options
  * are gated by their underlying equity's calendar rather than a distinct
- * derivatives calendar — the platform doesn't model separate options-market
+ * derivatives calendar, the platform doesn't model separate options-market
  * hours, so this deliberately reuses the exchange-based equity lookup.
  */
 export function calendarForOrder(key: AssetCalendarKey): TradingCalendar {

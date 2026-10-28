@@ -92,7 +92,7 @@ test("renders error dot when services are down", () => {
     {
       name: "svc-down",
       state: "error",
-      version: "—",
+      version: "n/a",
       meta: {},
       lastChecked: Date.now(),
       url: "",
@@ -116,7 +116,7 @@ test("renders mixed required and optional services", () => {
     {
       name: "svc-optional",
       state: "error",
-      version: "—",
+      version: "n/a",
       meta: {},
       lastChecked: Date.now(),
       url: "",
@@ -157,7 +157,7 @@ test("aggregates a warn-state service as overall warn, distinct from ok and erro
     {
       name: "svc-warn",
       state: "warn",
-      version: "—",
+      version: "n/a",
       meta: {},
       lastChecked: Date.now(),
       url: "",
@@ -197,7 +197,7 @@ test("aggregate state is error, not warn, when both an error and a warn service 
     {
       name: "svc-error",
       state: "error",
-      version: "—",
+      version: "n/a",
       meta: {},
       lastChecked: Date.now(),
       url: "",
@@ -205,7 +205,7 @@ test("aggregate state is error, not warn, when both an error and a warn service 
     {
       name: "svc-warn",
       state: "warn",
-      version: "—",
+      version: "n/a",
       meta: {},
       lastChecked: Date.now(),
       url: "",

@@ -19,7 +19,7 @@ const ROW_STATE_STYLE: Record<ServiceState, { dot: string; text: string; label: 
   error: { dot: "bg-red-500", text: "text-red-400", label: "error" },
   starting: { dot: "bg-sky-500", text: "text-sky-400", label: "starting" },
   standby: { dot: "bg-muted", text: "text-subtle", label: "standby" },
-  unknown: { dot: "bg-muted", text: "text-muted", label: "—" },
+  unknown: { dot: "bg-muted", text: "text-muted", label: "n/a" },
 };
 
 function RowDisplay({ health, index, now }: RowDisplayProps) {
@@ -51,7 +51,7 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
       </td>
       <td className="px-3 py-1 text-xs font-mono text-label whitespace-nowrap">{health.version}</td>
       <td className="px-3 py-1 text-xs font-mono text-muted whitespace-nowrap">
-        {ageSecs != null ? `${ageSecs}s ago` : "—"}
+        {ageSecs != null ? `${ageSecs}s ago` : "n/a"}
       </td>
     </tr>
   );

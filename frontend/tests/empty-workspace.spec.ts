@@ -52,7 +52,7 @@ traderTest("empty workspace: scrolls instead of clipping on a short viewport", a
     };
   });
 
-  // Content overflows the viewport (the bug) — but the container scrolls and
+  // Content overflows the viewport (the bug), but the container scrolls and
   // the last card can be scrolled fully into view (the fix).
   expect(scrollable).toBe(true);
   expect(lastCardReachable).toBe(true);

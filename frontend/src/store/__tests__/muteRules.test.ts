@@ -51,7 +51,7 @@ const INFO_ALERT = {
   ts: Date.now(),
 };
 
-describe("muteRules — reducer", () => {
+describe("muteRules, reducer", () => {
   it("adds a mute rule with generated id and createdAt", () => {
     const state = reducer(undefined, muteRuleAdded({ source: "service" }));
     expect(state.muteRules).toHaveLength(1);
@@ -87,7 +87,7 @@ describe("muteRules — reducer", () => {
   });
 });
 
-describe("muteRules — selectors", () => {
+describe("muteRules, selectors", () => {
   it("selectActiveAlerts excludes alerts matching a source mute rule", () => {
     const store = makeStore([CRITICAL_ALERT, WARNING_ALERT, INFO_ALERT]);
     store.dispatch(muteRuleAdded({ source: "service" }));

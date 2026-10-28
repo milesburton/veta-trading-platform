@@ -8,7 +8,7 @@
 
 import type { OptionType } from "./types.ts";
 
-/** Linear congruential generator — Park-Miller parameters. */
+/** Linear congruential generator, Park-Miller parameters. */
 export function makeLcg(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
@@ -19,7 +19,7 @@ export function makeLcg(seed: number): () => number {
 
 /**
  * Simple hash of a string to a uint32 seed.
- * djb2 variant — good enough for seeding Monte Carlo.
+ * djb2 variant, good enough for seeding Monte Carlo.
  */
 export function hashSeed(key: string): number {
   let h = 5381;

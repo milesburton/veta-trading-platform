@@ -381,7 +381,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           ? RECONNECT_DELAY_AFTER_GIVE_UP_MS
           : Math.min(reconnectDelay * 2, RECONNECT_DELAY_MAX_MS);
       console.warn(
-        `[gateway] Disconnected (attempt ${consecutiveFailures}, code=${code}) — reconnecting in ${nextDelay}ms`
+        `[gateway] Disconnected (attempt ${consecutiveFailures}, code=${code}), reconnecting in ${nextDelay}ms`
       );
       storeAPI.dispatch(
         reportError({
@@ -659,7 +659,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       if (probe.status === 401) {
         storeAPI.dispatch(
           reportError({
-            message: "Gateway returned 401 during reconnect probe — session expired",
+            message: "Gateway returned 401 during reconnect probe, session expired",
             source: "gatewayMiddleware",
             severity: "error",
           })
@@ -672,7 +672,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         return;
       }
     } catch {
-      // probe failure is not fatal — try the WS anyway, it has its own backoff
+      // probe failure is not fatal, try the WS anyway, it has its own backoff
     }
     connect();
   }

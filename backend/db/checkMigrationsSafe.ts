@@ -115,7 +115,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.error("❌ destructive migration detected — unsafe across a deploy gap:");
+  console.error("❌ destructive migration detected, unsafe across a deploy gap:");
   for (const v of allViolations) {
     const rule = RULES.find((r) => r.id === v.rule);
     console.error(`  ${v.file}:${v.line} [${v.rule}] ${rule?.why}`);

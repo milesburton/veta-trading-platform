@@ -30,7 +30,7 @@ describe("DemoDayPanel", () => {
     expect(screen.getByText(/Demo Day/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: /Launch Demo — Standard Trading Day/i,
+        name: /Launch Demo, Standard Trading Day/i,
       })
     ).toBeInTheDocument();
   });
@@ -48,7 +48,7 @@ describe("DemoDayPanel", () => {
     render(<DemoDayPanel />);
 
     fireEvent.click(screen.getByRole("button", { name: /Market Open/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Launch Demo — Market Open/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Launch Demo, Market Open/i }));
 
     await waitFor(() => {
       expect(runDemoDay).toHaveBeenCalledWith({ scenario: "market-open" });

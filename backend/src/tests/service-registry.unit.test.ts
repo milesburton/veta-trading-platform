@@ -125,7 +125,7 @@ test("[registry] Tier 0 (always-on) is exactly the intended core set", () => {
   assertEquals(
     actualTier0,
     EXPECTED_TIER_0_IDS,
-    "Tier 0 membership changed — if intentional, update EXPECTED_TIER_0_IDS in this test; " +
+    "Tier 0 membership changed, if intentional, update EXPECTED_TIER_0_IDS in this test; " +
       "if not, a service was accidentally reclassified."
   );
 });
@@ -133,7 +133,7 @@ test("[registry] Tier 0 (always-on) is exactly the intended core set", () => {
 test("[registry] Tier 0 services never carry an idleTimeoutSeconds", () => {
   for (const svc of SERVICE_REGISTRY) {
     if (svc.tier === 0 && svc.idleTimeoutSeconds !== undefined) {
-      throw new Error(`${svc.id} is Tier 0 but has idleTimeoutSeconds set — Tier 0 never idles.`);
+      throw new Error(`${svc.id} is Tier 0 but has idleTimeoutSeconds set, Tier 0 never idles.`);
     }
   }
 });
@@ -151,7 +151,7 @@ test("[registry] every supervisorProgram override names a real supervisord progr
   }
 });
 
-// ollama isn't a Node process supervisord manages — it's its own container in
+// ollama isn't a Node process supervisord manages, it's its own container in
 // compose.yml, with no dev-container wake path today.
 const NOT_SUPERVISORD_MANAGED = new Set(["ollama"]);
 

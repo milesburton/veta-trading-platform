@@ -32,7 +32,7 @@ test({
       perServiceEnv: {
         oms: { RISK_ENGINE_ENABLED: "true" },
         // The existing tests below submit real orders at whatever moment
-        // CI happens to run — disable market-hours enforcement at startup
+        // CI happens to run, disable market-hours enforcement at startup
         // so they aren't flaky depending on the real-world clock. The
         // dedicated market-hours test further down re-enables it via a
         // runtime PUT /config call instead of relying on wall-clock timing.

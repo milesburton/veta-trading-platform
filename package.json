@@ -2,7 +2,7 @@
   "name": "veta-trading-platform",
   "version": "1.88.14",
   "private": true,
-  "description": "VETA Trading Platform — real-time market simulation with algorithmic trading strategies.",
+  "description": "VETA Trading Platform, real-time market simulation with algorithmic trading strategies.",
   "scripts": {
     "prepare": "[ -n \"$CI\" ] || git config core.hooksPath .husky",
     "dev": "cd frontend && npm run dev",

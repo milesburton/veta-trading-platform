@@ -56,7 +56,7 @@
     {
       "id": 2,
       "type": "timeseries",
-      "title": "Order Pipeline — Submitted / Filled / Rejected / Expired",
+      "title": "Order Pipeline, Submitted / Filled / Rejected / Expired",
       "gridPos": { "x": 0, "y": 3, "w": 12, "h": 9 },
       "datasource": { "uid": "loki", "type": "loki" },
       "fieldConfig": {
@@ -237,7 +237,7 @@
     {
       "id": 9,
       "type": "logs",
-      "title": "Order Events — live stream",
+      "title": "Order Events, live stream",
       "gridPos": { "x": 0, "y": 25, "w": 12, "h": 10 },
       "datasource": { "uid": "loki", "type": "loki" },
       "options": {
@@ -261,7 +261,7 @@
     {
       "id": 10,
       "type": "logs",
-      "title": "Algo Heartbeat Log — live stream",
+      "title": "Algo Heartbeat Log, live stream",
       "gridPos": { "x": 12, "y": 25, "w": 12, "h": 10 },
       "datasource": { "uid": "loki", "type": "loki" },
       "options": {

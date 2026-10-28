@@ -80,7 +80,7 @@ export interface ScenarioResponse {
 
 export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
 
-/** @deprecated Use string[] in Recommendation.reasons — kept only for type compat. */
+/** @deprecated Use string[] in Recommendation.reasons, kept only for type compat. */
 export type SignalReason =
   | "DEEP_ITM"
   | "DEEP_OTM"

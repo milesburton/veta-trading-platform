@@ -159,7 +159,7 @@ describe("FixSessionsPanel", () => {
     expect(screen.getByText("SELL")).toBeInTheDocument();
     expect(screen.getByText("Partial")).toBeInTheDocument();
     // avgPx of 0 and a null counterparty both render the em-dash placeholder
-    expect(screen.getAllByText("—").length).toBe(2);
+    expect(screen.getAllByText("n/a").length).toBe(2);
   });
 
   it("falls back to the raw ordStatus code when it isn't in the known label map", () => {

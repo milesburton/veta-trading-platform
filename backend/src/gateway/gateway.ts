@@ -370,7 +370,7 @@ async function requireAuth(
     publishAccessEvent({
       action: "auth_failure",
       path: url.pathname,
-      reason: `csrf — origin=${req.headers.get("origin") ?? "none"} method=${req.method}`,
+      reason: `csrf, origin=${req.headers.get("origin") ?? "none"} method=${req.method}`,
       source,
     });
     return new Response(JSON.stringify({ error: "forbidden" }), {

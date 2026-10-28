@@ -2,13 +2,13 @@ name: CI
 
 on:
   # push only fires for main (the badge-commit-back + deploy path, which
-  # needs BOT_PAT so its own commits trigger downstream workflows — see the
+  # needs BOT_PAT so its own commits trigger downstream workflows: see the
   # escape-hatch note below). Feature branches are fully covered by
   # pull_request once a PR exists; a push trigger for them was firing a
   # second, fully redundant Integration-test run on every push (two full
   # 14+ service testcontainers stacks competing for the same runner
   # resources), and cancelling the redundant run still leaves a CANCELLED
-  # check-run recorded against the commit — which blocks merges under
+  # check-run recorded against the commit: which blocks merges under
   # required_status_checks even though the real (pull_request) run passed,
   # since GitHub's rollup treats any non-success entry sharing a required
   # check's name as failing, regardless of which run is authoritative for
@@ -52,7 +52,7 @@ jobs:
 
           echo "$incidents" | jq -r '
             .incidents[] |
-            "::warning title=GitHub incident affecting CI may be in progress::\(.name) [\(.impact)] — \(.shortlink)"
+            "::warning title=GitHub incident affecting CI may be in progress::\(.name) [\(.impact)], \(.shortlink)"
           '
 
           echo ""
@@ -315,7 +315,7 @@ jobs:
               echo "Frontend test badge push attempt $i failed, retrying..."
               sleep 2
             done
-            echo "⚠️ Failed to publish frontend test badge after 3 attempts (likely branch protection) — treating as non-fatal"
+            echo "⚠️ Failed to publish frontend test badge after 3 attempts (likely branch protection), treating as non-fatal"
             exit 0
           fi
 
@@ -430,9 +430,9 @@ jobs:
       # result. The docs-changed condition is applied per step (not at job
       # level) so non-docs PRs report success rather than leaving the required
       # check pending forever. Mirrors the always-run pattern of Integration.
-      - name: No docs changes — nothing to validate
+      - name: No docs changes, nothing to validate
         if: needs.changes.outputs.docs != 'true'
-        run: echo "No staged changes under docs/ — skipping docs validation."
+        run: echo "No staged changes under docs/, skipping docs validation."
 
       - uses: actions/checkout@v5
         if: needs.changes.outputs.docs == 'true'
@@ -566,7 +566,7 @@ jobs:
               echo "Coverage badge push attempt $i failed, retrying..."
               sleep 2
             done
-            echo "⚠️ Failed to publish coverage badges after 3 attempts (likely branch protection) — treating as non-fatal"
+            echo "⚠️ Failed to publish coverage badges after 3 attempts (likely branch protection), treating as non-fatal"
             exit 0
           fi
 
@@ -633,7 +633,7 @@ jobs:
               sleep 15
             fi
           done
-          echo "All $attempts attempts failed — this is a real failure, not a flake."
+          echo "All $attempts attempts failed, this is a real failure, not a flake."
           exit 1
         env:
           # The homelab box also runs the full production VETA stack around
@@ -1072,18 +1072,18 @@ jobs:
             echo '## 🔍 Visual anomaly check'
             echo ''
             if [ ! -f "$REPORT" ]; then
-              echo '_No report produced — the spec may have failed before writing._'
+              echo '_No report produced, the spec may have failed before writing._'
             else
               total_overflows=$(jq '[.reports[].overflows | length] | add // 0' "$REPORT")
               total_axe=$(jq '[.reports[].axe[].nodeCount] | add // 0' "$REPORT")
               if [ "$total_overflows" = "0" ] && [ "$total_axe" = "0" ]; then
-                echo '_Clean — no overflows and no axe-core violations across the checked scenarios._'
+                echo '_Clean, no overflows and no axe-core violations across the checked scenarios._'
               else
                 echo "**Found $total_overflows overflow(s) and $total_axe axe violation node(s) across $(jq '.scenarios | length' "$REPORT") scenarios.**"
                 echo ''
                 echo '| Scenario | Overflows | Axe rules (impact / nodes) |'
                 echo '| --- | --- | --- |'
-                jq -r '.reports[] | "| \(.scenario) | \(.overflows | length) | \(if (.axe | length) == 0 then "—" else (.axe | map("\(.id) (\(.impact // "none")/\(.nodeCount))") | join(", ")) end) |"' "$REPORT"
+                jq -r '.reports[] | "| \(.scenario) | \(.overflows | length) | \(if (.axe | length) == 0 then "n/a" else (.axe | map("\(.id) (\(.impact // "none")/\(.nodeCount))") | join(", ")) end) |"' "$REPORT"
                 echo ''
                 echo "[Download full report →]($RUN_URL#artifacts)"
               fi
@@ -1181,7 +1181,7 @@ jobs:
         env:
           CI: true
 
-      - name: Build Electron app (test variant — mocks baked in)
+      - name: Build Electron app (test variant, mocks baked in)
         if: always()
         working-directory: frontend
         run: npm run electron:build-test
@@ -1220,7 +1220,7 @@ jobs:
             echo "Push attempt $i failed, retrying..."
             sleep 5
           done
-          echo "⚠️ Failed to push Electron screenshots after 3 attempts (likely branch protection) — treating as non-fatal"
+          echo "⚠️ Failed to push Electron screenshots after 3 attempts (likely branch protection), treating as non-fatal"
           exit 0
 
       - name: Upload Electron test report on failure
@@ -1237,7 +1237,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.electron-e2e.outcome }}" = "failure" ]; then
-            echo "::warning::Electron E2E tests failed (non-blocking) — screenshot capture and commit still ran"
+            echo "::warning::Electron E2E tests failed (non-blocking), screenshot capture and commit still ran"
           else
             echo "✅ Electron E2E tests passed"
           fi
@@ -1462,7 +1462,7 @@ jobs:
     runs-on: ubuntu-latest
     # deploy-gate doesn't consume anything integration produces (it rebuilds
     # its own images and boots its own stack), so it doesn't need to wait
-    # for integration to finish — only publish-latest does, since that's the
+    # for integration to finish: only publish-latest does, since that's the
     # step that must never run on a commit whose integration suite failed.
     # Running deploy-gate in parallel with integration removes unnecessary
     # serialization and reduces overall wall-clock CI time.

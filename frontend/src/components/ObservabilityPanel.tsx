@@ -227,10 +227,10 @@ function TradeRow({ order }: { order: OrderRecord }) {
         <td className={`px-3 py-1.5 font-semibold ${statusColor}`}>{order.status}</td>
         <td className="px-3 py-1.5 text-right tabular-nums text-default">{fillPct.toFixed(0)}%</td>
         <td className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor}`}>
-          {totalFilledQty > 0 ? formatBps(impactBps) : "—"}
+          {totalFilledQty > 0 ? formatBps(impactBps) : "n/a"}
         </td>
         <td className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${commColor}`}>
-          {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "—"}
+          {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "n/a"}
         </td>
         <td className="px-3 py-1.5 text-right tabular-nums text-muted text-[10px]">
           {filledChildren.length}
@@ -245,8 +245,8 @@ function TradeRow({ order }: { order: OrderRecord }) {
               {timeline.length >= 2 ? (
                 <>
                   <div className="text-[10px] text-muted mb-1">
-                    Fill progression — {order.asset} {order.side} {order.quantity.toLocaleString()}{" "}
-                    @ limit {order.limitPrice.toFixed(2)}
+                    Fill progression, {order.asset} {order.side} {order.quantity.toLocaleString()} @
+                    limit {order.limitPrice.toFixed(2)}
                   </div>
                   <ResponsiveContainer width="100%" height={90}>
                     <LineChart data={timeline} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -365,7 +365,7 @@ export function ObservabilityPanel() {
               onClick={() => {
                 setTab("summary");
               }}
-              title="Summary — overview of fill statistics, notional, commission, and liquidity mix"
+              title="Summary, overview of fill statistics, notional, commission, and liquidity mix"
               aria-pressed={tab === "summary"}
               data-testid="summary-tab"
               className={`px-2.5 py-1 transition-colors ${
@@ -379,7 +379,7 @@ export function ObservabilityPanel() {
               onClick={() => {
                 setTab("trades");
               }}
-              title="Trades — individual trade records with fill progression charts"
+              title="Trades, individual trade records with fill progression charts"
               aria-pressed={tab === "trades"}
               data-testid="trades-tab"
               className={`px-2.5 py-1 transition-colors ${
@@ -398,7 +398,7 @@ export function ObservabilityPanel() {
               onClick={() => {
                 setTab("events");
               }}
-              title="Events — raw observability event stream from the algo engine"
+              title="Events, raw observability event stream from the algo engine"
               aria-pressed={tab === "events"}
               data-testid="events-tab"
               className={`px-2.5 py-1 transition-colors ${
@@ -470,7 +470,7 @@ export function ObservabilityPanel() {
                         : "text-default"
                   }`}
                 >
-                  {stats.filledCount > 0 ? formatBps(stats.avgImpactBps) : "—"}
+                  {stats.filledCount > 0 ? formatBps(stats.avgImpactBps) : "n/a"}
                 </div>
               </div>
               <div className="text-[9px] text-subtle max-w-[100px] text-right">
@@ -565,7 +565,7 @@ export function ObservabilityPanel() {
                   </th>
                   <th
                     className="text-right px-3 py-2"
-                    title="Market impact in basis points — slippage of average fill price vs limit price"
+                    title="Market impact in basis points, slippage of average fill price vs limit price"
                   >
                     Impact
                   </th>
@@ -599,7 +599,9 @@ export function ObservabilityPanel() {
                     data-testid="event-row"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="text-muted text-[10px]">{e.ts ? formatTime(e.ts) : "—"}</div>
+                      <div className="text-muted text-[10px]">
+                        {e.ts ? formatTime(e.ts) : "n/a"}
+                      </div>
                       <div className="text-[11px] font-mono text-secondary">{e.type}</div>
                     </div>
                     <pre className="text-[10px] text-muted mt-1 overflow-auto max-h-20 leading-relaxed">

@@ -378,7 +378,7 @@ async function handle(req: Request): Promise<Response> {
     const caller = await getUserFromToken(getCookieToken(req));
     if (!caller) return json({ error: "unauthenticated" }, 401);
     if (!canViewUserDirectory(caller.role)) {
-      return json({ error: "forbidden — admin or compliance only" }, 403);
+      return json({ error: "forbidden, admin or compliance only" }, 403);
     }
     const client = await usersPool.connect();
     try {
@@ -545,7 +545,7 @@ async function handle(req: Request): Promise<Response> {
     if (req.method === "PUT") {
       const caller = await getUserFromToken(getCookieToken(req));
       if (!caller) return json({ error: "unauthenticated" }, 401);
-      if (caller.role !== "admin") return json({ error: "forbidden — admin only" }, 403);
+      if (caller.role !== "admin") return json({ error: "forbidden, admin only" }, 403);
       const parsed = await parseBody(req, LimitsUpdateSchema);
       if (!parsed.ok) return parsed.res;
       const body = parsed.data;

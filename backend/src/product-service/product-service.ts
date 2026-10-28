@@ -1,6 +1,6 @@
 import "#veta/bootstrap";
 /**
- * Product Service — Structured product builder
+ * Product Service, Structured product builder
  *
  * Manages the lifecycle of structured products (CDO-like baskets)
  * from draft through to sale via the RFQ workflow.
@@ -85,7 +85,7 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     });
   }
 
-  // GET /products/stats — MUST be checked before /:id route
+  // GET /products/stats, MUST be checked before /:id route
   if (path === "/products/stats" && method === "GET") {
     const counts: Record<ProductState, number> = {
       draft: 0,

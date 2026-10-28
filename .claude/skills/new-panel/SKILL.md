@@ -1,6 +1,6 @@
 ---
 name: new-panel
-description: Scaffold a new frontend dashboard panel with the generator so every coupling point stays in sync. Use when adding a flexlayout panel to the VETA dashboard — adding one by hand touches a component, a test, four Record<PanelId> maps, a registerPanel call, and a duplicate map in ComponentPicker, and missing any one fails the typecheck or silently drops the panel.
+description: Scaffold a new frontend dashboard panel with the generator so every coupling point stays in sync. Use when adding a flexlayout panel to the VETA dashboard, adding one by hand touches a component, a test, four Record<PanelId> maps, a registerPanel call, and a duplicate map in ComponentPicker, and missing any one fails the typecheck or silently drops the panel.
 ---
 
 # Add a dashboard panel

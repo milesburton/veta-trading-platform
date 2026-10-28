@@ -235,7 +235,7 @@ describe("uiSlice – loadUiPrefs.fulfilled", () => {
     expect(state).toEqual(initial);
   });
 
-  it("applies partial payload — only updates provided fields", () => {
+  it("applies partial payload, only updates provided fields", () => {
     const state = reducer(initial, loadUiPrefs.fulfilled({ activeStrategy: "POV" }, "", undefined));
     expect(state.activeStrategy).toBe("POV");
     expect(state.activeSide).toBe("BUY");

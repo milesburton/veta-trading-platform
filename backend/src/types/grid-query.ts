@@ -1,5 +1,5 @@
 /**
- * Grid query types — shared contract between gateway and journal.
+ * Grid query types, shared contract between gateway and journal.
  *
  * These mirror the frontend types in frontend/src/types/gridPrefs.ts and
  * frontend/src/types/gridQuery.ts. They are deliberately duplicated rather than

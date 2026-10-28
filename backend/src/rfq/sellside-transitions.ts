@@ -81,7 +81,7 @@ export function checkSellSideActor(
   return { ok: true };
 }
 
-/** Sales markup applied to a dealer's price — marks up for a client BUY, marks down for a client SELL, protecting the desk's spread either way. */
+/** Sales markup applied to a dealer's price, marks up for a client BUY, marks down for a client SELL, protecting the desk's spread either way. */
 export function computeMarkupPrice(
   dealerPrice: number,
   side: "BUY" | "SELL",

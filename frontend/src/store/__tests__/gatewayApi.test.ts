@@ -15,7 +15,7 @@ describe("gatewayApi – endpoint definitions", () => {
   });
 
   it("builds a runLoadTest request with correct url and method", () => {
-    // Verify the endpoint is defined — RTK Query bakes the query internally
+    // Verify the endpoint is defined, RTK Query bakes the query internally
     expect(gatewayApi.endpoints.runLoadTest).toBeDefined();
   });
 

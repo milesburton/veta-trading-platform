@@ -361,7 +361,7 @@ describe("SalesWorkbenchPanel", () => {
     const markupButtons = screen.getAllByRole("button", { name: "Markup" });
     fireEvent.click(markupButtons[1]);
 
-    expect(await screen.findByText(/Apply Markup — rfq-b/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Apply Markup, rfq-b/i)).toBeInTheDocument();
   });
 
   it("renders empty state when no RFQs", async () => {

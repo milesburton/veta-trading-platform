@@ -10,7 +10,7 @@ const BASE_ALERT = {
   ts: Date.now(),
 };
 
-describe("alertsSlice — alertAdded", () => {
+describe("alertsSlice, alertAdded", () => {
   it("adds an alert with a generated id", () => {
     const state = reducer(undefined, alertAdded(BASE_ALERT));
     expect(state.alerts).toHaveLength(1);
@@ -54,7 +54,7 @@ describe("alertsSlice — alertAdded", () => {
   });
 });
 
-describe("alertsSlice — source field", () => {
+describe("alertsSlice, source field", () => {
   it("service alerts carry source=service so callers can filter them separately from user-facing toasts", () => {
     const state = reducer(undefined, alertAdded({ ...BASE_ALERT, source: "service" }));
     expect(state.alerts[0].source).toBe("service");
@@ -88,7 +88,7 @@ describe("alertsSlice — source field", () => {
   });
 });
 
-describe("alertsSlice — dedupe", () => {
+describe("alertsSlice, dedupe", () => {
   it("identical alerts within window collapse into one with count", () => {
     const t0 = 1_700_000_000_000;
     let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0 }));
@@ -149,7 +149,7 @@ describe("alertsSlice — dedupe", () => {
   });
 });
 
-describe("alertsSlice — acknowledged + toast queue", () => {
+describe("alertsSlice, acknowledged + toast queue", () => {
   it("alertAcknowledged sets the flag without dismissing", () => {
     let state = reducer(undefined, alertAdded(BASE_ALERT));
     const id = state.alerts[0].id;

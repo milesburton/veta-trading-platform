@@ -40,7 +40,7 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     diagnostics.push({
       field: "limitPrice",
       severity: "error",
-      message: `${venue.name} does not accept market orders — a limit price is required`,
+      message: `${venue.name} does not accept market orders, a limit price is required`,
       ruleId: "venue.no-market-orders",
     });
   }
@@ -80,7 +80,7 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     !venue.isDark &&
     (session.phase === "OPENING_AUCTION" || session.phase === "CLOSING_AUCTION")
   ) {
-    // Auction-capable venue during auction — no diagnostic needed
+    // Auction-capable venue during auction, no diagnostic needed
   } else if (
     !venue.supportsAuction &&
     (session.phase === "OPENING_AUCTION" || session.phase === "CLOSING_AUCTION")
@@ -88,7 +88,7 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     diagnostics.push({
       field: "venue",
       severity: "warning",
-      message: `${venue.name} does not participate in auctions — order may not execute during ${session.phaseLabel}`,
+      message: `${venue.name} does not participate in auctions, order may not execute during ${session.phaseLabel}`,
       ruleId: "venue.no-auction-support",
     });
   }

@@ -12,7 +12,7 @@ export function parseOffset(rawOffset: string | null): number {
  * True when a Postgres error message indicates a foreign-key-constraint
  * violation. Used to distinguish "this session still has chunks retained
  * for compliance" from other, unrelated failures when deleting a replay
- * session — the two need different HTTP status codes and messages.
+ * session, the two need different HTTP status codes and messages.
  */
 export function isForeignKeyViolation(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);

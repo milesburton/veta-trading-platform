@@ -111,11 +111,11 @@ test("shows current price for the selected asset", () => {
   expect(screen.getByText("155.50")).toBeInTheDocument();
 });
 
-test("shows — when no price is available for selected asset", () => {
+test("shows, when no price is available for selected asset", () => {
   render(
     <AssetSelector assets={assets} value="AAPL" onChange={vi.fn()} onSelect={vi.fn()} prices={{}} />
   );
-  expect(screen.getByText("—")).toBeInTheDocument();
+  expect(screen.getByText("n/a")).toBeInTheDocument();
 });
 
 test("shows sector label in dropdown items", () => {

@@ -363,7 +363,7 @@ export function OrderTicket() {
       if (isOptions) {
         feedback.value = {
           ok: false,
-          msg: "Options not supported in this simulation — order rejected",
+          msg: "Options not supported in this simulation, order rejected",
         };
       } else if (isBond) {
         feedback.value = { ok: true, msg: "Bond order submitted." };
@@ -536,38 +536,38 @@ export function OrderTicket() {
                 Limit Order{!limits.allowed_strategies.includes("LIMIT") ? " (not permitted)" : ""}
               </option>
               <option value="TWAP" disabled={!limits.allowed_strategies.includes("TWAP")}>
-                TWAP — Time Weighted Avg Price
+                TWAP, Time Weighted Avg Price
                 {!limits.allowed_strategies.includes("TWAP") ? " (not permitted)" : ""}
               </option>
               <option value="POV" disabled={!limits.allowed_strategies.includes("POV")}>
-                POV — Percentage of Volume
+                POV, Percentage of Volume
                 {!limits.allowed_strategies.includes("POV") ? " (not permitted)" : ""}
               </option>
               <option value="VWAP" disabled={!limits.allowed_strategies.includes("VWAP")}>
-                VWAP — Volume Weighted Avg Price
+                VWAP, Volume Weighted Avg Price
                 {!limits.allowed_strategies.includes("VWAP") ? " (not permitted)" : ""}
               </option>
               <option value="ICEBERG" disabled={!limits.allowed_strategies.includes("ICEBERG")}>
-                ICEBERG — Hidden quantity reveal
+                ICEBERG, Hidden quantity reveal
                 {!limits.allowed_strategies.includes("ICEBERG") ? " (not permitted)" : ""}
               </option>
               <option value="SNIPER" disabled={!limits.allowed_strategies.includes("SNIPER")}>
-                SNIPER — Multi-venue smart routing
+                SNIPER, Multi-venue smart routing
                 {!limits.allowed_strategies.includes("SNIPER") ? " (not permitted)" : ""}
               </option>
               <option
                 value="ARRIVAL_PRICE"
                 disabled={!limits.allowed_strategies.includes("ARRIVAL_PRICE")}
               >
-                ARRIVAL PRICE — Minimise arrival slippage
+                ARRIVAL PRICE, Minimise arrival slippage
                 {!limits.allowed_strategies.includes("ARRIVAL_PRICE") ? " (not permitted)" : ""}
               </option>
               <option value="IS" disabled={!limits.allowed_strategies.includes("IS")}>
-                IS — Implementation Shortfall
+                IS, Implementation Shortfall
                 {!limits.allowed_strategies.includes("IS") ? " (not permitted)" : ""}
               </option>
               <option value="MOMENTUM" disabled={!limits.allowed_strategies.includes("MOMENTUM")}>
-                MOMENTUM — EMA crossover entry
+                MOMENTUM, EMA crossover entry
                 {!limits.allowed_strategies.includes("MOMENTUM") ? " (not permitted)" : ""}
               </option>
             </select>
@@ -610,14 +610,14 @@ export function OrderTicket() {
                 <optgroup label="US Treasuries">
                   {BOND_UNIVERSE.filter((b) => b.issuer === "UST").map((b) => (
                     <option key={b.symbol} value={b.symbol}>
-                      {b.symbol} — {b.description}
+                      {b.symbol}, {b.description}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="Corporate">
                   {BOND_UNIVERSE.filter((b) => b.issuer === "Corp").map((b) => (
                     <option key={b.symbol} value={b.symbol}>
-                      {b.symbol} — {b.description}
+                      {b.symbol}, {b.description}
                     </option>
                   ))}
                 </optgroup>
@@ -903,7 +903,7 @@ export function OrderTicket() {
               type="button"
               data-testid="side-buy-tab"
               aria-pressed={activeSide === "BUY"}
-              title="Buy — go long. Keyboard shortcut: B"
+              title="Buy, go long. Keyboard shortcut: B"
               onClick={() => {
                 dispatch(setActiveSide("BUY"));
                 dispatch(saveUiPrefs() as unknown as UnknownAction);
@@ -920,7 +920,7 @@ export function OrderTicket() {
               type="button"
               data-testid="side-sell-tab"
               aria-pressed={activeSide === "SELL"}
-              title="Sell — go short. Keyboard shortcut: S"
+              title="Sell, go short. Keyboard shortcut: S"
               onClick={() => {
                 dispatch(setActiveSide("SELL"));
                 dispatch(saveUiPrefs() as unknown as UnknownAction);
@@ -1184,7 +1184,7 @@ export function OrderTicket() {
                 : limitWarnings.length > 0
                   ? `Order blocked: ${limitWarnings[0]}`
                   : isValid
-                    ? `Submit order — keyboard shortcut: Ctrl+Enter`
+                    ? `Submit order, keyboard shortcut: Ctrl+Enter`
                     : "Fill in all required fields to submit"
           }
           aria-label={

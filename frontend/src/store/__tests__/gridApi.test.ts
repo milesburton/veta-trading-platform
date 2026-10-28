@@ -11,7 +11,7 @@ describe("gridApi – endpoint definitions", () => {
   });
 
   it("builds a queryGrid request with the correct url and method", () => {
-    // RTK Query internalises the query builder — verify the endpoint is registered
+    // RTK Query internalises the query builder, verify the endpoint is registered
     expect(gridApi.endpoints.queryGrid).toBeDefined();
   });
 

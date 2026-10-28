@@ -103,7 +103,7 @@ test("[proxyWithWake] does not call startProgram when already running", async ()
     },
   });
 
-  assertEquals(startCalls, [], "already running — startProgram must not be called");
+  assertEquals(startCalls, [], "already running, startProgram must not be called");
 });
 
 test("[proxyWithWake] returns a starting response after exhausting all retries", async () => {

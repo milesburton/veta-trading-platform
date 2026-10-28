@@ -3,12 +3,12 @@
 //
 // Runs end-to-end checks against the public site to detect user-visible
 // outages within ~60s. Designed to run on the OVH edge box as a systemd
-// timer so it crosses the same SSH tunnel real users do — if the tunnel
+// timer so it crosses the same SSH tunnel real users do, if the tunnel
 // dies, the probe reports failure even though the homelab itself is fine.
 //
 // Each invocation runs all steps, emits one JSON line per step to stdout
 // (captured by journald), and exits 0 if all green, 1 if any failed.
-// systemd doesn't restart on exit 1 — failure state is computed downstream
+// systemd doesn't restart on exit 1, failure state is computed downstream
 // by counting consecutive non-zero exits via the OnFailure handler or a
 // Loki query.
 //

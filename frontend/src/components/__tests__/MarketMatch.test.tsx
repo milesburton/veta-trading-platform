@@ -150,7 +150,7 @@ describe("MarketMatch – with fills", () => {
 
   it("renders fill quantity", () => {
     renderMatch([makeFillEvent({ filledQty: 100 })]);
-    // "100" appears in qty cell and possibly stats — use getAllByText
+    // "100" appears in qty cell and possibly stats, use getAllByText
     expect(screen.getAllByText("100").length).toBeGreaterThan(0);
   });
 
@@ -252,7 +252,7 @@ describe("MarketMatch – context menu and fallbacks", () => {
       }),
     ]);
 
-    expect(screen.getAllByText("—").length).toBeGreaterThan(2);
+    expect(screen.getAllByText("n/a").length).toBeGreaterThan(2);
   });
 
   it("formats large quantity into K suffix", () => {

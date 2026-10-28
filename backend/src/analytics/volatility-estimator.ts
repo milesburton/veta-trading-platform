@@ -2,7 +2,7 @@
  * Volatility estimation from historical candle data.
  *
  * Uses 120 1-minute candles from the journal service.
- * Primary estimator: EWMA (RiskMetrics λ=0.94) — gives more weight to
+ * Primary estimator: EWMA (RiskMetrics λ=0.94), gives more weight to
  * recent returns than a simple rolling std-dev, making it responsive to
  * regime changes while remaining smooth.
  * Secondary: simple rolling std-dev, returned for reference.

@@ -66,7 +66,7 @@ const RFQ_RETENTION_MS = Number(process.env.RFQ_RETENTION_MS) || 300_000; // 5 m
 interface DealerProfile {
   id: string;
   name: string;
-  /** Base spread over mid-yield in bps — lower is tighter/better. */
+  /** Base spread over mid-yield in bps, lower is tighter/better. */
   baseSpreadBps: number;
   /** How often this dealer responds (0–1). */
   responseRate: number;
@@ -213,7 +213,7 @@ function nextExecId(): string {
 }
 
 const producer = await createProducer("rfq-service").catch((err) => {
-  logger.warn("Redpanda unavailable — executions will not be published", { err });
+  logger.warn("Redpanda unavailable, executions will not be published", { err });
   return null;
 });
 
@@ -280,7 +280,7 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
     )} ` + `price=${quote.price.toFixed(6)} dealer=${quote.dealerId} notional=${quote.notional}`
   );
 
-  // 1. rfq.executed — full RFQ trade record
+  // 1. rfq.executed, full RFQ trade record
   await producer
     ?.send("rfq.executed", {
       execId,
@@ -532,7 +532,7 @@ serveFetch({ port: PORT }, async (req) => {
     });
   }
 
-  // GET /rfq — list recent RFQs (most recent first, capped at 100)
+  // GET /rfq, list recent RFQs (most recent first, capped at 100)
   if (path === "/rfq" && req.method === "GET") {
     const userId = url.searchParams.get("userId");
     let records = [...rfqStore.values()].sort((a, b) => b.createdAt - a.createdAt);
@@ -540,7 +540,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json({ rfqs: records.slice(0, 100), total: records.length });
   }
 
-  // GET /rfq/stats — must be checked before /rfq/:id to avoid "stats" being treated as an id
+  // GET /rfq/stats, must be checked before /rfq/:id to avoid "stats" being treated as an id
   if (path === "/rfq/stats" && req.method === "GET") {
     const all = [...rfqStore.values()];
     const byState = all.reduce<Record<string, number>>((acc, r) => {
@@ -557,7 +557,7 @@ serveFetch({ port: PORT }, async (req) => {
     });
   }
 
-  // GET /rfq/:id — fetch a single RFQ
+  // GET /rfq/:id, fetch a single RFQ
   const matchGet = path.match(/^\/rfq\/([^/]+)$/);
   if (matchGet && matchGet[1] !== "sellside" && req.method === "GET") {
     const rfq = rfqStore.get(matchGet[1]);
@@ -565,7 +565,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json(rfq);
   }
 
-  // POST /rfq/:id/execute — manually select a specific dealer quote
+  // POST /rfq/:id/execute, manually select a specific dealer quote
   const matchExec = path.match(/^\/rfq\/([^/]+)\/execute$/);
   if (matchExec && req.method === "POST") {
     const rfq = rfqStore.get(matchExec[1]);
@@ -583,7 +583,7 @@ serveFetch({ port: PORT }, async (req) => {
         if (!selectedQuote) return jsonError("Dealer quote not found", 404);
       }
     } catch {
-      // No body — use best quote
+      // No body, use best quote
     }
 
     const quoteToExecute = selectedQuote ?? selectBestQuote(rfq.quotes, rfq.side);
@@ -593,7 +593,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json({ execId: rfq.execId, executedQuote: rfq.executedQuote });
   }
 
-  // POST /rfq/sellside — client submits a sell-side RFQ
+  // POST /rfq/sellside, client submits a sell-side RFQ
   if (path === "/rfq/sellside" && req.method === "POST") {
     let body: {
       clientUserId: string;
@@ -630,7 +630,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json({ rfqId, state: rfq.state });
   }
 
-  // GET /rfq/sellside/stats — must be before /rfq/sellside/:id
+  // GET /rfq/sellside/stats, must be before /rfq/sellside/:id
   if (path === "/rfq/sellside/stats" && req.method === "GET") {
     const byState = [...sellSideRfqStore.values()].reduce<Record<string, number>>((acc, r) => {
       acc[r.state] = (acc[r.state] ?? 0) + 1;
@@ -639,7 +639,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json({ total: sellSideRfqStore.size, byState });
   }
 
-  // GET /rfq/sellside — list sell-side RFQs
+  // GET /rfq/sellside, list sell-side RFQs
   if (path === "/rfq/sellside" && req.method === "GET") {
     const userId = url.searchParams.get("userId");
     const stateFilter = url.searchParams.get("state");
@@ -734,7 +734,7 @@ serveFetch({ port: PORT }, async (req) => {
     }
   }
 
-  // GET /rfq/sellside/:id — get one sell-side RFQ
+  // GET /rfq/sellside/:id, get one sell-side RFQ
   const ssIdMatch = path.match(/^\/rfq\/sellside\/([^/]+)$/);
   if (ssIdMatch && req.method === "GET") {
     const rfq = sellSideRfqStore.get(ssIdMatch[1]);

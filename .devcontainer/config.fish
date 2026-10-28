@@ -4,7 +4,7 @@ fish_add_path $NPM_CONFIG_PREFIX/bin
 set -l WS "/workspaces/virtual-equities-trading-application"
 set -l _SCONF "$WS/supervisord.conf"
 
-# ── Login banner — live service status snapshot ───────────────────────────────
+# ── Login banner: live service status snapshot ───────────────────────────────
 if status is-interactive
   echo "" | lolcat
   echo "  ╔═══════════════════════════════════════════════════════════╗" | lolcat

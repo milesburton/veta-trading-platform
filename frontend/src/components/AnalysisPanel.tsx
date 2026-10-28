@@ -23,7 +23,7 @@ const SENTIMENT_STYLES: Record<NewsItem["sentiment"], { dot: string; badge: stri
 const SENTIMENT_LABELS: Record<NewsItem["sentiment"], string> = {
   positive: "▲",
   negative: "▼",
-  neutral: "—",
+  neutral: "n/a",
 };
 
 export function AnalysisPanel() {
@@ -73,7 +73,7 @@ export function AnalysisPanel() {
           <div className="flex items-center gap-2 ml-1">
             <span className="text-[10px] text-emerald-400">▲ {sentimentCounts.positive}</span>
             <span className="text-[10px] text-red-400">▼ {sentimentCounts.negative}</span>
-            <span className="text-[10px] text-subtle">— {sentimentCounts.neutral}</span>
+            <span className="text-[10px] text-subtle">, {sentimentCounts.neutral}</span>
           </div>
         )}
 

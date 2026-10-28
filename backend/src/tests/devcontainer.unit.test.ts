@@ -70,7 +70,7 @@ test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so the s
   assertStringIncludes(
     cmd,
     `CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder}`,
-    `postStartCommand should pass CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder} into the script — this is how post-start.sh learns the real workspace path without hardcoding it.`
+    `postStartCommand should pass CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder} into the script, this is how post-start.sh learns the real workspace path without hardcoding it.`
   );
 });
 
@@ -89,7 +89,7 @@ test("[devcontainer] postCreateCommand does not use husky's deprecated 'install 
   );
   assert(
     !/husky\s+install\b/.test(cmd),
-    `postCreateCommand uses 'husky install ...' — this is deprecated in husky v9 and removed in v10. ` +
+    `postCreateCommand uses 'husky install ...', this is deprecated in husky v9 and removed in v10. ` +
       `Use plain './frontend/node_modules/.bin/husky' (auto-detects .husky/).`
   );
 });

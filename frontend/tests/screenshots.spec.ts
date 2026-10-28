@@ -477,7 +477,7 @@ test("screenshot: algo trading workspace", async ({ page }) => {
     action: "BUY",
     confidence: 0.91,
     reason:
-      "AI sector breakout — datacenter revenue up 154% YoY, volume surge above 20-day average",
+      "AI sector breakout, datacenter revenue up 154% YoY, volume surge above 20-day average",
     targetPrice: 920.0,
     generatedAt: Date.now(),
   });
@@ -493,7 +493,7 @@ test("screenshot: algo trading workspace", async ({ page }) => {
     symbol: "MSFT",
     action: "HOLD",
     confidence: 0.65,
-    reason: "Approaching resistance at 425 — wait for earnings confirmation",
+    reason: "Approaching resistance at 425, wait for earnings confirmation",
     targetPrice: 425.0,
     generatedAt: Date.now(),
   });
@@ -501,7 +501,7 @@ test("screenshot: algo trading workspace", async ({ page }) => {
     symbol: "TSLA",
     action: "SELL",
     confidence: 0.72,
-    reason: "Delivery miss — downside risk to 160 if support at 175 breaks",
+    reason: "Delivery miss, downside risk to 160 if support at 175 breaks",
     targetPrice: 160.0,
     generatedAt: Date.now(),
   });

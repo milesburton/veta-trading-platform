@@ -26,7 +26,7 @@ const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
 const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
 const TEST_MODE = process.env.RISK_ENGINE_TEST_MODE === "1";
 // Startup override for market-hours enforcement, distinct from the
-// hot-reloadable PUT /config toggle — mainly useful for wall-clock-sensitive
+// hot-reloadable PUT /config toggle, mainly useful for wall-clock-sensitive
 // test environments (e.g. testcontainers integration suites) that don't
 // want every order gated by real-world market hours by default.
 const MARKET_HOURS_ENFORCED_ENV = process.env.RISK_ENGINE_MARKET_HOURS_ENFORCED;
@@ -345,7 +345,7 @@ function evaluateBreakers(): void {
 }
 
 function consumeMarketTicks(): void {
-  // Stable group id (not timestamped) — see trackOrderCounts() above.
+  // Stable group id (not timestamped), see trackOrderCounts() above.
   createConsumer("risk-engine-ticks", ["market.ticks"])
     .then((consumer) => {
       consumer.onMessage((_topic, raw) => {

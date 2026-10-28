@@ -728,7 +728,7 @@ describe("gatewayMiddleware", () => {
         })
       );
 
-      // Connect the WS and send authIdentity — assets are seeded after prefs load.
+      // Connect the WS and send authIdentity, assets are seeded after prefs load.
       const ws = MockWebSocket.instances[0];
       ws.onopen?.({} as Event);
       ws.onmessage?.({

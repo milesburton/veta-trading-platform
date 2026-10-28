@@ -77,7 +77,7 @@ const GATEWAY_SPEC: FrontendServiceSpec = {
   url: `${_origin}/api/gateway/health`,
   link: `${_origin}/api/gateway/health`,
   category: "core",
-  description: "BFF — single WebSocket + HTTP entry point for the UI",
+  description: "BFF, single WebSocket + HTTP entry point for the UI",
   port: 5011,
 };
 
@@ -149,7 +149,7 @@ export function toServiceHealth(
     alertOnDeployments: spec.alertOnDeployments,
     tier: entry?.tier ?? spec.tier,
     state: entry ? STATE_BY_STATUS[entry.status] : fallback,
-    version: entry?.version ?? "—",
+    version: entry?.version ?? "n/a",
     meta: entry?.meta ?? {},
     lastChecked: entry?.checkedAt ?? null,
   };
@@ -188,7 +188,7 @@ export const servicesApi = createApi({
           alertOnDeployments: arg.alertOnDeployments,
           tier: arg.tier,
           state,
-          version: String(version ?? "—"),
+          version: String(version ?? "n/a"),
           meta: meta as Record<string, unknown>,
           lastChecked: Date.now(),
         };
@@ -213,7 +213,7 @@ export const servicesApi = createApi({
           alertOnDeployments: arg.alertOnDeployments,
           tier: arg.tier,
           state,
-          version: "—",
+          version: "n/a",
           meta: (data ?? {}) as Record<string, unknown>,
           lastChecked: Date.now(),
         };

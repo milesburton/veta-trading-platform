@@ -1,5 +1,5 @@
 /**
- * Analytics types — mirrored from backend/src/analytics/types.ts
+ * Analytics types, mirrored from backend/src/analytics/types.ts
  */
 
 export type OptionType = "call" | "put";

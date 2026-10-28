@@ -201,7 +201,7 @@ export function PopOutHost({
 
   useEffect(() => {
     const title = PANEL_TITLES[panelType as PanelId] ?? panelType;
-    document.title = `${envTag} ${title} — VETA`;
+    document.title = `${envTag} ${title}, VETA`;
   }, [panelType]);
 
   useEffect(() => {

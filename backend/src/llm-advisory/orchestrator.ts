@@ -325,7 +325,7 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     if (!effectivePolicy.workerEnabled) {
       return json(
         {
-          error: "LLM_WORKER_ENABLED is false — enable the worker before triggering",
+          error: "LLM_WORKER_ENABLED is false, enable the worker before triggering",
         },
         503
       );

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# start-trading.sh — bring up all idle-safe service groups
+# start-trading.sh: bring up all idle-safe service groups
 # Usage: ./scripts/start-trading.sh [--wait]
 #
 # After running, the full platform is active:
@@ -10,7 +10,7 @@
 #   - aux:           kafka-relay, news-aggregator, llm-advisory-orchestrator, llm-worker
 #
 # The always-on core (redpanda, postgres, market-sim, journal, gateway, oms, ems, user-service)
-# is unaffected — it runs continuously.
+# is unaffected: it runs continuously.
 
 set -euo pipefail
 

@@ -120,7 +120,7 @@ describe("simulationMiddleware – TWAP simulation", () => {
     const store = makeStore(true);
     const order = makeOrder();
     store.dispatch(ordersSlice.actions.orderAdded(order));
-    // Status remains pending — no simulation kicked in
+    // Status remains pending, no simulation kicked in
     expect(store.getState().orders.orders[0].status).toBe("pending");
   });
 });

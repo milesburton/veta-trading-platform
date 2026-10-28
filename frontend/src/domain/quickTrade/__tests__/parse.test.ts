@@ -1,7 +1,7 @@
 import { parseQuickTrade } from "@veta/frontend/domain/quickTrade/parse";
 import { describe, expect, it } from "vite-plus/test";
 
-describe("parseQuickTrade — happy paths", () => {
+describe("parseQuickTrade, happy paths", () => {
   it("parses basic shorthand", () => {
     expect(parseQuickTrade("buy 500 aapl")).toEqual({
       side: "BUY",
@@ -56,7 +56,7 @@ describe("parseQuickTrade — happy paths", () => {
   });
 });
 
-describe("parseQuickTrade — strategies", () => {
+describe("parseQuickTrade, strategies", () => {
   it("recognises TWAP plus duration", () => {
     expect(parseQuickTrade("buy 500 aapl twap 30m")).toMatchObject({
       strategy: "TWAP",
@@ -93,14 +93,14 @@ describe("parseQuickTrade — strategies", () => {
   });
 });
 
-describe("parseQuickTrade — TIF", () => {
+describe("parseQuickTrade, TIF", () => {
   it("recognises DAY/IOC/GTC/FOK", () => {
     expect(parseQuickTrade("buy 100 aapl ioc")?.tif).toBe("IOC");
     expect(parseQuickTrade("sell 100 aapl gtc")?.tif).toBe("GTC");
   });
 });
 
-describe("parseQuickTrade — rejections", () => {
+describe("parseQuickTrade, rejections", () => {
   it("returns null on empty input", () => {
     expect(parseQuickTrade("")).toBeNull();
     expect(parseQuickTrade("   ")).toBeNull();
@@ -124,7 +124,7 @@ describe("parseQuickTrade — rejections", () => {
   });
 });
 
-describe("parseQuickTrade — boundaries", () => {
+describe("parseQuickTrade, boundaries", () => {
   it("rejects zero / negative quantity", () => {
     expect(parseQuickTrade("buy 0 aapl")?.quantity).toBeUndefined();
   });

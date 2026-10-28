@@ -579,7 +579,7 @@ test("[risk-checks] market hours: equity order during regular session is allowed
 });
 
 test("[risk-checks] market hours: equity order outside session hours is rejected", () => {
-  const beforeOpen = new Date("2026-07-30T13:00:00Z").getTime(); // Thu, 09:00 ET — before 09:30 open
+  const beforeOpen = new Date("2026-07-30T13:00:00Z").getTime(); // Thu, 09:00 ET, before 09:30 open
   const state = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },
     assetMeta: new Map([["AAPL", { exchange: "XNAS", assetClass: "equity" }]]),
@@ -612,7 +612,7 @@ test("[risk-checks] market hours: equity order on a holiday is rejected", () => 
 });
 
 test("[risk-checks] market hours: FX order is NOT gated by the US equity calendar (regression)", () => {
-  // Saturday — US equity would reject, but FX trades weekends up until
+  // Saturday, US equity would reject, but FX trades weekends up until
   // Friday 22:00 UTC / reopens Sunday 22:00 UTC. Pick a moment squarely
   // inside FX's continuous window: Wed 12:00 UTC.
   const midweek = new Date("2026-07-29T12:00:00Z").getTime();
@@ -625,7 +625,7 @@ test("[risk-checks] market hours: FX order is NOT gated by the US equity calenda
   assertEquals(hit, null);
 
   // And confirm the same moment WOULD be rejected for equity, proving this
-  // isn't just "everything passes" — it's specifically FX not being gated
+  // isn't just "everything passes", it's specifically FX not being gated
   // by the equity calendar.
   const equityState = makeState({
     config: { ...DEFAULT_CONFIG, marketHoursEnforced: true },

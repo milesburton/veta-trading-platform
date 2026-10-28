@@ -207,7 +207,7 @@ export const LM_POSITIVE = new Set([
   "yield",
 ]);
 
-// Negative terms (LM Negative word list — financial-domain subset)
+// Negative terms (LM Negative word list, financial-domain subset)
 export const LM_NEGATIVE = new Set([
   "abandon",
   "abuse",
@@ -419,7 +419,7 @@ export function scoreSentiment(text: string): SentimentResult {
  * Extracts probable stock ticker mentions: 2-5 letter uppercase runs,
  * filtered against a stopword set of common financial acronyms that
  * would otherwise false-positive as tickers (CEO, GDP, Q1, ...), deduped,
- * capped at 5 results. Lowercase text never matches — this is
+ * capped at 5 results. Lowercase text never matches, this is
  * deliberately case-sensitive.
  */
 export function extractTickers(text: string): string[] {
@@ -427,7 +427,7 @@ export function extractTickers(text: string): string[] {
   return [...new Set(matches.filter((m) => !IGNORE_TICKERS.has(m)))].slice(0, 5);
 }
 
-/** Slugifies a label into a lowercase, hyphen-separated identifier. Symbol-only input produces an empty string — callers should provide a fallback. */
+/** Slugifies a label into a lowercase, hyphen-separated identifier. Symbol-only input produces an empty string, callers should provide a fallback. */
 export function slugify(label: string): string {
   return label
     .toLowerCase()

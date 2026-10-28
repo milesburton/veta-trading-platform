@@ -75,7 +75,7 @@ function computeMetrics(orders: OrderRecord[], windowMs: number): StrategyMetric
 
 function FillRateBar({ rate }: { rate: number | null }) {
   if (rate === null) {
-    return <span className="text-muted text-[10px]">—</span>;
+    return <span className="text-muted text-[10px]">n/a</span>;
   }
 
   const pct = Math.round(rate * 100);
@@ -94,7 +94,7 @@ function FillRateBar({ rate }: { rate: number | null }) {
 
 function SlippageCell({ bps }: { bps: number | null }) {
   if (bps === null) {
-    return <span className="text-muted text-[10px]">—</span>;
+    return <span className="text-muted text-[10px]">n/a</span>;
   }
 
   const colourClass =

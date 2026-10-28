@@ -2,7 +2,7 @@ apiVersion: 1
 
 # Alert contact points + notification policy. Routes alerts to Discord via
 # DISCORD_WEBHOOK_URL (per-host secret, never committed). Falls back to
-# the generic ALERT_WEBHOOK_URL receiver if Discord is unset — Grafana 11.4
+# the generic ALERT_WEBHOOK_URL receiver if Discord is unset: Grafana 11.4
 # refuses to provision a webhook receiver with an empty URL.
 
 contactPoints:

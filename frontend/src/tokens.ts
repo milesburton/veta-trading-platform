@@ -8,7 +8,7 @@
  *
  * For consumers that need a raw string at runtime (Recharts, canvas APIs,
  * inline `style={{ color }}`, SVG `fill=`), import COLOR and use it
- * exactly as before — values are now resolved from the live CSS variable
+ * exactly as before, values are now resolved from the live CSS variable
  * each time so theme switches take effect without recomputing module state.
  *
  * Defining values in CSS keeps a single source of truth between Tailwind

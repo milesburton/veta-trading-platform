@@ -7,17 +7,17 @@ export interface StrategyMeta {
 
 export const STRATEGY_OPTIONS: StrategyMeta[] = [
   { value: "LIMIT", label: "Limit Order" },
-  { value: "TWAP", label: "TWAP — Time Weighted Avg Price" },
-  { value: "POV", label: "POV — Percentage of Volume" },
-  { value: "VWAP", label: "VWAP — Volume Weighted Avg Price" },
-  { value: "ICEBERG", label: "ICEBERG — Hidden quantity reveal" },
-  { value: "SNIPER", label: "SNIPER — Multi-venue smart routing" },
+  { value: "TWAP", label: "TWAP, Time Weighted Avg Price" },
+  { value: "POV", label: "POV, Percentage of Volume" },
+  { value: "VWAP", label: "VWAP, Volume Weighted Avg Price" },
+  { value: "ICEBERG", label: "ICEBERG, Hidden quantity reveal" },
+  { value: "SNIPER", label: "SNIPER, Multi-venue smart routing" },
   {
     value: "ARRIVAL_PRICE",
-    label: "ARRIVAL PRICE — Minimise arrival slippage",
+    label: "ARRIVAL PRICE, Minimise arrival slippage",
   },
-  { value: "IS", label: "IS — Implementation Shortfall" },
-  { value: "MOMENTUM", label: "MOMENTUM — EMA crossover entry" },
+  { value: "IS", label: "IS, Implementation Shortfall" },
+  { value: "MOMENTUM", label: "MOMENTUM, EMA crossover entry" },
 ];
 
 export function quantityLabel(instrumentType: string): string {

@@ -80,7 +80,7 @@ function makeKafka(clientId: string): Kafka {
   return new Kafka({
     clientId,
     brokers: BROKERS,
-    // Redpanda is typically local — short timeouts are fine and make startup faster
+    // Redpanda is typically local, short timeouts are fine and make startup faster
     connectionTimeout: 5_000,
     requestTimeout: 15_000,
     retry: {

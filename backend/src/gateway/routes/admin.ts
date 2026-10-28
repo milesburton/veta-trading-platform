@@ -49,7 +49,7 @@ export function testTraderIds(): string[] {
 }
 
 // docs: /user-guide/admin-tools/
-// codeql[js/biased-cryptographic-random]: false positive — this is the
+// codeql[js/biased-cryptographic-random]: false positive, this is the
 // standard unbiased 53-bit-to-double conversion, not a biased
 // division/modulo, and the value is non-cryptographic simulation jitter.
 function secureRandomFloat(): number {

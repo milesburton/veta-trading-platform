@@ -150,9 +150,9 @@ function WorkspaceTitleButton({
       aria-current={active ? "page" : undefined}
       title={
         presetLocked
-          ? "Click to switch (default workspace — cannot rename or delete)"
+          ? "Click to switch (default workspace, cannot rename or delete)"
           : locked
-            ? "Click to switch (locked — right-click to unlock)"
+            ? "Click to switch (locked, right-click to unlock)"
             : "Click to switch · Right-click to rename"
       }
       className={`flex-1 min-w-0 text-left text-[11px] truncate bg-transparent border-0 p-0 cursor-pointer ${
@@ -186,7 +186,7 @@ function LockedIndicator({
   if (presetLocked) {
     return (
       <span
-        title="Default workspace — cannot be renamed, deleted, or shared"
+        title="Default workspace, cannot be renamed, deleted, or shared"
         className="shrink-0 text-subtle p-0.5"
       >
         <Icon path={LOCK_PATH_LOCKED} fillRule className="w-3 h-3" />
@@ -197,7 +197,7 @@ function LockedIndicator({
     <button
       type="button"
       aria-label={`Unlock workspace ${ws.name}`}
-      title="Locked by you — right-click or click to unlock"
+      title="Locked by you, right-click or click to unlock"
       onClick={(e) => {
         e.stopPropagation();
         toggleUserLock(ws.id);
@@ -241,7 +241,7 @@ function UnlockedActions({
         type="button"
         data-testid="share-workspace-btn"
         aria-label={`Share workspace ${ws.name}`}
-        title={isShared ? "Shared — click to copy link again" : "Share workspace (copies link)"}
+        title={isShared ? "Shared, click to copy link again" : "Share workspace (copies link)"}
         onClick={(e) => {
           e.stopPropagation();
           shareWorkspace(ws);

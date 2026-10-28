@@ -269,7 +269,7 @@ export function SalesWorkbenchPanel() {
         {markupRfq && (
           <div className="border border-amber-800 rounded p-3 flex flex-col gap-2.5 bg-amber-950/30">
             <div className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold">
-              Apply Markup — {markupRfq.rfqId}
+              Apply Markup, {markupRfq.rfqId}
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
@@ -295,7 +295,7 @@ export function SalesWorkbenchPanel() {
                 <span className="ml-2 text-default tabular-nums">
                   {markupRfq.dealerBestPrice != null
                     ? `$${markupRfq.dealerBestPrice.toFixed(2)}`
-                    : "—"}
+                    : "n/a"}
                 </span>
               </div>
             </div>

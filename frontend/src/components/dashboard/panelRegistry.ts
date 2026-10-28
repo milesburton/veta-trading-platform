@@ -139,96 +139,96 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "order-routing-sankey":
     "Sankey diagram showing order flow from strategy through to execution venue",
   "market-ladder":
-    "Live asset quotes — click a row to select and broadcast the symbol to linked panels",
+    "Live asset quotes, click a row to select and broadcast the symbol to linked panels",
   "order-ticket":
-    "Submit buy/sell orders — receives the selected symbol from a linked Market Ladder",
+    "Submit buy/sell orders, receives the selected symbol from a linked Market Ladder",
   "order-blotter": "History of submitted orders with status, fill price, and P&L",
   "child-orders":
-    "Child execution slices for a selected parent order — link to an Order Blotter channel to auto-select. Click a slice to broadcast it to a linked Decision Log.",
+    "Child execution slices for a selected parent order, link to an Order Blotter channel to auto-select. Click a slice to broadcast it to a linked Decision Log.",
   "algo-monitor": "Monitor running algorithmic strategies and their real-time state",
-  observability: "System health metrics — latency, throughput, and service status",
+  observability: "System health metrics, latency, throughput, and service status",
   "candle-chart":
-    "OHLC candlestick chart with volume — receives the selected symbol from a linked panel",
-  "market-depth": "Level 2 order book — bid/ask depth ladder for the selected symbol",
-  executions: "Real-time trade execution feed — fills, partial fills, and rejections",
-  "decision-log": "Audit trail of algo decision events — signals, triggers, and reasoning",
-  "market-match": "Live matched trade tape — recent prints for the selected symbol",
-  admin: "Mission Control — system configuration and user management",
-  news: "Live market news with sentiment scoring — signals for algo strategies",
+    "OHLC candlestick chart with volume, receives the selected symbol from a linked panel",
+  "market-depth": "Level 2 order book, bid/ask depth ladder for the selected symbol",
+  executions: "Real-time trade execution feed, fills, partial fills, and rejections",
+  "decision-log": "Audit trail of algo decision events, signals, triggers, and reasoning",
+  "market-match": "Live matched trade tape, recent prints for the selected symbol",
+  admin: "Mission Control, system configuration and user management",
+  news: "Live market news with sentiment scoring, signals for algo strategies",
   "news-sources":
-    "Enable or disable news feed sources for the aggregator service — mission control only",
+    "Enable or disable news feed sources for the aggregator service, mission control only",
   "order-progress":
     "Pie charts showing fill progress per active order, plus avg fill rate by strategy",
   "market-heatmap":
-    "Sector treemap heatmap — all assets sized by market cap, coloured by % price change. Click a tile to broadcast the symbol.",
+    "Sector treemap heatmap, all assets sized by market cap, coloured by % price change. Click a tile to broadcast the symbol.",
   alerts:
-    "System alert log — kill switch events, service outages, order rejections and algo heartbeat loss",
+    "System alert log, kill switch events, service outages, order rejections and algo heartbeat loss",
   "option-pricing":
-    "Black-Scholes European option pricing — theoretical price and full Greeks for calls and puts",
+    "Black-Scholes European option pricing, theoretical price and full Greeks for calls and puts",
   "scenario-matrix":
-    "Spot/vol shock scenario matrix with Monte Carlo distribution — visualise option P&L across market conditions",
+    "Spot/vol shock scenario matrix with Monte Carlo distribution, visualise option P&L across market conditions",
   "trade-recommendation":
-    "Rule-based option trade recommendations — scored signals with reason codes for all strikes and expiries",
+    "Rule-based option trade recommendations, scored signals with reason codes for all strikes and expiries",
   "market-data-sources":
-    "Configure per-symbol market data sources — switch symbols between synthetic GBM and real-world Alpha Vantage prices",
+    "Configure per-symbol market data sources, switch symbols between synthetic GBM and real-world Alpha Vantage prices",
   "market-feed-control":
-    "Feed health and market context — global Alpha Vantage pause/resume, exchange market hours, and symbol source overview",
+    "Feed health and market context, global Alpha Vantage pause/resume, exchange market hours, and symbol source overview",
   "research-radar":
-    "Signal Radar — all symbols scored by the intelligence pipeline, sized by confidence",
+    "Signal Radar, all symbols scored by the intelligence pipeline, sized by confidence",
   "instrument-analysis":
-    "Per-symbol deep-dive — 7 feature bars, live signal gauge, news timeline, and backtest replay overlay",
+    "Per-symbol deep-dive, 7 feature bars, live signal gauge, news timeline, and backtest replay overlay",
   "signal-explainability":
-    "Factor contribution waterfall — how each feature drives the current signal score for the selected symbol",
+    "Factor contribution waterfall, how each feature drives the current signal score for the selected symbol",
   "service-health":
-    "Live health grid for all backend services — status, version, and last-checked age for each service",
+    "Live health grid for all backend services, status, version, and last-checked age for each service",
   "throughput-gauges":
-    "Pipeline throughput metrics — orders/min, fills/min, fill rate, and active strategies from live order flow",
+    "Pipeline throughput metrics, orders/min, fills/min, fill rate, and active strategies from live order flow",
   "algo-leaderboard":
-    "Strategy performance leaderboard — fill rate, average slippage, and total filled quantity per algo in the last 5 minutes",
+    "Strategy performance leaderboard, fill rate, average slippage, and total filled quantity per algo in the last 5 minutes",
   "load-test":
-    "Admin-only bulk order injector — submit configurable volumes of synthetic orders to stress-test the pipeline",
+    "Admin-only bulk order injector, submit configurable volumes of synthetic orders to stress-test the pipeline",
   "load-gen":
-    "Admin/oncall sustained load generator — toggle on/off, configurable rate (orders/sec), realistic strategy mix, auto-stop safety cap",
+    "Admin/oncall sustained load generator, toggle on/off, configurable rate (orders/sec), realistic strategy mix, auto-stop safety cap",
   "llm-subsystem":
-    "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine, set trigger mode, and start the worker",
+    "LLM Advisory Subsystem operator controls, arm/disarm the advisory engine, set trigger mode, and start the worker",
   "greeks-surface":
-    "Delta, gamma, theta, and vega across the strike surface — visualise Greeks vs moneyness for any symbol and expiry",
+    "Delta, gamma, theta, and vega across the strike surface, visualise Greeks vs moneyness for any symbol and expiry",
   "vol-profile":
-    "EWMA volatility trend (λ=0.94) with rolling baseline — auto-refreshes every 60s to track realised vol evolution",
+    "EWMA volatility trend (λ=0.94) with rolling baseline, auto-refreshes every 60s to track realised vol evolution",
   "estate-overview":
-    "Unified estate command centre — service health chips, throughput gauges, 5-minute event timeline, and live alert feed in one panel",
+    "Unified estate command centre, service health chips, throughput gauges, 5-minute event timeline, and live alert feed in one panel",
   "yield-curve":
     "Nelson-Siegel spot yield curve with implied forward rates and bond pricing (price, duration, convexity, DV01)",
   "price-fan":
-    "Forward price projection fan chart — GBM Monte Carlo confidence bands (p5/p25/p50/p75/p95) for any equity",
+    "Forward price projection fan chart, GBM Monte Carlo confidence bands (p5/p25/p50/p75/p95) for any equity",
   "demo-day":
-    "One-click trading day simulator — injects a realistic wave of mixed-strategy orders across all assets to demonstrate the full pipeline in action",
+    "One-click trading day simulator, injects a realistic wave of mixed-strategy orders across all assets to demonstrate the full pipeline in action",
   "spread-analysis":
-    "Credit spread analysis — G-spread, Z-spread, and OAS for corporate bonds relative to the Nelson-Siegel government curve",
+    "Credit spread analysis, G-spread, Z-spread, and OAS for corporate bonds relative to the Nelson-Siegel government curve",
   "duration-ladder":
-    "Portfolio DV01 attribution ladder — key-rate duration contribution by tenor bucket for a multi-bond fixed income portfolio",
+    "Portfolio DV01 attribution ladder, key-rate duration contribution by tenor bucket for a multi-bond fixed income portfolio",
   "vol-surface":
-    "Implied volatility surface heatmap — SABR-inspired smile across 5 expiries and 9 strikes; click a cell to prefill the Option Pricing panel",
+    "Implied volatility surface heatmap, SABR-inspired smile across 5 expiries and 9 strikes; click a cell to prefill the Option Pricing panel",
   "basket-order":
-    "Multi-leg basket order builder — set target notional, assign weights per symbol, snap quantities to lot size, and submit all legs as individual orders in one click",
+    "Multi-leg basket order builder, set target notional, assign weights per symbol, snap quantities to lot size, and submit all legs as individual orders in one click",
   "client-rfq":
-    "Submit and track requests for quote — view indicative prices, confirm or reject dealer quotes",
+    "Submit and track requests for quote, view indicative prices, confirm or reject dealer quotes",
   "sales-workbench":
     "Review incoming client RFQs, route to pricing, apply markup, and send quotes to clients",
   "product-builder":
-    "Build structured products — add equity, bond, and option legs with weights, structure, and issue to the client catalogue",
+    "Build structured products, add equity, bond, and option legs with weights, structure, and issue to the client catalogue",
   "product-book":
-    "Browse and manage structured products — view all products by state, request quotes, and track sales",
+    "Browse and manage structured products, view all products by state, request quotes, and track sales",
   "session-replay": "Record and replay user sessions for training and audit",
-  "risk-dashboard": "Firm-wide position and P&L monitor — every trader's book in one view",
+  "risk-dashboard": "Firm-wide position and P&L monitor, every trader's book in one view",
   "my-positions": "Your open positions with live mark-to-market P&L",
   "symbol-search": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
   "dev-tools":
-    "Admin debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
+    "Admin debugging toolkit, fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
   "data-depth":
-    "Per-symbol market data depth — sortable list of all tracked symbols with candle count, span days, and warning thresholds",
+    "Per-symbol market data depth, sortable list of all tracked symbols with candle count, span days, and warning thresholds",
   scenarios:
-    "Save and replay deterministic trading scenarios — same seed reproduces the same fills, so an algo regression is visible immediately",
+    "Save and replay deterministic trading scenarios, same seed reproduces the same fills, so an algo regression is visible immediately",
   "platform-status":
     "Last 24h roll-up: service availability, alert counts, user tickets, and last critical event. Raise-ticket button notifies Support and creates GitHub issues when configured. Drives the daily Support summary at 09:00 UTC.",
 };

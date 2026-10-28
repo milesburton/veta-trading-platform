@@ -20,7 +20,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
 
   # Traefik's `errors` middleware can only proxy to a service, never
-  # redirect — see dynamic.yml's offline-holding-page comment. This
+  # redirect: see dynamic.yml's offline-holding-page comment. This
   # container's sole job is to answer every request with a 302 to the
   # published status page, so the browser lands on the real docs domain
   # and its relative CSS/JS/image paths resolve correctly (they 502 if
@@ -34,7 +34,7 @@ services:
     cap_drop:
       - ALL
     # nginx's official entrypoint starts as root, chowns its cache dirs
-    # under /var/cache/nginx, then drops to the nginx user — needs CHOWN
+    # under /var/cache/nginx, then drops to the nginx user: needs CHOWN
     # (the chown itself), SETUID/SETGID (the privilege drop), and
     # DAC_OVERRIDE (writing into dirs it doesn't yet own pre-chown).
     cap_add:

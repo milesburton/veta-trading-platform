@@ -97,7 +97,7 @@ jobs:
               exit 0
               ;;
           esac
-          CONTENT="✅ Merged **#${PR_NUMBER}** — ${PR_TITLE} (by ${AUTHOR})\n<${PR_URL}>"
+          CONTENT="✅ Merged **#${PR_NUMBER}**, ${PR_TITLE} (by ${AUTHOR})\n<${PR_URL}>"
           PAYLOAD=$(jq -nc --arg c "$CONTENT" '{username:"VETA CI",content:$c,allowed_mentions:{parse:[]}}')
           curl --fail-with-body --show-error --silent --retry 2 \
             -X POST -H "Content-Type: application/json" \

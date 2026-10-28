@@ -257,7 +257,7 @@ setTimeout(() => reconcileFillsFromArchive(), 5_000);
 
 const obsProducer = await createProducer("journal-obs").catch(() => null);
 
-// Per-instance consumer group IDs — avoids Kafka backlog replay on fresh DB
+// Per-instance consumer group IDs, avoids Kafka backlog replay on fresh DB
 let journalRowCount = 0;
 {
   const client = await journalPool.connect().catch(() => null);
@@ -278,8 +278,8 @@ let journalRowCount = 0;
 // a resumed group starts at last commit). Once the table has rows, we
 // flip to the stable "journal-group" / "journal-market" names so
 // restarts don't orphan groups on every boot and trip the
-// RedpandaConsumerLagSustained alert. The fresh case is rare — only
-// happens on a Postgres volume wipe — so a single orphan-per-reset is
+// RedpandaConsumerLagSustained alert. The fresh case is rare, only
+// happens on a Postgres volume wipe, so a single orphan-per-reset is
 // acceptable noise.
 const journalGroupId =
   journalRowCount === 0 ? `journal-fresh-${Date.now().toString(36)}` : "journal-group";

@@ -255,7 +255,7 @@ test("createTicketForAlert opens a fresh issue once the prior one was closed", a
   });
 });
 
-test("createTicketForUserReport does not dedupe — every report opens its own issue", async () => {
+test("createTicketForUserReport does not dedupe, every report opens its own issue", async () => {
   await withValidGithubEnv(async () => {
     const f = captureFetch((url) => {
       if (url.includes("/search/issues")) {

@@ -36,7 +36,7 @@ export interface DarkFill {
 
 /**
  * FIFO midpoint matching for one symbol's dark pool. Price is not used
- * for priority — every match crosses at the current midpoint — only
+ * for priority, every match crosses at the current midpoint, only
  * admission time and eligibility (does the resting order's limit allow a
  * trade at midPrice) determine who matches. Mutates `pool` in place
  * (filters out orders left with zero remaining quantity, same as the
@@ -44,7 +44,7 @@ export interface DarkFill {
  *
  * `execIdFactory` and `settlementDateFactory` are injected rather than
  * imported directly so this function has no I/O or global-counter
- * dependency of its own — callers supply their own id/date generation
+ * dependency of its own, callers supply their own id/date generation
  * (a monotonic counter and settlementDate("equity") in production, fixed
  * values in tests).
  */

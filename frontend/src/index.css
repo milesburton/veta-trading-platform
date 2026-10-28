@@ -1,18 +1,18 @@
 :root,
 [data-theme="dark"] {
-  --gray-50: 255 255 255; /* pure white — high-emphasis headings */
+  --gray-50: 255 255 255; /* pure white, high-emphasis headings */
   --gray-100: 241 245 249; /* primary text (~18:1 on 950) */
   --gray-200: 214 224 236; /* strong secondary text (~12:1) */
   --gray-300: 182 196 212; /* body / value text (~8:1) */
   --gray-400: 152 165 182; /* secondary labels (~5.5:1) */
   --gray-500: 142 156 175; /* muted labels (AA on panel) */
-  --gray-600: 78 90 106; /* disabled / decorative — fails AA by design */
+  --gray-600: 78 90 106; /* disabled / decorative, fails AA by design */
   --gray-700: 52 64 80; /* subtle borders */
   --gray-800: 30 41 55; /* panel backgrounds */
   --gray-900: 15 23 38; /* surface backgrounds */
   --gray-950: 3 7 18; /* page background */
 
-  /* Trading semantics — RGB triplets so Tailwind <alpha-value> works.
+  /* Trading semantics, RGB triplets so Tailwind <alpha-value> works.
      Constant across themes for now; per-theme contrast tuning is a follow-up. */
   --semantic-up: 52 211 153; /* emerald-400  */
   --semantic-up-dark: 5 150 105; /* emerald-600  */
@@ -22,17 +22,17 @@
   --semantic-maker: 16 185 129; /* emerald-500  */
   --semantic-taker: 245 158 11; /* amber-500    */
   --semantic-cross: 56 189 248; /* sky-400      */
-  --semantic-limit: 96 165 250; /* blue-400 — AA on panel */
-  --semantic-twap: 196 132 252; /* purple-400 — AA on panel */
+  --semantic-limit: 96 165 250; /* blue-400, AA on panel */
+  --semantic-twap: 196 132 252; /* purple-400, AA on panel */
   --semantic-pov: 249 115 22; /* orange-500   */
   --semantic-vwap: 234 179 8; /* yellow-500   */
   --semantic-iceberg: 34 211 238; /* cyan-400     */
-  --semantic-sniper: 251 113 133; /* rose-400 — AA on panel */
+  --semantic-sniper: 251 113 133; /* rose-400, AA on panel */
   --semantic-arrival-price: 129 140 248; /* indigo-400 */
   --semantic-is: 45 212 191; /* teal-400     */
   --semantic-momentum: 232 121 249; /* fuchsia-400  */
 
-  /* Status semantics — generic UI concepts (order/RFQ/alert state), distinct
+  /* Status semantics, generic UI concepts (order/RFQ/alert state), distinct
      from the trading-concept palette above. Aliased to the closest matching
      trading colour so there's one source of truth per hue. */
   --semantic-status-success: 52 211 153; /* = semantic-up      */
@@ -47,7 +47,7 @@
   --chart-tooltip-bg: 17 24 39; /* gray-900     */
   --chart-tooltip-border: 55 65 81; /* gray-700     */
 
-  /* Heatmap palette — Finviz-style, perceptually balanced. */
+  /* Heatmap palette, Finviz-style, perceptually balanced. */
   --heat-strong-up: 10 92 49;
   --heat-mid-up: 20 122 65;
   --heat-up: 30 153 82;
@@ -85,19 +85,19 @@
   /* Light mode: slate-tinted whites for backgrounds, dark ink for text.
      The gray scale runs light→dark (950=lightest bg, 100=darkest text)
      so components built for dark mode remain readable when inverted. */
-  --gray-950: 248 250 252; /* page background — slate-50 */
-  --gray-900: 241 245 249; /* card / panel background — slate-100 */
-  --gray-800: 226 232 240; /* subtle borders, hover — slate-200 */
-  --gray-700: 203 213 225; /* dividers — slate-300 */
-  --gray-600: 148 163 184; /* muted text, placeholders — slate-400 */
-  --gray-500: 94 109 128; /* secondary text — darkened slate-500 for AA on bg-surface */
-  --gray-400: 71 85 105; /* body text — slate-600 */
-  --gray-300: 51 65 85; /* strong text — slate-700 */
-  --gray-200: 30 41 59; /* headings — slate-800 */
-  --gray-100: 15 23 42; /* primary text, near-black — slate-900 */
-  --gray-50: 2 6 23; /* max contrast — slate-950 */
+  --gray-950: 248 250 252; /* page background, slate-50 */
+  --gray-900: 241 245 249; /* card / panel background, slate-100 */
+  --gray-800: 226 232 240; /* subtle borders, hover, slate-200 */
+  --gray-700: 203 213 225; /* dividers, slate-300 */
+  --gray-600: 148 163 184; /* muted text, placeholders, slate-400 */
+  --gray-500: 94 109 128; /* secondary text, darkened slate-500 for AA on bg-surface */
+  --gray-400: 71 85 105; /* body text, slate-600 */
+  --gray-300: 51 65 85; /* strong text, slate-700 */
+  --gray-200: 30 41 59; /* headings, slate-800 */
+  --gray-100: 15 23 42; /* primary text, near-black, slate-900 */
+  --gray-50: 2 6 23; /* max contrast, slate-950 */
 
-  /* Light-mode semantic overrides — darker variants for AA on light bgs.
+  /* Light-mode semantic overrides, darker variants for AA on light bgs.
      The dark-mode defaults are tuned for dark backgrounds and fail WCAG
      contrast when used on slate-50/100. */
   --semantic-up: 4 120 87; /* emerald-700 */
@@ -119,10 +119,10 @@
   --semantic-momentum: 162 28 175; /* fuchsia-700 */
 
   --semantic-status-success: 4 120 87; /* = semantic-up (emerald-700) */
-  --semantic-status-pending: 146 64 14; /* amber-800 — darker than semantic-taker for AA on bg-surface */
+  --semantic-status-pending: 146 64 14; /* amber-800, darker than semantic-taker for AA on bg-surface */
   --semantic-status-info: 3 105 161; /* = semantic-cross (sky-700) */
   --semantic-status-critical: 185 28 28; /* = semantic-down (red-700) */
-  --semantic-status-warning: 154 52 18; /* orange-800 — darker than semantic-pov for AA on bg-surface */
+  --semantic-status-warning: 154 52 18; /* orange-800, darker than semantic-pov for AA on bg-surface */
 }
 
 [data-theme="high-contrast"] {
@@ -138,7 +138,7 @@
   --gray-900: 255 255 255;
   --gray-950: 245 245 245;
 
-  /* Panels are near-white here, same as light mode — reuse its darker,
+  /* Panels are near-white here, same as light mode, reuse its darker,
      AA-tuned status variants instead of dark mode's light-on-dark values. */
   --semantic-status-success: 4 120 87;
   --semantic-status-pending: 146 64 14;

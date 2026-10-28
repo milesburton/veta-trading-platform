@@ -26,7 +26,7 @@ const ENABLED_POLICY: LlmPolicy = {
 
 const DISABLED_POLICY: LlmPolicy = { ...ENABLED_POLICY, enabled: false };
 
-/** In-memory JobStore for unit tests — no DB required */
+/** In-memory JobStore for unit tests, no DB required */
 function makeStore(): JobStore & { _jobs: Map<string, LlmJob> } {
   const jobs = new Map<string, LlmJob>();
 

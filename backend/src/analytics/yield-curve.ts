@@ -7,10 +7,10 @@
  *   R(τ) = β₀ + β₁ × (1-e^(-τ/λ))/(τ/λ) + β₂ × ((1-e^(-τ/λ))/(τ/λ) - e^(-τ/λ))
  *
  * Default parameters simulate a plausible near-current US Treasury curve:
- *   β₀ = 0.045 — long-run level (~4.5%)
- *   β₁ = -0.015 — slope (negative → slightly inverted short end)
- *   β₂ = 0.010  — curvature (hump around the belly)
- *   λ  = 2.5    — time constant (years)
+ *   β₀ = 0.045, long-run level (~4.5%)
+ *   β₁ = -0.015, slope (negative → slightly inverted short end)
+ *   β₂ = 0.010, curvature (hump around the belly)
+ *   λ  = 2.5,   time constant (years)
  */
 
 import type {
@@ -61,7 +61,7 @@ function nelsonSiegel(tau: number, p: NelsonSiegelParams): number {
 
 /**
  * Compute the full spot yield curve using Nelson-Siegel.
- * Accepts optional parameter overrides — any missing params use the defaults.
+ * Accepts optional parameter overrides, any missing params use the defaults.
  */
 export function computeYieldCurve(params?: Partial<NelsonSiegelParams>): YieldCurvePoint[] {
   const p: NelsonSiegelParams = { ...DEFAULT_PARAMS, ...params };

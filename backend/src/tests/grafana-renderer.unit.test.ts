@@ -150,7 +150,7 @@ test("renderGrafanaPanel rejects oversized payloads", async () => {
 test("renderGrafanaPanel rejects via Content-Length without pulling chunks", async () => {
   // Header advertises a 1 GiB body. The renderer should bail before
   // pulling any chunks. We track `pull()` invocations (not the eager
-  // `start()` which the platform invokes on stream construction) —
+  // `start()` which the platform invokes on stream construction),
   // pull is what reader.read() drives, so 0 pulls means the
   // early-reject path worked. If pulls happened we'd be back to
   // the OOM risk Copilot flagged on PR #340.
@@ -177,7 +177,7 @@ test("renderGrafanaPanel rejects via Content-Length without pulling chunks", asy
     // V8 may pre-pull one chunk when the Response is constructed
     // even if we never call reader.read(). The point is that the
     // renderer cancels the body before consuming the advertised 1 GiB
-    // — anything in single digits means we didn't drain the stream.
+    //, anything in single digits means we didn't drain the stream.
     assertEquals(
       pullCount <= 1,
       true,

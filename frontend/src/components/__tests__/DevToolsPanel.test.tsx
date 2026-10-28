@@ -246,7 +246,7 @@ describe("DevToolsPanel", () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: /Standard Day/i }));
-    expect(await screen.findByText(/Failed — check gateway connection/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Failed, check gateway connection/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^Run$/i }));
     expect(await screen.findByText(/Load test failed/i)).toBeInTheDocument();

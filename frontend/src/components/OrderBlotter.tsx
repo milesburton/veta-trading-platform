@@ -131,15 +131,15 @@ function formatPrice(asset: string, price: number) {
 
 function avgFillPrice(children: ChildOrder[]): string {
   const filled = children.filter((c) => c.status === "filled" && c.filled > 0);
-  if (filled.length === 0) return "—";
+  if (filled.length === 0) return "n/a";
   const totalQty = filled.reduce((s, c) => s + c.filled, 0);
   const totalValue = filled.reduce((s, c) => s + (c.avgFillPrice ?? c.limitPrice) * c.filled, 0);
-  return totalQty > 0 ? (totalValue / totalQty).toFixed(4) : "—";
+  return totalQty > 0 ? (totalValue / totalQty).toFixed(4) : "n/a";
 }
 
 function totalCommission(children: ChildOrder[]): string {
   const total = children.reduce((s, c) => s + (c.commissionUSD ?? 0), 0);
-  if (total === 0) return "—";
+  if (total === 0) return "n/a";
   return `$${total.toFixed(2)}`;
 }
 
@@ -336,7 +336,7 @@ export function OrderBlotter() {
         label: `Force kill ${label}`,
         icon: "⚡",
         danger: true,
-        title: "Immediately terminate — admin/risk-manager only",
+        title: "Immediately terminate, admin/risk-manager only",
         onClick: () => {
           for (const id of targetIds)
             dispatch(orderPatched({ id, patch: { status: "cancelled" } }));
@@ -553,7 +553,7 @@ export function OrderBlotter() {
                       title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(
                         order.asset,
                         order.limitPrice
-                      )} — ${order.status}. Double-click to create a similar order; right-click for actions.`}
+                      )}, ${order.status}. Double-click to create a similar order; right-click for actions.`}
                       style={
                         selectedOrderId.value === order.id && channelColour
                           ? {
@@ -739,7 +739,7 @@ export function OrderBlotter() {
                                 className={`px-3 py-1.5 text-muted font-mono text-[10px] ${cellCls} ${stickyClass}`}
                                 title={order.userId}
                               >
-                                {order.userId ?? "—"}
+                                {order.userId ?? "n/a"}
                               </td>
                             );
                           case "counterparty":
@@ -749,7 +749,7 @@ export function OrderBlotter() {
                                 style={stickyStyle}
                                 className={`px-3 py-1.5 text-muted ${stickyClass}`}
                               >
-                                —
+                                n/a
                               </td>
                             );
                           case "liquidityFlag":
@@ -759,7 +759,7 @@ export function OrderBlotter() {
                                 style={stickyStyle}
                                 className={`px-3 py-1.5 text-muted ${stickyClass}`}
                               >
-                                —
+                                n/a
                               </td>
                             );
                           case "commission":
@@ -779,7 +779,7 @@ export function OrderBlotter() {
                                 style={stickyStyle}
                                 className={`px-3 py-1.5 text-muted font-mono text-[9px] ${stickyClass}`}
                               >
-                                {order.settlementDate ?? "—"}
+                                {order.settlementDate ?? "n/a"}
                               </td>
                             );
                           default:

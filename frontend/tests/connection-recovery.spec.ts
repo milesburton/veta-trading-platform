@@ -1,6 +1,6 @@
 import { expect, ladderTest } from "./helpers/fixtures.ts";
 
-ladderTest.describe("Connection recovery — UI must surface stuck state", () => {
+ladderTest.describe("Connection recovery, UI must surface stuck state", () => {
   ladderTest(
     "shows a connection-lost banner when the gateway refuses reconnects",
     async ({ app, page }) => {
@@ -9,7 +9,7 @@ ladderTest.describe("Connection recovery — UI must surface stuck state", () =>
 
       app.gateway.sendMarketUpdate({ AAPL: 200 });
       await page.waitForTimeout(400);
-      expect(await ladder.rowForSymbol("AAPL").textContent()).not.toContain("—");
+      expect(await ladder.rowForSymbol("AAPL").textContent()).not.toContain("n/a");
 
       app.gateway.refuseNextConnections(true);
       await app.gateway.dropConnection({ code: 1006 });

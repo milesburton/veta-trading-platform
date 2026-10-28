@@ -40,7 +40,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 function relativeTime(ms: number | undefined): string {
-  if (ms === undefined) return "—";
+  if (ms === undefined) return "n/a";
   const delta = Date.now() - ms;
   if (delta < 0) return "just now";
   const s = Math.floor(delta / 1000);
@@ -227,5 +227,5 @@ function formatCausedBy(a: AlertType): string | null {
   if (a.relatedTopic) parts.push(`topic: ${a.relatedTopic}`);
   if (a.relatedEventId) parts.push(`event: ${a.relatedEventId}`);
   if (a.relatedAt && a.relatedAt !== a.ts) parts.push(`at: ${relativeTime(a.relatedAt)}`);
-  return parts.length === 0 ? null : `caused by — ${parts.join(" · ")}`;
+  return parts.length === 0 ? null : `caused by, ${parts.join(" · ")}`;
 }

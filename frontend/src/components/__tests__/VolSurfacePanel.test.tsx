@@ -153,7 +153,7 @@ describe("VolSurfacePanel", () => {
             expiryLabel: "7d",
             expirySecs: 7 * 86_400,
           },
-          // no point at moneyness 0.7 for any expiry — every cell in that row
+          // no point at moneyness 0.7 for any expiry, every cell in that row
           // must fall back to the empty placeholder div
         ],
       },

@@ -1,5 +1,5 @@
 /**
- * TradingContext — thin wrapper for DOM-imperative operations only.
+ * TradingContext, thin wrapper for DOM-imperative operations only.
  * Strategy, side, and showShortcuts state have moved to uiSlice (Redux).
  * This context manages only the ticketRef (DOM element ref) which is
  * not serializable and must NOT go into Redux state.

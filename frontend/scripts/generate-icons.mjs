@@ -1,6 +1,6 @@
 /**
  * Generates placeholder tray icons for the Electron app.
- * Uses only Node.js built-ins — no external dependencies.
+ * Uses only Node.js built-ins, no external dependencies.
  * Run once from repo root: node frontend/scripts/generate-icons.mjs
  * Output: frontend/electron/assets/tray-icon.png  (256×256 solid VETA blue)
  *         frontend/electron/assets/tray-icon.ico  (ICO wrapping a 16×16 PNG frame)

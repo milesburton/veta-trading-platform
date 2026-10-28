@@ -25,7 +25,7 @@ test("[armIdleExit] touch() resets the timer", () => {
     time.tick(900);
     touch();
     time.tick(900);
-    assertEquals(exitCodes, [], "should not have exited — touch() reset the 1000ms window");
+    assertEquals(exitCodes, [], "should not have exited, touch() reset the 1000ms window");
     time.tick(200);
     assertEquals(exitCodes, [0]);
   } finally {

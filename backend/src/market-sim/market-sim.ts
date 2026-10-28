@@ -105,7 +105,7 @@ createProducer("market-sim")
   .then((p) => {
     producer = p;
   })
-  .catch((err) => logger.warn("Redpanda unavailable — market.ticks not published", { err }));
+  .catch((err) => logger.warn("Redpanda unavailable, market.ticks not published", { err }));
 
 // KafkaJS batches concurrent sends. If Redpanda slows down, allowing the 250 ms
 // tick loop to enqueue indefinitely can create an oversized batch and starve
@@ -146,7 +146,7 @@ async function seedFromJournal(): Promise<void> {
   if (seeded > 0) {
     logger.info(`Seeded ${seeded}/${symbols.length} assets from journal candle history`);
   } else {
-    logger.info("Journal unavailable or empty — starting from initialPrice");
+    logger.info("Journal unavailable or empty, starting from initialPrice");
   }
 }
 
@@ -154,7 +154,7 @@ snapshotOpenPrices();
 const PREWARM_TICKS = Number(process.env.MARKET_SIM_PREWARM_TICKS) || 28_080;
 warmUpPrices(PREWARM_TICKS, async () => {
   snapshotOpenPrices();
-  logger.info(`Price engine pre-warmed — intraday moves seeded`);
+  logger.info(`Price engine pre-warmed, intraday moves seeded`);
   await seedFromJournal();
   snapshotOpenPrices();
 }).catch((err) => logger.error("Price warm-up failed", { err: err as Error }));
@@ -243,7 +243,7 @@ function buildBookForVenue(
 /**
  * Builds order books only for `symbols` rather than every symbol in
  * `prices`. On the recurring tick, tick-diff.ts's symbolsNeedingFreshBook()
- * already knows which symbols moved enough to be worth a fresh book —
+ * already knows which symbols moved enough to be worth a fresh book,
  * building the rest anyway (then discarding them when the diff gate drops
  * them) was the dominant per-tick CPU cost at the full instrument universe
  * size. A full snapshot still passes every symbol through `symbols`.
@@ -305,11 +305,11 @@ type SessionPhase =
   | "CLOSED";
 
 // Deliberately derived from the simulated 390-minute loop (marketMinute),
-// not wall-clock time — the loop compresses a trading day into ~90 seconds
+// not wall-clock time, the loop compresses a trading day into ~90 seconds
 // of ticks as a demo/UX choice, orthogonal to whether real-world calendar
 // gating (holidays, weekends; see #veta/trading-calendar and
 // isUsEquityRegularSession in market-hours.ts) allows order entry right now.
-// Do not "fix" this into a wall-clock-only check — that would lose the
+// Do not "fix" this into a wall-clock-only check, that would lose the
 // fast demo pacing every consumer of sessionPhase currently relies on.
 function deriveSessionPhase(minute: number): SessionPhase {
   if (minute < 5) return "PRE_OPEN";

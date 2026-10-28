@@ -200,7 +200,7 @@ export function LogsDrawer() {
             <div className="text-[10px] text-muted">
               {lines.value.length} line(s) · source: {meta.value.source}
               {!meta.value.lokiConfigured &&
-                " (Loki unavailable — falling back to in-process ring buffer)"}
+                " (Loki unavailable, falling back to in-process ring buffer)"}
             </div>
           )}
         </div>

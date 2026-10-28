@@ -25,7 +25,7 @@ interface FillReceivedPayload {
   leavesQty: number;
 }
 
-// Gateway WebSocket — shared singleton set by gatewayMiddleware
+// Gateway WebSocket, shared singleton set by gatewayMiddleware
 let _gatewayWs: WebSocket | null = null;
 export function setGatewayWs(ws: WebSocket | null): void {
   _gatewayWs = ws;
@@ -75,7 +75,7 @@ export const submitOrderThunk = createAsyncThunk(
         })
       );
     } else {
-      console.warn("[orders] Gateway WebSocket not connected — order queued locally only");
+      console.warn("[orders] Gateway WebSocket not connected, order queued locally only");
     }
     return clientOrderId;
   }
@@ -85,7 +85,7 @@ export const killOrdersThunk = createAsyncThunk("orders/kill", (payload: KillOrd
   if (_gatewayWs?.readyState === WebSocket.OPEN) {
     _gatewayWs.send(JSON.stringify({ type: "killOrders", payload }));
   } else {
-    console.warn("[orders] Gateway WebSocket not connected — kill command not sent");
+    console.warn("[orders] Gateway WebSocket not connected, kill command not sent");
   }
 });
 
@@ -95,7 +95,7 @@ export const resumeOrdersThunk = createAsyncThunk(
     if (_gatewayWs?.readyState === WebSocket.OPEN) {
       _gatewayWs.send(JSON.stringify({ type: "resumeOrders", payload }));
     } else {
-      console.warn("[orders] Gateway WebSocket not connected — resume command not sent");
+      console.warn("[orders] Gateway WebSocket not connected, resume command not sent");
     }
   }
 );

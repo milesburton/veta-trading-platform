@@ -74,7 +74,7 @@ test("user with no history is not blocked", () => {
 
 test("anonymous sockets share a single user bucket", () => {
   const tracker = new AbuseTracker(TIGHT);
-  // Trigger two force-closes against anon sockets — should now block anon.
+  // Trigger two force-closes against anon sockets, should now block anon.
   for (let i = 0; i < 2; i++) {
     const sock = fakeSocket();
     tracker.recordRateLimited(sock, null, 1000 + i * 10);

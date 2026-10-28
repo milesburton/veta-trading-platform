@@ -8,8 +8,8 @@ import { test } from "#veta/test";
  *   signal-engine   (port 5018)
  *   market-data-adapters (port 5016)
  *   scenario-engine (port 5020)
- *   gateway         (port 5011) — for proxy routes
- *   market-sim      (port 5000) — for symbols list
+ *   gateway         (port 5011), for proxy routes
+ *   market-sim      (port 5000), for symbols list
  *
  * Tests that:
  *  1. All intelligence services are healthy
@@ -241,7 +241,7 @@ test("[intelligence] scenario: positive momentum shock increases signal score", 
 
   if (res.status === 503) {
     await res.body?.cancel();
-    logger.warn("skip: scenario engine — feature-engine not ready");
+    logger.warn("skip: scenario engine, feature-engine not ready");
     return;
   }
   assert(res.ok, `POST /scenario → ${res.status}`);
@@ -275,7 +275,7 @@ test("[intelligence] scenario: negative sentiment shock decreases signal score",
 
   if (res.status === 503) {
     await res.body?.cancel();
-    logger.warn("skip: scenario engine — feature-engine not ready");
+    logger.warn("skip: scenario engine, feature-engine not ready");
     return;
   }
   assert(res.ok, `POST /scenario → ${res.status}`);

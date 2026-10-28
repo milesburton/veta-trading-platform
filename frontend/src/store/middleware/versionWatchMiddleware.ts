@@ -81,7 +81,7 @@ export const versionWatchMiddleware: Middleware = (storeAPI) => {
 
     if (servicesApi.endpoints.getServicesStatus.matchFulfilled(action)) {
       const versioned = action.payload.services.filter(
-        (svc) => svc.status === "ok" && svc.version !== "dev" && svc.version !== "—"
+        (svc) => svc.status === "ok" && svc.version !== "dev" && svc.version !== "n/a"
       );
       for (const svc of versioned) {
         const known = backendBaseline.get(svc.name);

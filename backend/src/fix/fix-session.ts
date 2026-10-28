@@ -16,7 +16,7 @@ export interface SessionConfig {
   onStateChange?: (state: SessionState) => void;
   /**
    * Called with the inbound Logon's tags before accepting it. Return false
-   * to reject the Logon (session stays DISCONNECTED, no reply is sent —
+   * to reject the Logon (session stays DISCONNECTED, no reply is sent,
    * the caller is expected to close the transport). Defaults to
    * always-accept, preserving the pre-existing behavior for callers that
    * don't need per-client identity checks.
@@ -46,7 +46,7 @@ export class FixSession {
   }
 
   /**
-   * Overrides the TargetCompID used on future outbound messages — e.g.
+   * Overrides the TargetCompID used on future outbound messages, e.g.
    * once a Logon's own SenderCompID is known, replies should address that
    * counterparty rather than a fixed default. Does not affect this
    * session's own identity (senderCompID).
@@ -58,7 +58,7 @@ export class FixSession {
   /** Called when raw bytes arrive over the transport. May produce messages to send. */
   handleInbound(raw: string): void {
     if (!validateChecksum(raw)) {
-      logger.warn("Checksum validation failed — dropping message", {
+      logger.warn("Checksum validation failed, dropping message", {
         senderCompID: this.config.senderCompID,
       });
       return;
@@ -143,7 +143,7 @@ export class FixSession {
   private onLogon(tags: Map<number, string>): void {
     const heartBtInt = Number(tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt);
     if (this.state === "LOGON_SENT") {
-      // Acceptor responded — session active
+      // Acceptor responded, session active
       this.setState("ACTIVE");
       this.startHeartbeat(heartBtInt);
     } else if (this.state === "DISCONNECTED") {
@@ -172,7 +172,7 @@ export class FixSession {
 
   private onLogout(_tags: Map<number, string>): void {
     if (this.state !== "LOGOUT_SENT") {
-      // Counterparty initiated logout — respond
+      // Counterparty initiated logout, respond
       const msg = this.buildMessage([
         [Tag.MsgType, MsgType.Logout],
         [Tag.Text, "Logout acknowledged"],
@@ -234,7 +234,7 @@ export class FixSession {
       if (this.state !== "ACTIVE") return;
       if (this.testReqId) {
         // No heartbeat received since we sent TestRequest → disconnect
-        logger.warn(`Heartbeat timeout — disconnecting`);
+        logger.warn(`Heartbeat timeout, disconnecting`);
         this.disconnect();
         return;
       }

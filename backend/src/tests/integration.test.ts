@@ -1,11 +1,11 @@
 import { test } from "#veta/test";
 import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
- * Integration tests — require backend services to be running.
+ * Integration tests, require backend services to be running.
  *
  * Tests key internal service endpoints.
  * Note: Order submission via HTTP to OMS/algo services is no longer
- * the primary path — orders flow via gateway WS → bus → OMS → algos.
+ * the primary path, orders flow via gateway WS → bus → OMS → algos.
  * These tests verify that internal health endpoints and bus-adjacent
  * behaviour are correct.
  */
@@ -130,7 +130,7 @@ test("[fix-archive] /executions/:nonexistent returns 404", async () => {
 test("[gateway] WS connects and responds to submitOrder within 5s", async () => {
   // Gateway requires a valid session cookie to submit orders.
   // In CI without a live user-service session, the gateway returns an
-  // error event rather than orderAck — both confirm the WS message pipeline works.
+  // error event rather than orderAck, both confirm the WS message pipeline works.
   const ws = new WebSocket(`ws://localhost:5011/ws`);
   const closed = new Promise<void>((r) => {
     ws.onclose = () => r();

@@ -34,7 +34,7 @@ const CLUSTER_STABLE_TIMEOUT_MS = 15_000;
 // Every topic any service produces or consumes. Auto-creation
 // (auto_create_topics_enable) lets each of the ~14+ services racing to
 // connect at boot trigger topic creation concurrently the first time they
-// subscribe/produce — the controller's partition leader assignment can lag
+// subscribe/produce, the controller's partition leader assignment can lag
 // behind that burst, so a consumer's very next ListOffsets call sometimes
 // lands before its topic's leader is assigned ("does not host this
 // topic-partition" / "not the leader for that topic-partition"). Explicitly

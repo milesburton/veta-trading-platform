@@ -378,7 +378,7 @@ describe("FIXSession – ExecutionReport", () => {
 
   it("does NOT fire onExecReport when session is not ACTIVE", () => {
     const { session, execReports } = makeSession();
-    // DISCONNECTED state — feed ExecReport directly
+    // DISCONNECTED state, feed ExecReport directly
     session.handleInbound(buildExecReport("F", 1));
     expect(execReports).toHaveLength(0);
   });

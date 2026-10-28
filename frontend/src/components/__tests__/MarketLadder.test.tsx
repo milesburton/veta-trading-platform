@@ -277,7 +277,7 @@ describe("MarketLadder – context menu and interactions", () => {
     renderLadder();
     fireEvent.contextMenu(screen.getByTestId("asset-row-AAPL"));
     fireEvent.click(screen.getByText(/Select asset|Deselect/));
-    // No throw — function exercised
+    // No throw, function exercised
     expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
   });
 });

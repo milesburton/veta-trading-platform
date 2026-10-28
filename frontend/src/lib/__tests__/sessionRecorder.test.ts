@@ -112,7 +112,7 @@ describe("sessionRecorder", () => {
     expect(onStop).toHaveBeenCalledOnce();
   });
 
-  it("startRecording() is idempotent — calling twice does not create duplicate", async () => {
+  it("startRecording() is idempotent, calling twice does not create duplicate", async () => {
     const upload = vi.fn().mockResolvedValue(undefined);
     const { record } = vi.mocked(await import("rrweb"));
 
@@ -125,7 +125,7 @@ describe("sessionRecorder", () => {
     expect(isRecording()).toBe(true);
   });
 
-  it("failed upload retries — buffer is prepended", async () => {
+  it("failed upload retries, buffer is prepended", async () => {
     const upload = vi
       .fn()
       .mockRejectedValueOnce(new Error("network error"))

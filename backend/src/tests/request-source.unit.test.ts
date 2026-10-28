@@ -31,7 +31,7 @@ test("classifier never returns 'loadgen' on suspicious-looking UAs", () => {
   // The relevant guarantee is documented: classifier output MUST NOT be
   // trusted for any authn/authz decision.
   const result = classifyRequestSource("k6/9.9.9-attacker");
-  // We accept the tag — but the alert-side guarantee is that we still
+  // We accept the tag, but the alert-side guarantee is that we still
   // record the event in user.access (audit trail intact); only the alert
   // query filters it out.
   assertEquals(result, "loadgen");

@@ -1,5 +1,5 @@
 /**
- * Price Fan Panel — GBM forward price projection
+ * Price Fan Panel, GBM forward price projection
  *
  * Shows Monte Carlo confidence bands (p5/p25/p50/p75/p95) for a selected
  * equity symbol over a chosen horizon.  Auto-refreshes every 60 seconds.

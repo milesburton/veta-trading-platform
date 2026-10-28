@@ -20,7 +20,7 @@ export K6_TOKEN=$(curl -s -X POST http://localhost:5008/oauth/authorize \
   -H 'Content-Type: application/json' \
   -d '{"client_id":"veta-automation","username":"admin","password":"...","redirect_uri":"postmessage","response_type":"code","scope":"openid profile","code_challenge":"...","code_challenge_method":"S256"}' \
   | jq -r .code)
-# (Followed by /oauth/token exchange — see Astro page for the full PKCE flow.)
+# (Followed by /oauth/token exchange: see Astro page for the full PKCE flow.)
 
 # 3. Run the baseline scenario
 docker compose --profile loadtest run --rm k6

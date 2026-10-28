@@ -9,7 +9,7 @@ import { assert, assertEquals } from "#veta/test-assert";
 //   POST /alerts  (severity = WARNING)     -> Discord (only)
 //
 // The notifier only posts to Discord for severities CRITICAL and
-// WARNING — other severities are dropped before any fetch. GitHub
+// WARNING, other severities are dropped before any fetch. GitHub
 // alert issues are reserved for CRITICAL alerts; user tickets create
 // lower-severity GitHub issues through their own labels.
 //

@@ -106,7 +106,7 @@ describe("PANEL_PERMISSIONS completeness", () => {
   });
 });
 
-describe("canAccessPanel — role restrictions", () => {
+describe("canAccessPanel, role restrictions", () => {
   it("returns false when role is undefined", () => {
     expect(canAccessPanel("market-ladder", undefined)).toBe(false);
   });

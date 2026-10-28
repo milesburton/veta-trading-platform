@@ -203,7 +203,7 @@ describe("RiskDashboardPanel", () => {
   it("shows the no-positions empty state when nothing is loading and there are no fills", () => {
     renderPanel();
     expect(
-      screen.getByText(/No positions — orders have not yet been filled\./i)
+      screen.getByText(/No positions, orders have not yet been filled\./i)
     ).toBeInTheDocument();
     expect(screen.queryByText(/Firm P&L/i)).not.toBeInTheDocument();
   });

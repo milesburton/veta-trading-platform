@@ -69,9 +69,9 @@ export async function probe(
 }
 
 function metaOf(result: ProbeResult): { version: string; meta: Record<string, unknown> } {
-  if (result.kind !== "ok" && result.kind !== "http") return { version: "—", meta: {} };
+  if (result.kind !== "ok" && result.kind !== "http") return { version: "n/a", meta: {} };
   const { version, service: _service, status: _status, ...meta } = result.body;
-  return { version: version === undefined ? "—" : String(version), meta };
+  return { version: version === undefined ? "n/a" : String(version), meta };
 }
 
 export function toEntry(

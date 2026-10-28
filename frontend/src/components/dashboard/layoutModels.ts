@@ -2681,7 +2681,7 @@ export const LAYOUT_TEMPLATES: {
     id: "full",
     locked: true,
     label: "Full Dashboard",
-    description: "All panels — complete trading view",
+    description: "All panels, complete trading view",
     model: makeDefaultModel(),
   },
   {
@@ -2705,7 +2705,7 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Equities Analysis",
     description:
-      "Equities chart, depth, ladder, news, and forward projections — no options or FI panels",
+      "Equities chart, depth, ladder, news, and forward projections, no options or FI panels",
     model: makeAnalysisModel(),
     styles: ["high_touch", "low_touch", "oversight"],
   },
@@ -2738,7 +2738,7 @@ export const LAYOUT_TEMPLATES: {
     id: "admin",
     locked: true,
     label: "Mission Control",
-    description: "Heatmap + mission control panels — observability, system config, news sources",
+    description: "Heatmap + mission control panels, observability, system config, news sources",
     model: makeAdminModel(),
   },
   {
@@ -2761,7 +2761,7 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Pipeline Ops",
     description:
-      "Live algo pipeline — leaderboard, throughput, decision log, fills, and order audit",
+      "Live algo pipeline, leaderboard, throughput, decision log, fills, and order audit",
     model: makePipelineOpsModel(),
   },
   {
@@ -2776,7 +2776,7 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Market Overview",
     description:
-      "Full-screen heatmap — sector view with room for key stocks, most traded, most moved",
+      "Full-screen heatmap, sector view with room for key stocks, most traded, most moved",
     model: makeOverviewModel(),
   },
   {
@@ -2784,7 +2784,7 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Research",
     description:
-      "Signal radar, instrument analysis, and factor explainability — market intelligence pipeline",
+      "Signal radar, instrument analysis, and factor explainability, market intelligence pipeline",
     model: makeResearchModel(),
     styles: ["high_touch", "low_touch", "oversight"],
   },
@@ -2801,14 +2801,14 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Intelligence Hub",
     description:
-      "Full intelligence pipeline — radar, heatmap, instrument deep-dive, signal explainability, scenario matrix, and news",
+      "Full intelligence pipeline, radar, heatmap, instrument deep-dive, signal explainability, scenario matrix, and news",
     model: makeIntelligenceModel(),
   },
   {
     id: "fi-analysis",
     locked: true,
     label: "FI Analysis",
-    description: "Yield curve, price fan, vol profile, and scenario matrix — no order entry",
+    description: "Yield curve, price fan, vol profile, and scenario matrix, no order entry",
     model: makeFiAnalysisModel(),
     styles: ["fi_voice", "oversight"],
   },
@@ -2816,7 +2816,7 @@ export const LAYOUT_TEMPLATES: {
     id: "fi-trading",
     locked: true,
     label: "FI Trading",
-    description: "High-touch bond desk — yield curve + price fan + full order workflow",
+    description: "High-touch bond desk, yield curve + price fan + full order workflow",
     model: makeFiTradingModel(),
     styles: ["fi_voice", "oversight"],
   },
@@ -2824,7 +2824,7 @@ export const LAYOUT_TEMPLATES: {
     id: "fi-research",
     locked: true,
     label: "FI Research",
-    description: "Rates intelligence — signal radar, instrument analysis, yield curve, and news",
+    description: "Rates intelligence, signal radar, instrument analysis, yield curve, and news",
     model: makeFiResearchModel(),
     styles: ["fi_voice", "oversight"],
   },
@@ -2833,7 +2833,7 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Observability",
     description:
-      "System health command centre — service status, throughput gauges, observability panel, algo leaderboard, and order audit trail",
+      "System health command centre, service status, throughput gauges, observability panel, algo leaderboard, and order audit trail",
     model: makeObservabilityModel(),
   },
   {
@@ -2849,13 +2849,13 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Pipeline Monitor",
     description:
-      "Real-time algo pipeline — strategy monitor, throughput, child order slices, fill progress, executions, and decision log",
+      "Real-time algo pipeline, strategy monitor, throughput, child order slices, fill progress, executions, and decision log",
     model: makeAlgoPipelineModel(),
   },
   {
     id: "clear",
     label: "Clear Layout",
-    description: "Empty canvas — add panels from the panel picker",
+    description: "Empty canvas, add panels from the panel picker",
     model: makeClearModel(),
   },
 ];

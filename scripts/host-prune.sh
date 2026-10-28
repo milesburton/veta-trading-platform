@@ -27,7 +27,7 @@ docker container prune --filter "until=${PRUNE_AGE}" -f
 docker builder prune --filter "until=${PRUNE_AGE}" -f
 
 if [ "${USED_PCT}" -ge "${THRESHOLD_PCT}" ]; then
-  echo "[$(date -Iseconds)] Disk above ${THRESHOLD_PCT}% — running aggressive prune (untagged images, all builder cache)"
+  echo "[$(date -Iseconds)] Disk above ${THRESHOLD_PCT}%, running aggressive prune (untagged images, all builder cache)"
   docker image prune -a -f
   docker builder prune -af
 fi

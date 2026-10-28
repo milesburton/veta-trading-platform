@@ -49,7 +49,7 @@ const SCENARIOS: Scenario[] = [
     id: "institutional",
     label: "Institutional Flow",
     description:
-      "Large-block TWAP, VWAP, and ICEBERG orders from institutional players — minimal LIMIT, concentrated on large-cap and financial stocks.",
+      "Large-block TWAP, VWAP, and ICEBERG orders from institutional players, minimal LIMIT, concentrated on large-cap and financial stocks.",
     icon: "🏛",
     orderEstimate: "~50 orders",
     colour: "purple",
@@ -109,9 +109,9 @@ export function DemoDayPanel() {
       if (err && "status" in err) {
         const status = (err as { status: number }).status;
         const data = (err as { data?: { error?: string } }).data;
-        if (status === 401) error.value = "Session expired — please log in again";
+        if (status === 401) error.value = "Session expired, please log in again";
         else if (status === 503) {
-          error.value = "Message bus unavailable — is Redpanda running?";
+          error.value = "Message bus unavailable, is Redpanda running?";
         } else error.value = data?.error ?? `Request failed (${status})`;
       } else {
         error.value = "Network error";
@@ -221,7 +221,7 @@ export function DemoDayPanel() {
           ) : result.value ? (
             "Launch Another Demo"
           ) : (
-            `Launch Demo — ${scenario.label}`
+            `Launch Demo, ${scenario.label}`
           )}
         </button>
 
@@ -266,20 +266,19 @@ export function DemoDayPanel() {
           </div>
           <ul className="space-y-1 text-[10px] text-muted list-disc list-inside leading-relaxed">
             <li>
-              <span className="text-label">Order Blotter</span> — rows appear as orders are
-              submitted
+              <span className="text-label">Order Blotter</span>, rows appear as orders are submitted
             </li>
             <li>
-              <span className="text-label">Algo Monitor</span> — active strategy count rises
+              <span className="text-label">Algo Monitor</span>, active strategy count rises
             </li>
             <li>
-              <span className="text-label">Throughput Gauges</span> — orders/min and fills/min spike
+              <span className="text-label">Throughput Gauges</span>, orders/min and fills/min spike
             </li>
             <li>
-              <span className="text-label">Decision Log</span> — algo reasoning events stream in
+              <span className="text-label">Decision Log</span>, algo reasoning events stream in
             </li>
             <li>
-              <span className="text-label">Grafana / Observability</span> — full pipeline telemetry
+              <span className="text-label">Grafana / Observability</span>, full pipeline telemetry
             </li>
           </ul>
         </div>

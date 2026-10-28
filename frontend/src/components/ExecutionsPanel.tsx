@@ -251,7 +251,7 @@ function TradeRow({
                   style={stickyStyle}
                   className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor} ${stickyClass}`}
                 >
-                  {totalFilledQty > 0 ? formatBps(impactBps) : "—"}
+                  {totalFilledQty > 0 ? formatBps(impactBps) : "n/a"}
                 </td>
               );
             case "commission":
@@ -261,7 +261,7 @@ function TradeRow({
                   style={stickyStyle}
                   className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${commColor} ${stickyClass}`}
                 >
-                  {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "—"}
+                  {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "n/a"}
                 </td>
               );
             case "slices":
@@ -334,8 +334,8 @@ function TradeRow({
               {timeline.length >= 2 ? (
                 <div>
                   <div className="text-[10px] text-muted mb-1">
-                    Fill progression — {order.asset} {order.side} {order.quantity.toLocaleString()}{" "}
-                    @ limit {order.limitPrice.toFixed(2)}
+                    Fill progression, {order.asset} {order.side} {order.quantity.toLocaleString()} @
+                    limit {order.limitPrice.toFixed(2)}
                   </div>
                   <ResponsiveContainer width="100%" height={90}>
                     <LineChart data={timeline} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>

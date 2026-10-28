@@ -45,9 +45,9 @@ interface DashboardProviderProps {
   model?: Model;
   /** Called whenever the layout changes (for server persistence). */
   onModelChange?: (m: Model) => void;
-  /** @deprecated — only used by unit tests that cannot pass a Model instance. */
+  /** @deprecated, only used by unit tests that cannot pass a Model instance. */
   initialModel?: IJsonModel;
-  /** @deprecated — no longer used; kept to avoid breaking existing call sites. */
+  /** @deprecated, no longer used; kept to avoid breaking existing call sites. */
   storageKey?: string;
 }
 

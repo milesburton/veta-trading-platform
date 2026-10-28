@@ -131,7 +131,7 @@ export function SpreadAnalysisPanel() {
       </button>
 
       {isError && (
-        <p className="text-center text-red-400">Failed to compute — check analytics service.</p>
+        <p className="text-center text-red-400">Failed to compute, check analytics service.</p>
       )}
 
       {data && (

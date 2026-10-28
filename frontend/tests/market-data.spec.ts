@@ -1,7 +1,7 @@
 import { expect, ladderTest } from "./helpers/fixtures.ts";
 import { DEFAULT_ASSETS } from "./helpers/GatewayMock.ts";
 
-ladderTest.describe("Market Ladder — asset rows", () => {
+ladderTest.describe("Market Ladder, asset rows", () => {
   ladderTest("shows a row for each seeded asset", async ({ ladder }) => {
     for (const asset of DEFAULT_ASSETS) {
       await ladder.waitForSymbol(asset.symbol);
@@ -17,7 +17,7 @@ ladderTest.describe("Market Ladder — asset rows", () => {
   });
 });
 
-ladderTest.describe("Market Ladder — live price updates", () => {
+ladderTest.describe("Market Ladder, live price updates", () => {
   ladderTest("prices appear after marketUpdate WS message", async ({ ladder, gateway, page }) => {
     gateway.sendMarketUpdate({ AAPL: 189.5, MSFT: 421.0, GOOGL: 175.25 });
     await page.waitForTimeout(400);
@@ -56,7 +56,7 @@ ladderTest.describe("Market Ladder — live price updates", () => {
   });
 });
 
-ladderTest.describe("Market Ladder — symbol selection", () => {
+ladderTest.describe("Market Ladder, symbol selection", () => {
   ladderTest("clicking marks symbol as selected", async ({ ladder }) => {
     await ladder.selectSymbol("AAPL");
     await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute("aria-pressed", "true", {

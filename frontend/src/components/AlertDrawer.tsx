@@ -179,7 +179,7 @@ export function AlertList({
                         className="text-[10px] text-muted mt-0.5 font-mono"
                         data-testid="alert-caused-by"
                       >
-                        caused by —{" "}
+                        caused by,{" "}
                         {[
                           alert.relatedTopic && `topic: ${alert.relatedTopic}`,
                           alert.relatedEventId && `event: ${alert.relatedEventId}`,

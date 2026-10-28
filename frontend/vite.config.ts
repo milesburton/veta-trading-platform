@@ -86,13 +86,13 @@ export default defineConfig(async ({ mode }) => {
               mode === "test" || mode === "playwright"
                 ? {}
                 : {
-                    // Single gateway WebSocket — replaces direct market-sim + FIX WebSocket connections
+                    // Single gateway WebSocket, replaces direct market-sim + FIX WebSocket connections
                     "/ws/gateway": {
                       target: "ws://localhost:5011",
                       ws: true,
                       rewrite: (path) => path.replace(/^\/ws\/gateway/, "/ws"),
                     },
-                    // Gateway REST API — proxies assets, candles, orders history
+                    // Gateway REST API, proxies assets, candles, orders history
                     "/api/gateway": {
                       target: "http://localhost:5011",
                       rewrite: (path) => path.replace(/^\/api\/gateway/, ""),
