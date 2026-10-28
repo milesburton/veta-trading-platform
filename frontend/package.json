@@ -56,7 +56,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "5.0.5",
     "autoprefixer": "^10.4.19",
-    "electron": "^42.10.0",
+    "electron": "^42.11.16",
     "electron-builder": "^26.15.3",
     "fallow": "^2.75.0",
     "husky": "^9.1.7",
