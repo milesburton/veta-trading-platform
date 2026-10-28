@@ -317,7 +317,10 @@ test("rejects a URL that shares the public URL's string prefix but not its origi
     if (!issueCall) throw new Error("expected GitHub issue create call");
     const issueBody = JSON.parse(issueCall.body);
     assertEquals(issueBody.body.includes("**Attachments:**"), false);
-    assertEquals(/evil\.com/.test(issueBody.body), false);
+    const hostnames = (issueBody.body.match(/https?:\/\/[^\s)"']+/g) ?? []).map(
+      (u: string) => new URL(u).hostname
+    );
+    assertEquals(hostnames, []);
   } finally {
     f.restore();
     restoreEnv();
