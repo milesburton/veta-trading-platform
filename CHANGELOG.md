@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.12](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.11...veta-trading-platform-v1.88.12) (2026-10-28)
+
+
+### Bug Fixes
+
+* **security:** resolve CodeQL request-forgery, file races and sanitisation alerts ([#934](https://github.com/milesburton/veta-trading-platform/issues/934)) ([14d88ef](https://github.com/milesburton/veta-trading-platform/commit/14d88ef478b7448e15343c5740872b55461d9d6b))
+
 ## [1.88.11](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.10...veta-trading-platform-v1.88.11) (2026-10-23)
 
 
