@@ -237,8 +237,7 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   const heapTotalCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().heapTotal);
   const externalCb = (r: ObservableResultLike) => r.observe(process.memoryUsage().external);
   const cpuCb = (r: ObservableResultLike) => {
-    const now = readCpuTimeSeconds();
-    if (now !== null) r.observe(now - (cpuStart ?? 0));
+    r.observe(readCpuTimeSeconds() - cpuStart);
   };
   const uptimeCb = (r: ObservableResultLike) => r.observe(performance.now() / 1000 - wallStart);
 
@@ -271,7 +270,7 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
   return processMetricsHandle;
 }
 
-function readCpuTimeSeconds(): number | null {
+function readCpuTimeSeconds(): number {
   const usage = process.cpuUsage();
   return (usage.user + usage.system) / 1_000_000;
 }
