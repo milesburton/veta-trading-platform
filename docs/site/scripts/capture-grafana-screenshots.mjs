@@ -126,7 +126,7 @@ async function main() {
       panels: [],
     };
 
-    console.log(`\n=== ${dash.title} (${dash.uid}) — ${dash.panels.length} panels ===`);
+    console.log(`\n=== ${dash.title} (${dash.uid}), ${dash.panels.length} panels ===`);
 
     const dashDirResolved = path.resolve(dashDir);
     for (const panel of dash.panels) {

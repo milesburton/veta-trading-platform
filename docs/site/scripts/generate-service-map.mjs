@@ -145,7 +145,7 @@ function resolveScriptAbsPath(scriptPath) {
   // repoRoot. The previous version accepted /workspaces/... unchanged,
   // which silently returned a non-existent path on CI ->
   // extractDefaultPort returned null -> every service rendered with
-  // port `—` and the table re-sorted alphabetically. That diff
+  // port `n/a` and the table re-sorted alphabetically. That diff
   // blocked every PR on check-clean-state.
   const KNOWN_CONTAINER_PREFIXES = [
     "/workspaces/virtual-equities-trading-application/",
@@ -169,7 +169,7 @@ function extractDescription(scriptAbs) {
   //   /**
   //    * Title line.
   //    *
-  //    * First paragraph — short summary, what this page should show.
+  //    * First paragraph, short summary, what this page should show.
   //    *
   //    * Longer operational detail (events, endpoints, lifecycle) below.
   //    */
@@ -253,7 +253,7 @@ for (const program of programs) {
   // new service to see whether the JSDoc-derived fallback reads well or
   // needs a hand-tuned override.
   const description =
-    DESCRIPTIONS[program.name] ?? extractDescription(scriptAbs) ?? "—";
+    DESCRIPTIONS[program.name] ?? extractDescription(scriptAbs) ?? "n/a";
   rows.push({
     name: program.name,
     port,
@@ -283,7 +283,7 @@ const lines = [
   "|------|---------|---------|------|",
 ];
 for (const r of rows) {
-  const portCell = r.port ?? "—";
+  const portCell = r.port ?? "n/a";
   lines.push(`| ${portCell} | ${r.display} | \`${r.name}\` | ${r.description} |`);
 }
 

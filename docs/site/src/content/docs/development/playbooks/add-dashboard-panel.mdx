@@ -69,7 +69,7 @@ The Panel Reference page in the Astro docs picks up the new panel automatically 
 
 ## Common pitfalls
 
-- **Forgetting the panel-id type union** — `PanelId` is a string-literal union derived from `PANEL_IDS`. If you add a panel but forget to update the registry, every consumer using `PanelId` will silently miss it.
+- **Forgetting the panel-id type union**, `PanelId` is a string-literal union derived from `PANEL_IDS`. If you add a panel but forget to update the registry, every consumer using `PanelId` will silently miss it.
 - **Channel capabilities**: `PANEL_CHANNEL_CAPS` only says whether a panel can broadcast (`out`) or listen (`in`) on a workspace channel. A panel with both set to `false` ignores channels entirely.
-- **Test-state shape** — many tests preload Redux state; if your panel reads a slice that test fixtures haven't populated, you'll see `Cannot read properties of undefined`. Either add the field to the fixture or default it in the panel.
-- **Stale screenshots** — if you edit the panel, re-run `panel-walkthrough.spec.ts` before merging or the docs site will show the old screenshot. CI does this automatically on main.
+- **Test-state shape**, many tests preload Redux state; if your panel reads a slice that test fixtures haven't populated, you'll see `Cannot read properties of undefined`. Either add the field to the fixture or default it in the panel.
+- **Stale screenshots**, if you edit the panel, re-run `panel-walkthrough.spec.ts` before merging or the docs site will show the old screenshot. CI does this automatically on main.

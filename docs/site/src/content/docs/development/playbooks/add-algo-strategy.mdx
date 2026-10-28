@@ -34,7 +34,7 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
 3. **Update the params type** in `frontend/src/types.ts`. Add a `<Name>Params` interface and union member in `AlgoParams`.
 4. **Add the strategy name** to the shared strategy list in `shared/primitives.ts` and to the frontend lists in `domain/market/venueCapabilities.ts`, `domain/market/marketSession.ts` and `domain/ticket/fieldDefinitions.ts`. Add a colour for it in `frontend/src/tokens.ts` (see the [style guide](/veta-trading-platform/development/style-guide/)), an entry in `StartupOverlay/serviceCatalog.ts`, and a `/api/<name>` proxy rewrite in `frontend/vite.config.ts`.
 5. **Wire the order-ticket UI** by adding a strategy option in [`StrategyParams.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/StrategyParams.tsx). Add a builder branch in [`OrderTicket/buildAlgoParams.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/OrderTicket/buildAlgoParams.ts).
-6. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](/veta-trading-platform/platform/algos/) — picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
+6. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](/veta-trading-platform/platform/algos/), picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
 
 ## Verification
 
@@ -55,9 +55,9 @@ cd docs/site && npm run generate
 ## Common pitfalls
 
 - **Forgetting the heartbeat**: the algo feed indicator in the status bar only turns live when `algo.heartbeat` events arrive. The helpers in `common-http.ts` and `fill-progress.ts` build the heartbeat payloads; use them.
-- **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](/veta-trading-platform/platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
+- **Hardcoding venue selection**, child orders should let the EMS choose the venue (see [Smart Order Router](/veta-trading-platform/platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
 - **Registration**: `npm run check` type-checks the whole `backend/` tree and the unit tests are discovered by glob, so a new strategy file and its tests need no registration.
-- **Docs auto-gen swallows your description** — the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.
+- **Docs auto-gen swallows your description**, the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.
 
 ## Execution mechanics reference
 

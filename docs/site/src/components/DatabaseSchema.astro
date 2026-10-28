@@ -1,21 +1,21 @@
 ---
 /**
- * DatabaseSchema — renders a database schema with a Mermaid ER diagram
+ * DatabaseSchema, renders a database schema with a Mermaid ER diagram
  * and per-table column detail cards.
  *
- * @prop {Object[]} tables — Table definitions.
- * @prop {string} tables[].name — Full table name (e.g. `scenarios.scenarios`).
- * @prop {string} tables[].label — Human-readable label.
- * @prop {string} tables[].description — Short description.
- * @prop {Object[]} tables[].columns — Column definitions.
- * @prop {string} tables[].columns[].name — Column name.
- * @prop {string} tables[].columns[].type — Data type.
- * @prop {'PK'|'FK'|'UK'|'NOT NULL'|'JSONB'|string} tables[].columns[].flags — Comma-separated flags.
- * @prop {string} tables[].columns[].description — Column description.
- * @prop {string} tables[].columns[].default — Default value (optional).
- * @prop {string} tables[].columns[].nullable — 'YES' | 'NO'.
- * @prop {string} [title] — Optional section title (defaults to "Schema").
- * @prop {string} [mermaidTitle] — Optional Mermaid diagram title (defaults to the first table name).
+ * @prop {Object[]} tables: Table definitions.
+ * @prop {string} tables[].name: Full table name (e.g. `scenarios.scenarios`).
+ * @prop {string} tables[].label: Human-readable label.
+ * @prop {string} tables[].description: Short description.
+ * @prop {Object[]} tables[].columns: Column definitions.
+ * @prop {string} tables[].columns[].name: Column name.
+ * @prop {string} tables[].columns[].type: Data type.
+ * @prop {'PK'|'FK'|'UK'|'NOT NULL'|'JSONB'|string} tables[].columns[].flags: Comma-separated flags.
+ * @prop {string} tables[].columns[].description: Column description.
+ * @prop {string} tables[].columns[].default: Default value (optional).
+ * @prop {string} tables[].columns[].nullable: 'YES' | 'NO'.
+ * @prop {string} [title]: Optional section title (defaults to "Schema").
+ * @prop {string} [mermaidTitle]: Optional Mermaid diagram title (defaults to the first table name).
  */
 
 const { title = "Schema", mermaidTitle } = Astro.props;
@@ -36,7 +36,7 @@ const tables: Array<{
 
 const diagramTitle = mermaidTitle ?? (tables[0]?.name ?? "schema");
 
-// Mermaid ERD entity names must be simple identifiers — no dots, spaces, or
+// Mermaid ERD entity names must be simple identifiers, no dots, spaces, or
 // special chars. Strip schema prefixes (e.g. "replay.chunks" → "chunks") and
 // replace any remaining non-word characters with underscores.
 function mermaidId(name: string): string {

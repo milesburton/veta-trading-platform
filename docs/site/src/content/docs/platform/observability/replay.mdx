@@ -44,10 +44,10 @@ sequenceDiagram
 | Component | Location | Responsibility |
 |---|---|---|
 | `sessionRecorder` | [`frontend/src/lib/sessionRecorder.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/lib/sessionRecorder.ts) | Wraps `rrweb.record()`, masks sensitive inputs, buffers events, flushes every 30 s, auto-stops after 30 min |
-| `replayVideoExport` | [`frontend/src/lib/replayVideoExport.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/lib/replayVideoExport.ts) | Client-side WebM renderer — steps through rrweb events at 10 fps, snapshots via `html-to-image`, encodes with `MediaRecorder` (VP9 → VP8 fallback) |
+| `replayVideoExport` | [`frontend/src/lib/replayVideoExport.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/lib/replayVideoExport.ts) | Client-side WebM renderer, steps through rrweb events at 10 fps, snapshots via `html-to-image`, encodes with `MediaRecorder` (VP9 → VP8 fallback) |
 | `SessionReplayPanel` | [`frontend/src/components/SessionReplayPanel.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/SessionReplayPanel.tsx) | Lists sessions, triggers Play/JSON/Video exports, manages rrweb-player inline playback |
 | `replayApi` | [`frontend/src/store/replayApi.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/replayApi.ts) | RTK Query slice with endpoints for config, sessions, chunks, events, and deletion |
-| `replay-service` | [`backend/src/replay/replay-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/replay/replay-service.ts) | Node/PostgreSQL REST API — stores session metadata and event chunks |
+| `replay-service` | [`backend/src/replay/replay-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/replay/replay-service.ts) | Node/PostgreSQL REST API, stores session metadata and event chunks |
 
 ## Data model
 
@@ -100,7 +100,7 @@ All endpoints are proxied through the gateway at `/api/gateway/api/replay`.
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/config` | Returns `{ recordingEnabled, updatedBy, updatedAt }` |
-| `PUT` | `/config` | Body: `{ enabled: boolean, userId?: string }` — toggles recording globally |
+| `PUT` | `/config` | Body: `{ enabled: boolean, userId?: string }`, toggles recording globally |
 
 ### Sessions
 
@@ -109,15 +109,15 @@ All endpoints are proxied through the gateway at `/api/gateway/api/replay`.
 | `GET` | `/sessions?limit=50&offset=0` | Paginated list of sessions (ordered by `started_at DESC`) |
 | `POST` | `/sessions` | Create a session. Body: `{ id, userId, userName?, userRole?, metadata? }` |
 | `PUT` | `/sessions/{id}/end` | Mark session as ended. Sets `ended_at` and `duration_ms` |
-| `DELETE` | `/sessions/{id}` | Delete session metadata. Returns `409` if chunks still exist (FK enforces compliance retention — delete chunks first). |
+| `DELETE` | `/sessions/{id}` | Delete session metadata. Returns `409` if chunks still exist (FK enforces compliance retention, delete chunks first). |
 
 ### Chunks & Events
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/sessions/{id}/chunks` | Upload event batch. Body: `{ seq, events }` — upserts by `(session_id, seq)` |
+| `POST` | `/sessions/{id}/chunks` | Upload event batch. Body: `{ seq, events }`, upserts by `(session_id, seq)` |
 | `DELETE` | `/sessions/{id}/chunks` | Delete all chunks for a session (compliance-authorised purge, required before deleting the session row) |
-| `GET` | `/sessions/{id}/events` | Returns `{ events }` — concatenates all chunks ordered by `seq` |
+| `GET` | `/sessions/{id}/events` | Returns `{ events }`, concatenates all chunks ordered by `seq` |
 
 ## Client-side video rendering
 
@@ -158,7 +158,7 @@ The exported WebM plays in every modern browser, Slack, and most video tools, so
 
 - **Session Replay panel**: Sidebar → **Session Replay** (under the Observability section)
 - **rrweb-player**: Installed via `npm` as `rrweb-player`; loaded dynamically in `SessionPlayer`
-- **WebM exporter**: [`frontend/src/lib/replayVideoExport.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/lib/replayVideoExport.ts) — imported dynamically in `SessionReplayPanel`
-- **replay-service**: [`backend/src/replay/replay-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/replay/replay-service.ts) — runs on port `5031` (configurable via `REPLAY_PORT`)
+- **WebM exporter**: [`frontend/src/lib/replayVideoExport.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/lib/replayVideoExport.ts), imported dynamically in `SessionReplayPanel`
+- **replay-service**: [`backend/src/replay/replay-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/replay/replay-service.ts), runs on port `5031` (configurable via `REPLAY_PORT`)
 
 ![Session Replay panel](/veta-trading-platform/screenshots/11-session-replay.png)

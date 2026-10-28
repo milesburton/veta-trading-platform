@@ -136,7 +136,7 @@ tries to re-establish, every new ssh attempt fails with:
 
 `autossh` loops indefinitely (162+ restarts observed during a
 2026-05-18 outage) until the edge kernel TCP timeout finally releases
-the dead socket — that takes around two hours by default. During the
+the dead socket, that takes around two hours by default. During the
 window, the deployment URL is unreachable.
 
 The fix is server-side keepalive on the edge sshd, scoped to the

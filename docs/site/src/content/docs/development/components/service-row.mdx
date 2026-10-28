@@ -24,8 +24,8 @@ Renders one row of the Service Health table: a status dot, the service name (opt
       <ServiceRow client:load svc={{ name: "oms", state: "ok", version: "1.21.0", meta: { uptime: "3h12m" }, link: "https://example.com", lastChecked: Date.now() }} />
       <ServiceRow client:load svc={{ name: "ems", state: "ok", version: "1.21.0", meta: { orders: 42 }, lastChecked: Date.now() }} />
       <ServiceRow client:load svc={{ name: "market-sim", state: "error", version: "1.20.5", meta: {}, lastChecked: Date.now() }} />
-      <ServiceRow client:load svc={{ name: "fix-gateway", state: "error", version: "—", meta: {}, optional: true, lastChecked: Date.now() }} />
-      <ServiceRow client:load svc={{ name: "analytics", state: "unknown", version: "—", meta: {}, lastChecked: Date.now() }} />
+      <ServiceRow client:load svc={{ name: "fix-gateway", state: "error", version: "n/a", meta: {}, optional: true, lastChecked: Date.now() }} />
+      <ServiceRow client:load svc={{ name: "analytics", state: "unknown", version: "n/a", meta: {}, lastChecked: Date.now() }} />
     </tbody>
   </table>
 </div>
