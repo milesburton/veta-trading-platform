@@ -30,7 +30,7 @@ const ACCESS_NOTES: Record<string, { admin: string; access: string }> = {
   <tbody>
     {
       data.roles.map((r) => {
-        const notes = ACCESS_NOTES[r.id] ?? { admin: "No", access: "—" };
+        const notes = ACCESS_NOTES[r.id] ?? { admin: "No", access: "n/a" };
         return (
           <tr>
             <td><code>{r.id}</code></td>

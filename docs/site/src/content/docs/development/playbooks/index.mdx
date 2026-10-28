@@ -7,7 +7,7 @@ import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 VETA accepts contributions from human engineers and from LLM agents (Claude on a cloud session, `qwen3-coder` on the Spark workstation). The Astro docs are the **golden source** for how the platform works; these playbooks are the golden source for **how to extend it**.
 
-Each playbook captures a recurring task — adding an algo, debugging a Grafana panel, fixing an accessibility violation — with the load-bearing context an agent needs to land a correct, well-tested change without re-discovering it every time.
+Each playbook captures a recurring task, adding an algo, debugging a Grafana panel, fixing an accessibility violation, with the load-bearing context an agent needs to land a correct, well-tested change without re-discovering it every time.
 
 <Aside type="note" title="When to write a new playbook">
 Three rules of thumb:
@@ -40,10 +40,10 @@ Three rules of thumb:
 
 Each playbook follows a consistent structure so an agent (or a human in a hurry) can skim:
 
-1. **When to use** — concrete trigger conditions
-2. **Inputs needed** — files, env vars, services that must be reachable
-3. **Steps** — numbered, with file paths and code shapes
-4. **Verification** — exactly which test invocations prove success
-5. **Common pitfalls** — what reliably breaks first time
+1. **When to use**, concrete trigger conditions
+2. **Inputs needed**, files, env vars, services that must be reachable
+3. **Steps**, numbered, with file paths and code shapes
+4. **Verification**, exactly which test invocations prove success
+5. **Common pitfalls**, what reliably breaks first time
 
 This is also the shape used by the runtime playbooks the LLM-advisory service loads from `backend/src/llm-advisory/playbooks/`. Different surface (TypeScript module vs Markdown page) but the same intent: capture working knowledge once, reuse forever.

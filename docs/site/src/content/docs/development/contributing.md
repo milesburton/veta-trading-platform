@@ -69,7 +69,7 @@ test(replay): add unit tests for session replay panel
 
 - Use British English spelling and grammar.
 - Use a professional, direct tone. Avoid conversational or jovial phrasing.
-- Do not use em-dashes (`—`). Replace with commas, periods, or restructure the sentence.
+- Do not use em-dashes (`n/a`). Replace with commas, periods, or restructure the sentence.
 - Mark key documents with a leading star in curated document lists.
 - Do not use ASCII-art diagrams; use mermaid (`graph LR` / `graph TD`) rendered by the mermaid integration in `astro.config.mjs`.
 

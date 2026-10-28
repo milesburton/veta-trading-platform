@@ -50,7 +50,7 @@ const ageDays = captured ? Math.floor((Date.now() - captured.getTime()) / 86_400
   <div class="grafana-screenshots">
     <p class="capture-meta">
       Captured {ageDays === 0 ? "today" : `${ageDays} day${ageDays === 1 ? "" : "s"} ago`} from
-      the homelab LGTM stack — <time datetime={manifest.capturedAt}>{manifest.capturedAt}</time>.
+      the homelab LGTM stack, <time datetime={manifest.capturedAt}>{manifest.capturedAt}</time>.
     </p>
 
     {manifest.dashboards.map((dash) => (

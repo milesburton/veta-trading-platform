@@ -103,7 +103,7 @@ export const TERMS: GlossaryTerm[] = [
     category: "infrastructure",
     short:
       "Single entry point for the browser. Validates the session cookie, proxies HTTP to backend services, fans out bus events over WebSocket.",
-    long: "The Gateway is a BFF (Backend-For-Frontend). The browser only ever talks to the gateway — it does not reach OMS, EMS, journal or any other service directly. On every HTTP request the gateway validates the veta_user cookie via the user-service (cached 10s). On WebSocket, it subscribes to every bus topic the UI cares about and forwards events to connected clients.",
+    long: "The Gateway is a BFF (Backend-For-Frontend). The browser only ever talks to the gateway, it does not reach OMS, EMS, journal or any other service directly. On every HTTP request the gateway validates the veta_user cookie via the user-service (cached 10s). On WebSocket, it subscribes to every bus topic the UI cares about and forwards events to connected clients.",
     seeAlso: ["bff", "user-service"],
     source: "backend/src/gateway/gateway.ts",
   },
@@ -122,7 +122,7 @@ export const TERMS: GlossaryTerm[] = [
     category: "risk",
     short:
       "Synchronous pre-trade check that runs before the OMS routes any order. Six rules: fat-finger, duplicate, max open, self-cross, ADV, rate-limit.",
-    long: "The OMS calls POST /check on the risk-engine for every order. Six checks run in sequence: fat-finger price collar (default 5% from mid), duplicate-order detection (500ms window), max open orders per user (default 50), self-cross prevention, order size versus ADV (default 10% of average daily volume), and rate-limit (default 10 orders/sec). If any check fails the order is rejected with a specific reason code. If the risk-engine is unreachable inside 3s, the order is also rejected — real firms halt trading rather than bypass pre-trade risk.",
+    long: "The OMS calls POST /check on the risk-engine for every order. Six checks run in sequence: fat-finger price collar (default 5% from mid), duplicate-order detection (500ms window), max open orders per user (default 50), self-cross prevention, order size versus ADV (default 10% of average daily volume), and rate-limit (default 10 orders/sec). If any check fails the order is rejected with a specific reason code. If the risk-engine is unreachable inside 3s, the order is also rejected, real firms halt trading rather than bypass pre-trade risk.",
     seeAlso: ["oms", "fat-finger", "adv", "self-cross"],
     source: "backend/src/risk-engine/risk-engine.ts",
   },
@@ -131,7 +131,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Fat-finger price collar",
     category: "risk",
     short:
-      "Reject orders whose limit price is more than N% away from the current mid — defends against typo prices.",
+      "Reject orders whose limit price is more than N% away from the current mid, defends against typo prices.",
     seeAlso: ["risk-engine"],
   },
   {
@@ -139,7 +139,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Self-cross",
     category: "risk",
     short:
-      "A trader's own buy crossing their own sell. Generally prohibited — the risk engine rejects orders that would cross an existing opposite-side resting order from the same user.",
+      "A trader's own buy crossing their own sell. Generally prohibited, the risk engine rejects orders that would cross an existing opposite-side resting order from the same user.",
     seeAlso: ["risk-engine"],
   },
   {
@@ -415,7 +415,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Gamma",
     category: "options",
     short:
-      "Rate of change of delta with respect to spot. Highest at-the-money near expiry — that's where gamma scalping pays.",
+      "Rate of change of delta with respect to spot. Highest at-the-money near expiry, that's where gamma scalping pays.",
     seeAlso: ["delta", "greeks"],
   },
   {
@@ -463,7 +463,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Monte Carlo",
     category: "options",
     short:
-      "Path-simulation pricing. The platform uses it for the Scenario Matrix — multiple spot × vol shocks combined.",
+      "Path-simulation pricing. The platform uses it for the Scenario Matrix, multiple spot × vol shocks combined.",
     seeAlso: ["black-scholes"],
   },
   {
@@ -539,7 +539,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Recommendation Engine",
     category: "intelligence",
     short:
-      "Filters signals at confidence > 0.6 and emits TradeRecommendation events for the UI. Advisory only — never auto-submits.",
+      "Filters signals at confidence > 0.6 and emits TradeRecommendation events for the UI. Advisory only, never auto-submits.",
     seeAlso: ["signal-engine"],
     source: "backend/src/recommendation-engine/recommendation-server.ts",
   },
@@ -599,7 +599,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "User Service",
     category: "infrastructure",
     short:
-      "Manages users, sessions (Postgres-backed), and per-user trading limits. OAuth2 + PKCE. Internal only — never reached from the browser directly.",
+      "Manages users, sessions (Postgres-backed), and per-user trading limits. OAuth2 + PKCE. Internal only, never reached from the browser directly.",
     seeAlso: ["gateway", "rbac"],
     source: "backend/src/user-service/user-service.ts",
   },
@@ -681,7 +681,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "LGTM stack",
     category: "telemetry",
     short:
-      "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the production server for the demo — a real-bank production should use a managed vendor.",
+      "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the production server for the demo, a real-bank production should use a managed vendor.",
     seeAlso: ["otel"],
   },
   {
@@ -689,7 +689,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Loki",
     category: "telemetry",
     short:
-      "Log-aggregation database from Grafana. Indexes labels rather than full-text — fast and cheap, designed to be paired with Grafana.",
+      "Log-aggregation database from Grafana. Indexes labels rather than full-text, fast and cheap, designed to be paired with Grafana.",
     seeAlso: ["lgtm"],
   },
   {
@@ -713,7 +713,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Scenario",
     category: "execution",
     short:
-      "Saved description of a single trade — symbol, side, qty, price, strategy plus a numeric seed — that can be replayed deterministically.",
+      "Saved description of a single trade, symbol, side, qty, price, strategy plus a numeric seed, that can be replayed deterministically.",
     long: "A scenario binds a market-sim seed to an order spec so re-running the saved row reproduces the same fills. Used to detect algo regressions across releases and as the data shape that would back RTS 6 conformance testing if the platform were ever production-bound.",
     seeAlso: ["determinism", "rts-6"],
     source: "backend/src/scenarios/types.ts",
@@ -830,7 +830,7 @@ export const TERMS: GlossaryTerm[] = [
     acronymOf: "Virtual user (k6)",
     category: "telemetry",
     short:
-      "k6's concurrency unit — a simulated user running one iteration of the script at a time. Soak holds VUs constant; ramp/burst scenarios scale up and down across stages.",
+      "k6's concurrency unit, a simulated user running one iteration of the script at a time. Soak holds VUs constant; ramp/burst scenarios scale up and down across stages.",
     seeAlso: ["k6", "soak", "burst-open"],
   },
   {
@@ -865,7 +865,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "Risk-stress",
     category: "telemetry",
     short:
-      "k6 scenario hammering the risk engine specifically — 100 VUs constant for 2min, mostly orders that approach per-user limits to maximise risk-check work.",
+      "k6 scenario hammering the risk engine specifically, 100 VUs constant for 2min, mostly orders that approach per-user limits to maximise risk-check work.",
     seeAlso: ["k6", "vu", "matrix-loop", "risk-engine"],
     source: "k6/risk-stress.js",
   },
@@ -919,7 +919,7 @@ export const TERMS: GlossaryTerm[] = [
     acronymOf: "Mean Time To Detect",
     category: "telemetry",
     short:
-      "Elapsed time from an incident starting to a useful alert firing. Bounded by monitoring quality — synthetic probes drive MTTD toward the probe cadence; without them MTTD is 'until a user complains'.",
+      "Elapsed time from an incident starting to a useful alert firing. Bounded by monitoring quality, synthetic probes drive MTTD toward the probe cadence; without them MTTD is 'until a user complains'.",
     seeAlso: ["mttr", "synthetic-monitor"],
   },
   {
@@ -928,7 +928,7 @@ export const TERMS: GlossaryTerm[] = [
     acronymOf: "Mean Time Between Failures",
     category: "telemetry",
     short:
-      "Average duration between incidents. Tracked but not targeted — it rewards hiding problems and punishes better detection. The team metric is 'did we hit our SLO'.",
+      "Average duration between incidents. Tracked but not targeted, it rewards hiding problems and punishes better detection. The team metric is 'did we hit our SLO'.",
     seeAlso: ["mttr", "slo"],
   },
   {
@@ -946,7 +946,7 @@ export const TERMS: GlossaryTerm[] = [
     acronymOf: "Recovery Time Objective",
     category: "telemetry",
     short:
-      "Maximum time to recover from disaster. VETA targets RTO < 30 minutes — automated Postgres failover plus a tested disaster runbook.",
+      "Maximum time to recover from disaster. VETA targets RTO < 30 minutes, automated Postgres failover plus a tested disaster runbook.",
     seeAlso: ["rpo", "mttr"],
   },
   {

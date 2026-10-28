@@ -67,7 +67,7 @@ curl -sS -X POST "$VETA_PLATFORM_URL/api/llm-advisory/advisory/request" \
 
 - Anything that needs sub-second latency at scale (the 70-120B models can take 2-5s per response under load)
 - Workloads that run inside `compose.yml`'s `trading-net` Docker network but cannot reach the server LAN (none currently)
-- Tasks where the response should be reproducible across deployments — the Spark model set is environment-specific
+- Tasks where the response should be reproducible across deployments, the Spark model set is environment-specific
 
 <Aside type="note" title="No auth on the Ollama API">
 Port 11434 is open on the LAN with no authentication. Treat it as trusted-network access only. If the Spark ever needs to be reachable from the public edge, put it behind Traefik with a strong auth layer first.

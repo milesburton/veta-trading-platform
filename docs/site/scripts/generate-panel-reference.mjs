@@ -112,6 +112,8 @@ const report = fs.existsSync(reportPath)
   : buildReportFromScreenshots(panelIds);
 
 const titles = parsePanelTitles(registrySrc);
+const withoutEmDashes = (text) => text.replaceAll(" \u2014 ", ", ").replaceAll("\u2014", ", ");
+
 const descriptions = parsePanelDescriptions(componentPickerSrc);
 
 fs.mkdirSync(screenshotsDestDir, { recursive: true });
@@ -135,7 +137,7 @@ const panels = report.panels.map((entry) => {
   return {
     panelId,
     title: titles[panelId] ?? panelId,
-    description: descriptions[panelId] ?? "",
+    description: withoutEmDashes(descriptions[panelId] ?? ""),
     rendered: entry.rendered,
     notes: entry.notes ?? null,
     screenshot: screenshotPublic,

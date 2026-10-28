@@ -1,4 +1,4 @@
-/* Shared design tokens — kept in sync with frontend/src/index.css.
+/* Shared design tokens, kept in sync with frontend/src/index.css.
    Both sites declare the same gray scale + trading semantic palette as RGB
    triplets so frontend components imported into the docs render with the
    same colours, and Tailwind's <alpha-value> works on both. */
@@ -148,7 +148,7 @@
   padding: 1.5rem;
 }
 .veta-lightbox-scroll svg {
-  /* Don't shrink — let it overflow and be scrolled. */
+  /* Don't shrink, let it overflow and be scrolled. */
   flex-shrink: 0;
   max-width: none;
   max-height: none;

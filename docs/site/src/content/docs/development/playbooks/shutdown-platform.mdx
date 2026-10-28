@@ -1,11 +1,11 @@
 ---
 title: Shut down the platform on the homelab
-description: Stop the running VETA stack for a maintenance window without losing data — pause auto-pull first, stop both compose scopes, and confirm named volumes (Postgres, journal, feature/signal-engine state) survive the teardown.
+description: Stop the running VETA stack for a maintenance window without losing data, pause auto-pull first, stop both compose scopes, and confirm named volumes (Postgres, journal, feature/signal-engine state) survive the teardown.
 ---
 
 ## When to use
 
-You need the platform offline for a period — a major upgrade, a homelab maintenance
+You need the platform offline for a period, a major upgrade, a homelab maintenance
 window, or an incident that needs the stack quiet while you investigate. This is a
 temporary, reversible shutdown, not decommissioning: the goal is zero data loss and a
 clean restart.
@@ -60,14 +60,14 @@ shared host (Caddy, MediaWiki, the LGTM stack, Guacamole) are unaffected.
 
 ### 4. Confirm the data survived
 
-`docker compose down` does not remove named volumes unless you pass `-v`/`--volumes` —
+`docker compose down` does not remove named volumes unless you pass `-v`/`--volumes`,
 this procedure never does. Verify the volumes are still present:
 
 ```bash
 docker volume ls | grep veta
 ```
 
-Expect to see `veta_postgres-data` (Postgres — journal, orders, user accounts,
+Expect to see `veta_postgres-data` (Postgres, journal, orders, user accounts,
 preferences), plus `veta_feature-engine-data`, `veta_signal-engine-data`,
 `veta_market-data-state`, `veta_llm-advisory-data`. None of these are removed by this
 procedure.
@@ -81,7 +81,7 @@ sudo systemctl start veta-auto-pull.timer
 ```
 
 `up -d` recreates containers fresh but re-attaches to the same named volumes, so
-Postgres starts with all prior data intact — journal history, user accounts, and saved
+Postgres starts with all prior data intact, journal history, user accounts, and saved
 preferences are exactly as they were before the shutdown. Run the
 [smoke-check](../smoke-check/) afterwards to confirm the platform actually serves
 traffic again, not just that containers report healthy.
@@ -90,5 +90,5 @@ traffic again, not just that containers report healthy.
 
 State which containers were stopped, confirm the timer was paused, and confirm the
 volume list post-shutdown matches the pre-shutdown list. If a volume is unexpectedly
-missing, stop and investigate before doing anything else — do not assume it will
+missing, stop and investigate before doing anything else, do not assume it will
 reappear on the next `up`.

@@ -106,7 +106,7 @@ for the whole stack, not just the one service with the missing image; see
 for the full chain.
 
 The fallback target is the [status page](/veta-trading-platform/status/) published as
-part of this Astro docs site — it deploys to GitHub Pages independently of the
+part of this Astro docs site, it deploys to GitHub Pages independently of the
 server, so it stays reachable exactly when the primary origin is not.
 
 Two separate problems had to be solved to make this actually redirect a
@@ -120,7 +120,7 @@ closed unimplemented). Proxying the status page's HTML directly under
 references are host-relative (correct for a site that must work from either
 `milesburton.com` or the raw `github.io` domain), so they resolve against
 `veta.mnetcs.com` when proxied in place and 502 too, leaving an unstyled page.
-The fix is one extra, minimal container — `status-redirect` in
+The fix is one extra, minimal container, `status-redirect` in
 [`edge/compose.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/compose.yml),
 a stock `nginx:1.27-alpine` running
 [`edge/status-redirect.conf`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/status-redirect.conf)
@@ -130,18 +130,18 @@ to this nginx instead of the docs site directly.
 **2. `errors` preserves the *original* status code by default.** Proxying to
 the nginx redirect above is not sufficient on its own: without
 `statusRewrites`, the client receives the triggering request's original 5xx
-status with the fallback's `Location` header attached — and browsers do not
+status with the fallback's `Location` header attached, and browsers do not
 act on a `Location` header unless the status is 3xx, so nothing visibly
 happens; the visitor still sees a blank error. This is documented, intentional
 Traefik behaviour prior to `statusRewrites`
 ([traefik/traefik#10720](https://github.com/traefik/traefik/issues/10720)),
 and `statusRewrites` itself only exists from **Traefik v3.4** onward
-(added in [#11520](https://github.com/traefik/traefik/pull/11520)) — this is
+(added in [#11520](https://github.com/traefik/traefik/pull/11520)), this is
 why the edge box runs v3.4.5 rather than v3.3. Both failure modes shipped to
 production once each during rollout before being caught; if this section is
 ever simplified, keep the `statusRewrites` line.
 
-This is a browser-facing convenience only — it changes nothing about the
+This is a browser-facing convenience only, it changes nothing about the
 underlying failure modes below, and does not paper over the tunnel or backend
 actually needing to be restored.
 
@@ -235,7 +235,7 @@ edge nodes and break per-IP rate limiting.
 
 Of these, "secure tunnel down" and "server gateway / user-service dead" both
 present to a browser as a 5xx from `veta-origin`, so both are caught by the
-[offline holding page](#offline-holding-page) above — the probe still alerts
+[offline holding page](#offline-holding-page) above, the probe still alerts
 on the underlying failure, but visitors see the status page instead of a bare
 502 while it's investigated.
 

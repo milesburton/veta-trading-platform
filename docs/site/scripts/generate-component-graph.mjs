@@ -138,7 +138,7 @@ function buildGraph() {
 const MAX_INLINE_NAMES = 6;
 
 function summarizeNames(paths) {
-  if (paths.length === 0) return "—";
+  if (paths.length === 0) return "n/a";
   const names = paths.map((i) => path.basename(i, path.extname(i)));
   if (names.length <= MAX_INLINE_NAMES) return names.join(", ");
   return `${names.slice(0, MAX_INLINE_NAMES).join(", ")}, +${names.length - MAX_INLINE_NAMES} more`;
@@ -167,7 +167,7 @@ function generateTable(graph) {
 const graph = buildGraph();
 
 // Write JSON data file. No timestamp: this file is committed and checked by
-// the docs drift gate, which re-runs `generate` and diffs — a per-run
+// the docs drift gate, which re-runs `generate` and diffs, a per-run
 // timestamp would make it perpetually "out of sync".
 const data = {
   totalComponents: graph.nodes.length,

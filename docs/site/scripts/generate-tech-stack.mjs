@@ -160,7 +160,7 @@ function generate() {
     for (const image of parseComposeImages(composePath)) imageSet.add(image);
   }
 
-  // Frontend UI — packages users of the app interact with
+  // Frontend UI, packages users of the app interact with
   const uiNames = ["react", "react-dom", "react-redux", "@reduxjs/toolkit",
     "flexlayout-react", "lightweight-charts", "recharts", "tailwindcss",
     "rrweb", "rrweb-player", "@preact/signals-react", "react-hotkeys-hook",

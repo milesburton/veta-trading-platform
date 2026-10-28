@@ -78,7 +78,7 @@
     {
       "panelId": "decision-log",
       "title": "Decision Log (algo audit trail)",
-      "description": "Real-time algo reasoning — every slice, fill, and decision",
+      "description": "Real-time algo reasoning, every slice, fill, and decision",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/decision-log.png"
@@ -94,7 +94,7 @@
     {
       "panelId": "admin",
       "title": "Mission Control (system config)",
-      "description": "Mission Control — system config and user management",
+      "description": "Mission Control, system config and user management",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/admin.png"
@@ -126,7 +126,7 @@
     {
       "panelId": "market-heatmap",
       "title": "Market Heatmap (sector view)",
-      "description": "Sector treemap heatmap — assets sized by market cap, coloured by % change",
+      "description": "Sector treemap heatmap, assets sized by market cap, coloured by % change",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/market-heatmap.png"
@@ -134,7 +134,7 @@
     {
       "panelId": "alerts",
       "title": "Alerts (system notifications)",
-      "description": "System alert log — kill switch events, service outages, order rejections and heartbeat loss",
+      "description": "System alert log, kill switch events, service outages, order rejections and heartbeat loss",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/alerts.png"
@@ -142,7 +142,7 @@
     {
       "panelId": "option-pricing",
       "title": "Option Pricing (Black-Scholes)",
-      "description": "Black-Scholes European option pricing — theoretical price and full Greeks",
+      "description": "Black-Scholes European option pricing, theoretical price and full Greeks",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/option-pricing.png"
@@ -158,7 +158,7 @@
     {
       "panelId": "trade-recommendation",
       "title": "Trade Recommendations (signal-driven)",
-      "description": "Rule-based option trade recommendations — scored signals with reason codes",
+      "description": "Rule-based option trade recommendations, scored signals with reason codes",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/trade-recommendation.png"
@@ -166,7 +166,7 @@
     {
       "panelId": "market-data-sources",
       "title": "Market Data Sources (provider config)",
-      "description": "Configure per-symbol market data sources — synthetic or Alpha Vantage",
+      "description": "Configure per-symbol market data sources, synthetic or Alpha Vantage",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/market-data-sources.png"
@@ -182,7 +182,7 @@
     {
       "panelId": "research-radar",
       "title": "Signal Radar (market intelligence)",
-      "description": "Signal Radar — all symbols scored by the intelligence pipeline",
+      "description": "Signal Radar, all symbols scored by the intelligence pipeline",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/research-radar.png"
@@ -190,7 +190,7 @@
     {
       "panelId": "instrument-analysis",
       "title": "Instrument Analysis (feature deep-dive)",
-      "description": "Per-symbol deep-dive — features, signal gauge, and backtest replay",
+      "description": "Per-symbol deep-dive, features, signal gauge, and backtest replay",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/instrument-analysis.png"
@@ -198,7 +198,7 @@
     {
       "panelId": "signal-explainability",
       "title": "Signal Explainability (factor breakdown)",
-      "description": "Factor waterfall — how each feature drives the signal score",
+      "description": "Factor waterfall, how each feature drives the signal score",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/signal-explainability.png"
@@ -206,7 +206,7 @@
     {
       "panelId": "service-health",
       "title": "Service Health (system status)",
-      "description": "Live health grid for all backend services — status, version, and latency",
+      "description": "Live health grid for all backend services, status, version, and latency",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/service-health.png"
@@ -214,7 +214,7 @@
     {
       "panelId": "throughput-gauges",
       "title": "Throughput (pipeline metrics)",
-      "description": "Pipeline throughput metrics — orders/min, fills/min, and fill rate",
+      "description": "Pipeline throughput metrics, orders/min, fills/min, and fill rate",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/throughput-gauges.png"
@@ -222,7 +222,7 @@
     {
       "panelId": "algo-leaderboard",
       "title": "Algo Leaderboard (strategy performance)",
-      "description": "Strategy performance leaderboard — fill rate and slippage per algo",
+      "description": "Strategy performance leaderboard, fill rate and slippage per algo",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/algo-leaderboard.png"
@@ -230,7 +230,7 @@
     {
       "panelId": "load-test",
       "title": "Load Test (bulk order injection)",
-      "description": "Admin-only bulk order injector — stress-test the pipeline",
+      "description": "Admin-only bulk order injector, stress-test the pipeline",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/load-test.png"
@@ -238,7 +238,7 @@
     {
       "panelId": "load-gen",
       "title": "Load Generator (sustained synthetic load)",
-      "description": "Admin/oncall sustained load generator — toggle on/off, configurable rate, auto-stop safety cap",
+      "description": "Admin/oncall sustained load generator, toggle on/off, configurable rate, auto-stop safety cap",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/load-gen.png"
@@ -246,7 +246,7 @@
     {
       "panelId": "llm-subsystem",
       "title": "LLM Advisory Subsystem (operator controls)",
-      "description": "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine",
+      "description": "LLM Advisory Subsystem operator controls, arm/disarm the advisory engine",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/llm-subsystem.png"
@@ -262,7 +262,7 @@
     {
       "panelId": "vol-profile",
       "title": "Volatility Profile (EWMA trend)",
-      "description": "EWMA volatility trend with rolling baseline — auto-refreshes every 60s",
+      "description": "EWMA volatility trend with rolling baseline, auto-refreshes every 60s",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/vol-profile.png"
@@ -270,7 +270,7 @@
     {
       "panelId": "estate-overview",
       "title": "Estate Overview (command centre)",
-      "description": "Unified estate command centre — service health, throughput, event timeline, and alert feed",
+      "description": "Unified estate command centre, service health, throughput, event timeline, and alert feed",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/estate-overview.png"
@@ -294,7 +294,7 @@
     {
       "panelId": "demo-day",
       "title": "Demo Day (simulate trading session)",
-      "description": "One-click trading day simulator — inject realistic mixed-strategy orders",
+      "description": "One-click trading day simulator, inject realistic mixed-strategy orders",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/demo-day.png"
@@ -310,7 +310,7 @@
     {
       "panelId": "duration-ladder",
       "title": "Duration Ladder (DV01 by tenor)",
-      "description": "Portfolio DV01 key-rate attribution by tenor bucket — stacked bar chart",
+      "description": "Portfolio DV01 key-rate attribution by tenor bucket, stacked bar chart",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/duration-ladder.png"
@@ -318,7 +318,7 @@
     {
       "panelId": "vol-surface",
       "title": "Vol Surface (implied vol smile)",
-      "description": "Implied vol heatmap (5 expiries × 9 strikes) — click to prefill Option Pricing",
+      "description": "Implied vol heatmap (5 expiries × 9 strikes), click to prefill Option Pricing",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/vol-surface.png"
@@ -326,7 +326,7 @@
     {
       "panelId": "basket-order",
       "title": "Basket Order (multi-leg)",
-      "description": "Multi-leg basket order builder — set target notional, assign weights, and submit all legs at once",
+      "description": "Multi-leg basket order builder, set target notional, assign weights, and submit all legs at once",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/basket-order.png"
@@ -374,7 +374,7 @@
     {
       "panelId": "risk-dashboard",
       "title": "Risk Dashboard (firm-wide P&L)",
-      "description": "Firm-wide position and P&L monitor — every trader's book in one view",
+      "description": "Firm-wide position and P&L monitor, every trader's book in one view",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/risk-dashboard.png"
@@ -398,7 +398,7 @@
     {
       "panelId": "dev-tools",
       "title": "Dev Tools (admin debugging)",
-      "description": "UAT debugging — fire test alerts, inject trades, manage mute rules",
+      "description": "UAT debugging, fire test alerts, inject trades, manage mute rules",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/dev-tools.png"
@@ -406,7 +406,7 @@
     {
       "panelId": "data-depth",
       "title": "Market Data Depth (per-symbol history)",
-      "description": "Per-symbol data depth — sortable list with candle counts and span days",
+      "description": "Per-symbol data depth, sortable list with candle counts and span days",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/data-depth.png"
@@ -414,7 +414,7 @@
     {
       "panelId": "scenarios",
       "title": "Scenarios (deterministic replay)",
-      "description": "Save and replay a deterministic trading scenario — same seed, same fills",
+      "description": "Save and replay a deterministic trading scenario, same seed, same fills",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/scenarios.png"

@@ -49,9 +49,9 @@
   ],
   "findings": [
     "Pipeline latency is FLAT across 5x scaling (100→500 orders): p99 submittedToFilled holds at ~283-291ms regardless of concurrent order count.",
-    "The dominant cost is the 250ms market-sim tick interval. routedToChild p99 (~263-266ms) ≈ tick cadence — orders wait for the next tick to be evaluated.",
+    "The dominant cost is the 250ms market-sim tick interval. routedToChild p99 (~263-266ms) ≈ tick cadence, orders wait for the next tick to be evaluated.",
     "Per-tick algo iteration is NOT the bottleneck at this scale. The predicate-index optimisation hypothesis from earlier architectural discussion was tested and falsified.",
     "Journal ingestion (submittedToArrived) consistently sub-25ms p99, confirming the write batcher (50ms flush, 20-row batches) is well-sized.",
-    "EMS execution (childToFilled) actually IMPROVED with scale — p99 dropped from 34ms to 23ms across runs (likely warmup/JIT effects)."
+    "EMS execution (childToFilled) actually IMPROVED with scale, p99 dropped from 34ms to 23ms across runs (likely warmup/JIT effects)."
   ]
 }

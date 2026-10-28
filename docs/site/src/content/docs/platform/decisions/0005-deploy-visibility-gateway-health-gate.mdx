@@ -3,7 +3,7 @@ title: "ADR 0005: Deploy accessibility via a gateway-only health gate, not a ful
 description: "ADR 0001's rolling-deploy plan assumed Traefik routes to every request-path service directly. It does not: only gateway is Traefik-enabled, and every downstream service (oms, ems, market-sim, user-service, journal) is reached by the gateway over Docker DNS. Records the real architecture and the narrower change that fits it, superseding ADR 0001."
 ---
 
-**Status:** Accepted — supersedes [ADR 0001](../0001-rolling-deploys-on-plain-compose/)
+**Status:** Accepted, supersedes [ADR 0001](../0001-rolling-deploys-on-plain-compose/)
 
 **Date:** 2026-08-16
 
@@ -17,8 +17,8 @@ dependency order.
 
 Implementing it surfaced that its premise does not match this stack. Checking
 `compose.prod.yml`, only four services carry `traefik.enable=true`: `frontend`, `gateway`,
-`fix-gateway`, `fix-archive`. Every other request-path service — `oms`, `ems`,
-`market-sim`, `user-service`, `journal`, and every algo — is `traefik.enable=false`. The
+`fix-gateway`, `fix-archive`. Every other request-path service, `oms`, `ems`,
+`market-sim`, `user-service`, `journal`, and every algo, is `traefik.enable=false`. The
 gateway reaches them by Docker service-name DNS (`OMS_HOST=oms`, `EMS_HOST=ems`, ...) and a
 plain HTTP call, never through Traefik. Traefik's router table for those services does not
 exist:
@@ -27,7 +27,7 @@ exist:
   inert.** Traefik cannot health-gate traffic on a router it never created. Only
   `gateway`'s router is real.
 - **A retry middleware can only hold requests at the one hop Traefik actually sits in
-  front of** — the browser-to-gateway hop. It cannot help the gateway-to-oms,
+  front of**, the browser-to-gateway hop. It cannot help the gateway-to-oms,
   gateway-to-ems, or gateway-to-market-sim hops, because those are plain `fetch()` calls
   inside `gateway.ts`, not Traefik-routed requests.
 - **`gateway` already has a real Docker Compose `healthcheck:`** (`compose.yml`, `curl
@@ -43,14 +43,14 @@ across every critical service (`gateway oms ems risk-engine journal market-sim
 user-service`), fails the deploy if any service is stuck in Docker's `created` state (the
 signature of a recreate race), and only records a new `.good-sha` once all of that passes.
 A per-service one-at-a-time recreate loop, layered on top, would fight this existing
-recovery logic rather than extend it — `docker compose up -d` already recreates every
+recovery logic rather than extend it, `docker compose up -d` already recreates every
 changed service in dependency order in one pass, and the retry/orphan-cleanup/drift-check
 steps around it already give the deploy the resilience ADR 0001 was trying to add.
 
 ## Decision
 
 Replace ADR 0001's plan with a narrower change that fits the architecture that actually
-exists: keep `gateway` — the only service a client ever talks to directly — from serving a
+exists: keep `gateway`, the only service a client ever talks to directly, from serving a
 hard error during its own recreate, and leave `homelab-deploy.sh`'s existing multi-service
 recreate as is.
 
@@ -76,7 +76,7 @@ recreate as is.
    continues to recreate every changed service together; the script's existing health-wait
    loop, orphan cleanup, and bind-mount drift detection are the resilience layer, and nothing
    here asks them to become sequential per-service. `ROLLING_DEPLOY` as a flag, and a
-   service-by-service loop behind it, is not built — there is no Traefik-routed hop for it
+   service-by-service loop behind it, is not built, there is no Traefik-routed hop for it
    to protect for `oms`/`ems`/`market-sim`/`user-service`/`journal`, so it would add
    deploy-script complexity without closing a real user-visible gap.
 
@@ -87,14 +87,14 @@ recreate as is.
   observes directly.
 - **Not covered:** a request already past the gateway that then hits `oms`, `ems`,
   `market-sim`, `user-service`, or `journal` mid-swap. These are protected today the same
-  way they were before this ADR and before ADR 0001 — by the order path being
+  way they were before this ADR and before ADR 0001, by the order path being
   asynchronous (the gateway publishes to `orders.new` and acknowledges immediately, so an
   order queues in Kafka and is not lost) and by `homelab-deploy.sh`'s health-wait loop
   making the deploy fail loudly if a critical service does not come back healthy. A
   synchronous downstream call that lands mid-swap on one of these services still sees a
   connection error at that hop; the gateway does not retry its own downstream fetches
   today. Closing that gap would mean adding retry logic inside `gateway.ts` for each
-  downstream call, a real but separate change, not a Traefik label — Traefik is not in
+  downstream call, a real but separate change, not a Traefik label, Traefik is not in
   that path at all.
 
 ## Consequences
@@ -102,8 +102,8 @@ recreate as is.
 - The platform gains real, if narrower, deploy accessibility: the browser-facing edge
   (gateway HTTP + WebSocket) stops surfacing the ~1-2s container-swap gap as a hard error.
   This is the majority of what a user directly experiences during a deploy.
-- The larger claim ADR 0001 made — that the whole synchronous order path becomes
-  accessible end to end — does not hold, because most of that path (oms, ems, market-sim,
+- The larger claim ADR 0001 made, that the whole synchronous order path becomes
+  accessible end to end, does not hold, because most of that path (oms, ems, market-sim,
   user-service, journal) was never Traefik-routed and a Traefik-level fix cannot reach it.
   Closing that fully would need retry-with-backoff added inside `gateway.ts`'s own
   downstream `fetch()` calls, which is application code, not infrastructure config, and is
