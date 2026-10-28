@@ -62,6 +62,6 @@ with a suboptimal approach.
 When in doubt:
 - **Ask the user first** on risky operations (force-push, destructive deletes, production changes).
 - **Default to British English** in all prose and user-facing text.
-- **No em-dashes** anywhere—use commas, periods, or restructure.
+- **No em-dashes** anywhere, use commas, periods, or restructure.
 - **Keep commit messages concise** (under 100 characters in the summary line).
   Use the body for context and justification, not marketing copy.

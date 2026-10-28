@@ -225,7 +225,7 @@ describe("DemoPersonas – expanded states", () => {
     });
     render(<DemoPersonas onSelect={() => {}} />);
     fireEvent.click(screen.getByTestId("demo-personas-toggle"));
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("n/a")).toBeInTheDocument();
   });
 
   it("falls back to default badge class when role is unknown", () => {

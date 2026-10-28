@@ -69,7 +69,7 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("dark-pool").catch((err) => {
-  logger.warn("Redpanda unavailable — executions will not be published", { err });
+  logger.warn("Redpanda unavailable, executions will not be published", { err });
   return null;
 });
 
@@ -133,7 +133,7 @@ async function runMatchCycle(): Promise<void> {
 
     const midPrice = tick.prices[asset];
     if (!midPrice) {
-      logger.warn(`No price for ${asset} — skipping match`);
+      logger.warn(`No price for ${asset}, skipping match`);
       continue;
     }
 
@@ -202,10 +202,10 @@ async function sweepExpiredOrders(): Promise<void> {
     pool.sells = pool.sells.filter((o) => now < o.deadlineAt);
 
     for (const order of [...expiredBuys, ...expiredSells]) {
-      if (order.remainingQty <= 0) continue; // fully filled — already handled
+      if (order.remainingQty <= 0) continue; // fully filled, already handled
 
       logger.info(
-        `Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`
+        `Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out, action=${RESIDUAL_ACTION}`
       );
 
       if (RESIDUAL_ACTION === "reroute") {

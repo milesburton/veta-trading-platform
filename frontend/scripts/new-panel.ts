@@ -71,7 +71,7 @@ function insertBefore(source: string, marker: string, line: string): string {
 
 function patchRegistry(src: string, a: Args): string {
   if (src.includes(`"${a.id}"`)) {
-    console.log(`  panelRegistry.ts already has "${a.id}" — skipping`);
+    console.log(`  panelRegistry.ts already has "${a.id}", skipping`);
     return src;
   }
   const title = JSON.stringify(a.title);
@@ -100,7 +100,7 @@ function patchRegistry(src: string, a: Args): string {
 
 function patchPicker(src: string, a: Args): string {
   if (src.includes(`"${a.id}"`)) {
-    console.log(`  ComponentPicker.tsx already has "${a.id}" — skipping`);
+    console.log(`  ComponentPicker.tsx already has "${a.id}", skipping`);
     return src;
   }
   const desc = JSON.stringify(a.description);
@@ -113,7 +113,7 @@ function patchPicker(src: string, a: Args): string {
 function patchComponents(src: string, a: Args): string {
   const name = componentName(a.id);
   if (src.includes(`registerPanel("${a.id}"`)) {
-    console.log(`  panelComponents.ts already registers "${a.id}" — skipping`);
+    console.log(`  panelComponents.ts already registers "${a.id}", skipping`);
     return src;
   }
   const importLine = `import { ${name} } from "@veta/frontend/components/${name}.tsx";\n`;
@@ -179,7 +179,7 @@ async function writeIfAbsent(path: string, contents: string): Promise<void> {
     console.log(`  created ${path.replace(ROOT, "")}`);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-    console.log(`  ${path.replace(ROOT, "")} already exists — skipping`);
+    console.log(`  ${path.replace(ROOT, "")} already exists, skipping`);
   }
 }
 
@@ -204,7 +204,7 @@ async function main(): Promise<void> {
   await writeFile(PICKER, patchPicker(picker, args));
   console.log("  patched ComponentPicker.tsx");
 
-  console.log("\nNext steps (not automated — these are design choices):");
+  console.log("\nNext steps (not automated, these are design choices):");
   console.log(`  1. Add "${args.id}" to a workspace in src/components/dashboard/layoutModels.ts`);
   console.log(`  2. Flesh out src/components/${name}.tsx`);
   console.log(

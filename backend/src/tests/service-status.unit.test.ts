@@ -88,8 +88,8 @@ test("[pollServices] classifies each target and strips status fields from meta",
     entries.map((e) => [e.id, e.status, e.version, e.meta, e.checkedAt]),
     [
       ["up", "ok", "v1", { uptime: 5 }, 42],
-      ["algo", "standby", "—", {}, 42],
-      ["core", "error", "—", {}, 42],
+      ["algo", "standby", "n/a", {}, 42],
+      ["core", "error", "n/a", {}, 42],
     ]
   );
 });

@@ -1,11 +1,11 @@
-# Dev container image — inherits the pre-built base (all heavy tooling,
+# Dev container image: inherits the pre-built base (all heavy tooling,
 # Redpanda, Playwright, Node, Docker CLI, etc.) and adds only
 # dev-container-specific config.
 #
 # Dockerfile.base is published to:
 #   ghcr.io/milesburton/veta-trading-platform-base:latest
 # Rebuild it via GitHub Actions (build-base-image.yml) when base tooling changes.
-# Services are managed by docker compose via the host Docker socket — no supervisord.
+# Services are managed by docker compose via the host Docker socket: no supervisord.
 FROM ghcr.io/milesburton/veta-trading-platform-base:latest
 
 # Devcontainer Features inject POSIX shell scripts during build; ensure they run

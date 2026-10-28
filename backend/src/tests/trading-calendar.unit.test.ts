@@ -102,7 +102,7 @@ test("SIFMA bond calendar diverges from the equity calendar on Columbus Day and 
 });
 
 test("FX reduced-liquidity dates are not modeled as calendar holidays", () => {
-  // These dates must NOT reject order entry — only flag reduced liquidity.
+  // These dates must NOT reject order entry, only flag reduced liquidity.
   assertEquals(isHoliday(FX_CALENDAR, "2026-12-25"), false);
   assert(FX_REDUCED_LIQUIDITY_DATES.has("2026-12-25"));
 });
@@ -113,7 +113,7 @@ test("calendarForOrder resolves by assetClass before falling back to exchange", 
   assertEquals(calendarForOrder({ assetClass: "commodity" }).exchangeMic, "XCME");
   assertEquals(calendarForOrder({ exchange: "XLON" }).exchangeMic, "XLON");
   assertEquals(calendarForOrder({ exchange: "XTKS" }).exchangeMic, "XTKS");
-  // Options are gated by the underlying equity's calendar — no distinct
+  // Options are gated by the underlying equity's calendar, no distinct
   // derivatives calendar, so an unmatched/equity request falls back to US.
   assertEquals(calendarForOrder({ instrumentType: "option" }).exchangeMic, "XNAS");
   assertEquals(calendarForOrder({}).exchangeMic, "XNAS");

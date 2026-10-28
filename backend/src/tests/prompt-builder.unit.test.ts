@@ -113,7 +113,7 @@ test("[prompt-builder] buildPrompt: short direction when score is negative", () 
 test("[prompt-builder] buildPrompt tolerates feature vector with null/undefined fields", () => {
   // Regression: 2026-05-18 worker crashed with 'v.toFixed is not a function'
   // when feature-engine returned partial data (null fields). Guard each
-  // toFixed with a numeric check; render '—' for missing values.
+  // toFixed with a numeric check; render 'n/a' for missing values.
   const partialFv = {
     momentum: 0.12,
     relativeVolume: null,
@@ -125,11 +125,11 @@ test("[prompt-builder] buildPrompt tolerates feature vector with null/undefined 
   } as unknown as FeatureVector;
   const out = buildPrompt("AAPL", baseSignal, partialFv, null, []);
   assertStringIncludes(out, "momentum=0.1200");
-  assertStringIncludes(out, "relVol=—");
-  assertStringIncludes(out, "realisedVol=—");
+  assertStringIncludes(out, "relVol=n/a");
+  assertStringIncludes(out, "realisedVol=n/a");
   assertStringIncludes(out, "sectorRS=0.0400");
-  assertStringIncludes(out, "eventScore=—");
-  assertStringIncludes(out, "newsVel=—");
+  assertStringIncludes(out, "eventScore=n/a");
+  assertStringIncludes(out, "newsVel=n/a");
   assertStringIncludes(out, "sentDelta=0.010");
 });
 
@@ -143,14 +143,14 @@ test("[prompt-builder] buildPrompt tolerates signal with NaN score / missing con
     ts: Date.now(),
   } as unknown as Signal;
   const out = buildPrompt("AAPL", wonkySignal, null, null, []);
-  assertStringIncludes(out, "score —");
-  assertStringIncludes(out, "confidence —");
+  assertStringIncludes(out, "score n/a");
+  assertStringIncludes(out, "confidence n/a");
 });
 
 test("[prompt-builder] buildPrompt tolerates signal.factors being missing or empty", () => {
   const emptyFactorsSignal = { ...baseSignal, factors: [] };
   const out = buildPrompt("AAPL", emptyFactorsSignal, null, null, []);
-  assertStringIncludes(out, "Top factors: —");
+  assertStringIncludes(out, "Top factors: n/a");
 });
 
 test("[prompt-builder] buildPrompt filters non-numeric contribution from factors", () => {
@@ -178,6 +178,6 @@ test("[prompt-builder] buildPrompt tolerates recommendation with missing fields"
     ts: Date.now(),
   } as unknown as TradeRecommendation;
   const out = buildPrompt("AAPL", baseSignal, null, partialRec, []);
-  assertStringIncludes(out, "Recommendation: BUY | qty — | confidence —");
-  assertStringIncludes(out, "Rationale: —");
+  assertStringIncludes(out, "Recommendation: BUY | qty n/a | confidence n/a");
+  assertStringIncludes(out, "Rationale: n/a");
 });

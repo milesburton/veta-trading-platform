@@ -19,14 +19,14 @@ export interface RiskCheckResult {
 
 /**
  * Calls risk-engine's existing POST /check directly (Option B from the FIX
- * remediation plan) rather than routing the order through orders.new/OMS —
+ * remediation plan) rather than routing the order through orders.new/OMS,
  * that fuller integration is deliberately deferred (see ADR 0004). The
  * endpoint itself is caller-agnostic: this is the same request/response
  * shape oms-server.ts already sends, so no risk-engine changes were
  * needed to support this caller.
  *
  * Fails closed on any error (timeout, network, non-2xx, malformed body),
- * mirroring oms-server.ts's posture exactly — an unreachable risk-engine
+ * mirroring oms-server.ts's posture exactly, an unreachable risk-engine
  * blocks orders rather than letting them through unchecked.
  */
 export async function checkRisk(
@@ -46,7 +46,7 @@ export async function checkRisk(
       return {
         allowed: false,
         reasons: [
-          "Risk engine unavailable — all orders are blocked until the risk service is restored",
+          "Risk engine unavailable, all orders are blocked until the risk service is restored",
         ],
         warnings: [],
       };
@@ -57,7 +57,7 @@ export async function checkRisk(
       return {
         allowed: false,
         reasons: [
-          "Risk engine unavailable — all orders are blocked until the risk service is restored",
+          "Risk engine unavailable, all orders are blocked until the risk service is restored",
         ],
         warnings: [],
       };
@@ -72,7 +72,7 @@ export async function checkRisk(
     return {
       allowed: false,
       reasons: [
-        "Risk engine unavailable — all orders are blocked until the risk service is restored",
+        "Risk engine unavailable, all orders are blocked until the risk service is restored",
       ],
       warnings: [],
     };

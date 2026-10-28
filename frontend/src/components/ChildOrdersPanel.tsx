@@ -130,7 +130,7 @@ export function ChildOrdersPanel() {
         )}
         <span className="text-[11px] text-label font-medium truncate">
           {parentOrder
-            ? `${parentOrder.asset} ${parentOrder.side} ${parentOrder.quantity} — ${children.length} slice${
+            ? `${parentOrder.asset} ${parentOrder.side} ${parentOrder.quantity}, ${children.length} slice${
                 children.length !== 1 ? "s" : ""
               }`
             : "No order selected"}
@@ -213,7 +213,7 @@ export function ChildOrdersPanel() {
                         : child.limitPrice.toFixed(4)}
                     </td>
                     <td className="px-3 py-1.5 text-right tabular-nums text-label">
-                      {child.filled > 0 ? child.filled : "—"}
+                      {child.filled > 0 ? child.filled : "n/a"}
                     </td>
                     <td className="px-3 py-1.5">
                       {child.venue ? (
@@ -221,7 +221,7 @@ export function ChildOrdersPanel() {
                           {child.venue}
                         </span>
                       ) : (
-                        <span className="text-subtle">—</span>
+                        <span className="text-subtle">n/a</span>
                       )}
                     </td>
                     <td className="px-3 py-1.5">
@@ -235,22 +235,22 @@ export function ChildOrdersPanel() {
                       </span>
                     </td>
                     <td className="px-3 py-1.5 font-mono text-[9px] text-muted">
-                      {child.counterparty ?? "—"}
+                      {child.counterparty ?? "n/a"}
                     </td>
                     <td
                       className={`px-3 py-1.5 text-[9px] font-semibold ${
                         child.liquidityFlag ? LIQ_STYLES[child.liquidityFlag] : "text-subtle"
                       }`}
                     >
-                      {child.liquidityFlag ?? "—"}
+                      {child.liquidityFlag ?? "n/a"}
                     </td>
                     <td className="px-3 py-1.5 text-right tabular-nums text-[9px] text-muted">
                       {child.commissionUSD !== undefined
                         ? `$${child.commissionUSD.toFixed(2)}`
-                        : "—"}
+                        : "n/a"}
                     </td>
                     <td className="px-3 py-1.5 font-mono text-[9px] text-subtle">
-                      {child.settlementDate ?? "—"}
+                      {child.settlementDate ?? "n/a"}
                     </td>
                   </tr>
                 );

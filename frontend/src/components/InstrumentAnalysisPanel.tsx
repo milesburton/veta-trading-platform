@@ -171,7 +171,7 @@ export function InstrumentAnalysisPanel() {
   if (!symbol) {
     return (
       <div className="h-full flex items-center justify-center text-muted text-xs">
-        Link to a channel — waiting for symbol selection
+        Link to a channel, waiting for symbol selection
       </div>
     );
   }

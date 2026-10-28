@@ -174,7 +174,7 @@ async function deleteSession(sessionId: string): Promise<Response> {
     }
     return json({ ok: true });
   } catch (err) {
-    // FK RESTRICT: chunks still reference this session — chunks are retained
+    // FK RESTRICT: chunks still reference this session, chunks are retained
     // for compliance and block session-metadata deletion.
     if (isForeignKeyViolation(err)) {
       return json(

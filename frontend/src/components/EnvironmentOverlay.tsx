@@ -35,7 +35,7 @@ export function EnvironmentOverlay() {
               xmlSpace="preserve"
               fill="rgb(251 191 36)"
             >
-              UAT — NOT PRODUCTION ·{"  "}
+              UAT, NOT PRODUCTION ·{"  "}
             </text>
           </pattern>
         </defs>

@@ -17,14 +17,14 @@ export function runSpreadCheck(ctx: TicketContext): Diagnostic[] {
       severity: "error",
       message: `Bid-ask spread is ${spreadBps.toFixed(
         0
-      )} bps — exceeds maximum threshold, order blocked`,
+      )} bps, exceeds maximum threshold, order blocked`,
       ruleId: "spread.exceeds-max",
     });
   } else if (spreadBps >= SPREAD_WARNING_THRESHOLD_BPS) {
     diagnostics.push({
       field: "*",
       severity: "warning",
-      message: `Bid-ask spread is ${spreadBps.toFixed(0)} bps — wider than normal, check liquidity`,
+      message: `Bid-ask spread is ${spreadBps.toFixed(0)} bps, wider than normal, check liquidity`,
       ruleId: "spread.wide",
     });
   }

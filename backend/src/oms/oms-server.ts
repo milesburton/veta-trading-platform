@@ -198,7 +198,7 @@ function nextOrderId(): string {
 }
 
 const producer = await createProducer("oms").catch((err) => {
-  logger.warn("Redpanda unavailable — orders will not be published to bus", { err });
+  logger.warn("Redpanda unavailable, orders will not be published to bus", { err });
   return null;
 });
 
@@ -224,7 +224,7 @@ consumer?.onMessage(async (_topic, raw) => {
     const issues = parsed.error.issues
       .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
       .join("; ");
-    logger.warn(`Malformed orders.new message — ${issues}`);
+    logger.warn(`Malformed orders.new message, ${issues}`);
     await producer
       ?.send("orders.rejected", {
         clientOrderId: rawPartial.clientOrderId,
@@ -261,7 +261,7 @@ consumer?.onMessage(async (_topic, raw) => {
                   ? "Risk Manager (read-only oversight)"
                   : "External-client";
     logger.warn(
-      `Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`
+      `Order rejected, ${order.userRole} user ${order.userId} attempted to submit an order`
     );
     await producer
       ?.send("orders.rejected", {
@@ -291,7 +291,7 @@ consumer?.onMessage(async (_topic, raw) => {
   }
 
   if (!limits.allowed_desks.includes(desk)) {
-    logger.warn(`Order rejected — user ${order.userId} does not have access to ${desk} desk`);
+    logger.warn(`Order rejected, user ${order.userId} does not have access to ${desk} desk`);
     await producer
       ?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
@@ -304,7 +304,7 @@ consumer?.onMessage(async (_topic, raw) => {
   }
 
   if (!RISK_ENGINE_ENABLED) {
-    logger.info(`Risk-engine disabled — skipping pre-trade checks for ${order.clientOrderId}`);
+    logger.info(`Risk-engine disabled, skipping pre-trade checks for ${order.clientOrderId}`);
   } else
     try {
       const riskRes = await fetch(`${RISK_ENGINE_URL}/check`, {
@@ -345,7 +345,7 @@ consumer?.onMessage(async (_topic, raw) => {
         logger.info(`Risk warning for ${order.clientOrderId}: ${w}`);
       }
     } catch (err) {
-      logger.error(`Risk-engine unreachable — rejecting order ${order.clientOrderId}`, {
+      logger.error(`Risk-engine unreachable, rejecting order ${order.clientOrderId}`, {
         err: err as Error,
       });
       await producer
@@ -353,7 +353,7 @@ consumer?.onMessage(async (_topic, raw) => {
           clientOrderId: order.clientOrderId,
           userId: order.userId,
           reason:
-            "Risk engine unavailable — all orders are blocked until the risk service is restored",
+            "Risk engine unavailable, all orders are blocked until the risk service is restored",
           ts: Date.now(),
         })
         .catch(() => {});
@@ -392,7 +392,7 @@ consumer?.onMessage(async (_topic, raw) => {
     }
   }
 
-  // FI uses RFQ — no algo strategy applies. OTC options use bilateral flow.
+  // FI uses RFQ, no algo strategy applies. OTC options use bilateral flow.
   // FX and commodities use standard algo strategies (same pool as equity).
   const needsStrategyCheck =
     desk === "equity" ||
@@ -464,7 +464,7 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  // Lot size validation — warn but don't hard-reject (algos may work in fractional lots)
+  // Lot size validation, warn but don't hard-reject (algos may work in fractional lots)
   const lotSize = await getAssetLotSize(order.asset);
   if (lotSize > 1 && order.quantity % lotSize !== 0) {
     logger.warn(
@@ -524,7 +524,7 @@ consumer?.onMessage(async (_topic, raw) => {
   await producer?.send("orders.submitted", enriched).catch(() => {});
 
   if (desk === "fi") {
-    // FI orders go to RFQ service — not via algo strategies
+    // FI orders go to RFQ service, not via algo strategies
     await producer?.send("orders.fi.rfq", { ...enriched, routedAt: Date.now() }).catch(() => {});
     logger.info(`Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`);
   } else {
@@ -541,7 +541,7 @@ killConsumer?.onMessage(async (topic, raw) => {
       const issues = parsed.error.issues
         .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
         .join("; ");
-      logger.warn(`Malformed orders.kill — dropped: ${issues}`);
+      logger.warn(`Malformed orders.kill, dropped: ${issues}`);
       return;
     }
     const cmd: KillCommand = parsed.data;
@@ -549,7 +549,7 @@ killConsumer?.onMessage(async (topic, raw) => {
 
     if (issuedByRole !== "admin" && targetUserId && targetUserId !== issuedBy) {
       logger.warn(
-        `Kill rejected — trader ${issuedBy} attempted to kill orders for user ${targetUserId}`
+        `Kill rejected, trader ${issuedBy} attempted to kill orders for user ${targetUserId}`
       );
       return;
     }
@@ -581,7 +581,7 @@ killConsumer?.onMessage(async (topic, raw) => {
     if (toCancel.length === 0) {
       logger.info(
         `Kill command from ${issuedBy}: no matching active orders (scope=${scope} scopeValue=${
-          scopeValue ?? "—"
+          scopeValue ?? "n/a"
         })`
       );
       return;
@@ -629,7 +629,7 @@ killConsumer?.onMessage(async (topic, raw) => {
       const issues = parsed.error.issues
         .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
         .join("; ");
-      logger.warn(`Malformed orders.resume — dropped: ${issues}`);
+      logger.warn(`Malformed orders.resume, dropped: ${issues}`);
       return;
     }
     const cmd: ResumeCommand = parsed.data;
@@ -640,7 +640,7 @@ killConsumer?.onMessage(async (topic, raw) => {
     const doResume = async () => {
       logger.info(
         `Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${
-          scopeValue ?? "—"
+          scopeValue ?? "n/a"
         }`
       );
       await producer
@@ -723,7 +723,7 @@ async function expireOrphanedOrders() {
 
 (async () => {
   const ready = await waitForUrl(`${JOURNAL_URL}/health`, { timeoutMs: 60_000 });
-  if (!ready) logger.warn("journal not reachable after 60s — expire-orphan loop will start anyway");
+  if (!ready) logger.warn("journal not reachable after 60s, expire-orphan loop will start anyway");
   expireOrphanedOrders().catch(() => {});
   setInterval(() => {
     expireOrphanedOrders().catch(() => {});

@@ -126,7 +126,7 @@ services:
       # Used by provisioning/alerting/contact-points.yml. Grafana 11.4
       # rejects an empty `url` on a webhook receiver at provisioning
       # time and crash-loops the container, so the default has to be a
-      # syntactically valid URL. The sentinels below are unreachable —
+      # syntactically valid URL. The sentinels below are unreachable,
       # webhook send attempts will fail with a connection error logged
       # by Grafana, but the UI keeps working.
       #

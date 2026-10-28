@@ -1,5 +1,5 @@
 /**
- * Market data types — mirrored from backend/src/market-data/market-data-service.ts
+ * Market data types, mirrored from backend/src/market-data/market-data-service.ts
  */
 
 export interface DataSource {

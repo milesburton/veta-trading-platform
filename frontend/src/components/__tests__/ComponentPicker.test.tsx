@@ -195,7 +195,7 @@ describe("ComponentPicker – active/hidden state", () => {
   });
 
   it("always enables non-singleton panels regardless of open state", () => {
-    // market-ladder is not a singleton — can have multiple instances
+    // market-ladder is not a singleton, can have multiple instances
     renderPicker({ activePanelIds: new Set(["market-ladder"]) });
     openDropdown();
     const btn = getPickerBtn("Market Ladder");

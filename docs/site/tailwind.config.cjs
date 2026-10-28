@@ -32,7 +32,7 @@ module.exports = {
           900: "rgb(var(--gray-900) / <alpha-value>)",
           950: "rgb(var(--gray-950) / <alpha-value>)",
         },
-        // Purpose-named aliases — see frontend/tailwind.config.cjs for docs.
+        // Purpose-named aliases, see frontend/tailwind.config.cjs for docs.
         strong: "rgb(var(--gray-50) / <alpha-value>)",
         primary: "rgb(var(--gray-100) / <alpha-value>)",
         secondary: "rgb(var(--gray-200) / <alpha-value>)",

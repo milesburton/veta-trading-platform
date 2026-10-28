@@ -5,7 +5,7 @@
 - **MTTR**: ~80 minutes from first red CI to green
 - **User-visible impact**: No new container images published during this window. Stale frontend bundles served to users with no path to recovery (older bundles missing recent reconnect-recovery improvements).
 - **Detection**: user-reported ("Lets find out why CI and the docker builds are failing")
-- **Severity**: SEV2 — silent failure mode, no immediate outage but degraded recovery for stale browser tabs
+- **Severity**: SEV2, silent failure mode, no immediate outage but degraded recovery for stale browser tabs
 
 ## What happened
 
@@ -23,7 +23,7 @@ Two layers:
 ## Action items
 
 - [x] Fix route pattern in `GatewayMock` (PR #197). Owner: M, done.
-- [ ] Add CI deploy-gate that builds containers + runs Playwright against the running stack — Phase 1 of [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx). This would have caught the regression on PR #192 before it merged. Owner: M, by: 2026-05-12 EOD.
+- [ ] Add CI deploy-gate that builds containers + runs Playwright against the running stack, Phase 1 of [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx). This would have caught the regression on PR #192 before it merged. Owner: M, by: 2026-05-12 EOD.
 - [ ] Add a CI alert (email to `the ops email`) when main goes red and stays red for more than one merge. Owner: M, by: 2026-05-14.
 
 ## Related

@@ -11,7 +11,7 @@ let tray: Tray | null = null;
 
 function createWindow(): void {
   // In test mode or when GPU is disabled (dev container / CI), show the window
-  // immediately — ready-to-show requires GPU rendering to fire.
+  // immediately, ready-to-show requires GPU rendering to fire.
   const isTest = process.env.NODE_ENV === "test";
   const noGpu = app.commandLine.hasSwitch("disable-gpu");
 
@@ -38,7 +38,7 @@ function createWindow(): void {
   });
 
   mainWindow.once("ready-to-show", () => {
-    // Reset zoom to 1.0 — on Windows with display scaling > 100 % Chromium
+    // Reset zoom to 1.0, on Windows with display scaling > 100 % Chromium
     // can inherit the OS text-size setting and render the page zoomed in,
     // making the layout look stretched / warped.
     mainWindow?.webContents.setZoomFactor(1.0);
@@ -150,7 +150,7 @@ app.whenReady().then(() => {
   try {
     createTray();
   } catch {
-    // System tray unavailable (headless CI / xvfb) — non-fatal.
+    // System tray unavailable (headless CI / xvfb), non-fatal.
   }
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -1,6 +1,6 @@
 // Browser-side FIXT 1.1 / FIX 4.4 session.
 // Manages sequence numbers, heartbeats, Logon/Logout, and message building.
-// Mirrors backend/src/fix/fixSession.ts — same protocol, browser-compatible.
+// Mirrors backend/src/fix/fixSession.ts, same protocol, browser-compatible.
 
 import type { OrderRecord } from "@veta/frontend/types.ts";
 import {
@@ -217,7 +217,7 @@ export class FIXSession {
     this.heartbeatTimer = setInterval(() => {
       if (this.state !== "ACTIVE") return;
       if (this.testReqId) {
-        console.warn("[FIX] Heartbeat timeout — disconnecting");
+        console.warn("[FIX] Heartbeat timeout, disconnecting");
         this.disconnect();
         return;
       }

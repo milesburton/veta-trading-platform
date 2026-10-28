@@ -1,5 +1,5 @@
 /**
- * BroadcastChannel middleware — syncs Redux domain actions across all open windows.
+ * BroadcastChannel middleware, syncs Redux domain actions across all open windows.
  *
  * Abstraction point: swap BroadcastChannel for OpenFin InterApplicationBus
  * or Electron ipcRenderer by replacing only this file.
@@ -8,7 +8,7 @@ import type { Middleware } from "@reduxjs/toolkit";
 
 const CHANNEL_NAME = "trading-app";
 
-// Only sync domain slices — exclude RTK Query internal actions
+// Only sync domain slices, exclude RTK Query internal actions
 function isSyncableAction(type: string): boolean {
   return (
     type.startsWith("market/") ||

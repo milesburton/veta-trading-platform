@@ -53,7 +53,7 @@ export function MarketFeedControlPanel() {
         const srcDef = sources.find((s) => s.id === src);
         return {
           symbol: a.symbol,
-          exchange: a.exchange ?? "—",
+          exchange: a.exchange ?? "n/a",
           source: src,
           sourceLabel: srcDef?.label ?? src,
           paused: src !== "synthetic" && srcDef ? !srcDef.active : false,
@@ -162,7 +162,7 @@ export function MarketFeedControlPanel() {
                   <span className="text-[9px] font-mono text-muted">{ex.mic}</span>
                 </div>
                 <div className="text-[10px] text-muted mb-1.5">
-                  {marketHoursLoading ? "…" : (equityHours?.phase ?? "—")}
+                  {marketHoursLoading ? "…" : (equityHours?.phase ?? "n/a")}
                 </div>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${badge.cls}`}>
                   {badge.label}

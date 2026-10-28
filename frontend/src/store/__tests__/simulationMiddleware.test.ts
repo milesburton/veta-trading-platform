@@ -251,7 +251,7 @@ describe("simulationMiddleware – VWAP", () => {
       limitPrice: 150,
       algoParams: {
         strategy: "VWAP",
-        maxDeviation: 0.1, // 10% — generous so price always qualifies
+        maxDeviation: 0.1, // 10%, generous so price always qualifies
         startOffsetSecs: 0,
         endOffsetSecs: 60,
       },
@@ -276,7 +276,7 @@ describe("simulationMiddleware – VWAP", () => {
       limitPrice: 150,
       algoParams: {
         strategy: "VWAP",
-        maxDeviation: 0.001, // 0.1% — very tight
+        maxDeviation: 0.001, // 0.1%, very tight
         startOffsetSecs: 0,
         endOffsetSecs: 60,
       },
@@ -284,7 +284,7 @@ describe("simulationMiddleware – VWAP", () => {
     });
     store.dispatch(ordersSlice.actions.orderAdded(vwapOrder));
 
-    // Set price far from limit — deviation will exceed 0.1%
+    // Set price far from limit, deviation will exceed 0.1%
     store.dispatch(marketSlice.actions.tickReceived({ prices: { AAPL: 200 }, ts: NOW }));
 
     vi.advanceTimersByTime(FIVE_SECONDS);
@@ -310,7 +310,7 @@ describe("simulationMiddleware – gateway-connected guard", () => {
       )
     );
 
-    // Status should remain queued — local simulation must not have started
+    // Status should remain queued, local simulation must not have started
     const [order] = store.getState().orders.orders;
     expect(order.status).toBe("pending");
   });
@@ -320,7 +320,7 @@ describe("simulationMiddleware – gateway-connected guard", () => {
     store.dispatch(marketSlice.actions.setConnected(true));
     store.dispatch(ordersSlice.actions.orderAdded(makeOrder({ limitPrice: 200 })));
 
-    // Price is below limit — would fill if local simulation were running
+    // Price is below limit, would fill if local simulation were running
     store.dispatch(
       marketSlice.actions.tickReceived({
         prices: { AAPL: 100 },
@@ -334,7 +334,7 @@ describe("simulationMiddleware – gateway-connected guard", () => {
 
   it("DOES run local TWAP simulation when gateway is disconnected", () => {
     const store = makeStore();
-    // Connected starts false by default — explicitly set to false
+    // Connected starts false by default, explicitly set to false
     store.dispatch(marketSlice.actions.setConnected(false));
 
     store.dispatch(

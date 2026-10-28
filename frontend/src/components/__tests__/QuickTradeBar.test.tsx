@@ -97,7 +97,7 @@ function renderBar(store: ReturnType<typeof makeStore>) {
   );
 }
 
-describe("QuickTradeBar — visibility", () => {
+describe("QuickTradeBar, visibility", () => {
   it("does not render for anonymous visitors", () => {
     renderBar(makeStore({ authed: false }));
     expect(screen.queryByTestId("quick-trade-bar")).toBeNull();
@@ -114,7 +114,7 @@ describe("QuickTradeBar — visibility", () => {
   });
 });
 
-describe("QuickTradeBar — new order", () => {
+describe("QuickTradeBar, new order", () => {
   it("opens a blank order ticket from the action to the left of Quick trade", () => {
     const openTicket = vi
       .spyOn(orderTicketWindow, "openOrderTicketWindow")
@@ -134,7 +134,7 @@ describe("QuickTradeBar — new order", () => {
   });
 });
 
-describe("QuickTradeBar — regex path", () => {
+describe("QuickTradeBar, regex path", () => {
   it("disables Send until input parses", () => {
     renderBar(makeStore());
     const send = screen.getByTestId("quick-trade-send");
@@ -185,7 +185,7 @@ describe("QuickTradeBar — regex path", () => {
   });
 });
 
-describe("QuickTradeBar — LLM fallback", () => {
+describe("QuickTradeBar, LLM fallback", () => {
   it("Ask AI is disabled while regex parse matches", () => {
     renderBar(makeStore());
     fireEvent.change(screen.getByTestId("quick-trade-input"), {

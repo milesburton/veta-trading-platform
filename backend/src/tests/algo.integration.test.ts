@@ -1,7 +1,7 @@
 import { test } from "#veta/test";
 import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
- * Algo integration tests — require all backend services to be running.
+ * Algo integration tests, require all backend services to be running.
  *
  * For each strategy: submits an order via the gateway WebSocket (authenticated),
  * then polls the journal until the order is routed, has child slices, and
@@ -461,7 +461,7 @@ test("[perf] SNIPER executes in ≤3 slices (aggressive, single-shot strategy)",
   assertExists(order, `SNIPER order ${id} did not produce children within 30s`);
   assert(
     order.children.length <= 3,
-    `SNIPER produced ${order.children.length} slices — expected ≤3 (aggressive algo should not over-slice)`
+    `SNIPER produced ${order.children.length} slices, expected ≤3 (aggressive algo should not over-slice)`
   );
 });
 

@@ -5,7 +5,7 @@
 # alert on the Nth failure (default 3) and again on recovery, but not on
 # every individual failure.
 #
-# Notification delivery is via webhook — set ALERT_WEBHOOK_URL in the
+# Notification delivery is via webhook: set ALERT_WEBHOOK_URL in the
 # systemd service env. If unset, the script logs to journald only.
 
 set -euo pipefail
@@ -39,7 +39,7 @@ case "${1:-failure}" in
     echo "$count" > "$COUNTER_FILE"
     log "probe failed (consecutive=$count)"
     if [[ "$count" -eq "$FAIL_THRESHOLD" ]]; then
-      log "threshold reached — sending alert"
+      log "threshold reached, sending alert"
       hostname=$(hostname -f 2>/dev/null || hostname)
       payload=$(cat <<EOF
 {

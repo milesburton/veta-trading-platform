@@ -286,7 +286,7 @@ async function loadSymbols(): Promise<void> {
 
 (async () => {
   const ready = await waitForUrl(`${MARKET_SIM_URL}/health`, { timeoutMs: 60_000 });
-  if (!ready) logger.warn("market-sim not reachable after 60s — proceeding anyway");
+  if (!ready) logger.warn("market-sim not reachable after 60s, proceeding anyway");
   await loadSymbols();
   await pollAll();
   let polling = false;
@@ -362,7 +362,7 @@ serveFetch({ port: PORT }, async (req) => {
     });
   }
 
-  // POST /sources — create a new source
+  // POST /sources, create a new source
   if (req.method === "POST" && path === "/sources") {
     let body: Partial<NewsSource>;
     try {
@@ -394,7 +394,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json(newSource, 201);
   }
 
-  // PUT /sources/:id — update label, rssTemplate, symbolSpecific
+  // PUT /sources/:id, update label, rssTemplate, symbolSpecific
   const putMatch = path.match(/^\/sources\/([^/]+)$/);
   if (req.method === "PUT" && putMatch) {
     const [, id] = putMatch;
@@ -420,7 +420,7 @@ serveFetch({ port: PORT }, async (req) => {
     return json(source);
   }
 
-  // DELETE /sources/:id — remove a source
+  // DELETE /sources/:id, remove a source
   if (req.method === "DELETE" && putMatch) {
     const [, id] = putMatch;
     const idx = SOURCES.findIndex((s) => s.id === id);

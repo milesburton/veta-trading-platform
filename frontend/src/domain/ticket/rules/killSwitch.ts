@@ -13,7 +13,7 @@ export function runKillSwitchCheck(ctx: TicketContext): Diagnostic[] {
       {
         field: "*",
         severity: "error",
-        message: "Kill switch active — this order is currently blocked",
+        message: "Kill switch active, this order is currently blocked",
         ruleId: "kill-switch-blocked",
       },
     ];

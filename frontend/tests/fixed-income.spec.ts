@@ -29,7 +29,7 @@ const bondTest = base.extend<{ app: AppPage; ticket: OrderTicketPage }>({
   },
 });
 
-fiTest.describe("Fixed Income — Spread Analysis Panel", () => {
+fiTest.describe("Fixed Income, Spread Analysis Panel", () => {
   fiTest("compute button triggers request and result chips are visible", async ({ app }) => {
     const panel = await app.panelByTitle(/Spread Analysis/i);
 
@@ -67,7 +67,7 @@ fiTest.describe("Fixed Income — Spread Analysis Panel", () => {
   });
 });
 
-fiTest.describe("Fixed Income — Duration Ladder Panel", () => {
+fiTest.describe("Fixed Income, Duration Ladder Panel", () => {
   fiTest("compute ladder renders portfolio DV01 summary", async ({ app }) => {
     const panel = await app.panelByTitle(/Duration Ladder/i);
 
@@ -100,7 +100,7 @@ fiTest.describe("Fixed Income — Duration Ladder Panel", () => {
   });
 });
 
-fiTest.describe("Fixed Income — Vol Surface Panel", () => {
+fiTest.describe("Fixed Income, Vol Surface Panel", () => {
   fiTest("heatmap renders with ATM vol and expiry labels", async ({ app }) => {
     const panel = await app.panelByTitle(/Vol Surface/i);
 
@@ -132,7 +132,7 @@ fiTest.describe("Fixed Income — Vol Surface Panel", () => {
   });
 });
 
-bondTest.describe("Fixed Income — Bond Order Ticket", () => {
+bondTest.describe("Fixed Income, Bond Order Ticket", () => {
   bondTest("Bond tab is accessible and shows ISIN selector", async ({ ticket }) => {
     await ticket.switchToBond();
     await expect(ticket.locator.locator("#bondSymbol")).toBeVisible({
@@ -218,6 +218,6 @@ base.describe("Trader personas", () => {
   });
 
   base.skip(
-    "research analyst has no trading permission — order ticket not accessible (RBAC blocks)"
+    "research analyst has no trading permission, order ticket not accessible (RBAC blocks)"
   );
 });

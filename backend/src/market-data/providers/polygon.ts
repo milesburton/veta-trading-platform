@@ -1,6 +1,6 @@
 /**
- * Polygon.io provider — REST fallback + WebSocket streaming for equity quotes.
- * Key: POLYGON_KEY (https://polygon.io — free tier: 15-min delayed)
+ * Polygon.io provider, REST fallback + WebSocket streaming for equity quotes.
+ * Key: POLYGON_KEY (https://polygon.io, free tier: 15-min delayed)
  */
 
 import { logger } from "#veta/logger";

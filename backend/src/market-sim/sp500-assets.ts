@@ -43,7 +43,7 @@ export interface AssetDef {
     | "CNH"
     | "THB"
     | "ILS";
-  /** Asset class — equity (default), fx, or commodity. */
+  /** Asset class, equity (default), fx, or commodity. */
   assetClass?: "equity" | "fx" | "commodity" | "bond";
   /** Simulated ISIN (format: US + 9 uppercase alphanum + 1 check digit). */
   isin: string;
@@ -53,7 +53,7 @@ export interface AssetDef {
   bbgTicker: string;
   /** Full company/instrument name. */
   name: string;
-  /** Round lot size — minimum tradeable quantity increment. 1 for high-price stocks (>$500),
+  /** Round lot size, minimum tradeable quantity increment. 1 for high-price stocks (>$500),
    *  10 for mid-price ($100–500), 100 for standard equities (<$100). ETFs always 1. */
   lotSize: number;
 }

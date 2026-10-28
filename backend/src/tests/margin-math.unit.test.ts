@@ -49,7 +49,7 @@ test("[margin-math] adding to an existing short recomputes a weighted-average co
   const acct = emptyAccount({ positions: { AAPL: -100 }, costBasis: { AAPL: 190 } });
   updatePosition(acct, "AAPL", "SELL", 100, 210);
   assertEquals(acct.positions.AAPL, -200);
-  // (100*190 + 100*210) / 200 = 200 — symmetric with the long case
+  // (100*190 + 100*210) / 200 = 200, symmetric with the long case
   assertEquals(acct.costBasis.AAPL, 200);
 });
 
@@ -88,7 +88,7 @@ test("[margin-math] flipping from long to short re-seeds cost basis at the trade
   assertEquals(
     acct.costBasis.AAPL,
     250,
-    "flipping through zero must re-seed cost basis — the old long's basis doesn't apply to the new short"
+    "flipping through zero must re-seed cost basis, the old long's basis doesn't apply to the new short"
   );
 });
 

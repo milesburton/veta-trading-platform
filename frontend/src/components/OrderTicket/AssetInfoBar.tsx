@@ -21,20 +21,20 @@ export function AssetInfoBar({ symbol }: { symbol: string }) {
     >
       <div className="flex justify-between">
         <span className="text-muted">Bid</span>
-        <span className="tabular-nums text-sky-400">{bid ? formatPrice(symbol, bid) : "—"}</span>
+        <span className="tabular-nums text-sky-400">{bid ? formatPrice(symbol, bid) : "n/a"}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted">Ask</span>
-        <span className="tabular-nums text-red-400">{ask ? formatPrice(symbol, ask) : "—"}</span>
+        <span className="tabular-nums text-red-400">{ask ? formatPrice(symbol, ask) : "n/a"}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted">Spread</span>
-        <span className="tabular-nums text-label">{spreadBps ? `${spreadBps}bp` : "—"}</span>
+        <span className="tabular-nums text-label">{spreadBps ? `${spreadBps}bp` : "n/a"}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted">Beta</span>
         <span className="tabular-nums text-label">
-          {asset.beta !== undefined ? asset.beta.toFixed(2) : "—"}
+          {asset.beta !== undefined ? asset.beta.toFixed(2) : "n/a"}
         </span>
       </div>
       <div className="flex justify-between">
@@ -44,7 +44,7 @@ export function AssetInfoBar({ symbol }: { symbol: string }) {
             ? asset.marketCapB >= 1000
               ? `$${(asset.marketCapB / 1000).toFixed(1)}T`
               : `$${asset.marketCapB.toFixed(0)}B`
-            : "—"}
+            : "n/a"}
         </span>
       </div>
       <div className="flex justify-between">
@@ -52,19 +52,19 @@ export function AssetInfoBar({ symbol }: { symbol: string }) {
         <span className="tabular-nums text-label">
           {asset.dividendYield !== undefined && asset.dividendYield > 0
             ? `${(asset.dividendYield * 100).toFixed(2)}%`
-            : "—"}
+            : "n/a"}
         </span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted">P/E</span>
         <span className="tabular-nums text-label">
-          {asset.peRatio !== undefined && asset.peRatio > 0 ? asset.peRatio.toFixed(1) : "—"}
+          {asset.peRatio !== undefined && asset.peRatio > 0 ? asset.peRatio.toFixed(1) : "n/a"}
         </span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted">Exchange</span>
         <span className="tabular-nums text-label">
-          {exchange ? <ExchangeBadge symbol={symbol} /> : (asset.exchange ?? "—")}
+          {exchange ? <ExchangeBadge symbol={symbol} /> : (asset.exchange ?? "n/a")}
         </span>
       </div>
     </div>

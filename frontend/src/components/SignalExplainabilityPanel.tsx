@@ -28,7 +28,7 @@ export function SignalExplainabilityPanel() {
   if (!symbol) {
     return (
       <div className="h-full flex items-center justify-center text-muted text-xs">
-        Link to a channel — waiting for symbol selection
+        Link to a channel, waiting for symbol selection
       </div>
     );
   }
@@ -88,7 +88,7 @@ export function SignalExplainabilityPanel() {
                   {f.contribution.toFixed(4)}
                 </span>
               </div>
-              {/* Bar — always centred, extends left or right */}
+              {/* Bar, always centred, extends left or right */}
               <div className="relative h-3 bg-panel rounded overflow-hidden">
                 {/* Centre marker */}
                 <div className="absolute top-0 bottom-0 w-px bg-subtle" style={{ left: "50%" }} />

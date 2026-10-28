@@ -16,7 +16,7 @@ export async function computeSystemPromptHash(): Promise<string> {
 }
 
 function fmt(n: number | null | undefined, places: number): string {
-  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
+  if (typeof n !== "number" || !Number.isFinite(n)) return "n/a";
   return n.toFixed(places);
 }
 
@@ -37,12 +37,12 @@ export function buildPrompt(
   const confidencePct =
     typeof signal.confidence === "number" && Number.isFinite(signal.confidence)
       ? `${(signal.confidence * 100).toFixed(0)}%`
-      : "—";
+      : "n/a";
 
   const lines: string[] = [
     `Symbol: ${symbol}`,
     `Signal: ${signal.direction} | score ${fmt(signal.score, 3)} | confidence ${confidencePct}`,
-    `Top factors: ${topFactors || "—"}`,
+    `Top factors: ${topFactors || "n/a"}`,
   ];
 
   if (fv) {
@@ -58,10 +58,10 @@ export function buildPrompt(
     const recConfidencePct =
       typeof rec.confidence === "number" && Number.isFinite(rec.confidence)
         ? `${(rec.confidence * 100).toFixed(0)}%`
-        : "—";
+        : "n/a";
     lines.push(
-      `Recommendation: ${rec.action} | qty ${rec.suggestedQty ?? "—"} | confidence ${recConfidencePct}`,
-      `Rationale: ${rec.rationale ?? "—"}`
+      `Recommendation: ${rec.action} | qty ${rec.suggestedQty ?? "n/a"} | confidence ${recConfidencePct}`,
+      `Rationale: ${rec.rationale ?? "n/a"}`
     );
   }
 

@@ -62,7 +62,7 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
         alertAdded({
           severity: "INFO",
           source: "workspace",
-          message: "Workspace save failed — your layout changes may not have been persisted.",
+          message: "Workspace save failed, your layout changes may not have been persisted.",
           ts: Date.now(),
         })
       );
@@ -84,7 +84,7 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
         alertAdded({
           severity: "CRITICAL",
           source: "kill-switch",
-          message: `Kill switch activated — ${scopeDetail}`,
+          message: `Kill switch activated, ${scopeDetail}`,
           detail: `Issued by ${b.issuedBy}`,
           ts: b.issuedAt,
           relatedTopic: "orders.kill",
@@ -98,7 +98,7 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
         alertAdded({
           severity: "INFO",
           source: "kill-switch",
-          message: "Kill switch cleared — trading resumed",
+          message: "Kill switch cleared, trading resumed",
           ts: Date.now(),
           relatedTopic: "orders.resume",
         })

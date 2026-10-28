@@ -18,7 +18,7 @@ describe("WorldClocksPanel", () => {
   });
 });
 
-describe("WorldClocksPanel — session badges", () => {
+describe("WorldClocksPanel, session badges", () => {
   beforeEach(() => {
     // Wednesday 2026-08-05 14:00 UTC = 10:00 America/New_York (open), 23:00 Asia/Tokyo (closed)
     vi.useFakeTimers();

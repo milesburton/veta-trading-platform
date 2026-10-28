@@ -80,7 +80,7 @@ describe("FilterBar", () => {
       }));
     };
     realRender();
-    // Skipping deep mock chain — basic render coverage
+    // Skipping deep mock chain, basic render coverage
     render(<FilterBar gridId="executions" fields={[...fields]} />);
     expect(screen.getByRole("button", { name: /Add filter/i })).toBeInTheDocument();
   });

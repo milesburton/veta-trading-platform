@@ -5,7 +5,7 @@
 - **MTTR**: ~13 minutes (from detection to recovery; actual outage began at 06:42 but went undetected until ~06:50)
 - **User-visible impact**: The deployment URL returned 404. Sign-in unavailable. Order flow unavailable. Live feed disconnected for all tabs.
 - **Detection**: user-reported ("Looks like the server is entirely offline now")
-- **Severity**: SEV1 — full platform outage
+- **Severity**: SEV1, full platform outage
 
 ## What happened
 
@@ -25,11 +25,11 @@ The deeper root cause is **using Watchtower at all** for a platform with availab
 
 ## Action items
 
-- [x] Replace Watchtower — done via PR #203's auto-pull half (systemd `veta-auto-pull.timer` + `scripts/homelab-auto-pull.sh` running `scripts/homelab-deploy.sh`). Watchtower itself is gone; the partial-recreate bug class can't recur. The originally-planned Swarm half of PR #203 was later descoped — auto-pull alone solved this incident. See Phase 2 in the [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx) for the rationale.
-- [ ] Stand up external synthetic probe so the next outage of this class is detected within 4 minutes, not after a user notices. — Phase 4. Owner: M, by: 2026-05-14.
-- [x] Add a deploy-time smoke gate that fails non-zero if not every named service is healthy after the deploy completes — `scripts/homelab-deploy.sh` checks `gateway oms ems risk-engine journal market-sim user-service` and exits 1 if any are unhealthy after 180s.
+- [x] Replace Watchtower, done via PR #203's auto-pull half (systemd `veta-auto-pull.timer` + `scripts/homelab-auto-pull.sh` running `scripts/homelab-deploy.sh`). Watchtower itself is gone; the partial-recreate bug class can't recur. The originally-planned Swarm half of PR #203 was later descoped, auto-pull alone solved this incident. See Phase 2 in the [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx) for the rationale.
+- [ ] Stand up external synthetic probe so the next outage of this class is detected within 4 minutes, not after a user notices., Phase 4. Owner: M, by: 2026-05-14.
+- [x] Add a deploy-time smoke gate that fails non-zero if not every named service is healthy after the deploy completes, `scripts/homelab-deploy.sh` checks `gateway oms ems risk-engine journal market-sim user-service` and exits 1 if any are unhealthy after 180s.
 
 ## Related
 
 - PRs: this PR (operations strategy doc itself); future Phase 2 PR.
-- Postmortem: see strategy doc — outage is the worked example justifying the entire strategy. No separate postmortem; this entry plus the strategy doc serves the same purpose.
+- Postmortem: see strategy doc, outage is the worked example justifying the entire strategy. No separate postmortem; this entry plus the strategy doc serves the same purpose.

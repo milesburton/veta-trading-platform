@@ -34,7 +34,7 @@ export function armConsumerIdleExit(
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const fire = () => {
-    logger.info(`[${label}] Idle timeout reached with no messages consumed — exiting`);
+    logger.info(`[${label}] Idle timeout reached with no messages consumed, exiting`);
     exit(0);
   };
 

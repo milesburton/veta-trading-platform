@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stop-idle.sh — shut down all idle-safe service groups
+# stop-idle.sh: shut down all idle-safe service groups
 # Usage: ./scripts/stop-idle.sh
 #
 # Stops all non-essential services while keeping the always-on core running:

@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { useDashboard } from "./DashboardLayout.tsx";
 
 /**
- * Panel action menu — replaces the single pop-out button with a small dropdown.
+ * Panel action menu, replaces the single pop-out button with a small dropdown.
  * Provides "Open in new window" and "Open in dialog" actions.
  *
  * panelId should be the FlexLayout node instance ID (from ChannelContext.instanceId)

@@ -184,7 +184,7 @@ log "Pulling latest images..."
 docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" pull \
     || log "⚠ pull returned non-zero (some images may be unavailable); continuing"
 
-# Horizontal scale — gateway is the CPU bottleneck. Override via env at
+# Horizontal scale: gateway is the CPU bottleneck. Override via env at
 # deploy time: GATEWAY_REPLICAS=3 /opt/stacks/veta/deploy.sh
 GATEWAY_REPLICAS="${GATEWAY_REPLICAS:-1}"
 
@@ -203,10 +203,10 @@ log "Restarting stack (gateway replicas=$GATEWAY_REPLICAS)..."
 # `up -d` exits non-zero if any service fails to start (e.g. unhealthy
 # dependency, or the Docker daemon race condition where remove/create
 # overlap on container names during a recreate). We retry once after a
-# short pause — most race-induced failures clear within seconds.
+# short pause: most race-induced failures clear within seconds.
 if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d --no-build \
         --scale "gateway=$GATEWAY_REPLICAS"; then
-    log "⚠ up -d returned non-zero — pausing 10s and retrying once"
+    log "⚠ up -d returned non-zero, pausing 10s and retrying once"
     sleep 10
     # Re-clean orphans in case the failed up created new ones
     ORPHANS=$(docker ps -a --format "{{.Names}}" | grep -E "^[0-9a-f]{12}_veta-" || true)
@@ -220,7 +220,7 @@ fi
 
 # Detect bind-mount drift on single-file mounts and restart the affected
 # container so the new inode takes effect. `docker compose up -d` only
-# recreates a container when the *service definition* changes — not
+# recreates a container when the *service definition* changes: not
 # when a bind-mounted single file is replaced. rsync atomic-replaces
 # the file with a new inode, which the container's mount can't follow,
 # so the container silently keeps serving the old content.
@@ -232,7 +232,7 @@ fi
 # resolution (`docker compose ps -q <svc>`), which handles the default
 # `<project>_<service>_<n>` form.
 #
-# 2026-05-20: disk-monitor.py was stale by this exact mechanism —
+# 2026-05-20: disk-monitor.py was stale by this exact mechanism,
 # the new /metrics-serving script was on the host but the container
 # had the old single-handler version, so Prometheus scrape silently
 # failed and the disk fill went undetected. See PR #309 for the
@@ -265,14 +265,14 @@ check_bind_mount_drift() {
         local in_container="${target#*:}"
         local container
         if ! container=$(resolve_container "$container_ref"); then
-            log "  ⚠ $host_rel: no running container matches '$container_ref' — skipping drift check"
+            log "  ⚠ $host_rel: no running container matches '$container_ref', skipping drift check"
             continue
         fi
         local host_sum cont_sum
         host_sum=$(sha256sum "$host_file" | awk '{print $1}')
         cont_sum=$(docker exec "$container" sha256sum "$in_container" 2>/dev/null | awk '{print $1}')
         if [[ -n "$cont_sum" && "$host_sum" != "$cont_sum" ]]; then
-            log "  ⚠ $host_rel differs from $container_ref view — bind-mount went stale"
+            log "  ⚠ $host_rel differs from $container_ref view, bind-mount went stale"
             restart_needed["$container"]=1
         fi
     done
@@ -296,7 +296,7 @@ declare -A VETA_BIND_MOUNTS=(
 check_bind_mount_drift VETA_BIND_MOUNTS
 
 # Observability (LGTM) is a separate compose project. Recreate it so config
-# changes in observability/docker-compose.lgtm.yml take effect — e.g.
+# changes in observability/docker-compose.lgtm.yml take effect: e.g.
 # Grafana's sub-path env + Traefik labels for the public /grafana route.
 if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
     # Docker compose loads .env from the project directory (which is
@@ -353,7 +353,7 @@ DEADLINE=$(( $(date +%s) + MAX_WAIT ))
 while [[ $(date +%s) -lt $DEADLINE ]]; do
     UNHEALTHY=""
     for svc in $CRITICAL_SERVICES; do
-        # Check ALL replicas, not just the first — a partial scale-out
+        # Check ALL replicas, not just the first: a partial scale-out
         # where some replicas are unhealthy should fail the deploy.
         cids=$(docker compose "${COMPOSE_FILES[@]}" ps -q "$svc" 2>/dev/null)
         if [[ -z "$cids" ]]; then

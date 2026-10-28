@@ -13,7 +13,7 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
     if (state === "warn") return <span className="text-amber-400">warn</span>;
     if (state === "starting") return <span className="text-sky-400">starting</span>;
     if (state === "error") return <span className="text-red-400">error</span>;
-    return <span className="text-muted">—</span>;
+    return <span className="text-muted">n/a</span>;
   }
 
   const info =
@@ -23,7 +23,7 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
           .join(", ")
       : svc.lastChecked
         ? formatUtcTime(svc.lastChecked)
-        : "—";
+        : "n/a";
 
   return (
     <tr className={`border-b border-panel/40 ${unavailable ? "opacity-40" : ""}`}>

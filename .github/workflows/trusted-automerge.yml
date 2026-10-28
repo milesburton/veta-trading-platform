@@ -21,8 +21,8 @@ jobs:
       # Wait for all REQUIRED status checks to pass before approving. The
       # approval is auto-dismissed by branch protection on every new push
       # (dismiss_stale_reviews), so a fresh run gates the approval on a fresh
-      # green build. Without this, the bot approved on push — seconds after the
-      # commit, long before CI finished — so the approval did not mean "green".
+      # green build. Without this, the bot approved on push: seconds after the
+      # commit, long before CI finished: so the approval did not mean "green".
       - name: Wait for required checks to pass
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,7 +42,7 @@ jobs:
           # state, and its own exit code already reflects the final result
           # (0 only if every required check is green). --fail-fast used to
           # be set here too, but it exits the instant ANY check is seen in a
-          # transient "fail" state — including one still mid-retry on CI's
+          # transient "fail" state: including one still mid-retry on CI's
           # own internal flake-recovery logic (Integration tests retries up
           # to 3x). That meant a check which later went green on its own
           # retry still killed this job permanently, with nothing to

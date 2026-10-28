@@ -61,7 +61,7 @@ function ServiceRow({ health, category }: { health: ServiceHealth; category: str
             ? "STANDBY"
             : displayState === "error"
               ? "DOWN"
-              : "—";
+              : "n/a";
   const statusClass =
     displayState === "ok"
       ? "text-green-400"

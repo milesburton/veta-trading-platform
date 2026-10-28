@@ -206,7 +206,7 @@ const Row = memo(function Row({
         onClick={handleSelect}
         onContextMenu={(e) => onContextMenu(e, asset.symbol)}
         aria-pressed={isSelected}
-        aria-label={`${asset.symbol} — ${asset.sector}.${
+        aria-label={`${asset.symbol}, ${asset.sector}.${
           exchange ? ` ${exchange.label} market ${exchange.isOpen ? "open" : "closed"}.` : ""
         } Bid ${
           price > 0 ? formatPrice(asset.symbol, bid) : "unavailable"
@@ -214,7 +214,7 @@ const Row = memo(function Row({
           price > 0 ? formatPrice(asset.symbol, price) : "unavailable"
         }, change ${
           price > 0 ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%` : "unavailable"
-        }. ${isSelected ? "Selected — click to deselect" : "Click to select and view in chart"}`}
+        }. ${isSelected ? "Selected, click to deselect" : "Click to select and view in chart"}`}
         title={
           isSelected
             ? "Click again to deselect"
@@ -247,7 +247,7 @@ const Row = memo(function Row({
         </div>
         <div style={{ width: colWidths.bid ?? 64 }} className="text-right px-2 flex-shrink-0">
           <div className="text-sky-400 tabular-nums text-[10px]">
-            {price > 0 ? formatPrice(asset.symbol, bid) : "—"}
+            {price > 0 ? formatPrice(asset.symbol, bid) : "n/a"}
           </div>
           {price > 0 && (
             <div className="text-divider text-[9px] tabular-nums">{spreadBps.toFixed(1)}bp</div>
@@ -257,13 +257,13 @@ const Row = memo(function Row({
           style={{ width: colWidths.ask ?? 64 }}
           className="text-right px-2 text-red-400 tabular-nums flex-shrink-0"
         >
-          {price > 0 ? formatPrice(asset.symbol, ask) : "—"}
+          {price > 0 ? formatPrice(asset.symbol, ask) : "n/a"}
         </div>
         <div style={{ width: colWidths.last ?? 64 }} className="text-right px-2 flex-shrink-0">
           {price > 0 ? (
             <PriceFlash value={price} asset={asset.symbol} />
           ) : (
-            <span className="text-subtle">—</span>
+            <span className="text-subtle">n/a</span>
           )}
         </div>
         <div
@@ -272,7 +272,7 @@ const Row = memo(function Row({
             changePos ? "text-emerald-400" : "text-red-400"
           }`}
         >
-          {price > 0 ? `${changePos ? "+" : ""}${changePct.toFixed(2)}%` : "—"}
+          {price > 0 ? `${changePos ? "+" : ""}${changePct.toFixed(2)}%` : "n/a"}
         </div>
         <div className="flex-1 flex items-center justify-end pr-2 gap-1.5">
           {isSelected && accentColour && (
@@ -416,7 +416,7 @@ export function MarketLadder() {
       },
       { separator: true, label: symbol },
       {
-        label: `View in order ticket (ask ${price > 0 ? ask.toFixed(2) : "—"})`,
+        label: `View in order ticket (ask ${price > 0 ? ask.toFixed(2) : "n/a"})`,
         icon: "▲",
         title: "Select this asset so it loads in the linked Order Ticket",
         onClick: () => {

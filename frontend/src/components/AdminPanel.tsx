@@ -107,7 +107,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
               className="w-24 bg-panel border border-divider rounded px-2 py-0.5 text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ) : (
-            <span className="text-subtle">—</span>
+            <span className="text-subtle">n/a</span>
           )}
         </td>
         <td className="px-3 py-2">
@@ -125,7 +125,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
               className="w-28 bg-panel border border-divider rounded px-2 py-0.5 text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ) : (
-            <span className="text-subtle">—</span>
+            <span className="text-subtle">n/a</span>
           )}
         </td>
         <td className="px-3 py-2">
@@ -151,7 +151,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
               })}
             </div>
           ) : (
-            <span className="text-subtle">—</span>
+            <span className="text-subtle">n/a</span>
           )}
         </td>
         {isAdmin && (
@@ -225,7 +225,7 @@ export function AdminPanel() {
                   <div className="text-secondary font-medium">
                     {label}{" "}
                     <span className="text-[10px] text-muted font-mono">
-                      {entry?.calendarLabel ?? "—"}
+                      {entry?.calendarLabel ?? "n/a"}
                     </span>
                   </div>
                   <div className="text-[10px] text-muted mt-1">
@@ -279,7 +279,7 @@ export function AdminPanel() {
           Trading Limits
           {!isAdmin && (
             <span className="ml-2 text-orange-400">
-              (read-only — mission control access required to edit)
+              (read-only, mission control access required to edit)
             </span>
           )}
         </div>
@@ -382,9 +382,9 @@ export function AdminPanel() {
                         {entry.event_type.replace("orders.", "")}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 text-label">{entry.algo ?? "—"}</td>
+                    <td className="px-3 py-1.5 text-label">{entry.algo ?? "n/a"}</td>
                     <td className="px-3 py-1.5 text-secondary font-mono">
-                      {entry.instrument ?? "—"}
+                      {entry.instrument ?? "n/a"}
                     </td>
                     <td
                       className={`px-3 py-1.5 font-medium ${
@@ -395,19 +395,19 @@ export function AdminPanel() {
                             : "text-muted"
                       }`}
                     >
-                      {entry.side ?? "—"}
+                      {entry.side ?? "n/a"}
                     </td>
                     <td className="px-3 py-1.5 text-default tabular-nums">
-                      {entry.quantity?.toLocaleString() ?? "—"}
+                      {entry.quantity?.toLocaleString() ?? "n/a"}
                     </td>
                     <td className="px-3 py-1.5 text-default tabular-nums">
-                      {entry.limit_price != null ? entry.limit_price.toFixed(4) : "—"}
+                      {entry.limit_price != null ? entry.limit_price.toFixed(4) : "n/a"}
                     </td>
                     <td className="px-3 py-1.5 text-default tabular-nums">
-                      {entry.fill_price != null ? entry.fill_price.toFixed(4) : "—"}
+                      {entry.fill_price != null ? entry.fill_price.toFixed(4) : "n/a"}
                     </td>
                     <td className="px-3 py-1.5 text-default tabular-nums">
-                      {entry.filled_qty?.toLocaleString() ?? "—"}
+                      {entry.filled_qty?.toLocaleString() ?? "n/a"}
                     </td>
                   </tr>
                 ))

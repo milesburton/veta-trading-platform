@@ -1,5 +1,5 @@
 /**
- * useGridQuery — server-driven grid data hook.
+ * useGridQuery, server-driven grid data hook.
  *
  * Reads the current filterExpr, sortField and sortDir from Redux, posts a
  * GridQueryRequest to the gateway via RTK Query, and returns the paginated
@@ -34,7 +34,7 @@ export interface UseGridQueryResult<T> {
 
 /**
  * Returns a ref to attach to the scroll container and a limit derived from
- * the container's current height — visible rows × BUFFER_FACTOR.
+ * the container's current height, visible rows × BUFFER_FACTOR.
  */
 export function useContainerLimit(): {
   containerRef: React.RefObject<HTMLDivElement>;

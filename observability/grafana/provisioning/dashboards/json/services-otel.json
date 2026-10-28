@@ -1,7 +1,7 @@
 {
   "uid": "veta-services-otel",
   "title": "Service Performance (OTel)",
-  "description": "Per-service request rate, latency, errors, and resource usage — sourced from the OpenTelemetry Node SDK. All panels respect the service variable, so pick a service from the top to scope the view.",
+  "description": "Per-service request rate, latency, errors, and resource usage, sourced from the OpenTelemetry Node SDK. All panels respect the service variable, so pick a service from the top to scope the view.",
   "tags": ["veta", "otel", "services"],
   "timezone": "browser",
   "time": { "from": "now-5m", "to": "now" },
@@ -256,7 +256,7 @@
       "id": 31,
       "type": "timeseries",
       "title": "p99 latency by service",
-      "description": "99th-percentile latency broken down by service — slow services rise above the rest.",
+      "description": "99th-percentile latency broken down by service, slow services rise above the rest.",
       "gridPos": { "x": 12, "y": 15, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
@@ -424,7 +424,7 @@
       "id": 60,
       "type": "timeseries",
       "title": "Inter-service request rate",
-      "description": "Edges of the service graph — who calls whom, how often. Sourced from Tempo's service-graph processor.",
+      "description": "Edges of the service graph, who calls whom, how often. Sourced from Tempo's service-graph processor.",
       "gridPos": { "x": 0, "y": 43, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
@@ -448,7 +448,7 @@
       "id": 61,
       "type": "timeseries",
       "title": "Inter-service p95 latency",
-      "description": "p95 latency for each call-pair in the service graph — useful for tracking which downstream calls dominate end-to-end latency.",
+      "description": "p95 latency for each call-pair in the service graph, useful for tracking which downstream calls dominate end-to-end latency.",
       "gridPos": { "x": 12, "y": 43, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {

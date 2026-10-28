@@ -251,19 +251,19 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
               c.liquidityFlag ? LIQ_STYLES[c.liquidityFlag] : "text-subtle"
             }`}
           >
-            {c.liquidityFlag ?? "—"}
+            {c.liquidityFlag ?? "n/a"}
           </td>
           <td className="px-3 py-1 text-muted font-mono text-[10px]">
-            {c.venue ? <span className="bg-panel rounded px-1">{c.venue}</span> : "—"}
+            {c.venue ? <span className="bg-panel rounded px-1">{c.venue}</span> : "n/a"}
           </td>
-          <td className="px-3 py-1 text-muted font-mono text-[10px]">{c.counterparty ?? "—"}</td>
+          <td className="px-3 py-1 text-muted font-mono text-[10px]">{c.counterparty ?? "n/a"}</td>
           <td className="px-3 py-1 text-right tabular-nums text-muted text-[10px]">
             {c.commissionUSD !== undefined ? (
               <span className={c.commissionUSD < 0 ? "text-emerald-600" : "text-amber-600"}>
                 ${c.commissionUSD.toFixed(2)}
               </span>
             ) : (
-              "—"
+              "n/a"
             )}
           </td>
         </tr>
@@ -405,7 +405,7 @@ export function AlgoMonitor() {
             </button>
             <button
               type="button"
-              title="Completed orders — filled or expired. Click a row to view execution performance."
+              title="Completed orders, filled or expired. Click a row to view execution performance."
               aria-pressed={tab === "history"}
               onClick={() => setTab("history")}
               data-testid="history-tab"
@@ -517,7 +517,7 @@ export function AlgoMonitor() {
                         {unfilled > 0 ? (
                           formatQty(unfilled)
                         ) : (
-                          <span className="text-subtle">—</span>
+                          <span className="text-subtle">n/a</span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums text-default">
@@ -544,7 +544,7 @@ export function AlgoMonitor() {
                             : "text-subtle"
                         }`}
                       >
-                        {marketPrice !== undefined ? formatPrice(order.asset, marketPrice) : "—"}
+                        {marketPrice !== undefined ? formatPrice(order.asset, marketPrice) : "n/a"}
                       </td>
                       <td
                         className={`px-3 py-2 text-right tabular-nums text-[10px] ${
@@ -557,7 +557,7 @@ export function AlgoMonitor() {
                             : "text-subtle"
                         }`}
                       >
-                        {perf ? formatBps(perf.marketImpactBps) : "—"}
+                        {perf ? formatBps(perf.marketImpactBps) : "n/a"}
                       </td>
                       <td
                         className={`px-3 py-2 text-right tabular-nums text-[10px] ${
@@ -568,7 +568,7 @@ export function AlgoMonitor() {
                             : "text-subtle"
                         }`}
                       >
-                        {perf ? `$${perf.totalCommission.toFixed(2)}` : "—"}
+                        {perf ? `$${perf.totalCommission.toFixed(2)}` : "n/a"}
                       </td>
                       {isNeedsAction && (
                         <td className="px-3 py-2">
@@ -620,11 +620,11 @@ export function AlgoMonitor() {
                         <td colSpan={colSpan} className="px-3 py-0.5 text-[10px] text-subtle">
                           {order.status === "pending" ? (
                             <span className="text-amber-600">
-                              Pending — waiting for fill conditions
+                              Pending, waiting for fill conditions
                             </span>
                           ) : order.status === "expired" ? (
                             <span className="text-muted">
-                              Expired —{" "}
+                              Expired,{" "}
                               {order.filled > 0
                                 ? `${formatQty(order.filled)} of ${formatQty(
                                     order.quantity
@@ -633,7 +633,7 @@ export function AlgoMonitor() {
                             </span>
                           ) : order.status === "filled" ? (
                             <span className="text-emerald-700">
-                              Filled — click to view performance
+                              Filled, click to view performance
                             </span>
                           ) : (
                             <span className="text-sky-700">

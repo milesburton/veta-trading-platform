@@ -29,7 +29,7 @@ module.exports = {
         // flatten into Tailwind utilities: `colors.muted` → `text-muted` /
         // `bg-muted` / `border-muted`. Each maps to a specific gray shade so
         // the four data-theme variants apply automatically.
-        //   strong       (gray-50)  pure white — high-emphasis headings
+        //   strong       (gray-50)  pure white, high-emphasis headings
         //   primary      (gray-100) primary text (~18:1 on page)
         //   secondary    (gray-200) strong secondary text (~12:1)
         //   default      (gray-300) body / value text (~8:1)

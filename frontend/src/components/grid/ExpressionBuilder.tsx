@@ -128,7 +128,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
         ))}
       </select>
 
-      {/* Value input — hidden for is_null / is_not_null */}
+      {/* Value input, hidden for is_null / is_not_null */}
       {!noValue &&
         (rule.op === "between" ? (
           <div className="flex gap-1">
@@ -252,7 +252,7 @@ function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps)
 
   return (
     <div className={`border rounded p-2 space-y-2 ${borderColor} ${bgColor}`}>
-      {/* Join toggle — shown between items, or as a pill at the top */}
+      {/* Join toggle, shown between items, or as a pill at the top */}
       <div className="flex items-center gap-2">
         <button
           type="button"

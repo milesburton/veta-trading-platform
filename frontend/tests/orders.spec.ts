@@ -198,7 +198,7 @@ traderTest.describe("Order submission", () => {
     const msg = await outbound;
     const id = msg.payload.clientOrderId as string;
 
-    gateway.sendOrderRejected(id, "Unauthenticated — please log in again");
+    gateway.sendOrderRejected(id, "Unauthenticated, please log in again");
     const blotter = await app.getOrderBlotter();
     await blotter.waitForStatusForOrder(id.slice(0, 8), "rejected");
   });

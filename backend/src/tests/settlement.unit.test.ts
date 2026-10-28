@@ -25,12 +25,12 @@ test("settlementDate uses the SIFMA bond calendar for fi desk, diverging from eq
   assertEquals(settlementDate("fi", fromFi), "2026-10-13");
 
   // derivatives also settles T+1 but uses the equity calendar, which does
-  // NOT observe Columbus Day — same Friday trade settles 2026-10-12.
+  // NOT observe Columbus Day, same Friday trade settles 2026-10-12.
   assertEquals(settlementDate("derivatives", fromFi), "2026-10-12");
 });
 
 test("settlementDate returns same-day for zero-day desks", () => {
-  // No desk currently has 0 settlement days, but the code path exists —
+  // No desk currently has 0 settlement days, but the code path exists,
   // confirm it still returns a same-day ISO date if it ever did.
   const from = new Date("2026-07-31T12:00:00Z").getTime();
   const sameDay = new Date(from).toISOString().slice(0, 10);

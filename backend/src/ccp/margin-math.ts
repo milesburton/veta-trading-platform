@@ -19,12 +19,12 @@ const DUST_THRESHOLD = 0.0001;
 
 /**
  * Applies a fill to a margin account's position and cost basis. Mutates
- * `acct` in place — a margin account is ledger state, not a value to
+ * `acct` in place, a margin account is ledger state, not a value to
  * recompute from scratch each time.
  *
  * Opening a fresh position from flat, or adding to an existing position in
  * the same direction (long+BUY or short+SELL), recomputes a weighted-average
- * cost basis — symmetric for both longs and shorts. Reducing a position
+ * cost basis, symmetric for both longs and shorts. Reducing a position
  * (trading against the existing direction, without flipping through zero)
  * updates quantity but leaves cost basis untouched; this does not realize
  * P&L on the reduced portion, since realized P&L is not tracked by this
@@ -55,7 +55,7 @@ export function updatePosition(
     acct.positions[asset] = newQty;
     acct.costBasis[asset] = totalCost / Math.abs(newQty);
   } else if (Math.sign(newQty) !== Math.sign(currentQty)) {
-    // Flipped through zero — the new position is in the opposite direction
+    // Flipped through zero, the new position is in the opposite direction
     // to the old one, so none of the prior cost basis applies.
     acct.positions[asset] = newQty;
     acct.costBasis[asset] = price;
@@ -71,7 +71,7 @@ export function computeInitialMargin(desk: string, notional: number): number {
   return parseFloat((notional * rate).toFixed(2));
 }
 
-/** Margin released on settlement of a position, by desk. Same rate table as computeInitialMargin — kept as one shared function so post/release can't silently drift. */
+/** Margin released on settlement of a position, by desk. Same rate table as computeInitialMargin, kept as one shared function so post/release can't silently drift. */
 export function computeMarginRelease(desk: string, notional: number): number {
   return computeInitialMargin(desk, notional);
 }
@@ -90,13 +90,13 @@ export interface MarginCallResult {
  * Maintenance requirement is 70% of net initial margin while any position
  * is open; it snaps to 100% (the full initial requirement) once positions
  * are flat, on the read that a flat account has no market exposure to
- * hold margin against reduced-rate — a call only fires while
+ * hold margin against reduced-rate, a call only fires while
  * `initialMarginPosted > 0`, so a flat account with no margin posted at
  * all never triggers one regardless of this snap.
  *
  * A call is only returned when initial margin has actually been posted,
  * the account is genuinely under the maintenance threshold, and the
- * computed shortfall is strictly positive — a rounding-driven zero or
+ * computed shortfall is strictly positive, a rounding-driven zero or
  * negative shortfall does not count as a call.
  */
 export function computeMarginCall(

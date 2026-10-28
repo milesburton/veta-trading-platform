@@ -18,7 +18,7 @@ name: Post-deploy probe
 # SHA when a new image was actually going to be built.
 #
 # This is the same probe that runs every 60s on the edge server.
-# CI is a third, independent vantage point — if the edge probe sees a
+# CI is a third, independent vantage point: if the edge probe sees a
 # different result from GitHub runners, the divergence itself is a
 # useful signal (e.g. an edge-side network issue).
 #
@@ -87,7 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          # Only need the probe script — shallow checkout.
+          # Only need the probe script: shallow checkout.
           fetch-depth: 1
 
       - name: Setup Node
@@ -154,7 +154,7 @@ jobs:
           PROBE_BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
           PROBE_TIMEOUT_MS: "15000"
         run: |
-          # Retry up to 3 times — auto-pull cadence has jitter, and the
+          # Retry up to 3 times: auto-pull cadence has jitter, and the
           # probe may catch a brief gateway recreate window.
           for attempt in 1 2 3; do
             echo "::group::probe attempt ${attempt}"

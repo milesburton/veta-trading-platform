@@ -1,4 +1,4 @@
-# Homelab prod override — internal Dockge-managed VM serving veta.mnetcs.com.
+# Homelab prod override: internal Dockge-managed VM serving veta.mnetcs.com.
 # Usage: docker compose -f compose.yml -f compose.prod.yml up -d
 
 x-prod-image: &prod-defaults
@@ -14,7 +14,7 @@ secrets:
 
 services:
 
-  # Infrastructure — persistent, never auto-restarted on image change.
+  # Infrastructure: persistent, never auto-restarted on image change.
   redpanda:
     <<: *prod-defaults
     command:
@@ -53,7 +53,7 @@ services:
     <<: *prod-defaults
     mem_limit: 512m
 
-  # Application services — pulled from GHCR by the homelab auto-pull.
+  # Application services: pulled from GHCR by the homelab auto-pull.
   frontend:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/frontend:latest
@@ -277,7 +277,7 @@ services:
       OAUTH2_USER_SECRETS: "${OAUTH2_USER_SECRETS:-}"
       # Enables the unauthenticated /personas endpoint that powers the
       # demo-persona picker on the Sign-in panel. Safe to leave on for
-      # public deployments — only returns avatar, role, desk and trading
+      # public deployments: only returns avatar, role, desk and trading
       # style; never credentials.
       VETA_DEMO_MODE: "${VETA_DEMO_MODE:-true}"
     labels:
@@ -317,7 +317,7 @@ services:
   # fix-gateway is the browser-facing edge of the FIX stack (WS -> TCP
   # bridge to fix-exchange). It's the trust boundary, so TLS terminates
   # here (entrypoints=websecure, tls=true) and a per-IP rate limit applies
-  # — same pattern the main gateway already uses for its own WS route.
+  #: same pattern the main gateway already uses for its own WS route.
   # The internal TCP hop from fix-gateway to fix-exchange stays plaintext
   # deliberately: both processes are on the trusted internal network, and
   # that hop was never the trust boundary in the first place. This is a
@@ -325,7 +325,7 @@ services:
   # limit at fix-exchange itself is a separate, larger change (fix-gateway
   # proxies every client through one TCP connection pool, so IP-based
   # limiting at fix-exchange's own layer would only ever see fix-gateway's
-  # address — see fix-protocol.mdx's known gaps).
+  # address: see fix-protocol.mdx's known gaps).
   fix-gateway:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/fix-gateway:latest
@@ -577,7 +577,7 @@ services:
       - "traefik.http.services.risk-engine.loadbalancer.server.port=5032"
       - "traefik.http.routers.risk-engine.priority=10"
 
-  # Gateway is the platform's CPU bottleneck under load — Node is single-
+  # Gateway is the platform's CPU bottleneck under load: Node is single-
   # threaded and one replica pegs at one core. Scale horizontally with
   # `docker compose ... up -d --scale gateway=N` (or set GATEWAY_REPLICAS
   # in the deploy environment; deploy.sh wires it up).
@@ -585,7 +585,7 @@ services:
   # Sticky cookie ensures WebSocket connections + their associated HTTP
   # requests land on the same replica. In-process WS state (subscription
   # maps, pending signal/feature debounce buffers) stays consistent.
-  # The upgradeInProgress flag is per-replica today — if it diverges,
+  # The upgradeInProgress flag is per-replica today: if it diverges,
   # set UPGRADE_IN_PROGRESS via env on all replicas at once.
   gateway:
     <<: *prod-defaults
@@ -614,7 +614,7 @@ services:
       - "traefik.http.services.gateway.loadbalancer.sticky.cookie=true"
       - "traefik.http.services.gateway.loadbalancer.sticky.cookie.name=veta_gw"
       - "traefik.http.services.gateway.loadbalancer.sticky.cookie.httpOnly=true"
-      # Health-gate this router specifically — Traefik stops sending
+      # Health-gate this router specifically: Traefik stops sending
       # traffic to a gateway container the moment it fails /health,
       # rather than only when the container disappears entirely. With
       # one replica this narrows the swap-window error rather than

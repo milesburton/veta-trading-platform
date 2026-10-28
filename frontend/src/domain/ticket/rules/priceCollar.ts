@@ -22,7 +22,7 @@ export function runPriceCollarCheck(ctx: TicketContext): Diagnostic[] {
       severity: "error",
       message: `Limit price is ${pct}% ${direction} current market ($${instrument.currentPrice.toFixed(
         2
-      )}) — exceeds price collar`,
+      )}), exceeds price collar`,
       ruleId: "price-collar.exceeds-max",
     });
   } else if (deviation >= COLLAR_WARNING_PCT) {

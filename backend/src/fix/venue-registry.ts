@@ -125,7 +125,7 @@ export interface VenueValidationResult {
  * Validates a NewOrderSingle's ExDestination/OrdType/OrderQty against the
  * resolved venue's capabilities. An empty/absent ExDestination is treated
  * as valid (no venue routing requested) rather than rejected, since venue
- * routing is optional on this exchange today — a client that never sends
+ * routing is optional on this exchange today, a client that never sends
  * ExDestination should see no behavior change from before this check
  * existed.
  */

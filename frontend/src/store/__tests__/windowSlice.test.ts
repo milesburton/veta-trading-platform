@@ -10,7 +10,7 @@ import { describe, expect, it } from "vite-plus/test";
 const { reducer } = windowSlice;
 const initial = reducer(undefined, { type: "@@init" });
 
-// windowSlice now uses a dynamic string-keyed record — no pre-initialised entries.
+// windowSlice now uses a dynamic string-keyed record, no pre-initialised entries.
 
 describe("windowSlice – initial state", () => {
   it("starts with an empty popOuts record", () => {

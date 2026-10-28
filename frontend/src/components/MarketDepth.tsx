@@ -60,7 +60,7 @@ export function MarketDepth({ symbol }: Props) {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Asks — shown top-to-bottom, lowest ask at bottom */}
+        {/* Asks, shown top-to-bottom, lowest ask at bottom */}
         <div data-testid="ask-table" className="flex-1 flex flex-col justify-end overflow-hidden">
           {[...asks].reverse().map((level, i) => {
             const barPct = (level.size / maxSize) * 100;
@@ -101,18 +101,18 @@ export function MarketDepth({ symbol }: Props) {
         >
           <span
             className="text-[10px] text-muted"
-            title="Bid-ask spread — difference between best ask and best bid prices"
+            title="Bid-ask spread, difference between best ask and best bid prices"
           >
             Spread{" "}
             <span className="font-mono text-default">
               {asks.length > 0 && bids.length > 0
                 ? (asks[0].price - bids[0].price).toFixed(decimals)
-                : "—"}
+                : "n/a"}
             </span>
           </span>
           <span
             className="text-[10px] font-mono font-semibold text-secondary"
-            title="Mid price — midpoint between best bid and ask"
+            title="Mid price, midpoint between best bid and ask"
           >
             {snapshot.mid.toFixed(decimals)}
           </span>

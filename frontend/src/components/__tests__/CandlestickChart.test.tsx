@@ -11,7 +11,7 @@ function renderWithStore(ui: React.ReactElement) {
   return render(<Provider store={testStore}>{ui}</Provider>);
 }
 
-// lightweight-charts renders to canvas which jsdom doesn't support — stub it out
+// lightweight-charts renders to canvas which jsdom doesn't support, stub it out
 const seriesStub = { setData: vi.fn(), update: vi.fn(), applyOptions: vi.fn() };
 const priceScaleStub = { applyOptions: vi.fn() };
 const timeScaleStub = {

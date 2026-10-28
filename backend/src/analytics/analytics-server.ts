@@ -1,19 +1,19 @@
 import "#veta/bootstrap";
 /**
- * Analytics Service — port 5014
+ * Analytics Service, port 5014
  *
  * Endpoints:
- *   POST /quote                    — Black-Scholes option price + Greeks
- *   POST /scenario                 — Scenario matrix (spot/vol shocks) with Monte Carlo
- *   POST /recommend                — Trade recommendations (rule-based or signal-driven)
- *   GET  /vol-profile/:symbol      — EWMA vol trend series for charting
- *   GET  /greeks-surface/:symbol   — Greeks across strike range at given expiry
- *   POST /bond-price               — Bond pricing (DCF, duration, convexity, DV01)
- *   POST /yield-curve              — Nelson-Siegel spot curve + forward rates
- *   GET  /price-fan/:symbol        — GBM forward price fan (p5/p25/p50/p75/p95)
- *   POST /spread-analysis          — Z-spread, G-spread, OAS vs Nelson-Siegel curve
- *   POST /duration-ladder          — Key-rate DV01 ladder for a bond portfolio
- *   GET  /vol-surface/:symbol      — Implied vol surface (5 expiries × 9 strikes)
+ *   POST /quote,                   Black-Scholes option price + Greeks
+ *   POST /scenario,                Scenario matrix (spot/vol shocks) with Monte Carlo
+ *   POST /recommend,               Trade recommendations (rule-based or signal-driven)
+ *   GET  /vol-profile/:symbol,     EWMA vol trend series for charting
+ *   GET  /greeks-surface/:symbol , Greeks across strike range at given expiry
+ *   POST /bond-price,              Bond pricing (DCF, duration, convexity, DV01)
+ *   POST /yield-curve,             Nelson-Siegel spot curve + forward rates
+ *   GET  /price-fan/:symbol,       GBM forward price fan (p5/p25/p50/p75/p95)
+ *   POST /spread-analysis,         Z-spread, G-spread, OAS vs Nelson-Siegel curve
+ *   POST /duration-ladder,         Key-rate DV01 ladder for a bond portfolio
+ *   GET  /vol-surface/:symbol,     Implied vol surface (5 expiries × 9 strikes)
  *   GET  /health
  */
 import { decodePathSegment, json, serveJsonService } from "#veta/http";

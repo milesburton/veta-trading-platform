@@ -1,14 +1,14 @@
 /**
- * Electron screenshot capture spec — generates docs/screenshots/electron-*.png for the README.
+ * Electron screenshot capture spec, generates docs/screenshots/electron-*.png for the README.
  *
  * Launches the packaged Electron app (built with electron:build-test, which bakes
  * VITE_GATEWAY_URL/VITE_GATEWAY_WS_URL pointing at localhost:7777) and captures
  * representative screenshots showing the desktop application in action.
  *
  * Screenshots:
- *   electron-01-dashboard.png  — main dashboard with live market data
- *   electron-02-main-window.png — main window after pop-out is opened (channel linked)
- *   electron-03-linked-popout.png — the linked pop-out panel window
+ *   electron-01-dashboard.png, main dashboard with live market data
+ *   electron-02-main-window.png, main window after pop-out is opened (channel linked)
+ *   electron-03-linked-popout.png, the linked pop-out panel window
  *
  * Run:
  *   npm run electron:build-test
@@ -147,7 +147,7 @@ test("electron screenshot: linked pop-out window", async () => {
   await waitForHealthy(mainPage);
   await mainPage.waitForTimeout(400);
 
-  // Open a pop-out panel via window.open — mirrors what usePopOut() does.
+  // Open a pop-out panel via window.open, mirrors what usePopOut() does.
   // Must use the same file:// origin so setWindowOpenHandler allows it.
   // Pop out the market-ladder (live quotes) rather than an empty order
   // blotter, so the linked-pop-out screenshot shows meaningful content.
@@ -165,7 +165,7 @@ test("electron screenshot: linked pop-out window", async () => {
 
   const popOutPage = await popOutPromise;
   await popOutPage.waitForLoadState("load");
-  // Wait for React to mount — pop-out renders PopOutHost directly (no AuthGate/StartupOverlay)
+  // Wait for React to mount, pop-out renders PopOutHost directly (no AuthGate/StartupOverlay)
   await popOutPage.waitForSelector("#root > *", { timeout: 15_000 });
   await popOutPage.waitForTimeout(1_000);
 

@@ -153,7 +153,7 @@ describe("PopOutHost", () => {
   it("renders market-depth pop-out with default symbol", () => {
     localStorage.removeItem("layout-test");
     renderHost("market-depth");
-    // MarketDepth is mocked as <div /> so no specific text — just no throw
+    // MarketDepth is mocked as <div /> so no specific text, just no throw
     expect(document.title).toMatch(/VETA/);
   });
 

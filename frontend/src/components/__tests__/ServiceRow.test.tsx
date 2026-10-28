@@ -88,6 +88,6 @@ describe("ServiceRow", () => {
         </tbody>
       </table>
     );
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("n/a")).toBeInTheDocument();
   });
 });

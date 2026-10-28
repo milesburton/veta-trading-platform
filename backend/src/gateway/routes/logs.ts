@@ -98,7 +98,7 @@ async function queryLoki(
         try {
           parsed = JSON.parse(raw);
         } catch {
-          // not JSON — treat as plain message
+          // not JSON, treat as plain message
         }
         out.push({
           ts: Math.floor(Number(tsNs) / 1_000_000),

@@ -1,7 +1,7 @@
 /**
  * Research Radar Panel
  *
- * Scatter chart of all tracked symbols — X = signal score, Y = confidence,
+ * Scatter chart of all tracked symbols, X = signal score, Y = confidence,
  * bubble size = news velocity, colour = direction (long/short/neutral).
  * Clicking a bubble broadcasts the symbol on the outgoing channel.
  * Filter by direction; sort by score, confidence, or news velocity.
@@ -46,7 +46,7 @@ interface Entry {
   confidence: number;
   direction: Direction;
   newsVelocity: number;
-  // For scatter chart — z maps to bubble size
+  // For scatter chart, z maps to bubble size
   z: number;
 }
 

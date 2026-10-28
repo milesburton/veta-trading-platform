@@ -162,9 +162,9 @@ describe("OrderBlotter – single order", () => {
     expect(screen.getByText("SELL")).toBeInTheDocument();
   });
 
-  it("shows — for avg fill when there are no children", () => {
+  it("shows, for avg fill when there are no children", () => {
     renderBlotter([makeOrder()]);
-    const dashes = screen.getAllByText("—");
+    const dashes = screen.getAllByText("n/a");
     expect(dashes.length).toBeGreaterThan(0);
   });
 
@@ -335,9 +335,9 @@ describe("OrderBlotter – Booked By column", () => {
     expect(screen.getByText("trader-alice")).toBeInTheDocument();
   });
 
-  it("shows — when userId is absent", () => {
+  it("shows, when userId is absent", () => {
     renderBlotter([makeOrder()]);
-    const dashes = screen.getAllByText("—");
+    const dashes = screen.getAllByText("n/a");
     expect(dashes.length).toBeGreaterThan(0);
   });
 });
@@ -494,14 +494,14 @@ describe("OrderBlotter – formatting paths", () => {
     expect(screen.getByText("1.1234")).toBeInTheDocument();
   });
 
-  it("renders shows '—' for empty commission", () => {
+  it("renders shows 'n/a' for empty commission", () => {
     renderBlotter([
       makeOrder({
         id: "o-empty",
         children: [],
       }),
     ]);
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("n/a").length).toBeGreaterThan(0);
   });
 });
 

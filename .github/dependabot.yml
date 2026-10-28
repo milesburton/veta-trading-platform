@@ -3,7 +3,7 @@ version: 2
 # This repo is Node (backend) + Vite/Astro frontend. Each package has a real
 # package.json, so npm is the only ecosystem worth running Dependabot for.
 # The other ecosystems (pip, gradle, maven, composer, bundler, pub, cargo,
-# nuget) were inherited template defaults — they had no manifests to scan, but
+# nuget) were inherited template defaults: they had no manifests to scan, but
 # the nuget entry was still triggering GitHub's auto-dependency-submission
 # job (`submit-nuget`) which then failed on every PR with "No .NET project
 # files found in repository". Removing the unused ecosystems silences the

@@ -304,7 +304,7 @@ describe("MarketHeatmap – rendering", () => {
         <MarketHeatmap />
       </Provider>
     );
-    // The component sets canvas width via ResizeObserver — initial may be 960x540
+    // The component sets canvas width via ResizeObserver, initial may be 960x540
     expect(screen.getByTestId("market-heatmap-panel")).toBeInTheDocument();
   });
 

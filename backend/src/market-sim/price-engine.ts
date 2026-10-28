@@ -28,7 +28,7 @@ export const marketData: Record<string, number> = Object.fromEntries(
 );
 
 /**
- * Session open prices — baseline for intraday % change. Set once before the
+ * Session open prices, baseline for intraday % change. Set once before the
  * first live broadcast so late-connecting clients see the same day's move.
  */
 export const openPrices: Record<string, number> = Object.fromEntries(

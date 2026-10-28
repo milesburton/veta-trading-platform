@@ -313,14 +313,14 @@ export function BasketOrderPanel() {
                       {leg.qty > 0 ? (
                         leg.qty.toLocaleString()
                       ) : (
-                        <span className="text-subtle">—</span>
+                        <span className="text-subtle">n/a</span>
                       )}
                       {leg.lotSize > 1 && (
                         <span className="text-subtle ml-0.5">/{leg.lotSize}</span>
                       )}
                     </td>
                     <td className="px-2 py-1 text-right tabular-nums text-label">
-                      {leg.price > 0 ? `$${leg.price.toFixed(2)}` : "—"}
+                      {leg.price > 0 ? `$${leg.price.toFixed(2)}` : "n/a"}
                     </td>
                     <td className="px-2 py-1 text-right tabular-nums text-default">
                       {leg.qty > 0 && leg.price > 0 ? (
@@ -328,7 +328,7 @@ export function BasketOrderPanel() {
                           maximumFractionDigits: 0,
                         })}`
                       ) : (
-                        <span className="text-subtle">—</span>
+                        <span className="text-subtle">n/a</span>
                       )}
                     </td>
                     <td className="px-2 py-1 text-center">
@@ -392,7 +392,7 @@ export function BasketOrderPanel() {
 
         {!weightOk && computedLegs.length > 0 && (
           <div className="rounded border border-amber-700/40 bg-amber-950/30 px-2.5 py-1.5 text-[10px] text-amber-400">
-            ⚠ Weights sum to {totalWeight.toFixed(1)}% — adjust to 100% or use "Distribute evenly"
+            ⚠ Weights sum to {totalWeight.toFixed(1)}%, adjust to 100% or use "Distribute evenly"
           </div>
         )}
 

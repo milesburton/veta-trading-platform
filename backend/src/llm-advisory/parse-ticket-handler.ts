@@ -1,7 +1,7 @@
 import { ParseTicketRequestSchema, QuickTradeIntentSchema } from "./parse-ticket-schema.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 
-const PARSE_TICKET_SYSTEM_PROMPT = `You convert short trading instructions into JSON. Respond with a single JSON object and nothing else — no prose, no markdown fences.
+const PARSE_TICKET_SYSTEM_PROMPT = `You convert short trading instructions into JSON. Respond with a single JSON object and nothing else, no prose, no markdown fences.
 
 Schema:
 {

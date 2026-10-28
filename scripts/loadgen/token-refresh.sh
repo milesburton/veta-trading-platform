@@ -20,11 +20,11 @@ while true; do
   if token=$(oauth_acquire_token); then
     printf '%s' "$token" > "$TOKEN_FILE"
     # 644 so the unprivileged k6 containers (UID 1000) can read it.
-    # The volume is internal — never reaches a network or another tenant.
+    # The volume is internal: never reaches a network or another tenant.
     chmod 644 "$TOKEN_FILE"
     log "refreshed token (length=${#token}, next refresh in ${REFRESH_INTERVAL}s)"
   else
-    log "refresh FAILED — leaving previous token in place"
+    log "refresh FAILED, leaving previous token in place"
   fi
   sleep "$REFRESH_INTERVAL"
 done

@@ -235,7 +235,7 @@ function DataFreshness() {
     return (
       <span
         data-testid="feed-status"
-        title="Gateway disconnected — all data sources offline"
+        title="Gateway disconnected, all data sources offline"
         className="flex items-center gap-1.5 text-[10px] text-semantic-status-critical tabular-nums"
       >
         <span className="text-muted">Feed</span>
@@ -293,7 +293,7 @@ const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: stri
   },
   uat: {
     label: "UAT",
-    title: "Internal UAT environment — not production",
+    title: "Internal UAT environment, not production",
     cls: "bg-semantic-status-pending/6 text-semantic-status-pending border-semantic-status-pending/30",
   },
   prod: {
@@ -512,7 +512,7 @@ export function AppHeader() {
           <span className="h-2 w-2 rounded-full bg-orange-400 animate-pulse shrink-0" />
           <span>
             {upgradeStatus.message ??
-              "System upgrade in progress — orders may be delayed or rejected."}
+              "System upgrade in progress, orders may be delayed or rejected."}
           </span>
         </div>
       )}
@@ -522,7 +522,7 @@ export function AppHeader() {
           className="flex items-center justify-center gap-3 px-4 py-1.5 bg-amber-900/60 border-b border-amber-700/60 text-xs text-amber-300"
         >
           <span>
-            A new version is available. Reload when convenient — your session will be preserved.
+            A new version is available. Reload when convenient, your session will be preserved.
           </span>
           <button
             type="button"

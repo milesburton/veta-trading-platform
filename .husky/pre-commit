@@ -16,7 +16,7 @@ fi
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
 echo "  [0/15] Verifying clean working directory..."
-# Block unstaged changes to tracked files. Staged changes are expected —
+# Block unstaged changes to tracked files. Staged changes are expected,
 # those are what we're about to commit. Using `git diff-index HEAD` here
 # would also flag the staged files and make any normal commit fail.
 if ! git diff --quiet; then
@@ -51,7 +51,7 @@ cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   npm run test:integration --silent
 else
-  echo "       Services not fully running — skipping integration tests."
+  echo "       Services not fully running, skipping integration tests."
 fi
 
 echo "  [8/15] Migration safety (expand/contract)..."
@@ -65,7 +65,7 @@ if [ -n "$STAGED_MIGRATIONS" ]; then
   # shellcheck disable=SC2086
   node backend/db/checkMigrationsSafe.ts $STAGED_MIGRATIONS
 else
-  echo "       No staged migration changes — skipping."
+  echo "       No staged migration changes, skipping."
 fi
 
 echo "  [9/15] Prometheus alert rules..."
@@ -75,11 +75,11 @@ if git diff --cached --name-only | grep -qE '^observability/(prometheus-rules\.y
     promtool check rules observability/prometheus-rules.yml
     promtool test rules observability/prometheus-rules.test.yml
   else
-    echo "       promtool not on PATH — skipping (CI runs the hard gate)."
+    echo "       promtool not on PATH, skipping (CI runs the hard gate)."
     echo "       To install locally: see docs/site/src/content/docs/platform/observability/alerts.mdx"
   fi
 else
-  echo "       No staged changes to alert rules — skipping."
+  echo "       No staged changes to alert rules, skipping."
 fi
 
 echo "  [10/15] Docs drift check (regenerate derived files)..."
@@ -102,14 +102,14 @@ if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
     exit 1
   fi
 else
-  echo "       docs/site/node_modules missing — skipping (run 'cd docs/site && npm ci')."
+  echo "       docs/site/node_modules missing, skipping (run 'cd docs/site && npm ci')."
 fi
 
 echo "  [11/15] Private IPs in public docs..."
 # The Astro/Starlight site under docs/site/src/ is published to GitHub Pages,
 # so it is internet-public. Reject RFC1918 (10/8, 172.16/12, 192.168/16)
 # addresses in source files, which would advertise internal infrastructure.
-# Loopback (127/8) is excluded — it is a generic "this machine" address and
+# Loopback (127/8) is excluded: it is a generic "this machine" address and
 # leaks nothing. Mirrors the hard gate in the frontend CI workflow.
 cd "$REPO_ROOT"
 if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+)\b' \
@@ -125,7 +125,7 @@ echo "  [12/15] Docs validation (markdown + mermaid + build + links)..."
 # Mirrors the "Docs build & lint" CI job step-for-step so broken docs can
 # never reach a push. The link checker (validate:links) scans the BUILT html
 # in dist/, so the order matters: markdownlint -> mermaid -> build -> links.
-# astro build alone does NOT catch broken internal links — validate:links does.
+# astro build alone does NOT catch broken internal links: validate:links does.
 # Only runs when the changeset touches docs, so non-docs commits stay fast.
 cd "$REPO_ROOT"
 if git diff --cached --name-only | grep -qE '^docs/'; then
@@ -146,13 +146,13 @@ if git diff --cached --name-only | grep -qE '^docs/'; then
     ) || exit 1
     cd "$REPO_ROOT"
   else
-    echo "❌ ERROR: docs/ changed but docs/site/node_modules is missing —"
+    echo "❌ ERROR: docs/ changed but docs/site/node_modules is missing, "
     echo "         cannot validate docs locally. Install with: cd docs/site && npm ci"
     echo "         (refusing to skip: a missing-deps skip is how broken docs reach CI)"
     exit 1
   fi
 else
-  echo "       No staged changes under docs/ — skipping."
+  echo "       No staged changes under docs/, skipping."
 fi
 
 echo "  [13/15] Fallow audit (staged vs HEAD; advisory)..."
@@ -167,7 +167,7 @@ if [ -x "./node_modules/.bin/fallow" ]; then
   ./node_modules/.bin/fallow audit --root "$REPO_ROOT" --changed-since HEAD || \
     echo "       fallow audit flagged findings (advisory; see CI for the hard gate)."
 else
-  echo "       fallow not installed in frontend/node_modules — skipping (run npm ci)."
+  echo "       fallow not installed in frontend/node_modules, skipping (run npm ci)."
 fi
 
 echo "  [14/15] No secret files staged..."

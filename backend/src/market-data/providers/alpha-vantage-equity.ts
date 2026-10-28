@@ -1,5 +1,5 @@
 /**
- * Alpha Vantage provider — equity GLOBAL_QUOTE and FX CURRENCY_EXCHANGE_RATE.
+ * Alpha Vantage provider, equity GLOBAL_QUOTE and FX CURRENCY_EXCHANGE_RATE.
  */
 
 import { logger } from "#veta/logger";

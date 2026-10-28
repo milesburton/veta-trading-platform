@@ -101,7 +101,7 @@ export async function handleWebSocketRoute(
     } else {
       ctx.publishAccessEvent({
         action: "ws_connect",
-        reason: "anonymous — no valid session",
+        reason: "anonymous, no valid session",
       });
     }
   };
@@ -138,7 +138,7 @@ export async function handleWebSocketRoute(
         } catch {
           /* ignore */
         }
-        socket.close(1008, "abuse — too many rate-limited frames");
+        socket.close(1008, "abuse, too many rate-limited frames");
       }
       return;
     }
@@ -183,13 +183,13 @@ export async function handleWebSocketRoute(
         if (!currentAuth) {
           ctx.publishAccessEvent({
             action: "order_rejected",
-            reason: "unauthenticated — session expired",
+            reason: "unauthenticated, session expired",
           });
           socket.send(
             JSON.stringify({
               event: "orderRejected",
               data: {
-                reason: "Unauthenticated — please log in again",
+                reason: "Unauthenticated, please log in again",
                 clientOrderId: msg.payload.clientOrderId ?? null,
               },
             })
@@ -230,7 +230,7 @@ export async function handleWebSocketRoute(
               JSON.stringify({
                 event: "orderRejected",
                 data: {
-                  reason: `Rate limit — try again in ${Math.ceil(guestResult.retryAfterMs / 1000)}s`,
+                  reason: `Rate limit, try again in ${Math.ceil(guestResult.retryAfterMs / 1000)}s`,
                   retryAfterMs: guestResult.retryAfterMs,
                   clientOrderId: msg.payload.clientOrderId ?? null,
                 },
@@ -243,7 +243,7 @@ export async function handleWebSocketRoute(
           socket.send(
             JSON.stringify({
               event: "error",
-              message: "Bus unavailable — order not submitted",
+              message: "Bus unavailable, order not submitted",
             })
           );
           return;
@@ -268,13 +268,13 @@ export async function handleWebSocketRoute(
         if (!currentAuth) {
           ctx.publishAccessEvent({
             action: "auth_failure",
-            reason: "killOrders — unauthenticated",
+            reason: "killOrders, unauthenticated",
             source,
           });
           socket.send(
             JSON.stringify({
               event: "error",
-              data: { message: "Unauthenticated — please log in again" },
+              data: { message: "Unauthenticated, please log in again" },
             })
           );
           return;
@@ -282,7 +282,7 @@ export async function handleWebSocketRoute(
         if (currentAuth.user.role !== "admin" && currentAuth.user.role !== "trader") {
           ctx.publishAccessEvent({
             action: "auth_failure",
-            reason: `killOrders — role ${currentAuth.user.role} not permitted`,
+            reason: `killOrders, role ${currentAuth.user.role} not permitted`,
             userId: currentAuth.user.id,
             source,
           });
@@ -325,13 +325,13 @@ export async function handleWebSocketRoute(
         if (!currentAuth) {
           ctx.publishAccessEvent({
             action: "auth_failure",
-            reason: "resumeOrders — unauthenticated",
+            reason: "resumeOrders, unauthenticated",
             source,
           });
           socket.send(
             JSON.stringify({
               event: "error",
-              data: { message: "Unauthenticated — please log in again" },
+              data: { message: "Unauthenticated, please log in again" },
             })
           );
           return;
@@ -339,7 +339,7 @@ export async function handleWebSocketRoute(
         if (currentAuth.user.role !== "admin") {
           ctx.publishAccessEvent({
             action: "auth_failure",
-            reason: `resumeOrders — role ${currentAuth.user.role} not permitted`,
+            reason: `resumeOrders, role ${currentAuth.user.role} not permitted`,
             userId: currentAuth.user.id,
             source,
           });

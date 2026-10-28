@@ -68,13 +68,13 @@ export interface CandleHistory {
 export type OrderStatus = BackendOrderStatus | "held";
 
 export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
-  pending: "Received by OMS — awaiting routing to execution algo",
-  working: "Routed to algo engine — actively slicing and executing in market",
+  pending: "Received by OMS, awaiting routing to execution algo",
+  working: "Routed to algo engine, actively slicing and executing in market",
   filled: "Fully executed",
   expired: "Time-in-force elapsed before full fill",
   rejected: "Refused by OMS or gateway (limit violation or auth failure)",
   cancelled: "Cancelled by kill switch",
-  held: "Blocked by an active kill switch — submit disabled",
+  held: "Blocked by an active kill switch, submit disabled",
 };
 
 /** FIX Time In Force (tag 59). */

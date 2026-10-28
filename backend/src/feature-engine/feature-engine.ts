@@ -112,7 +112,7 @@ async function loadSectorMap(): Promise<void> {
     }
     sectorPeers = buildSectorPeers(symbolSectors);
   } catch {
-    /* ignore — retried by interval */
+    /* ignore, retried by interval */
   }
 }
 
@@ -120,7 +120,7 @@ async function loadSectorMap(): Promise<void> {
   const ready = await waitForUrl(`http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/health`, {
     timeoutMs: 60_000,
   });
-  if (!ready) logger.warn("market-sim not reachable after 60s — proceeding anyway");
+  if (!ready) logger.warn("market-sim not reachable after 60s, proceeding anyway");
 }
 await loadSectorMap();
 setInterval(loadSectorMap, 5 * 60_000);

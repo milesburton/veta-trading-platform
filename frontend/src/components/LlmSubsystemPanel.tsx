@@ -72,7 +72,7 @@ export function LlmSubsystemPanel() {
       await triggerWorker().unwrap();
       success.value = "Worker started";
     } catch {
-      error.value = "Failed to start worker — check LLM_WORKER_ENABLED";
+      error.value = "Failed to start worker, check LLM_WORKER_ENABLED";
     }
     setTimeout(() => {
       success.value = null;
@@ -178,11 +178,11 @@ export function LlmSubsystemPanel() {
           <div className="space-y-1 text-[10px] font-mono">
             <div className="flex justify-between">
               <span className="text-muted">Pending jobs</span>
-              <span className="text-default">{status?.pendingJobs ?? "—"}</span>
+              <span className="text-default">{status?.pendingJobs ?? "n/a"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Tracked symbols</span>
-              <span className="text-default">{status?.trackedSymbols ?? "—"}</span>
+              <span className="text-default">{status?.trackedSymbols ?? "n/a"}</span>
             </div>
             {status?.ts && (
               <div className="flex justify-between">

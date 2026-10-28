@@ -34,7 +34,7 @@ export interface DealerQuote {
  * Prices a bond as clean price (fraction of face value) using the standard
  * discrete-period present-value-of-annuity formula. This is a deliberately
  * separate, purpose-built formula from analytics/bond-pricing.ts's
- * priceBond — that one prices an absolute dollar value via continuous
+ * priceBond, that one prices an absolute dollar value via continuous
  * compounding for portfolio risk metrics (duration/convexity/DV01); this
  * one prices a percent-of-par clean quote for a dealer RFQ workflow, the
  * conventional discrete-compounding convention bond desks actually quote
@@ -75,7 +75,7 @@ export function specialisationBonus(
 
 /**
  * Computes a dealer's quoted yield and clean price for an RFQ, given an
- * already-resolved spread (bps) and side. Deterministic — the caller
+ * already-resolved spread (bps) and side. Deterministic, the caller
  * supplies the spread (which in production includes Math.random() jitter)
  * so this function itself has no randomness and no timing, making it
  * directly unit-testable independent of simulateDealerQuote's

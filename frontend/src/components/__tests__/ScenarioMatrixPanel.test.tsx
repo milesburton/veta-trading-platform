@@ -127,7 +127,7 @@ describe("ScenarioMatrixPanel", () => {
     render(<ScenarioMatrixPanel />);
     const putBtn = screen.getByRole("button", { name: /^PUT$/ });
     fireEvent.click(putBtn);
-    // Button changes class — check it's still rendered
+    // Button changes class, check it's still rendered
     expect(putBtn).toBeInTheDocument();
   });
 

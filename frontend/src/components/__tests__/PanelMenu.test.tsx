@@ -110,7 +110,7 @@ describe("PanelMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: /Panel actions/i }));
     expect(screen.getByRole("menu", { name: /Panel actions menu/i })).toBeInTheDocument();
     fireEvent.mouseDown(document.body);
-    // No throw — backdrop click handled
+    // No throw, backdrop click handled
     expect(screen.queryByRole("menu", { name: /Panel actions menu/i })).not.toBeInTheDocument();
   });
 

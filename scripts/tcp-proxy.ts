@@ -1,6 +1,6 @@
 import { connect, createServer } from "node:net";
 /**
- * tcp-proxy.ts — minimal TCP port forwarder.
+ * tcp-proxy.ts, minimal TCP port forwarder.
  *
  * Usage:  node scripts/tcp-proxy.ts <listenPort> <targetPort>
  *

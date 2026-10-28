@@ -61,7 +61,7 @@ while true; do
   fi
   for script in $SCENARIOS; do
     if [ ! -f "/scripts/$script" ]; then
-      log "missing /scripts/$script — skipping"
+      log "missing /scripts/$script, skipping"
       continue
     fi
     TOKEN=$(cat "$TOKEN_FILE")
@@ -77,7 +77,7 @@ while true; do
       --out experimental-prometheus-rw \
       --tag run_mode=continuous \
       "/scripts/$script" \
-      || log "$script exited non-zero — continuing loop"
+      || log "$script exited non-zero, continuing loop"
     log "✓ $script complete; sleeping ${SLEEP_BETWEEN}s"
     sleep "$SLEEP_BETWEEN"
   done

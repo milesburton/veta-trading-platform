@@ -1,6 +1,6 @@
 /**
- * Tiingo provider — REST quotes for equities and FX.
- * Key: TIINGO_KEY (https://api.tiingo.com — free tier)
+ * Tiingo provider, REST quotes for equities and FX.
+ * Key: TIINGO_KEY (https://api.tiingo.com, free tier)
  */
 
 import { logger } from "#veta/logger";

@@ -1,7 +1,7 @@
 import { test } from "#veta/test";
 import { assert, assertEquals, assertExists } from "#veta/test-assert";
 /**
- * Load tests — require all backend services to be running.
+ * Load tests, require all backend services to be running.
  *
  * These tests inject high volumes of orders via the gateway load-test endpoint
  * (admin-only), then assert pipeline throughput, fill rates, and system health
@@ -372,7 +372,7 @@ test("[load] LIMIT pipeline percentiles within budget after 100-order burst", as
   assert(
     arrived.p99 <= SUBMITTED_TO_ARRIVED_P99_BUDGET_MS,
     `submittedToArrived.p99 = ${arrived.p99}ms exceeds budget ${SUBMITTED_TO_ARRIVED_P99_BUDGET_MS}ms ` +
-      `(journal ingestion lag — bus or DB write batcher saturated?)`
+      `(journal ingestion lag, bus or DB write batcher saturated?)`
   );
 });
 

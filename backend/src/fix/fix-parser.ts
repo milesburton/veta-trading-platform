@@ -29,7 +29,7 @@ export function decode(raw: string): Map<number, string> {
  * and appends 10 (CheckSum).
  *
  * @param tags Array of [tagNumber, value] pairs.
- *             Do NOT include tags 8, 9, or 10 — they are added automatically.
+ *             Do NOT include tags 8, 9, or 10, they are added automatically.
  */
 export function encode(tags: [number, string | number][]): string {
   // Build body (everything between BodyLength and CheckSum)

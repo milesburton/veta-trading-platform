@@ -51,7 +51,7 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("momentum-algo").catch((err) => {
-  logger.warn("Redpanda unavailable — orders will not be published", { err });
+  logger.warn("Redpanda unavailable, orders will not be published", { err });
   return null;
 });
 

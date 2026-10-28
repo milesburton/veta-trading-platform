@@ -108,7 +108,7 @@ test("[runtime-config-store] updateConfig invalidates the cache with the new val
   const fromCache = await store.getConfig();
   assertEquals(fromCache.enabled, false, "next getConfig sees the update without a DB round-trip");
   // updateConfig itself does one extra SELECT (fetchFresh) plus the UPDATE,
-  // and the cached value is set from the patched result — the subsequent
+  // and the cached value is set from the patched result, the subsequent
   // getConfig must NOT trigger an additional SELECT.
   const selectsAfterUpdate = pool.__selectCount();
   await store.getConfig();

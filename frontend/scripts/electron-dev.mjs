@@ -2,7 +2,7 @@
  * electron-dev.mjs
  *
  * Orchestrates the Electron dev workflow:
- *   1. Starts the Vite renderer dev server (no electron plugin — main/preload already compiled by tsc)
+ *   1. Starts the Vite renderer dev server (no electron plugin, main/preload already compiled by tsc)
  *   2. Waits for the Vite server to be ready
  *   3. Launches Electron with VITE_DEV_SERVER_URL pointing at the Vite server
  *   4. Kills everything on exit
@@ -51,14 +51,14 @@ vite.on("error", (err) => {
 
 console.log(`Waiting for Vite at ${VITE_URL}...`);
 waitForServer(VITE_URL).then(() => {
-  console.log("Vite ready — launching Electron");
+  console.log("Vite ready, launching Electron");
 
   // ELECTRON_RUN_AS_NODE is set by VS Code (which is itself an Electron app).
-  // It makes the Electron binary behave as Node.js — require("electron") returns
+  // It makes the Electron binary behave as Node.js, require("electron") returns
   // a path string instead of the Electron API. Must be unset before launching.
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
 
-  // Determine display args — prefer Wayland if the socket exists, fall back to X11
+  // Determine display args, prefer Wayland if the socket exists, fall back to X11
   const useWayland = !!process.env.WAYLAND_DISPLAY;
   const extraArgs = useWayland
     ? ["--ozone-platform=wayland", "--enable-features=UseOzonePlatform"]
@@ -87,7 +87,7 @@ waitForServer(VITE_URL).then(() => {
   );
 
   electron.on("close", (code) => {
-    console.log(`Electron exited (${code}) — stopping Vite`);
+    console.log(`Electron exited (${code}), stopping Vite`);
     vite.kill();
     process.exit(code ?? 0);
   });

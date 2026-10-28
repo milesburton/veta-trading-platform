@@ -347,7 +347,7 @@ async function main() {
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
   } else {
-    // not a TTY (piped / CI) — just run once and exit
+    // not a TTY (piped / CI), just run once and exit
     const status = await fetchStatus();
     console.log(render(status, 0));
     restore();

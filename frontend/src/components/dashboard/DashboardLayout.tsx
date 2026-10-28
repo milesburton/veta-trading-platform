@@ -90,8 +90,8 @@ function ChannelPicker({
     connectedPanels.length > 0 ? ` · ${isOut ? "→" : "←"} ${connectedPanels.join(", ")}` : "";
 
   const buttonTitle = colour
-    ? `${dirLabel} Ch ${current} ${colour.label}${connectedStr} — click to change`
-    : `${dirLabel}: not set — click to connect`;
+    ? `${dirLabel} Ch ${current} ${colour.label}${connectedStr}, click to change`
+    : `${dirLabel}: not set, click to connect`;
 
   const dropdown = open.value
     ? createPortal(
@@ -169,7 +169,7 @@ function ChannelPicker({
             <span className="font-mono tabular-nums text-label">Ch {current}</span>
           </>
         ) : (
-          <span className="font-mono text-subtle">—</span>
+          <span className="font-mono text-subtle">n/a</span>
         )}
       </button>
       {dropdown}
@@ -593,8 +593,8 @@ export function DashboardLayout() {
           type="button"
           title={
             isPinned
-              ? "Unpin panel — allow moving and closing"
-              : "Pin panel — prevent moving or closing"
+              ? "Unpin panel, allow moving and closing"
+              : "Pin panel, prevent moving or closing"
           }
           onClick={() => {
             const next = !isPinned;

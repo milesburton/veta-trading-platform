@@ -4,8 +4,8 @@ import "#veta/bootstrap";
  *
  * Subscribes to "orders.child" from the message bus (published by algo services).
  * Computes fills using current market data, then publishes:
- *   - "orders.filled"  — fill confirmation with all execution enrichment fields
- *   - "fix.execution"  — FIX-style execution report for the archive
+ *   - "orders.filled", fill confirmation with all execution enrichment fields
+ *   - "fix.execution", FIX-style execution report for the archive
  *
  * No longer accepts direct HTTP order submission from algos.
  * HTTP surface (internal only): GET /health
@@ -74,7 +74,7 @@ function deskFromOrder(order: ChildOrder): Desk {
 }
 
 const producer = await createProducer("ems").catch((err) => {
-  logger.warn("Redpanda unavailable — fills will not be published to bus", {
+  logger.warn("Redpanda unavailable, fills will not be published to bus", {
     err,
   });
   return null;
@@ -89,7 +89,7 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
   const midPrice = tick.prices[child.asset];
 
   if (!midPrice) {
-    logger.warn(`Unknown asset ${child.asset} — cannot fill ${child.childId}`);
+    logger.warn(`Unknown asset ${child.asset}, cannot fill ${child.childId}`);
     return;
   }
 

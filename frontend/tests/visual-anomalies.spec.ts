@@ -27,7 +27,7 @@ test.afterAll(async () => {
   const totalOverflow = reports.reduce((n, r) => n + r.overflows.length, 0);
   const totalAxe = reports.reduce((n, r) => n + r.axe.length, 0);
   console.log(
-    `[visual-anomalies] ${reports.length} scenarios — ${totalOverflow} overflows, ${totalAxe} axe violations. Report: ${REPORT_DIR}/report.json`
+    `[visual-anomalies] ${reports.length} scenarios, ${totalOverflow} overflows, ${totalAxe} axe violations. Report: ${REPORT_DIR}/report.json`
   );
 });
 
@@ -119,16 +119,16 @@ test.describe("visual anomalies (merge-gating)", () => {
 
   // Each named theme should render the trader dashboard cleanly. The
   // high-contrast theme exists in CSS but is otherwise never visually
-  // tested — this scenario surfaces axe contrast or DOM overflow regressions
+  // tested, this scenario surfaces axe contrast or DOM overflow regressions
   // before they reach a user.
   //
   // Theme must be seeded via localStorage *before* the app loads, not by
-  // setting the DOM attribute after the fact — themeSlice's Redux state is
+  // setting the DOM attribute after the fact, themeSlice's Redux state is
   // the single source of truth for data-theme (App.tsx syncs the attribute
   // from state on every render), so a post-hoc attribute write gets
   // immediately overwritten by React's own effect on the next render.
   for (const theme of ["dark", "darker", "light", "high-contrast"] as const) {
-    test(`trader dashboard — ${theme} theme`, async ({ page }) => {
+    test(`trader dashboard, ${theme} theme`, async ({ page }) => {
       await page.addInitScript((t) => {
         localStorage.setItem("veta-theme", t);
       }, theme);

@@ -30,7 +30,7 @@ pct stop 100  # ~30s outage if no live-clone, or skip + use snapshot mode
 pct clone 100 999 --full --hostname server-upgrade-test
 
 # 3. Start the clone (it'll come up with the same IP if you don't change
-#    networking — most setups need to edit /etc/network/interfaces inside
+#    networking: most setups need to edit /etc/network/interfaces inside
 #    the clone before boot or use a different bridge). Disconnect prod
 #    network first if both will be up at once.
 
@@ -48,7 +48,7 @@ exists in 24.04 repos, or Docker config breaks), fix the runbook below
 ```bash
 ssh <user>@<server-host>
 
-# 1. Confirm disk has headroom — upgrade needs ~5 GB free
+# 1. Confirm disk has headroom: upgrade needs ~5 GB free
 df -h /
 # Target: at least 20% free. Run scripts/host-prune.sh if needed.
 
@@ -91,7 +91,7 @@ sudo apt autoremove -y
 
 # Now the release upgrade
 sudo do-release-upgrade
-# This is interactive — answer y/n prompts. Notable ones:
+# This is interactive: answer y/n prompts. Notable ones:
 # - Y to continue when source.list will be rewritten
 # - 'install the package maintainer's version' for any docker/systemd
 #   config that's been customised (we want stock 24.04 defaults; our
@@ -109,7 +109,7 @@ After reboot, SSH back in and verify:
 # 1. OS version
 cat /etc/os-release | head -3   # expect 24.04 Noble
 
-# 2. Secure tunnel back up — without this, the public URL stays
+# 2. Secure tunnel back up: without this, the public URL stays
 #    down even if the server is healthy
 systemctl status veta-tunnel.service --no-pager
 # Expect: active (running). If not, restart:
@@ -123,7 +123,7 @@ diff /tmp/pre-upgrade-containers.txt /tmp/post-upgrade-containers.txt
 
 # 4. Critical services healthy
 docker exec veta-traefik-1 wget -qO- http://gateway:5011/ready  # internal
-curl -sf https://veta.mnetcs.com/                              # public — through tunnel
+curl -sf https://veta.mnetcs.com/                              # public, through tunnel
 
 # 5. Resume the synthetic probe on the edge server (it was paused in pre-flight)
 ssh <user>@<edge-server> \
@@ -135,7 +135,7 @@ sudo systemctl start veta-auto-pull.timer
 sudo systemctl start veta-host-prune.timer
 sudo systemctl list-timers --no-pager | grep veta
 
-# 7. Watch for ~5 min — probe should fire 5x with all-green outcomes:
+# 7. Watch for ~5 min: probe should fire 5x with all-green outcomes:
 ssh <user>@<edge-server> \
     'sudo journalctl -u veta-synthetic-probe.service -n 25 --no-pager \
      | grep probe_done'
@@ -174,6 +174,6 @@ Total public outage: ~90 s.
 ## Out of scope (future)
 
 - Migration off Proxmox LXC entirely (e.g. to a bare-metal install or a
-  cloud VM) — too big to bundle here, separate decision.
-- Switching to a server-friendly distro (Debian stable, RHEL family) —
+  cloud VM), too big to bundle here, separate decision.
+- Switching to a server-friendly distro (Debian stable, RHEL family),
   same argument.

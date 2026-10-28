@@ -21,7 +21,7 @@ export function pctToColor(pct: number): string {
 }
 
 export function tileTextColor(pct: number): string {
-  // Faint tiles are dark olive/dark maroon — need light-coloured text for legibility.
+  // Faint tiles are dark olive/dark maroon, need light-coloured text for legibility.
   if (pct > 0 && pct < 0.25) return COLOR.HEAT_TEXT_LIGHT_UP;
   if (pct < 0 && pct > -0.25) return COLOR.HEAT_TEXT_LIGHT_DOWN;
   return COLOR.HEAT_TEXT_DEFAULT;
@@ -169,8 +169,8 @@ export function collapseSmallTiles(items: TileData[], bounds: Rect, sector: stri
   const layout = squarify(items, bounds);
   const MIN_PX = 18;
   // A pre-existing "+N" tile (e.g. from capItemsPerSector) always folds into
-  // whichever "+N" tile this pass produces — whether it lands in the visible
-  // set or the newly-collapsed set — so there is never more than one
+  // whichever "+N" tile this pass produces, whether it lands in the visible
+  // set or the newly-collapsed set, so there is never more than one
   // `${sector}:OTHER` entry (a second would collide as a React key).
   const visible: TileData[] = [];
   const collapsed: TileData[] = [];
@@ -427,7 +427,7 @@ export function MarketHeatmap() {
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") onClickOther?.(tile.sector);
           }}
-          aria-label={`${tile.otherCount} more stocks in ${tile.sector} — click to expand`}
+          aria-label={`${tile.otherCount} more stocks in ${tile.sector}, click to expand`}
         >
           <rect
             x={tx}
@@ -611,7 +611,7 @@ export function MarketHeatmap() {
           aria-label={
             isDrilled
               ? `${drilldown.value} sector heatmap`
-              : "Market heatmap — sector treemap coloured by % price change"
+              : "Market heatmap, sector treemap coloured by % price change"
           }
         >
           <rect x={0} y={0} width={cw} height={ch} fill={COLOR.HEAT_BG} />

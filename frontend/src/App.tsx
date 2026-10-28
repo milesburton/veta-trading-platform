@@ -396,8 +396,8 @@ function TradingApp() {
               <span>
                 <span className="font-semibold">{cloneBanner.value.ownerName}</span> shared
                 workspace{" "}
-                <span className="font-semibold">&ldquo;{cloneBanner.value.name}&rdquo;</span> —
-                clone it into your account?
+                <span className="font-semibold">&ldquo;{cloneBanner.value.name}&rdquo;</span>, clone
+                it into your account?
               </span>
               <button
                 type="button"

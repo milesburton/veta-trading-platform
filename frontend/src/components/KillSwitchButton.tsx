@@ -236,8 +236,8 @@ export function KillSwitchButton() {
         onClick={resetAndOpen}
         title={
           activeCount > 0
-            ? `Kill switch ACTIVE — ${activeCount} block(s) in force. Click to manage.`
-            : "Kill switch standby — click to cancel or resume orders. Action is audited."
+            ? `Kill switch ACTIVE, ${activeCount} block(s) in force. Click to manage.`
+            : "Kill switch standby, click to cancel or resume orders. Action is audited."
         }
         data-testid="kill-switch-btn"
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${

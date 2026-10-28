@@ -1,6 +1,6 @@
 import { serveFetch } from "#veta/http";
 /**
- * kafka-relay — minimal Kafka → stdout relay for LGTM observability stack.
+ * kafka-relay, minimal Kafka → stdout relay for LGTM observability stack.
  *
  * Consumes the topics listed below and writes each event as a single JSON
  * line to stdout. Grafana Alloy tails this container's Docker log output
@@ -42,7 +42,7 @@ const HEARTBEAT_TOPICS = ["algo.heartbeat"];
 // We currently run a single relay replica so the consumer groups don't
 // need to be unique-per-instance. If the relay ever scales out, each
 // replica would need a stable replica-id (e.g. POD_NAME or COMPOSE_PROJECT
-// + container index) baked into the group name — never a wall-clock
+// + container index) baked into the group name, never a wall-clock
 // timestamp, which makes every restart a new orphan.
 const ORDER_GROUP = "relay-ord";
 const HIGH_GROUP = "relay-high";

@@ -9,7 +9,7 @@ export interface ChannelData {
 }
 
 interface ChannelsState {
-  /** Live data on each channel — what's currently "selected" on that channel */
+  /** Live data on each channel, what's currently "selected" on that channel */
   data: Record<number, ChannelData>;
 }
 

@@ -393,7 +393,7 @@ export function RiskDashboardPanel() {
 
       {!isLoading && !hasPositions && (
         <div className="flex-1 flex items-center justify-center text-muted">
-          No positions — orders have not yet been filled.
+          No positions, orders have not yet been filled.
         </div>
       )}
 

@@ -9,8 +9,8 @@
  * where:
  *   σ_ATM  = EWMA vol (annualised, from volatility-estimator)
  *   F      = spot price (forward ≈ spot for illustration)
- *   skew   = -0.10  (equity put skew — OTM puts command higher IV)
- *   curvature = 0.05 (smile — both deep ITM and OTM have higher IV than ATM)
+ *   skew   = -0.10  (equity put skew, OTM puts command higher IV)
+ *   curvature = 0.05 (smile, both deep ITM and OTM have higher IV than ATM)
  *
  * Expiries: 7d, 14d, 30d, 60d, 90d
  * Moneynesses: 0.70, 0.775, 0.85, 0.925, 1.00, 1.075, 1.15, 1.225, 1.30

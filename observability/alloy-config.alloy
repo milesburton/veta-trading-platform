@@ -100,7 +100,7 @@ loki.source.docker "containers" {
   forward_to = [loki.write.default.receiver]
 }
 
-// Direct /metrics scrape removed 2026-05-18 — host.docker.internal:5xxx
+// Direct /metrics scrape removed 2026-05-18, host.docker.internal:5xxx
 // addresses never worked because services don't bind those ports on the host
 // (only on the docker network). OTel metric push via OTEL_METRICS_EXPORTER=otlp
 // (enabled in PR #262) provides the same data path: every Node service pushes

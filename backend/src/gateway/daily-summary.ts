@@ -94,7 +94,7 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
     if (stats.lastCritical) {
       const ago = Math.round((nowMs - stats.lastCritical.ts) / 60_000);
       lines.push(
-        `Last critical: ${ago}m ago — \`${stats.lastCritical.source}\` ${stats.lastCritical.message.slice(0, 100)}`
+        `Last critical: ${ago}m ago, \`${stats.lastCritical.source}\` ${stats.lastCritical.message.slice(0, 100)}`
       );
     }
   }

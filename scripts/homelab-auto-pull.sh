@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Polls origin/main and runs deploy.sh when a new commit lands.
 # Designed to be invoked by a systemd timer (or cron) on the homelab,
-# every 5 minutes. Idempotent and safe to run concurrently — uses an
+# every 5 minutes. Idempotent and safe to run concurrently: uses an
 # advisory flock so overlapping invocations bail.
 #
 # Why this exists: GitHub Actions runners can't reach the homelab's
 # private LAN. Inverting the direction, the homelab
-# polls GitHub — sidesteps the network problem entirely without a
+# polls GitHub: sidesteps the network problem entirely without a
 # tunnel.
 #
 # State files: $STATE_DIR/last-deployed-sha     (full 40-char SHA)
@@ -55,19 +55,19 @@ last_sha() {
   fi
 }
 
-# ls-remote reports a SHA the instant a commit lands on main — often
+# ls-remote reports a SHA the instant a commit lands on main: often
 # well before the CI workflow that builds and publishes GHCR images for
 # that commit has finished. Deploying immediately means `docker compose
 # pull` finds nothing new (the image tag hasn't been re-pushed yet),
 # `up -d` silently keeps the old container running, and last-deployed-sha
-# still gets marked as this SHA — so no later tick ever retries it.
+# still gets marked as this SHA: so no later tick ever retries it.
 # 2026-07-04: this exact race left the frontend a week+ stale in
 # production while auto-pull kept reporting "already at <sha>".
 #
 # Guard against it by requiring every "Publish ... :latest (gated)"
 # check-run for the target SHA to be `completed` before deploying. If
 # none exist yet, or any are still queued/in_progress, the commit's
-# publish step hasn't caught up — skip this tick and let the next one
+# publish step hasn't caught up: skip this tick and let the next one
 # re-check. This does not require a GitHub token: check-runs are
 # readable anonymously on a public repo.
 publish_checks_ready() {
@@ -80,11 +80,11 @@ publish_checks_ready() {
     local resp
     resp=$(curl -sf --max-time 10 \
       "https://api.github.com/repos/$REPO_SLUG/commits/$sha/check-runs?per_page=100&page=$page") \
-      || { log "check-runs API request failed (network/rate-limit?) — treating as not ready"; return 1; }
+      || { log "check-runs API request failed (network/rate-limit?), treating as not ready"; return 1; }
     local page_stats count page_incomplete page_failed returned
     # Parses the whole page once and prints four counts, defaulting every
     # field to "" via .get() so a check-run missing an expected key can't
-    # raise and kill the (set -e) caller — it's just counted as neither
+    # raise and kill the (set -e) caller: it's just counted as neither
     # complete nor successful, which correctly keeps us in "not ready".
     page_stats=$(echo "$resp" | python3 -c '
 import json,sys
@@ -97,7 +97,7 @@ print(len(runs))
 print(incomplete)
 print(failed)
 print(len(d.get("check_runs",[])))
-') || { log "check-runs response could not be parsed — treating as not ready"; return 1; }
+') || { log "check-runs response could not be parsed, treating as not ready"; return 1; }
     count=$(echo "$page_stats" | sed -n '1p')
     page_incomplete=$(echo "$page_stats" | sed -n '2p')
     page_failed=$(echo "$page_stats" | sed -n '3p')
@@ -109,22 +109,22 @@ print(len(d.get("check_runs",[])))
     page=$((page + 1))
   done
   if [[ "$total_gated" -eq 0 ]]; then
-    log "no 'Publish ... :latest (gated)' check-runs found for ${sha:0:7} yet — not ready"
+    log "no 'Publish ... :latest (gated)' check-runs found for ${sha:0:7} yet, not ready"
     return 1
   fi
   if [[ "$failed" -gt 0 ]]; then
-    log "$failed/$total_gated publish check-runs FAILED for ${sha:0:7} — refusing to deploy this SHA"
+    log "$failed/$total_gated publish check-runs FAILED for ${sha:0:7}, refusing to deploy this SHA"
     return 1
   fi
   if [[ "$incomplete" -gt 0 ]]; then
-    log "$incomplete/$total_gated publish check-runs still in progress for ${sha:0:7} — not ready"
+    log "$incomplete/$total_gated publish check-runs still in progress for ${sha:0:7}, not ready"
     return 1
   fi
   return 0
 }
 
 # [skip ci] commits (release-please screenshot updates, etc.) never get
-# Publish check-runs — CI doesn't run for them at all — so
+# Publish check-runs: CI doesn't run for them at all: so
 # publish_checks_ready would block on them forever. They also carry no
 # new images to wait for, so it's safe to deploy immediately (mainly to
 # pick up any config-file changes via sync_configs).
@@ -132,14 +132,14 @@ print(len(d.get("check_runs",[])))
 # Detecting this by grepping the commit message for the literal string
 # "[skip ci]" is a trap: a squash-merge concatenates every commit body
 # into the merge commit, and this very script's own commit message
-# *describes* the "[skip ci] bypass" in prose — which then matches the
+# *describes* the "[skip ci] bypass" in prose: which then matches the
 # substring check on its own merge commit and wrongly skips the gate for
 # a commit that has real code changes and IS waiting on CI. (Caught live
 # on d62a45a5, the squash-merge of the PR that introduced this check.)
 #
 # Ask GitHub directly instead: query the CI workflow's own runs filtered
 # by head_sha. A SHA that GitHub Actions skipped (native [skip ci]) never
-# gets a CI workflow run at all, so total_count is 0 — an unambiguous,
+# gets a CI workflow run at all, so total_count is 0: an unambiguous,
 # content-independent signal.
 #
 # This used to check total_count of /commits/<sha>/check-runs instead
@@ -149,7 +149,7 @@ print(len(d.get("check_runs",[])))
 # still post check-runs against a [skip ci] commit even though CI itself
 # never ran, so total_count was never 0 and publish_checks_ready blocked
 # forever waiting for Publish runs that could never appear. (Caught live
-# on bf883581 — a badge-update [skip ci] commit — which stuck the gate
+# on bf883581: a badge-update [skip ci] commit: which stuck the gate
 # for ~23h.) Querying the CI workflow specifically sidesteps that.
 has_no_check_runs() {
   local sha="$1"
@@ -189,7 +189,7 @@ ci_idle_on_ref() {
 
 REMOTE=$(remote_sha)
 if [[ -z "$REMOTE" ]]; then
-  log "could not fetch remote SHA — network problem? exiting without deploying"
+  log "could not fetch remote SHA, network problem? exiting without deploying"
   exit 0
 fi
 
@@ -199,7 +199,7 @@ LAST_DIGEST=$(cat "$LAST_DIGEST_FILE" 2>/dev/null || true)
 
 if [[ "$REMOTE" == "$LAST" ]]; then
   if [[ -z "$DIGEST" || "$DIGEST" == "$LAST_DIGEST" ]]; then
-    log "already at $REMOTE — nothing to do"
+    log "already at $REMOTE, nothing to do"
     exit 0
   fi
   if ! ci_idle_on_ref; then
@@ -212,12 +212,12 @@ elif has_no_check_runs "$REMOTE"; then
     log "remote=${REMOTE:0:7} has no CI run but CI on $REPO_REF is still running; deferring to next tick"
     exit 0
   fi
-  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — no CI check-runs at all (skip-ci or actions disabled), running deploy"
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7}, no CI check-runs at all (skip-ci or actions disabled), running deploy"
 elif ! publish_checks_ready "$REMOTE"; then
-  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — publish not confirmed complete; deferring to next tick"
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7}, publish not confirmed complete; deferring to next tick"
   exit 0
 else
-  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — publish confirmed complete, running deploy"
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7}, publish confirmed complete, running deploy"
 fi
 
 # Self-update deploy.sh from the freshly-fetched repo before running it.

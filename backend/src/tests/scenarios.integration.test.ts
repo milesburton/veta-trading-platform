@@ -133,7 +133,7 @@ test({
       assertEquals(
         same,
         false,
-        "different seeds produced bit-identical outcomes — seeded RNG isn't actually being used"
+        "different seeds produced bit-identical outcomes, seeded RNG isn't actually being used"
       );
     } finally {
       await deleteScenario(token, idA);

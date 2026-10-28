@@ -251,7 +251,7 @@ describe("LoginPage", () => {
     await waitFor(() => expect(mockExchangeOAuthCode).toHaveBeenCalled());
   });
 
-  test("does not duplicate footer chrome — build info lives in the shared AppHeader", () => {
+  test("does not duplicate footer chrome, build info lives in the shared AppHeader", () => {
     renderLogin();
     // Build info, GitHub link, and author attribution are now part of AppHeader,
     // mocked above. The login layout itself adds no footer.
@@ -292,7 +292,7 @@ describe("LoginPage", () => {
 
   test("rejects empty username with a local validation error before hitting the API", async () => {
     renderLogin();
-    // useSignal initialises username to "alice" — explicitly clear it so the
+    // useSignal initialises username to "alice", explicitly clear it so the
     // !normalizedUsername guard fires.
     fireEvent.change(screen.getByTestId("oauth-username"), {
       target: { value: "" },
@@ -317,7 +317,7 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByTestId("oauth-username"), {
       target: { value: "alice" },
     });
-    // useSignal initialises password to a default — explicitly clear it.
+    // useSignal initialises password to a default, explicitly clear it.
     fireEvent.change(screen.getByTestId("oauth-password"), {
       target: { value: "" },
     });
@@ -461,7 +461,7 @@ describe("LoginPage – DegradedServicesOverlay", () => {
       {
         name: "Gateway",
         state: "error",
-        version: "—",
+        version: "n/a",
         meta: {},
         lastChecked: Date.now(),
         url: "",
@@ -470,7 +470,7 @@ describe("LoginPage – DegradedServicesOverlay", () => {
       {
         name: "EMS",
         state: "error",
-        version: "—",
+        version: "n/a",
         meta: {},
         lastChecked: Date.now(),
         url: "",
@@ -499,7 +499,7 @@ describe("LoginPage – DegradedServicesOverlay", () => {
       {
         name: "Gateway",
         state: "unknown",
-        version: "—",
+        version: "n/a",
         meta: {},
         lastChecked: null,
         url: "",
@@ -522,7 +522,7 @@ describe("LoginPage – DegradedServicesOverlay", () => {
       {
         name: "Gateway",
         state: "error",
-        version: "—",
+        version: "n/a",
         meta: {},
         lastChecked: Date.now(),
         url: "",
@@ -583,7 +583,7 @@ describe("LoginPage – DegradedServicesOverlay", () => {
       {
         name: "Traefik",
         state: "error",
-        version: "—",
+        version: "n/a",
         meta: {},
         lastChecked: Date.now(),
         url: "",

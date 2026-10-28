@@ -41,7 +41,7 @@ jobs:
 
           # Refresh the index first. Without this, `git diff-index` can
           # report a file as changed when only its stat-info (mtime,
-          # size) differs — a no-op rewrite of an identical file is
+          # size) differs: a no-op rewrite of an identical file is
           # enough to trip it. `git diff` shows zero content diff in
           # that case, which is exactly what we observed on PR #341.
           git update-index --refresh >/dev/null 2>&1 || true
@@ -54,7 +54,7 @@ jobs:
             echo ""
             echo "── DIFF (first ~200 lines per file) ──────────────────"
             # Print the diff content so we can see WHY each file
-            # differs — the local pre-commit hook never produces drift,
+            # differs: the local pre-commit hook never produces drift,
             # so the difference must be environment-specific (Node
             # version, line endings, fs order, etc).
             git diff HEAD -- | head -300
@@ -72,8 +72,8 @@ jobs:
             echo "  npm run lint:fix"
             echo "  git add -A && git commit -m 'chore(docs): regenerate'"
             echo ""
-            echo "Pre-commit hook does this automatically — see .husky/pre-commit."
+            echo "Pre-commit hook does this automatically, see .husky/pre-commit."
             exit 1
           fi
 
-          echo "✅ Working directory is clean — all generated docs are in sync with source code"
+          echo "✅ Working directory is clean, all generated docs are in sync with source code"

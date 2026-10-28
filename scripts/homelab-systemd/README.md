@@ -8,7 +8,7 @@ Three systemd timers / services manage the homelab's continuous-deploy
 | Unit                              | What it does                                                                  | Astro page                                                                                                  |
 | --------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `veta-auto-pull.{service,timer}`  | Polls `origin/main` every 5 min, runs `deploy.sh` on SHA change               | [veta-auto-pull](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-auto-pull/)   |
-| `veta-tunnel.service`             | `autossh` reverse tunnel to the OVH edge — public traffic comes back via this | [veta-tunnel](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-tunnel/)         |
+| `veta-tunnel.service`             | `autossh` reverse tunnel to the OVH edge, public traffic comes back via this  | [veta-tunnel](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-tunnel/)         |
 | `veta-host-prune.{service,timer}` | Daily Docker prune (04:00 UTC). Stops auto-pull image churn from filling disk | [veta-host-prune](https://milesburton.github.io/veta-trading-platform/platform/supporting/veta-host-prune/) |
 | `veta.slice`, `ci.slice`          | CPU isolation between production containers and the self-hosted CI runner     | [CI/CD](https://milesburton.github.io/veta-trading-platform/development/ci-cd/)                             |
 
@@ -19,7 +19,7 @@ Three systemd timers / services manage the homelab's continuous-deploy
 sudo install -m 0755 /path/to/repo/scripts/homelab-auto-pull.sh /opt/stacks/veta/auto-pull.sh
 sudo install -m 0644 /path/to/repo/scripts/homelab-systemd/veta-auto-pull.{service,timer} /etc/systemd/system/
 
-# 2. tunnel — generate keypair first (see Astro page for the OVH side)
+# 2. tunnel: generate keypair first (see Astro page for the OVH side)
 sudo apt-get install -y autossh
 sudo install -d -m 0700 -o root -g root /etc/veta-tunnel
 sudo ssh-keygen -t ed25519 -N "" -C veta-tunnel@homelab -f /etc/veta-tunnel/id_ed25519
@@ -77,23 +77,23 @@ OpenBao at `secret/veta/platform`; non-secret flags (`OAUTH_ALLOW_PUBLIC_REGISTE
 `VETA_CGROUP_PARENT`, `PUBLIC_GUEST_TRADING`) stay in `/opt/stacks/veta/.env`.
 See [Secrets](https://milesburton.github.io/veta-trading-platform/development/deployment/#secrets):
 
-- **`OAUTH_SHARED_SECRET`** and **`OAUTH_USER_SECRETS`** — see
+- **`OAUTH_SHARED_SECRET`** and **`OAUTH_USER_SECRETS`**, see
   [Security posture](https://milesburton.github.io/veta-trading-platform/platform/security/)
-- **`GRAFANA_BASICAUTH_HTPASSWD`** — gates the public `/grafana` route.
+- **`GRAFANA_BASICAUTH_HTPASSWD`**, gates the public `/grafana` route.
   See [Observability](https://milesburton.github.io/veta-trading-platform/platform/observability/)
-- **`DISCORD_WEBHOOK_URL`** — alerts channel for both Grafana platform
+- **`DISCORD_WEBHOOK_URL`**, alerts channel for both Grafana platform
   alerts and frontend-emitted user alerts (kill switch, order rejected).
   See [Alert routing](https://milesburton.github.io/veta-trading-platform/platform/observability/alerts/)
-- **`DISCORD_BUG_WEBHOOK_URL`** — dedicated webhook for user-submitted
+- **`DISCORD_BUG_WEBHOOK_URL`**, dedicated webhook for user-submitted
   bug reports. Falls back to `DISCORD_WEBHOOK_URL` when unset. See
   [User bug reports](https://milesburton.github.io/veta-trading-platform/platform/observability/bug-reports/)
-- **`OAUTH_ALLOW_PUBLIC_REGISTER`** — when `true`, the LoginPage
+- **`OAUTH_ALLOW_PUBLIC_REGISTER`**, when `true`, the LoginPage
   Create-account form is reachable and new users land as trader with
   starter limits.
 - **`VETA_CGROUP_PARENT`**: set to `veta.slice` so every compose service
   runs on the production CPU set. Unset means Docker's default cgroup
   parent. See [CPU isolation](#cpu-isolation-slices) above.
-- **`PUBLIC_GUEST_TRADING`** — when `true`, anonymous users can place
+- **`PUBLIC_GUEST_TRADING`**, when `true`, anonymous users can place
   rate-limited orders via the `/oauth/guest` endpoint. See
   [synthetic probe](https://milesburton.github.io/veta-trading-platform/platform/supporting/synthetic-probe/)
   (the probe uses this endpoint).

@@ -43,7 +43,7 @@ vi.mock("../../hooks/useAllServiceHealth", () => ({
         name: svc.name,
         url: svc.url,
         state: row?.ok ? "ok" : row?.warn ? "warn" : "error",
-        version: row?.ok ? row.version : "—",
+        version: row?.ok ? row.version : "n/a",
         meta: {},
         lastChecked: 1,
       };

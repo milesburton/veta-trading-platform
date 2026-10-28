@@ -154,7 +154,7 @@ export async function loginAsVerified(userId: string, maxAttempts = 3): Promise<
     try {
       token = await loginAs(userId);
     } catch {
-      continue; /* transient network error — retry */
+      continue; /* transient network error, retry */
     }
     lastToken = token;
     // Quick probe: can gateway validate this token via HTTP?
@@ -290,7 +290,7 @@ export async function submitOrderWithRetry(
     } catch (err) {
       lastErr = err as Error;
       const msg = (err as Error).message;
-      // Only retry on auth failure or WS timeout — not on WS error (connection refused)
+      // Only retry on auth failure or WS timeout, not on WS error (connection refused)
       if (!msg.startsWith("authError:") && msg !== "WS timeout") throw err;
     }
   }

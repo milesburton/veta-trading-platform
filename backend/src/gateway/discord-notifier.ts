@@ -215,7 +215,7 @@ function loadgenRunnerSafe(s: string): string {
 
 export function buildLoadgenMessage(a: LoadgenAnnouncement): string {
   const runner = loadgenRunnerSafe(a.runner);
-  const note = a.note ? ` — ${sanitise(a.note, LOADGEN_NOTE_MAX)}` : "";
+  const note = a.note ? `, ${sanitise(a.note, LOADGEN_NOTE_MAX)}` : "";
   if (a.event === "start") {
     return `🧪 **Loadgen \`${runner}\` started**${note}\n_Expect bus + WS rate alerts to be noisy until it stops; disregard for now._`;
   }

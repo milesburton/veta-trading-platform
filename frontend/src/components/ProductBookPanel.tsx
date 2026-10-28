@@ -292,7 +292,7 @@ export function ProductBookPanel() {
                         {product.issuedAt ? (
                           new Date(product.issuedAt).toLocaleDateString()
                         ) : (
-                          <span className="text-divider">—</span>
+                          <span className="text-divider">n/a</span>
                         )}
                       </td>
                       <td
@@ -415,7 +415,7 @@ export function ProductBookPanel() {
                                     {leg.quantity != null ? (
                                       leg.quantity.toLocaleString()
                                     ) : (
-                                      <span className="text-divider">—</span>
+                                      <span className="text-divider">n/a</span>
                                     )}
                                   </td>
                                 </tr>

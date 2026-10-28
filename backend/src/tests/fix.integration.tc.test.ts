@@ -8,7 +8,7 @@ import { startStack, type TestStack } from "./testcontainers/services.ts";
 
 // The market-hours reject path itself (ADR 0003 Phase 6) is unit-tested
 // directly in fix-market-session.unit.test.ts against the extracted
-// isMarketOpenForOrderEntry() predicate — market-sim's simulated session
+// isMarketOpenForOrderEntry() predicate, market-sim's simulated session
 // cycles a full day in ~390 real seconds with no hook to force a specific
 // sessionPhase, so reaching HALTED/CLOSED from a fresh start here would be
 // impractically slow for this suite.
@@ -84,7 +84,7 @@ function logonMsg(seq = 1): string {
 }
 
 test({
-  // Risk-engine disabled here — this suite covers session/venue/cancel/
+  // Risk-engine disabled here, this suite covers session/venue/cancel/
   // archive behavior, not risk checking, and several steps intentionally
   // submit large quantities to force a resting order for cancel/replace
   // to act on. Those quantities would otherwise trip risk-engine's
@@ -428,13 +428,13 @@ test({
           assertEquals(reply.get(Tag.OrigClOrdID), clOrdId);
 
           // Confirm no further fills arrive for this order after the
-          // cancel — the connection should go quiet for this clOrdId.
+          // cancel, the connection should go quiet for this clOrdId.
           let sawFillAfterCancel = false;
           try {
             const maybeFill = await reader.next(2_000);
             if (maybeFill.get(Tag.ClOrdID) === clOrdId) sawFillAfterCancel = true;
           } catch {
-            // timeout is the expected/passing outcome — no more messages
+            // timeout is the expected/passing outcome, no more messages
           }
           assertEquals(sawFillAfterCancel, false, "no fill should follow a successful cancel");
         } finally {
@@ -491,7 +491,7 @@ test({
             `expected New or PartiallyFilled after replace, got ${replaceAck.get(Tag.OrdStatus)}`
           );
 
-          // A subsequent cancel must reference the replacement ClOrdID —
+          // A subsequent cancel must reference the replacement ClOrdID,
           // the original is no longer a valid handle.
           const cancelOrig = encode([
             [Tag.MsgType, MsgType.OrderCancelRequest],
@@ -544,7 +544,7 @@ test({
           RISK_ENGINE_ENABLED: "true",
         },
         "fix-gateway": { FIX_EXCHANGE_PORT: String(FIX_EXCHANGE_TCP_PORT_RISK) },
-        // Real orders submitted at whatever moment CI happens to run —
+        // Real orders submitted at whatever moment CI happens to run,
         // disable market-hours enforcement so this isn't flaky depending
         // on the real-world clock, same rationale as
         // risk-rejection.integration.tc.test.ts.

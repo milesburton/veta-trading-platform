@@ -87,10 +87,10 @@ function RunRow({ run }: { run: ScenarioRun }) {
         <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${cls}`}>{run.status}</span>
       </td>
       <td className="px-2 py-1 text-default tabular-nums">
-        {run.actual ? `${run.actual.fillCount}/${run.actual.totalFilled}` : "—"}
+        {run.actual ? `${run.actual.fillCount}/${run.actual.totalFilled}` : "n/a"}
       </td>
       <td className="px-2 py-1 text-default tabular-nums">
-        {run.actual ? `${run.actual.slippageBps.toFixed(1)} bps` : "—"}
+        {run.actual ? `${run.actual.slippageBps.toFixed(1)} bps` : "n/a"}
       </td>
       <td className="px-2 py-1 text-muted font-mono truncate" title={run.parentOrderId ?? ""}>
         {run.parentOrderId ? `${run.parentOrderId.slice(0, 8)}…` : (run.error ?? "")}
@@ -314,7 +314,7 @@ export function ScenariosPanel() {
         {isLoading && <div className="p-3 text-muted">Loading…</div>}
         {!isLoading && scenarios.length === 0 && (
           <div className="p-4 text-muted">
-            No saved scenarios yet. Click <strong>+ New</strong> to capture one — same seed, same
+            No saved scenarios yet. Click <strong>+ New</strong> to capture one, same seed, same
             symbol, same strategy means the run is repeatable end-to-end.
           </div>
         )}

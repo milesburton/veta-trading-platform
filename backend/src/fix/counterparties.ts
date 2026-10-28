@@ -1,5 +1,5 @@
 // Per-client identity for FIX sessions (gap #4). Starts as a static,
-// env-configured map rather than a Postgres table — promote to a real
+// env-configured map rather than a Postgres table, promote to a real
 // table only once something besides Logon needs to query it, matching
 // the codebase's general pattern of starting simple. Same config-string
 // shape as user-service.ts's OAUTH2_USER_SECRETS
@@ -41,7 +41,7 @@ export function resolveCounterparty(senderCompID: string | undefined): Counterpa
  * dictionary this exchange implements (no tag 96/554 support), so
  * credential verification is scoped to "is this SenderCompID a
  * provisioned counterparty" rather than a full password check on Logon
- * itself — consistent with the exchange's existing acceptor-only,
+ * itself, consistent with the exchange's existing acceptor-only,
  * no-encryption session model.
  */
 export function isKnownCounterparty(senderCompID: string | undefined): boolean {

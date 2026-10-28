@@ -26,7 +26,7 @@ const state: {
 } = {
   byService: {
     OMS: { kind: "ok" as const, version: "1.2.3" },
-    Gateway: { kind: "error" as const, version: "—" },
+    Gateway: { kind: "error" as const, version: "n/a" },
   },
   systemMetrics: {
     disk: { total_gb: 100, used_gb: 92, free_gb: 8, used_pct: 92 },
@@ -57,7 +57,7 @@ vi.mock("../../hooks/useAllServiceHealth", () => ({
       return {
         ...svc,
         state: item?.kind ?? "error",
-        version: item?.version ?? "—",
+        version: item?.version ?? "n/a",
         meta: {},
         lastChecked: 1_700_000_000_000,
       };
@@ -79,7 +79,7 @@ describe("ServiceHealthPanel", () => {
   beforeEach(() => {
     state.byService = {
       OMS: { kind: "ok", version: "1.2.3" },
-      Gateway: { kind: "error", version: "—" },
+      Gateway: { kind: "error", version: "n/a" },
     };
   });
 
@@ -106,7 +106,7 @@ describe("ServiceHealthPanel", () => {
   });
 
   it("renders a warn-state service distinctly from ok and error", () => {
-    state.byService.Gateway = { kind: "warn", version: "—" };
+    state.byService.Gateway = { kind: "warn", version: "n/a" };
 
     renderPanel();
 

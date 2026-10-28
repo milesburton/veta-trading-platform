@@ -45,7 +45,7 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("arrival-price-algo").catch((err) => {
-  logger.warn("Redpanda unavailable — orders will not be published", { err });
+  logger.warn("Redpanda unavailable, orders will not be published", { err });
   return null;
 });
 
@@ -56,7 +56,7 @@ interface ActiveAP {
   side: "BUY" | "SELL";
   limitPrice: number;
   expiresAt: number; // absolute ms
-  receivedAt: number; // ms — when order was queued
+  receivedAt: number; // ms, when order was queued
   arrivalPrice: number; // mid-price captured at receipt
   urgency: number; // 1–100
   maxSlippageBps: number; // adverse drift threshold
@@ -65,7 +65,7 @@ interface ActiveAP {
   filledQty: number;
   costBasis: number;
   sliceCount: number;
-  lastSliceAt: number; // ms — timestamp of last child order sent
+  lastSliceAt: number; // ms, timestamp of last child order sent
 }
 
 /** Active AP orders, keyed by orderId. */

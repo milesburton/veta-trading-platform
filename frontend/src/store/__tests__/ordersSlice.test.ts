@@ -170,7 +170,7 @@ describe("ordersSlice – limitOrdersChecked", () => {
       side: "BUY",
     });
     let state = reducer(initial, orderAdded(order));
-    // price above limit — no fill
+    // price above limit, no fill
     state = reducer(state, limitOrdersChecked({ AAPL: 200 }));
     expect(state.orders[0].status).toBe("working");
   });
@@ -200,7 +200,7 @@ describe("ordersSlice – limitOrdersChecked", () => {
     const order = makeOrder({ strategy: "TWAP", status: "working" });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 1 }));
-    // Status unchanged — only LIMIT orders are evaluated
+    // Status unchanged, only LIMIT orders are evaluated
     expect(state.orders[0].status).toBe("working");
   });
 

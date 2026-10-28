@@ -1,6 +1,6 @@
 import "#veta/bootstrap";
 import type { Socket } from "node:net";
-// FIX Gateway — HTTP/WebSocket server on port 9881
+// FIX Gateway, HTTP/WebSocket server on port 9881
 // Bridges browser WebSocket connections to the FIX Exchange TCP listener (port 9880).
 // Each WS client gets a dedicated TCP connection to the exchange.
 //

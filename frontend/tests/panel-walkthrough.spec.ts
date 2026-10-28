@@ -486,7 +486,7 @@ test.describe("panel walkthrough", () => {
       });
     }
 
-    // The test always passes — the verdicts in the report are the artefact.
+    // The test always passes, the verdicts in the report are the artefact.
     expect(verdicts.length).toBe(ALL_PANEL_IDS.length);
   });
 

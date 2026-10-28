@@ -1,5 +1,5 @@
 /**
- * Grid query types — frontend copy of the contract defined in
+ * Grid query types, frontend copy of the contract defined in
  * backend/src/types/gridQuery.ts. Deliberately duplicated (not imported
  * cross-boundary) so frontend and backend can evolve independently.
  */

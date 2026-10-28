@@ -32,7 +32,7 @@ function captureFetch(): CapturedFetch {
   const calls: { url: string; body: string }[] = [];
   globalThis.fetch = ((url: string, init?: RequestInit) => {
     calls.push({ url: String(url), body: init?.body as string });
-    // Renderer calls return an empty 204 — notifyDiscord then falls
+    // Renderer calls return an empty 204, notifyDiscord then falls
     // back to the text-only message path. Discord webhook responses
     // are also 204; the distinction is purely the URL hostname.
     return Promise.resolve(new Response(null, { status: 204 }));
@@ -202,7 +202,7 @@ test("notifyDiscord attaches a Grafana panel screenshot when render succeeds", a
       const discord = f.discordCalls();
       assertEquals(discord.length, 1);
       // multipart form body, not JSON. The captured body should be a
-      // FormData stringification — look for the payload_json field name.
+      // FormData stringification, look for the payload_json field name.
       const body = discord[0].body;
       const isMultipart = typeof body === "object" || body.includes("payload_json");
       assertEquals(
@@ -442,7 +442,7 @@ for (const testCase of [
       runner: "k6-burst-2026-05-23",
       note: "30m",
     } as const,
-    startsWith: "🧪 **Loadgen `k6-burst-2026-05-23` started** — 30m",
+    startsWith: "🧪 **Loadgen `k6-burst-2026-05-23` started**, 30m",
     includes: "disregard",
   },
   {

@@ -103,7 +103,7 @@ test("[gridQuery/evalOp] in array (case-insensitive)", () => {
   assert(!evalOp("queued", "in", ["filled", "executing"]));
 });
 
-test("[gridQuery/evalOp] is_null — null, undefined, empty string", () => {
+test("[gridQuery/evalOp] is_null, null, undefined, empty string", () => {
   assert(evalOp(null, "is_null", ""));
   assert(evalOp(undefined, "is_null", ""));
   assert(evalOp("", "is_null", ""));
@@ -125,7 +125,7 @@ test("[gridQuery/evalExprGroup] empty group passes every row", () => {
   }
 });
 
-test("[gridQuery/evalExprGroup] AND group — all rules must match", () => {
+test("[gridQuery/evalExprGroup] AND group, all rules must match", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",
@@ -142,7 +142,7 @@ test("[gridQuery/evalExprGroup] AND group — all rules must match", () => {
   ); // AAPL BUY 10000
 });
 
-test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
+test("[gridQuery/evalExprGroup] OR group, any rule matches", () => {
   const g: ExprGroup = {
     kind: "group",
     id: "root",

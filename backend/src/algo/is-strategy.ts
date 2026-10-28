@@ -48,7 +48,7 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("is-algo").catch((err) => {
-  logger.warn("Redpanda unavailable — orders will not be published", { err });
+  logger.warn("Redpanda unavailable, orders will not be published", { err });
   return null;
 });
 
@@ -63,7 +63,7 @@ interface ActiveIS {
   side: "BUY" | "SELL";
   limitPrice: number;
   expiresAt: number; // absolute ms
-  receivedAt: number; // ms — when order was queued
+  receivedAt: number; // ms, when order was queued
   arrivalPrice: number; // mid-price captured at receipt
   urgency: number; // 0.0–1.0
   maxSlippageBps: number; // adverse drift threshold in bps
@@ -72,7 +72,7 @@ interface ActiveIS {
   filledQty: number;
   costBasis: number;
   sliceCount: number; // number of child orders already sent
-  lastSliceAt: number; // ms — timestamp of last child order sent
+  lastSliceAt: number; // ms, timestamp of last child order sent
   sliceQtys: number[]; // pre-computed geometric schedule (1-indexed)
   numSlices: number; // total slices in schedule
   sliceIntervalMs: number; // target interval between slices (uniform spacing)

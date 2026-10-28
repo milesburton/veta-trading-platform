@@ -59,7 +59,7 @@ export function ClientRfqPanel() {
       });
       if (res.ok) {
         const data = (await res.json()) as { rfqId: string };
-        feedback.value = { ok: true, msg: `RFQ submitted — ${data.rfqId}` };
+        feedback.value = { ok: true, msg: `RFQ submitted, ${data.rfqId}` };
         await fetchRfqs();
       } else {
         const err = (await res.json().catch(() => ({ error: "Unknown error" }))) as {
@@ -188,7 +188,7 @@ export function ClientRfqPanel() {
                 onChange={(e) => {
                   limitPrice.value = e.target.value;
                 }}
-                placeholder="—"
+                placeholder="n/a"
                 className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 tabular-nums"
               />
             </div>
@@ -263,7 +263,7 @@ export function ClientRfqPanel() {
                         </span>
                       </td>
                       <td className="py-1.5 pr-2 text-right tabular-nums text-default">
-                        {rfq.clientQuotedPrice != null ? rfq.clientQuotedPrice.toFixed(2) : "—"}
+                        {rfq.clientQuotedPrice != null ? rfq.clientQuotedPrice.toFixed(2) : "n/a"}
                       </td>
                       <td className="py-1.5">
                         {rfq.state === "CLIENT_CONFIRMATION" && (

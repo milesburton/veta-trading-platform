@@ -25,7 +25,7 @@ function commitSummary(services: ServiceHealth[]): {
   commit: string | null;
   lastChecked: number | null;
 } {
-  const checked = services.filter((s) => !s.optional && s.state === "ok" && s.version !== "—");
+  const checked = services.filter((s) => !s.optional && s.state === "ok" && s.version !== "n/a");
   const commits = [...new Set(checked.map((s) => s.version))];
   const lastChecked = checked.reduce<number | null>((max, s) => {
     if (s.lastChecked === null) return max;

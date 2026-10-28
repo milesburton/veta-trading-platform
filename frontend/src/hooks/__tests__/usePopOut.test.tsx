@@ -77,7 +77,7 @@ describe("usePopOut – initial state", () => {
     const { result } = renderHook(() => usePopOut(), {
       wrapper: wrapper(store),
     });
-    // ChannelContext supplies "unknown" — isPopOut starts false
+    // ChannelContext supplies "unknown", isPopOut starts false
     expect(result.current.isPopOut).toBe(false);
   });
 });
