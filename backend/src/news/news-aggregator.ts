@@ -49,10 +49,30 @@ const DEFAULT_SOURCES: NewsSource[] = [
   },
 ];
 
+const PRIVATE_HOST_PATTERN =
+  /^(localhost|.*\.(local|internal|localdomain)|\d{1,3}(\.\d{1,3}){3}|\[.*\])$/i;
+
+export function isAllowedFeedTemplate(template: unknown): boolean {
+  if (typeof template !== "string") return false;
+  try {
+    const url = new URL(template.replace("{symbol}", "SYMBOL"));
+    return (
+      url.protocol === "https:" &&
+      url.username === "" &&
+      url.password === "" &&
+      url.hostname.includes(".") &&
+      !PRIVATE_HOST_PATTERN.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function loadSources(): NewsSource[] {
   try {
     const raw = readFileSync(SOURCES_FILE, "utf8");
-    return JSON.parse(raw) as NewsSource[];
+    const parsed = JSON.parse(raw) as NewsSource[];
+    return parsed.filter((s) => isAllowedFeedTemplate(s.rssTemplate));
   } catch {
     return DEFAULT_SOURCES.map((s) => ({ ...s }));
   }
@@ -247,9 +267,7 @@ async function pollAll(): Promise<void> {
   const jobs = symbolSpecific.flatMap((source) =>
     knownSymbols.map((symbol) => [source, symbol] as const)
   );
-  await inBatches(jobs, POLL_CONCURRENCY, ([source, symbol]) =>
-    pollSymbolSpecific(source, symbol)
-  );
+  await inBatches(jobs, POLL_CONCURRENCY, ([source, symbol]) => pollSymbolSpecific(source, symbol));
 }
 
 async function loadSymbols(): Promise<void> {
@@ -356,6 +374,9 @@ serveFetch({ port: PORT }, async (req) => {
     if (!label || !rssTemplate) {
       return json({ error: "label and rssTemplate are required" }, 400);
     }
+    if (!isAllowedFeedTemplate(rssTemplate)) {
+      return json({ error: "rssTemplate must be a public https URL" }, 400);
+    }
     const id = slugify(label) || `source-${Date.now()}`;
     if (SOURCES.some((s) => s.id === id)) {
       return json({ error: "source with this id already exists" }, 409);
@@ -384,6 +405,9 @@ serveFetch({ port: PORT }, async (req) => {
       body = (await req.json()) as Partial<NewsSource>;
     } catch {
       return json({ error: "invalid JSON" }, 400);
+    }
+    if (body.rssTemplate !== undefined && !isAllowedFeedTemplate(body.rssTemplate)) {
+      return json({ error: "rssTemplate must be a public https URL" }, 400);
     }
     if (body.label !== undefined) source.label = body.label;
     if (body.rssTemplate !== undefined) source.rssTemplate = body.rssTemplate;

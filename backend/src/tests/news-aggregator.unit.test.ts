@@ -183,24 +183,46 @@ test("[news] creates sources with validation and rejects duplicates", async () =
 
   const created = await call("POST", "/sources", {
     label: "Reuters Wire",
-    rssTemplate: "https://r/feed",
+    rssTemplate: "https://r.example.com/feed",
   });
   assertEquals(created.status, 201);
   assertEquals(await created.json(), {
     id: "reuters-wire",
     label: "Reuters Wire",
-    rssTemplate: "https://r/feed",
+    rssTemplate: "https://r.example.com/feed",
     enabled: true,
     symbolSpecific: false,
   });
   assertEquals(
-    (await call("POST", "/sources", { label: "Reuters Wire", rssTemplate: "x" })).status,
+    (
+      await call("POST", "/sources", {
+        label: "Reuters Wire",
+        rssTemplate: "https://r.example.com/feed",
+      })
+    ).status,
     409
   );
 
-  const symbolOnly = await call("POST", "/sources", { label: "!!!", rssTemplate: "https://s" });
+  const symbolOnly = await call("POST", "/sources", {
+    label: "!!!",
+    rssTemplate: "https://s.example.com",
+  });
   assertEquals(symbolOnly.status, 201);
   assert((await symbolOnly.json()).id.startsWith("source-"));
+});
+
+test("[news] rejects feed templates that are not public https URLs", async () => {
+  for (const rssTemplate of [
+    "http://r.example.com/feed",
+    "https://localhost/feed",
+    "https://10.0.0.5/feed",
+    "https://user:pw@r.example.com/feed",
+    "https://printer.local/feed",
+    "not a url",
+  ]) {
+    assertEquals((await call("POST", "/sources", { label: "Bad", rssTemplate })).status, 400);
+    assertEquals((await call("PUT", "/sources/reuters-wire", { rssTemplate })).status, 400);
+  }
 });
 
 test("[news] updates and deletes sources", async () => {
@@ -210,13 +232,13 @@ test("[news] updates and deletes sources", async () => {
   const updated = await (
     await call("PUT", "/sources/reuters-wire", {
       label: "Reuters",
-      rssTemplate: "https://r/new",
+      rssTemplate: "https://r.example.com/new",
       symbolSpecific: true,
       enabled: false,
     })
   ).json();
   assertEquals(updated.label, "Reuters");
-  assertEquals(updated.rssTemplate, "https://r/new");
+  assertEquals(updated.rssTemplate, "https://r.example.com/new");
   assertEquals(updated.symbolSpecific, true);
   assertEquals(updated.enabled, false);
 
