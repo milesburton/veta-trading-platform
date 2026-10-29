@@ -19,14 +19,13 @@ function makeSvc(overrides: Partial<ServiceHealth> = {}): ServiceHealth {
 describe("StatusDot", () => {
   it("renders expected state classes", () => {
     const { rerender, container } = render(<StatusDot state="ok" className="extra" />);
-    expect(container.querySelector("span")?.className).toContain("bg-emerald-400");
-    expect(container.querySelector("span")?.className).toContain("extra");
+    expect(container.firstChild).toHaveClass("bg-emerald-400", "extra");
 
     rerender(<StatusDot state="error" />);
-    expect(container.querySelector("span")?.className).toContain("bg-red-500");
+    expect(container.firstChild).toHaveClass("bg-red-500");
 
     rerender(<StatusDot state="unknown" />);
-    expect(container.querySelector("span")?.className).toContain("bg-muted");
+    expect(container.firstChild).toHaveClass("bg-muted");
   });
 });
 
@@ -61,13 +60,11 @@ describe("ServiceRow", () => {
       </table>
     );
 
-    const row = container.querySelector("tr");
-    expect(row?.className).toContain("opacity-40");
+    expect(screen.getByRole("row")).toHaveClass("opacity-40");
     expect(screen.getByText("unavailable")).toBeInTheDocument();
 
     const dot = container.querySelector("span.inline-block");
-    expect(dot).toBeTruthy();
-    expect(dot?.className).toContain("bg-muted");
+    expect(dot).toHaveClass("bg-muted");
   });
 
   it("falls back to lastChecked time or dash", () => {

@@ -213,7 +213,7 @@ describe("DevToolsPanel", () => {
 
     const removeButtons = screen.getAllByRole("button", { name: "×" });
     expect(removeButtons).toHaveLength(1);
-    expect(removeButtons[0].previousSibling?.textContent).toBe("CRITICAL");
+    expect(removeButtons[0].parentElement).toHaveTextContent(/^CRITICAL/);
   });
 
   it("renders a mute rule with only a source field", () => {
@@ -227,7 +227,7 @@ describe("DevToolsPanel", () => {
 
     const removeButtons = screen.getAllByRole("button", { name: "×" });
     expect(removeButtons).toHaveLength(1);
-    expect(removeButtons[0].previousSibling?.textContent).toBe("order");
+    expect(removeButtons[0].parentElement).toHaveTextContent(/^order/);
   });
 
   it("fires a custom alert without a detail value", () => {

@@ -142,7 +142,7 @@ describe("AlertToast", () => {
   it("position indicator shows 1/N for the latest alert in a multi-alert queue", () => {
     mockQueue = [makeAlert({ id: "newest" }), makeAlert({ id: "older" })];
     render(<AlertToast />);
-    expect(screen.getByTestId("alert-toast-position").textContent).toBe("1/2");
+    expect(screen.getByTestId("alert-toast-position")).toHaveTextContent(/^1\/2$/);
   });
 
   it("prev button is disabled when there's only one alert", () => {

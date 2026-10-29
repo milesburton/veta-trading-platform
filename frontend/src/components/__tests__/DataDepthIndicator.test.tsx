@@ -58,13 +58,13 @@ describe("DataDepthIndicator", () => {
 
   it("clicking the indicator toggles the data-depth drawer", () => {
     renderIndicator();
-    expect(screen.getByTestId("probe").textContent).toBe("false");
+    expect(screen.getByTestId("probe")).toHaveTextContent(/^false$/);
 
     fireEvent.click(screen.getByTestId("data-depth"));
-    expect(screen.getByTestId("probe").textContent).toBe("true");
+    expect(screen.getByTestId("probe")).toHaveTextContent(/^true$/);
 
     fireEvent.click(screen.getByTestId("data-depth"));
-    expect(screen.getByTestId("probe").textContent).toBe("false");
+    expect(screen.getByTestId("probe")).toHaveTextContent(/^false$/);
   });
 
   it("sets aria-pressed when the drawer is open", () => {

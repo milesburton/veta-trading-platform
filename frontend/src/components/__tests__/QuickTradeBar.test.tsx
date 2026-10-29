@@ -150,8 +150,8 @@ describe("QuickTradeBar, regex path", () => {
     fireEvent.change(screen.getByTestId("quick-trade-input"), {
       target: { value: "buy 500 aapl @ 200 twap 30m" },
     });
-    expect(screen.getByTestId("quick-trade-preview").textContent).toContain("AAPL");
-    expect(screen.getByTestId("quick-trade-preview").textContent).toContain("TWAP");
+    expect(screen.getByTestId("quick-trade-preview")).toHaveTextContent("AAPL");
+    expect(screen.getByTestId("quick-trade-preview")).toHaveTextContent("TWAP");
   });
 
   it("opens the order ticket on Send", () => {
@@ -235,7 +235,7 @@ describe("QuickTradeBar, LLM fallback", () => {
     });
     fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
     await waitFor(() =>
-      expect(screen.getByTestId("quick-trade-flash").textContent).toContain("AI is offline")
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("AI is offline")
     );
   });
 
@@ -247,7 +247,7 @@ describe("QuickTradeBar, LLM fallback", () => {
     });
     fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
     await waitFor(() =>
-      expect(screen.getByTestId("quick-trade-flash").textContent).toContain("couldn't parse")
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("couldn't parse")
     );
   });
 
@@ -275,7 +275,7 @@ describe("QuickTradeBar, LLM fallback", () => {
     });
     fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
     await waitFor(() =>
-      expect(screen.getByTestId("quick-trade-flash").textContent).toContain("failed validation")
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("failed validation")
     );
   });
 });

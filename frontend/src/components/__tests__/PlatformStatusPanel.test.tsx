@@ -108,7 +108,7 @@ describe("PlatformStatusPanel", () => {
       error: { status: 403 },
     });
     render(<PlatformStatusPanel />);
-    expect(screen.getByTestId("platform-status-error").textContent).toMatch(/admin or oncall/i);
+    expect(screen.getByTestId("platform-status-error")).toHaveTextContent(/admin or oncall/i);
   });
 
   it("renders network-error message when error.status is FETCH_ERROR", () => {
@@ -117,7 +117,7 @@ describe("PlatformStatusPanel", () => {
       error: { status: "FETCH_ERROR" },
     });
     render(<PlatformStatusPanel />);
-    expect(screen.getByTestId("platform-status-error").textContent).toMatch(/reach the gateway/i);
+    expect(screen.getByTestId("platform-status-error")).toHaveTextContent(/reach the gateway/i);
   });
 
   it("renders ✅ header when worst-window is exactly 1.0", () => {
@@ -181,7 +181,7 @@ describe("PlatformStatusPanel", () => {
     });
     fireEvent.click(screen.getByTestId("bug-report-submit"));
     await waitFor(() => {
-      expect(screen.getByTestId("bug-report-result").textContent).toMatch(/notified Support/i);
+      expect(screen.getByTestId("bug-report-result")).toHaveTextContent(/notified Support/i);
     });
   });
 
@@ -217,7 +217,7 @@ describe("PlatformStatusPanel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("bug-report-queued")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("bug-report-queued").textContent).toMatch(/GITHUB_TICKETING_REPO/);
+    expect(screen.getByTestId("bug-report-queued")).toHaveTextContent(/GITHUB_TICKETING_REPO/);
   });
 
   it("closes the dialog on Escape key", () => {
@@ -250,7 +250,7 @@ describe("PlatformStatusPanel", () => {
       error: { status: 500 },
     });
     render(<PlatformStatusPanel />);
-    expect(screen.getByTestId("platform-status-error").textContent).toMatch(/HTTP 500/);
+    expect(screen.getByTestId("platform-status-error")).toHaveTextContent(/HTTP 500/);
   });
 
   it("renders fallback error message when error shape is unknown", () => {
@@ -259,7 +259,7 @@ describe("PlatformStatusPanel", () => {
       error: "some unstructured failure",
     });
     render(<PlatformStatusPanel />);
-    expect(screen.getByTestId("platform-status-error").textContent).toMatch(
+    expect(screen.getByTestId("platform-status-error")).toHaveTextContent(
       /Unable to load platform status\./
     );
   });

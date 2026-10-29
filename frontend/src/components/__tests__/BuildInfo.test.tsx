@@ -5,7 +5,7 @@ import { describe, expect, it } from "vite-plus/test";
 describe("BuildInfo", () => {
   it("renders nothing when no version, sha or date are provided", () => {
     const { container } = render(<BuildInfo />);
-    expect(container.textContent).toBe("");
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("renders short SHA only", () => {
@@ -54,7 +54,7 @@ describe("BuildInfo", () => {
     render(<BuildInfo version="1.39.0" commitSha="406cbdc" buildDate="2026-05-18T17:31:18Z" />);
     const info = screen.getByTestId("build-info");
     expect(info).toHaveTextContent("1.39.0 · 406cbdc · 2026-05-18");
-    expect(info.textContent).not.toContain("T17:31:18Z");
+    expect(info).not.toHaveTextContent("T17:31:18Z");
   });
 
   it("keeps full ISO timestamp in the tooltip", () => {
