@@ -38,7 +38,7 @@ test("shows ok/total count in the Services button", () => {
   render(<ServiceStatus services={services} />);
   const btn = screen.getByRole("button", { name: /services/i });
   // 1 ok out of 2 required (neither is optional)
-  expect(btn.textContent).toMatch(/1\/2/);
+  expect(btn).toHaveTextContent(/1\/2/);
 });
 
 test("does not duplicate the shared commit SHA in the Services button", () => {
@@ -62,8 +62,8 @@ test("does not duplicate the shared commit SHA in the Services button", () => {
   ];
   render(<ServiceStatus services={allOk} />);
   const btn = screen.getByRole("button", { name: /services/i });
-  expect(btn.textContent).toContain("2/2");
-  expect(btn.textContent).not.toContain("abc1234");
+  expect(btn).toHaveTextContent("2/2");
+  expect(btn).not.toHaveTextContent("abc1234");
 
   fireEvent.click(btn);
   expect(screen.getByTestId("service-health-commit-link")).toHaveTextContent("abc1234");

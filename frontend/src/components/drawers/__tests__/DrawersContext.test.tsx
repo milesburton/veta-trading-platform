@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { Drawer } from "@veta/frontend/components/drawers/Drawer";
 import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/DrawersContext";
 import { describe, expect, it } from "vite-plus/test";
@@ -44,41 +44,41 @@ describe("DrawersContext", () => {
     act(() => {
       screen.getByTestId("open-alerts").click();
     });
-    expect(screen.getByTestId("state").textContent).toBe("alerts");
-    expect(screen.getByTestId("alerts-pos").textContent).toBe("0");
-    expect(screen.getByTestId("alerts-open").textContent).toBe("true");
+    expect(screen.getByTestId("state")).toHaveTextContent(/^alerts$/);
+    expect(screen.getByTestId("alerts-pos")).toHaveTextContent(/^0$/);
+    expect(screen.getByTestId("alerts-open")).toHaveTextContent(/^true$/);
   });
 
   it("stacks newest-first; second drawer becomes position 0, first moves to 1", () => {
     renderProbe();
     act(() => screen.getByTestId("open-alerts").click());
     act(() => screen.getByTestId("open-data-depth").click());
-    expect(screen.getByTestId("state").textContent).toBe("data-depth,alerts");
-    expect(screen.getByTestId("data-depth-pos").textContent).toBe("0");
-    expect(screen.getByTestId("alerts-pos").textContent).toBe("1");
+    expect(screen.getByTestId("state")).toHaveTextContent(/^data-depth,alerts$/);
+    expect(screen.getByTestId("data-depth-pos")).toHaveTextContent(/^0$/);
+    expect(screen.getByTestId("alerts-pos")).toHaveTextContent(/^1$/);
   });
 
   it("re-opening an already-open drawer is a no-op", () => {
     renderProbe();
     act(() => screen.getByTestId("open-alerts").click());
     act(() => screen.getByTestId("open-alerts").click());
-    expect(screen.getByTestId("state").textContent).toBe("alerts");
+    expect(screen.getByTestId("state")).toHaveTextContent(/^alerts$/);
   });
 
   it("close removes the drawer", () => {
     renderProbe();
     act(() => screen.getByTestId("open-alerts").click());
     act(() => screen.getByTestId("close-alerts").click());
-    expect(screen.getByTestId("state").textContent).toBe("");
-    expect(screen.getByTestId("alerts-pos").textContent).toBe("-1");
+    expect(screen.getByTestId("state")).toBeEmptyDOMElement();
+    expect(screen.getByTestId("alerts-pos")).toHaveTextContent(/^-1$/);
   });
 
   it("toggle opens then closes", () => {
     renderProbe();
     act(() => screen.getByTestId("toggle-alerts").click());
-    expect(screen.getByTestId("alerts-open").textContent).toBe("true");
+    expect(screen.getByTestId("alerts-open")).toHaveTextContent(/^true$/);
     act(() => screen.getByTestId("toggle-alerts").click());
-    expect(screen.getByTestId("alerts-open").textContent).toBe("false");
+    expect(screen.getByTestId("alerts-open")).toHaveTextContent(/^false$/);
   });
 
   it("closeAll empties the stack", () => {
@@ -86,7 +86,7 @@ describe("DrawersContext", () => {
     act(() => screen.getByTestId("open-alerts").click());
     act(() => screen.getByTestId("open-data-depth").click());
     act(() => screen.getByTestId("close-all").click());
-    expect(screen.getByTestId("state").textContent).toBe("");
+    expect(screen.getByTestId("state")).toBeEmptyDOMElement();
   });
 });
 
@@ -153,8 +153,7 @@ describe("Drawer (ESC + backdrop)", () => {
     renderTwoStackedDrawers();
     act(() => screen.getByTestId("open-both").click());
 
-    const backdrops = document.querySelectorAll('[aria-label="Close drawer"]');
-    expect(backdrops).toHaveLength(1);
+    expect(screen.getAllByLabelText("Close drawer")).toHaveLength(1);
   });
 
   it("close-button on a non-frontmost drawer removes only that drawer", () => {
@@ -162,10 +161,8 @@ describe("Drawer (ESC + backdrop)", () => {
     act(() => screen.getByTestId("open-both").click());
 
     const alertsDrawer = screen.getByTestId("drawer-alerts");
-    const closeButton = alertsDrawer.querySelector('[aria-label="Close"]');
-    expect(closeButton).not.toBeNull();
     act(() => {
-      fireEvent.click(closeButton as HTMLElement);
+      fireEvent.click(within(alertsDrawer).getByRole("button", { name: "Close" }));
     });
 
     expect(screen.queryByTestId("drawer-alerts")).not.toBeInTheDocument();

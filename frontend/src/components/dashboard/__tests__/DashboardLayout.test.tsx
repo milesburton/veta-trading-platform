@@ -89,61 +89,65 @@ function renderWithDefault(children = <ContextInspector />) {
   return renderProvider(children, makeDefaultModel());
 }
 
+function expectActiveCount(count: number) {
+  expect(screen.getByTestId("active-count")).toHaveTextContent(new RegExp(`^${count}$`));
+}
+
+function expectDefaultLayoutActive() {
+  expectActiveCount(DEFAULT_LAYOUT.length);
+  for (const { panelType } of DEFAULT_LAYOUT) {
+    expect(screen.getByTestId("active-ids")).toHaveTextContent(panelType);
+  }
+}
+
 describe("DashboardProvider – initial state", () => {
   it("provides activePanelIds from DEFAULT_LAYOUT on mount", () => {
     renderWithDefault();
-    const defaultIds = DEFAULT_LAYOUT.map((l) => l.panelType)
-      .sort()
-      .join(",");
-    const activeIds = screen.getByTestId("active-ids").textContent?.split(",").sort().join(",");
-    expect(activeIds).toBe(defaultIds);
+    expectDefaultLayoutActive();
   });
 
   it("always starts from DEFAULT_LAYOUT regardless of localStorage contents", () => {
     localStorage.setItem("dashboard-layout", JSON.stringify({ _v: 99, flex: {} }));
     renderWithDefault();
-    const count = Number(screen.getByTestId("active-count").textContent);
-    expect(count).toBe(DEFAULT_LAYOUT.length);
+    expectActiveCount(DEFAULT_LAYOUT.length);
     localStorage.clear();
   });
 
   it("starts with empty layout when no initialModel provided", () => {
     renderProvider();
-    expect(Number(screen.getByTestId("active-count").textContent)).toBe(0);
+    expectActiveCount(0);
   });
 });
 
 describe("DashboardProvider – addPanel", () => {
   it("adds a panel that was not in the active set", () => {
     renderProvider(undefined, makeMinimalModel(["market-ladder", "order-ticket"]));
-    const before = Number(screen.getByTestId("active-count").textContent);
-    expect(before).toBeGreaterThan(0);
+    expectActiveCount(2);
     act(() => {
       fireEvent.click(screen.getByText("Add Chart"));
     });
-    expect(Number(screen.getByTestId("active-count").textContent)).toBe(before + 1);
+    expectActiveCount(3);
   });
 
   it("does not duplicate a singleton panel already in the layout", () => {
     renderWithDefault();
-    const before = Number(screen.getByTestId("active-count").textContent);
+    expectActiveCount(DEFAULT_LAYOUT.length);
     act(() => {
       fireEvent.click(screen.getByText("Add Chart"));
     });
-    expect(Number(screen.getByTestId("active-count").textContent)).toBe(before);
+    expectActiveCount(DEFAULT_LAYOUT.length);
   });
 });
 
 describe("DashboardProvider – removePanel", () => {
   it("removes a panel from the active set", () => {
     renderWithDefault();
-    const before = Number(screen.getByTestId("active-count").textContent);
+    expectActiveCount(DEFAULT_LAYOUT.length);
     act(() => {
       fireEvent.click(screen.getByText("Remove Blotter"));
     });
-    const after = Number(screen.getByTestId("active-count").textContent);
-    expect(after).toBe(before - 1);
-    expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
+    expectActiveCount(DEFAULT_LAYOUT.length - 1);
+    expect(screen.getByTestId("active-ids")).not.toHaveTextContent("order-blotter");
   });
 });
 
@@ -155,18 +159,14 @@ describe("DashboardProvider – resetLayout", () => {
     act(() => {
       fireEvent.click(screen.getByText("Remove Blotter"));
     });
-    expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
+    expect(screen.getByTestId("active-ids")).not.toHaveTextContent("order-blotter");
 
     // Reset should restore it
     act(() => {
       fireEvent.click(screen.getByText("Reset"));
     });
 
-    const defaultIds = DEFAULT_LAYOUT.map((l) => l.panelType)
-      .sort()
-      .join(",");
-    const activeIds = screen.getByTestId("active-ids").textContent?.split(",").sort().join(",");
-    expect(activeIds).toBe(defaultIds);
+    expectDefaultLayoutActive();
   });
 
   it("supports resetting from an explicit template model", () => {
@@ -174,10 +174,10 @@ describe("DashboardProvider – resetLayout", () => {
     act(() => {
       fireEvent.click(screen.getByText("Reset Template"));
     });
-    const active = screen.getByTestId("active-ids").textContent ?? "";
-    expect(active).toContain("order-ticket");
-    expect(active).toContain("market-ladder");
-    expect(active).toContain("order-blotter");
+    const active = screen.getByTestId("active-ids");
+    expect(active).toHaveTextContent("order-ticket");
+    expect(active).toHaveTextContent("market-ladder");
+    expect(active).toHaveTextContent("order-blotter");
   });
 });
 
@@ -187,26 +187,25 @@ describe("DashboardProvider – model and tab controls", () => {
     act(() => {
       fireEvent.click(screen.getByText("Set Model"));
     });
-    expect(screen.getByTestId("active-ids").textContent).toContain("market-ladder");
-    expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
+    expect(screen.getByTestId("active-ids")).toHaveTextContent("market-ladder");
+    expect(screen.getByTestId("active-ids")).not.toHaveTextContent("order-blotter");
   });
 
   it("removeTabById removes a specific tab instance", () => {
     renderWithDefault();
-    expect(screen.getByTestId("active-ids").textContent).toContain("order-blotter");
+    expect(screen.getByTestId("active-ids")).toHaveTextContent("order-blotter");
     act(() => {
       fireEvent.click(screen.getByText("Remove By Id"));
     });
-    expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
+    expect(screen.getByTestId("active-ids")).not.toHaveTextContent("order-blotter");
   });
 
   it("setLayout callback remains a no-op by design", () => {
     renderWithDefault();
-    const before = screen.getByTestId("active-ids").textContent;
     act(() => {
       fireEvent.click(screen.getByText("Set Layout Noop"));
     });
-    expect(screen.getByTestId("active-ids").textContent).toBe(before);
+    expectDefaultLayoutActive();
   });
 });
 
@@ -237,6 +236,6 @@ describe("DashboardContext – default value", () => {
       return <span data-testid="size">{ctx.activePanelIds.size}</span>;
     }
     render(<Check />);
-    expect(screen.getByTestId("size").textContent).toBe("0");
+    expect(screen.getByTestId("size")).toHaveTextContent(/^0$/);
   });
 });
