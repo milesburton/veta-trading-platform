@@ -121,29 +121,39 @@ for (const [path, expected] of GET_ROUTES) {
   });
 }
 
-const WRITE_ROUTES: Array<[string, string, string]> = [
-  ["POST", "/rfq/r-1/execute", "http://rfq/rfq/r-1/execute"],
-  ["POST", "/rfq/sellside", "http://rfq/rfq/sellside"],
-  ["PUT", "/rfq/sellside/ss-1/route", "http://rfq/rfq/sellside/ss-1/route"],
-  ["PUT", "/rfq/sellside/ss-1/markup", "http://rfq/rfq/sellside/ss-1/markup"],
-  ["PUT", "/rfq/sellside/ss-1/confirm", "http://rfq/rfq/sellside/ss-1/confirm"],
-  ["PUT", "/rfq/sellside/ss-1/reject", "http://rfq/rfq/sellside/ss-1/reject"],
-  ["POST", "/products", "http://products/products"],
-  ["PUT", "/products/p-1/legs", "http://products/products/p-1/legs"],
-  ["PUT", "/products/p-1/unwind", "http://products/products/p-1/unwind"],
-  ["PUT", "/market-data/overrides", "http://md/overrides"],
-  ["POST", "/market-data/sources/finnhub/toggle", "http://md/sources/finnhub/toggle"],
+const WRITE_ROUTES: Array<[string, string, string, string]> = [
+  ["POST", "/rfq/r-1/execute", "http://rfq/rfq/r-1/execute", "trader"],
+  ["POST", "/rfq/sellside", "http://rfq/rfq/sellside", "external-client"],
+  ["PUT", "/rfq/sellside/ss-1/route", "http://rfq/rfq/sellside/ss-1/route", "sales"],
+  ["PUT", "/rfq/sellside/ss-1/markup", "http://rfq/rfq/sellside/ss-1/markup", "sales"],
+  ["PUT", "/rfq/sellside/ss-1/confirm", "http://rfq/rfq/sellside/ss-1/confirm", "external-client"],
+  ["PUT", "/rfq/sellside/ss-1/reject", "http://rfq/rfq/sellside/ss-1/reject", "external-client"],
+  ["POST", "/products", "http://products/products", "sales"],
+  ["PUT", "/products/p-1/legs", "http://products/products/p-1/legs", "sales"],
+  ["PUT", "/products/p-1/unwind", "http://products/products/p-1/unwind", "sales"],
+  ["PUT", "/market-data/overrides", "http://md/overrides", "admin"],
+  ["POST", "/market-data/sources/finnhub/toggle", "http://md/sources/finnhub/toggle", "admin"],
 ];
 
-for (const [method, path, expected] of WRITE_ROUTES) {
+for (const [method, path, expected, role] of WRITE_ROUTES) {
   test(`[proxied] ${method} ${path} forwards the body to ${expected}`, async () => {
     assertEquals((await call(null, method, path, "{}"))?.status, 401);
 
-    const res = await call("trader", method, path, '{"a":1}');
+    const res = await call(role, method, path, '{"a":1}');
     assertEquals(res?.status, 200);
     assertEquals(upstream[0].url, expected);
     assertEquals(upstream[0].method, method);
     assertEquals(upstream[0].body, '{"a":1}');
+  });
+}
+
+const RESTRICTED_WRITE_ROUTES = WRITE_ROUTES.filter(([, , , role]) => role !== "trader");
+
+for (const [method, path] of RESTRICTED_WRITE_ROUTES) {
+  test(`[proxied] ${method} ${path} rejects a viewer without reaching the upstream`, async () => {
+    const res = await call("viewer", method, path, '{"a":1}');
+    assertEquals(res?.status, 403);
+    assertEquals(upstream.length, 0);
   });
 }
 

@@ -37,6 +37,22 @@ async function forwardWithCookie(
   }
 }
 
+const ADMIN_ONLY = new Set(["admin"]);
+const SALES_ROLES = new Set(["sales", "admin"]);
+const RFQ_CLIENT_ROLES = new Set(["external-client", "sales", "admin"]);
+const CLIENT_RFQ_ACTIONS = new Set(["confirm", "reject"]);
+
+function forbiddenUnlessRole(
+  auth: { user: { role: string } },
+  allowed: ReadonlySet<string>
+): Response | null {
+  if (allowed.has(auth.user.role)) return null;
+  return new Response(JSON.stringify({ error: "forbidden" }), {
+    status: 403,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
+}
+
 export async function handleProxiedRoutes(
   req: Request,
   path: string,
@@ -163,6 +179,8 @@ export async function handleProxiedRoutes(
   if (path === "/rfq/sellside" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, RFQ_CLIENT_ROLES);
+    if (rejected) return rejected;
     return proxyPost(`${ctx.urls.rfqService}/rfq/sellside`, req);
   }
   if (path === "/rfq/sellside" && req.method === "GET") {
@@ -185,6 +203,11 @@ export async function handleProxiedRoutes(
   if (matchSsRoute && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(
+      auth,
+      CLIENT_RFQ_ACTIONS.has(matchSsRoute[2]) ? RFQ_CLIENT_ROLES : SALES_ROLES
+    );
+    if (rejected) return rejected;
     return proxyPut(
       `${ctx.urls.rfqService}/rfq/sellside/${matchSsRoute[1]}/${matchSsRoute[2]}`,
       req
@@ -210,6 +233,8 @@ export async function handleProxiedRoutes(
   if (path === "/products" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, SALES_ROLES);
+    if (rejected) return rejected;
     return proxyPost(`${ctx.urls.productService}/products`, req);
   }
   const matchProductId = path.match(/^\/products\/([^/]+)$/);
@@ -224,6 +249,8 @@ export async function handleProxiedRoutes(
   if (matchProductAction && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, SALES_ROLES);
+    if (rejected) return rejected;
     return proxyPut(
       `${ctx.urls.productService}/products/${matchProductAction[1]}/${matchProductAction[2]}`,
       req
@@ -319,12 +346,16 @@ export async function handleProxiedRoutes(
   if (path === "/market-data/overrides" && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, ADMIN_ONLY);
+    if (rejected) return rejected;
     return proxyPut(`${ctx.urls.marketData}/overrides`, req);
   }
   const mdsToggleMatch = path.match(/^\/market-data\/sources\/([^/]+)\/toggle$/);
   if (mdsToggleMatch && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, ADMIN_ONLY);
+    if (rejected) return rejected;
     return proxyPost(`${ctx.urls.marketData}/sources/${mdsToggleMatch[1]}/toggle`, req);
   }
 
