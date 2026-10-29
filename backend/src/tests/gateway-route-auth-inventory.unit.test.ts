@@ -2,44 +2,18 @@ import { readdir, readFile } from "node:fs/promises";
 import { afterEach, beforeEach, vi } from "vitest";
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import type { AuthResult, GatewayContext } from "../gateway/context.ts";
-import { handleAdminRoute } from "../gateway/routes/admin.ts";
-import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
-import { handleAnalyticsRoute } from "../gateway/routes/analytics.ts";
-import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
-import { handleLlmAdvisoryRoute } from "../gateway/routes/llm-advisory.ts";
-import { handleLoadgenAnnounceRoute } from "../gateway/routes/loadgen-announce.ts";
-import { handleLogsRoute } from "../gateway/routes/logs.ts";
-import { handleProxiedRoutes } from "../gateway/routes/proxied.ts";
-import { handleScenariosRoute } from "../gateway/routes/scenarios.ts";
-import { handleTelemetryRoute } from "../gateway/routes/telemetry.ts";
-import { handleTicketAttachmentsRoute } from "../gateway/routes/ticket-attachments.ts";
-import { handleWebSocketRoute } from "../gateway/routes/websocket.ts";
+import {
+  discoverCandidatePaths,
+  GATEWAY_SOURCE,
+  HANDLERS,
+  METHODS,
+  makeProbeContext,
+  probeRequest,
+  ROUTES_DIR,
+  unauthenticated,
+} from "./gateway-route-probe.ts";
 
-type RouteHandler = (req: Request, path: string, ctx: GatewayContext) => unknown;
-
-const ROUTES_DIR = new URL("../gateway/routes/", import.meta.url);
-const GATEWAY_SOURCE = new URL("../gateway/gateway.ts", import.meta.url);
-
-const HANDLERS: Record<string, RouteHandler> = {
-  "admin.ts": handleAdminRoute,
-  "alerts.ts": handleAlertsRoute,
-  "analytics.ts": handleAnalyticsRoute,
-  "bug-report.ts": handleBugReportRoute,
-  "llm-advisory.ts": handleLlmAdvisoryRoute,
-  "loadgen-announce.ts": handleLoadgenAnnounceRoute,
-  "logs.ts": handleLogsRoute,
-  "proxied.ts": handleProxiedRoutes,
-  "scenarios.ts": handleScenariosRoute,
-  "telemetry.ts": handleTelemetryRoute,
-  "ticket-attachments.ts": handleTicketAttachmentsRoute,
-  "websocket.ts": (req, path, ctx) =>
-    req.method !== "GET"
-      ? null
-      : handleWebSocketRoute(req, path, ctx, {
-          validateToken: () => Promise.resolve<AuthResult | null>(null),
-        }),
-};
+const MIN_AUTHENTICATED_PROBES = 105;
 
 const PUBLIC_ROUTES = new Set<string>(["GET /ws", "GET /ws/gateway"]);
 
@@ -59,41 +33,6 @@ const EXPECTED_PUBLIC_PROXY_PREDICATE = [
   `svcPath === "/health" ||`,
   `(svcName === "kafka-relay" && svcPath === "/events/batch" && req.method === "POST");`,
 ].join(" ");
-
-const METHODS = ["GET", "POST", "PUT", "DELETE"] as const;
-const MIN_AUTHENTICATED_PROBES = 80;
-const UNREACHABLE = "http://127.0.0.1:1";
-
-function instantiateRegexSource(source: string): string {
-  const withoutOptional = source.replace(/\((?:[^()]*)\)\?/g, "");
-  const withoutGroups = withoutOptional.replace(/\(([^()]*)\)/g, (_m, inner: string) => {
-    const first = inner.split("|")[0];
-    return /[[\].*+\\]/.test(first) ? "x" : first;
-  });
-  return withoutGroups.replace(/^\^/, "").replace(/\$$/, "").replace(/\\\//g, "/");
-}
-
-function discoverCandidatePaths(source: string): string[] {
-  const literals = [...source.matchAll(/["'`](\/[\w\-/]*)["'`]/g)].map((m) => m[1]);
-  const regexes = [...source.matchAll(/\/(\^\\\/(?:[^/\n]|\\\/)*?\$?)\/[gimsuy]*[,;)]/g)].map((m) =>
-    instantiateRegexSource(m[1])
-  );
-  return [...new Set([...literals, ...regexes])].filter((p) => p.startsWith("/"));
-}
-
-function makeProbeContext(onAuthCheck: () => void): GatewayContext {
-  const urls = new Proxy({}, { get: () => UNREACHABLE });
-  return {
-    requireAuth: () => {
-      onAuthCheck();
-      return Promise.resolve(new Response('{"error":"unauthenticated"}', { status: 401 }));
-    },
-    urls,
-    producer: { send: () => Promise.resolve() },
-    publishAccessEvent: () => undefined,
-    publicGuestTradingEnabled: false,
-  } as unknown as GatewayContext;
-}
 
 beforeEach(() => {
   vi.stubGlobal("fetch", () => Promise.reject(new Error("network disabled in route inventory")));
@@ -125,14 +64,10 @@ test("route-auth-inventory: every handled route authenticates or is on the publi
     for (const path of discoverCandidatePaths(source)) {
       for (const method of METHODS) {
         let authChecked = false;
-        const ctx = makeProbeContext(() => {
+        const ctx = makeProbeContext(unauthenticated, () => {
           authChecked = true;
         });
-        const req = new Request(`http://gw${path}`, {
-          method,
-          headers: { "content-type": "application/json" },
-          body: method === "GET" ? undefined : "{}",
-        });
+        const req = probeRequest(method, path);
         let handled = true;
         try {
           handled = (await handler(req, path, ctx)) !== null;

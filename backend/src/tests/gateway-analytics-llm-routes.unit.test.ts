@@ -145,6 +145,7 @@ test("[analytics-route] admin-only intelligence and advisory routes reject other
     ["GET", "/advisory/admin/state"],
     ["PUT", "/advisory/admin/state"],
     ["POST", "/advisory/admin/trigger-worker"],
+    ["POST", "/advisory/admin/watchlist-brief"],
   ];
   for (const [method, path] of adminOnly) {
     const denied = stubUpstream();
@@ -173,7 +174,7 @@ test("[analytics-route] advisory requests are stamped with the calling user", as
   await handleAnalyticsRoute(
     request("POST", "/advisory/admin/watchlist-brief", { symbols: ["AAPL"] }),
     "/advisory/admin/watchlist-brief",
-    context("trader")
+    context("admin")
   );
   assertEquals(brief[0].url, "http://advisory/admin/watchlist-brief");
   assertEquals(JSON.parse(brief[0].body ?? ""), { symbols: ["AAPL"], requestedBy: "u-7" });

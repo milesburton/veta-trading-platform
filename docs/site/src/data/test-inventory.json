@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 160,
-      "cases": 1792,
+      "files": 161,
+      "cases": 1795,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -57,7 +57,8 @@
         "frontend-image-files.unit.test.ts": 1,
         "gateway-analytics-llm-routes.unit.test.ts": 12,
         "gateway-logs-route.unit.test.ts": 7,
-        "gateway-proxied-routes.unit.test.ts": 17,
+        "gateway-proxied-routes.unit.test.ts": 18,
+        "gateway-role-matrix.unit.test.ts": 2,
         "gateway-route-auth-inventory.unit.test.ts": 4,
         "gateway-scenarios-route.unit.test.ts": 11,
         "gateway-system-status.unit.test.ts": 8,

@@ -191,6 +191,8 @@ export async function handleAnalyticsRoute(
   if (path === "/advisory/admin/watchlist-brief" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
+    const adminRej = requireAdmin(auth);
+    if (adminRej) return adminRej;
     const body = await req.text();
     const parsed = JSON.parse(body) as Record<string, unknown>;
     return proxyPost(

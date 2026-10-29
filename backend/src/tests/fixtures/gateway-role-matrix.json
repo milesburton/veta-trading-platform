@@ -1,0 +1,435 @@
+{
+  "routes": {
+    "DELETE /api/gateway/llm-advisory": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "DELETE /logs/query": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "oncall",
+      "risk-manager",
+      "sales",
+      "trader"
+    ],
+    "DELETE /scenarios/x": [
+      "admin",
+      "trader"
+    ],
+    "DELETE /shared-workspaces/x": "all",
+    "GET /admin/market-hours": [
+      "admin"
+    ],
+    "GET /advisory/admin/state": [
+      "admin"
+    ],
+    "GET /advisory/jobs": "all",
+    "GET /advisory/request": "all",
+    "GET /advisory/x": "all",
+    "GET /alerts": "all",
+    "GET /analytics/greeks-surface/x": "all",
+    "GET /analytics/price-fan/x": "all",
+    "GET /analytics/vol-profile/x": "all",
+    "GET /analytics/vol-surface/x": "all",
+    "GET /api/gateway/llm-advisory": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "GET /assets": "all",
+    "GET /candles": "all",
+    "GET /ccp/margin/x": [
+      "admin",
+      "compliance"
+    ],
+    "GET /ccp/settlements": "all",
+    "GET /ccp/settlements/x": "all",
+    "GET /ccp/stats": "all",
+    "GET /data-depth": "all",
+    "GET /intelligence/features": "all",
+    "GET /intelligence/recommendations": "all",
+    "GET /intelligence/signals": "all",
+    "GET /intelligence/weights": "all",
+    "GET /load-gen/status": [
+      "admin",
+      "oncall"
+    ],
+    "GET /logs/query": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "oncall",
+      "risk-manager",
+      "sales",
+      "trader"
+    ],
+    "GET /market-data/overrides": "all",
+    "GET /market-data/sources": "all",
+    "GET /market-hours": "all",
+    "GET /me": "all",
+    "GET /orders": "all",
+    "GET /pool/stats": "all",
+    "GET /preferences": "all",
+    "GET /products": "all",
+    "GET /products/stats": "all",
+    "GET /products/x": "all",
+    "GET /rfq": "all",
+    "GET /rfq/sellside": "all",
+    "GET /rfq/sellside/stats": "all",
+    "GET /rfq/sellside/x": "all",
+    "GET /rfq/stats": "all",
+    "GET /rfq/x": "all",
+    "GET /scenarios": "all",
+    "GET /scenarios/x": "all",
+    "GET /scenarios/x/runs": "all",
+    "GET /shared-workspaces": "all",
+    "GET /shared-workspaces/x": "all",
+    "GET /telemetry/frontend": [
+      "admin",
+      "oncall"
+    ],
+    "POST /advisory/admin/trigger-worker": [
+      "admin"
+    ],
+    "POST /advisory/admin/watchlist-brief": [
+      "admin"
+    ],
+    "POST /advisory/request": "all",
+    "POST /alerts": "all",
+    "POST /analytics/bond-price": "all",
+    "POST /analytics/duration-ladder": "all",
+    "POST /analytics/quote": "all",
+    "POST /analytics/recommend": "all",
+    "POST /analytics/scenario": "all",
+    "POST /analytics/spread-analysis": "all",
+    "POST /analytics/yield-curve": "all",
+    "POST /api/gateway/llm-advisory": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "POST /bug-report": "all",
+    "POST /demo-day": [
+      "admin",
+      "oncall"
+    ],
+    "POST /grid/query": "all",
+    "POST /intelligence/replay": "all",
+    "POST /intelligence/scenario": "all",
+    "POST /load-gen/start": [
+      "admin",
+      "oncall"
+    ],
+    "POST /load-gen/stop": [
+      "admin",
+      "oncall"
+    ],
+    "POST /load-test": [
+      "admin"
+    ],
+    "POST /logs/query": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "oncall",
+      "risk-manager",
+      "sales",
+      "trader"
+    ],
+    "POST /market-data/sources/x/toggle": [
+      "admin"
+    ],
+    "POST /products": [
+      "admin",
+      "sales"
+    ],
+    "POST /rfq/sellside": [
+      "admin",
+      "external-client",
+      "sales"
+    ],
+    "POST /scenarios": [
+      "admin",
+      "trader"
+    ],
+    "POST /scenarios/x": "all",
+    "POST /scenarios/x/run": [
+      "admin",
+      "trader"
+    ],
+    "POST /shared-workspaces": "all",
+    "POST /telemetry/frontend": "all",
+    "POST /ticket-attachments/presign": "all",
+    "PUT /admin/market-hours": [
+      "admin"
+    ],
+    "PUT /advisory/admin/state": [
+      "admin"
+    ],
+    "PUT /alerts/dismiss-all": "all",
+    "PUT /alerts/x/dismiss": "all",
+    "PUT /api/gateway/llm-advisory": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "PUT /intelligence/weights": [
+      "admin"
+    ],
+    "PUT /logs/query": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "oncall",
+      "risk-manager",
+      "sales",
+      "trader"
+    ],
+    "PUT /market-data/overrides": [
+      "admin"
+    ],
+    "PUT /preferences": "all",
+    "PUT /products/x/issue": [
+      "admin",
+      "sales"
+    ],
+    "PUT /products/x/legs": [
+      "admin",
+      "sales"
+    ],
+    "PUT /products/x/sell": [
+      "admin",
+      "sales"
+    ],
+    "PUT /products/x/structure": [
+      "admin",
+      "sales"
+    ],
+    "PUT /products/x/unwind": [
+      "admin",
+      "sales"
+    ],
+    "PUT /rfq/sellside/x/confirm": [
+      "admin",
+      "external-client",
+      "sales"
+    ],
+    "PUT /rfq/sellside/x/markup": [
+      "admin",
+      "sales"
+    ],
+    "PUT /rfq/sellside/x/reject": [
+      "admin",
+      "external-client",
+      "sales"
+    ],
+    "PUT /rfq/sellside/x/route": [
+      "admin",
+      "sales"
+    ],
+    "PUT /scenarios/x": [
+      "admin",
+      "trader"
+    ]
+  },
+  "proxy": {
+    "analytics": "all",
+    "arrival-price-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "ccp-service": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager"
+    ],
+    "dark-pool": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager"
+    ],
+    "ems": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "feature-engine": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "fix-archive": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "fix-exchange": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "fix-gateway": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "iceberg-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "is-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "journal": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "oncall",
+      "risk-manager",
+      "trader"
+    ],
+    "kafka-relay": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "limit-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "llm-advisory": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "llm-worker": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "market-data": "all",
+    "market-data-adapters": "all",
+    "market-sim": "all",
+    "momentum-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "news-aggregator": "all",
+    "observability": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "oms": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "pov-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "product-service": "all",
+    "recommendation-engine": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "replay": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "replay-service": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "rfq-service": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "risk-engine": [
+      "admin",
+      "compliance",
+      "oncall",
+      "risk-manager"
+    ],
+    "scenario-engine": [
+      "admin",
+      "compliance",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "signal-engine": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "sniper-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "twap-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ],
+    "user-service": "all",
+    "vwap-algo": [
+      "admin",
+      "desk-head",
+      "risk-manager",
+      "trader"
+    ]
+  }
+}
