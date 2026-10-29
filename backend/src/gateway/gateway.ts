@@ -8,6 +8,12 @@ import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
 // fallow-ignore-file unused-file
 import { serveDir } from "../lib/static-files.ts";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
+import {
+  createAlertRouter,
+  createRejectionWatch,
+  createServiceWatch,
+  routeKillSwitchEvent,
+} from "./alert-router.ts";
 import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
@@ -17,7 +23,7 @@ import {
   type UserLimits,
 } from "./context.ts";
 import { startDailySummary } from "./daily-summary.ts";
-import { sendDailySummary } from "./discord-notifier.ts";
+import { notifyOperators, sendDailySummary } from "./discord-notifier.ts";
 import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
@@ -458,7 +464,38 @@ const ORDER_TOPICS = [
   "orders.resumed",
 ];
 
+const ALERT_ROUTER_ENABLED = (process.env.ALERT_ROUTER_ENABLED ?? "true").toLowerCase() !== "false";
+const alertRouter = createAlertRouter({ deliver: notifyOperators });
+const serviceWatch = createServiceWatch(
+  alertRouter,
+  Number(process.env.ALERT_SERVICE_FAILURE_THRESHOLD) || 6,
+  Number(process.env.ALERT_STARTUP_GRACE_MS) || 120_000
+);
+const rejectionWatch = createRejectionWatch(
+  alertRouter,
+  Number(process.env.ALERT_REJECTION_WINDOW_MS) || 60_000,
+  Number(process.env.ALERT_REJECTION_THRESHOLD) || 10
+);
+
+function startAlertRouting(): void {
+  if (!ALERT_ROUTER_ENABLED) return;
+  createConsumer("gateway-alert-router", [
+    "orders.kill.audit",
+    "orders.resume.audit",
+    "orders.rejected",
+  ])
+    .then((c) => {
+      c.onMessage((topic, value) => {
+        if (topic === "orders.rejected") rejectionWatch.record(value);
+        else routeKillSwitchEvent(alertRouter, topic, value);
+      });
+    })
+    .catch((err) => logger.warn("alert router consumer unavailable", { err }));
+  setInterval(() => rejectionWatch.evaluate(), 15_000);
+}
+
 function startConsumers(): void {
+  startAlertRouting();
   let lastKafkaTick = 0;
   createConsumer("gateway-market", ["market.ticks"]).then((c) => {
     c.onMessage((_topic, value) => {
@@ -693,6 +730,7 @@ async function refreshHealthAndRecord(): Promise<void> {
   const flags = toHealthFlags(entries);
   cachedEntries = entries;
   cachedCheckedAt = Date.now();
+  if (ALERT_ROUTER_ENABLED) serviceWatch.observe(entries);
   cachedHealth = { ...flags, bus: flags.kafkaRelay, observability: flags.kafkaRelay };
   const up = Object.values(flags).filter(Boolean).length;
   platformStats.recordServiceSnapshot(up, entries.length);
