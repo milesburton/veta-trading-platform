@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.15](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.14...veta-trading-platform-v1.88.15) (2026-10-29)
+
+
+### Bug Fixes
+
+* **gateway:** restrict market-data, product, RFQ and advisory admin routes by role ([#981](https://github.com/milesburton/veta-trading-platform/issues/981)) ([27efb63](https://github.com/milesburton/veta-trading-platform/commit/27efb63788c996bf9c43ef9fa46e648b05d02d8b))
+
 ## [1.88.14](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.13...veta-trading-platform-v1.88.14) (2026-10-28)
 
 
