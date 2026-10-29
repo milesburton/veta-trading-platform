@@ -93,8 +93,8 @@ AI assistant used for targeted code generation, particularly in the frontend Red
 
 AI completion assistant used for inline code suggestions across both the backend Node code and the frontend React/Vitest test files. Particularly useful for boilerplate test setup and Zod schema definitions.
 
-### nVidia Spark (DeepSeek R1)
+### nVidia Spark (local Ollama)
 
-AI reasoning model used for architecture review, complex refactor planning, and reviewing risk-engine logic. Accessed via the nVidia Spark interface.
+Local LLM host on the LAN, running Ollama with several open models. It is used for architecture review, complex refactor planning, and reviewing risk-engine logic. See [NVIDIA Spark](/veta-trading-platform/platform/supporting/nvidia-spark/) for the models it hosts.
 
 Each AI assistant's contributions are attributed in commit messages with a `Co-Authored-By` trailer. Humans retain final review authority on all merges to `main`.
