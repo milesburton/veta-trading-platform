@@ -109,6 +109,22 @@ describe("OrderTicket", () => {
 
 Tests live next to the component they test, in a sibling `__tests__/` folder. So `src/components/OrderTicket.tsx` is tested by `src/components/__tests__/OrderTicket.test.tsx`.
 
+### Querying and asserting on the DOM
+
+Query by what a user perceives and assert with the jest-dom matchers. Do not reach into the DOM with `document.querySelector`, `container.querySelector` or `.textContent`.
+
+| Instead of | Use |
+| --- | --- |
+| `el.textContent` with `toBe`, `toContain` or `toMatch` | `toHaveTextContent` (a regular expression such as `/^1\/2$/` for an exact match) |
+| `container.textContent` equal to `""` | `toBeEmptyDOMElement()` |
+| `el.className` containing a class | `toHaveClass("a", "b")` |
+| `querySelector('[aria-label="Close"]')` | `within(parent).getByRole("button", { name: "Close" })` or `getByLabelText` |
+| Reading a count, then comparing it with itself | Assert the known expected value |
+
+Prefer queries in this order: `getByRole` with a name, `getByLabelText`, `getByText`, then `getByTestId`. Use `findBy*` or `waitFor` for asynchronous output rather than inline timeouts.
+
+A direct query is acceptable only for an element with no role, label or text, such as a decorative `aria-hidden` handle. Do not add a test id to production code just to avoid one.
+
 ### Global mocks
 
 `frontend/src/setupTests.ts` stubs three browser APIs that JSdom does not ship:
