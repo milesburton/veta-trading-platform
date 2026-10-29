@@ -22,7 +22,7 @@ This page is a historical snapshot taken in May 2026, before the operations stra
 
 ## CI/CD
 
-- Every PR runs lint, typecheck, vitest, Playwright, CodeQL, secret scan, image builds.
+- Every PR runs lint, typecheck, vitest, Playwright, image builds. CodeQL and secret scanning run through GitHub's native defaults.
 - On `main` merge, CI publishes container images to `ghcr.io` with the `:latest` tag.
 - A systemd auto-pull timer polls the server every ~5 minutes, pulls new `:latest` images, and runs `docker compose up -d` when the main-branch SHA changes.
 - No pre-deploy verification beyond container healthchecks. No staging. No automated rollback. No on-failure alerts (the synthetic probe shipped 2026-05-15 covers that gap; see [target architecture](../target-architecture/) for current monitoring state).

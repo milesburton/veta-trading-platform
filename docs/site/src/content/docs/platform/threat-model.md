@@ -108,7 +108,7 @@ hurdles in order.
 1. A transitive dep is hijacked and pushes a malicious patch release.
 2. CI builds the image with the bad dep and pushes to GHCR.
    - **Control**: Dependabot watches for advisories; CodeQL and
-     `gitleaks` run in CI and catch a class of compromises but not all.
+     GitHub secret scanning run natively and catch a class of compromises but not all.
 3. The server auto-pull deploys the image to prod.
    - **Control**: per-container CPU and memory limits cap how much
      the miner can consume; alerts on sustained CPU saturation are
