@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.89.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.15...veta-trading-platform-v1.89.0) (2026-10-30)
+
+
+### Features
+
+* **gateway:** deliver service, kill-switch and rejection alerts to operators ([#982](https://github.com/milesburton/veta-trading-platform/issues/982)) ([47b7466](https://github.com/milesburton/veta-trading-platform/commit/47b746684903309562dd28b2c1f6429e76e05cd7))
+
 ## [1.88.15](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.14...veta-trading-platform-v1.88.15) (2026-10-29)
 
 
