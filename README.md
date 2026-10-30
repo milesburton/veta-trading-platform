@@ -17,7 +17,7 @@
 | Coverage | Backend | [![Backend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
 | Coverage | Frontend | [![Frontend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
 | Coverage | Combined | [![Combined coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/combined-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml) |
-| Performance | k6 load tests | [![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-manual%20%2F%20homelab-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/) |
+| Performance | k6 load tests | [![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-nightly-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/) |
 
 A simulation-first equities and fixed-income trading platform for paper trading and market-structure analysis. Built around realistic desk segregation, nine execution algorithms, and a pre-trade risk engine that gates every order.
 

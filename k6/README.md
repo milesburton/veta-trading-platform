@@ -1,6 +1,6 @@
 # k6 Load Tests
 
-[![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-manual%20%2F%20homelab-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/)
+[![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-nightly-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/)
 
 Load-testing scenarios for the VETA pipeline. Tests run in Docker, send
 traffic through the gateway, and export percentile metrics to Prometheus.
