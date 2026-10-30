@@ -18,6 +18,7 @@ import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
   type AuthenticatedUser,
+  type AuthResult,
   type GatewayContext,
   isResponse,
   type UserLimits,
@@ -27,6 +28,12 @@ import { notifyOperators, sendDailySummary } from "./discord-notifier.ts";
 import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
+import {
+  buildAuditEvent,
+  classifyPrivileged,
+  makeAuditPublisher,
+  runWithAudit,
+} from "./privileged-audit.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
 import { createRefPriceCache } from "./ref-prices.ts";
 import { classifyRequestSource } from "./request-source.ts";
@@ -759,6 +766,8 @@ startDailySummary({
   sender: sendDailySummary,
 });
 
+const publishAudit = makeAuditPublisher(producer);
+
 const gatewayContext: GatewayContext = {
   requireAuth,
   producer,
@@ -973,6 +982,7 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     }
     upgradeInProgress = body.inProgress;
     upgradeMessage = body.message ?? null;
+    publishAudit(buildAuditEvent(auth, "upgrade_status_update", req.method, path, 200));
     broadcastAll({
       event: "upgradeStatus",
       data: { inProgress: upgradeInProgress, message: upgradeMessage },
@@ -989,38 +999,43 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     return makeMarketSimWsProxy(req, Number(process.env.MARKET_SIM_PORT ?? "5000"));
   }
 
-  const wsResponse = await handleWebSocketRoute(req, path, gatewayContext, { validateToken });
-  if (wsResponse) return wsResponse;
+  const routeResponse = await runWithAudit(req, path, gatewayContext, publishAudit, async (ctx) => {
+    const wsResponse = await handleWebSocketRoute(req, path, ctx, { validateToken });
+    if (wsResponse) return wsResponse;
 
-  const proxiedResponse = await handleProxiedRoutes(req, path, gatewayContext);
-  if (proxiedResponse) return proxiedResponse;
+    const proxiedResponse = await handleProxiedRoutes(req, path, ctx);
+    if (proxiedResponse) return proxiedResponse;
 
-  const alertsResponse = await handleAlertsRoute(req, path, gatewayContext);
-  if (alertsResponse) return alertsResponse;
+    const alertsResponse = await handleAlertsRoute(req, path, ctx);
+    if (alertsResponse) return alertsResponse;
 
-  const analyticsResponse = await handleAnalyticsRoute(req, path, gatewayContext);
-  if (analyticsResponse) return analyticsResponse;
+    const analyticsResponse = await handleAnalyticsRoute(req, path, ctx);
+    if (analyticsResponse) return analyticsResponse;
 
-  const adminResponse = await handleAdminRoute(req, path, gatewayContext);
-  if (adminResponse) return adminResponse;
+    const adminResponse = await handleAdminRoute(req, path, ctx);
+    if (adminResponse) return adminResponse;
 
-  const logsResponse = await handleLogsRoute(req, path, gatewayContext);
-  if (logsResponse) return logsResponse;
+    const logsResponse = await handleLogsRoute(req, path, ctx);
+    if (logsResponse) return logsResponse;
 
-  const telemetryResponse = await handleTelemetryRoute(req, path, gatewayContext);
-  if (telemetryResponse) return telemetryResponse;
+    const telemetryResponse = await handleTelemetryRoute(req, path, ctx);
+    if (telemetryResponse) return telemetryResponse;
 
-  const bugReportResponse = await handleBugReportRoute(req, path, gatewayContext);
-  if (bugReportResponse) return bugReportResponse;
+    const bugReportResponse = await handleBugReportRoute(req, path, ctx);
+    if (bugReportResponse) return bugReportResponse;
 
-  const ticketAttachmentsResponse = await handleTicketAttachmentsRoute(req, path, gatewayContext);
-  if (ticketAttachmentsResponse) return ticketAttachmentsResponse;
+    const ticketAttachmentsResponse = await handleTicketAttachmentsRoute(req, path, ctx);
+    if (ticketAttachmentsResponse) return ticketAttachmentsResponse;
 
-  const loadgenAnnounceResponse = await handleLoadgenAnnounceRoute(req, path, gatewayContext);
-  if (loadgenAnnounceResponse) return loadgenAnnounceResponse;
+    const loadgenAnnounceResponse = await handleLoadgenAnnounceRoute(req, path, ctx);
+    if (loadgenAnnounceResponse) return loadgenAnnounceResponse;
 
-  const scenariosResponse = await handleScenariosRoute(req, path, gatewayContext);
-  if (scenariosResponse) return scenariosResponse;
+    const scenariosResponse = await handleScenariosRoute(req, path, ctx);
+    if (scenariosResponse) return scenariosResponse;
+
+    return null;
+  });
+  if (routeResponse) return routeResponse;
 
   if (path.startsWith("/api/gateway/")) {
     const stripped = path.slice("/api/gateway".length);
@@ -1068,15 +1083,19 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
             svcPath === "/personas")) ||
         svcPath === "/health" ||
         (svcName === "kafka-relay" && svcPath === "/events/batch" && req.method === "POST");
+      let proxyActor: AuthResult | null = null;
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
+        proxyActor = auth;
         const ownPositionsMatch =
           svcName === "risk-engine" ? svcPath.match(/^\/positions\/([^/]+)$/) : null;
         const allowedRoles =
           svcName === "market-sim" && svcPath.startsWith("/admin/")
             ? new Set(["admin"])
-            : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
+            : svcName === "journal" && svcPath.startsWith("/audit")
+              ? new Set(["admin", "compliance"])
+              : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
         const isOwnPositions =
           ownPositionsMatch !== null && decodePathSegment(ownPositionsMatch[1]) === auth.user.id;
         const isRecordingParticipantRoute =
@@ -1101,6 +1120,14 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
       }
       const targetUrl = `${target}${resolveInfraHealthPath(svcName, svcPath)}${url.search}`;
       const tier = SVC_SPEC_BY_COMPOSE_NAME.get(svcName)?.tier ?? 0;
+      const auditedProxy = async (call: () => Promise<Response>): Promise<Response> => {
+        const res = await call();
+        const action = classifyPrivileged(req.method, path);
+        if (action && proxyActor && res.status < 400) {
+          publishAudit(buildAuditEvent(proxyActor, action, req.method, path, res.status));
+        }
+        return res;
+      };
       if (req.method === "GET" || req.method === "DELETE") {
         const call = () => proxyGet(targetUrl, req);
         return tier >= 1
@@ -1109,11 +1136,13 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
       }
       if (req.method === "POST" || req.method === "PUT") {
         const proxyFn = req.method === "POST" ? proxyPost : proxyPut;
-        if (tier < 1) return proxyFn(targetUrl, req);
+        if (tier < 1) return auditedProxy(() => proxyFn(targetUrl, req));
         // req.text() can only be called once, but a wake retry calls proxyFn twice.
         const presetBody = await req.text();
         const call = () => proxyFn(targetUrl, req, presetBody);
-        return proxyWithWake(svcName, call, req, SVC_SPEC_BY_COMPOSE_NAME, corsHeaders);
+        return auditedProxy(() =>
+          proxyWithWake(svcName, call, req, SVC_SPEC_BY_COMPOSE_NAME, corsHeaders)
+        );
       }
     }
   }
