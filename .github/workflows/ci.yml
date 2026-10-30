@@ -655,17 +655,17 @@ jobs:
           path: coverage-tc.lcov
           retention-days: 14
 
-      - name: Generate integration test badge
+      - name: Generate integration and smoke test badges
         if: github.ref == 'refs/heads/main'
         run: |
-          PASSED=$(grep -oP '\d+(?= passed)' /tmp/tc-test-output.txt | awk '{s+=$1} END {print s}')
-          PASSED="${PASSED:-0}"
+          CLEAN=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/tc-test-output.txt)
+          PASSED=$(echo "$CLEAN" | grep -E '^\s*Tests\s+' | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)
+          SMOKE=$(echo "$CLEAN" | grep -E '✓ backend/src/tests/smoke(\.full)?\.tc\.test\.ts \(' | grep -oE '\([0-9]+ tests?\)' | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          if [ -z "$PASSED" ] || [ "$PASSED" -eq 0 ] || [ "$SMOKE" -eq 0 ]; then
+            echo "::error::Could not read test counts from the vitest output (integration='${PASSED}', smoke='${SMOKE}'); the output format has probably changed."
+            exit 1
+          fi
           echo "{\"schemaVersion\":1,\"label\":\"integration tests\",\"message\":\"${PASSED} passed\",\"color\":\"brightgreen\"}" > docs/badges/integration-tests.json
-
-      - name: Generate smoke test badge
-        if: github.ref == 'refs/heads/main'
-        run: |
-          SMOKE=$(awk '/running [0-9]+ tests? from \.\/backend\/src\/tests\/smoke(\.full)?\.tc\.test\.ts/ {s+=$2} END {print s+0}' /tmp/tc-test-output.txt)
           echo "{\"schemaVersion\":1,\"label\":\"smoke tests\",\"message\":\"${SMOKE} passed\",\"color\":\"brightgreen\"}" > docs/badges/smoke-tests.json
 
       - name: Commit integration test badge
