@@ -43,6 +43,14 @@
       "trader"
     ],
     "GET /assets": "all",
+    "GET /audit/events": [
+      "admin",
+      "compliance"
+    ],
+    "GET /audit/verify": [
+      "admin",
+      "compliance"
+    ],
     "GET /candles": "all",
     "GET /ccp/margin/x": [
       "admin",

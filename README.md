@@ -49,6 +49,8 @@ A simulation-first equities and fixed-income trading platform for paper trading 
 
 Full documentation is at **[milesburton.github.io/veta-trading-platform](https://milesburton.github.io/veta-trading-platform/)**, published on every merge to `main`.
 
+The [Professional Standards](https://milesburton.github.io/veta-trading-platform/platform/professional-standards/) page lists what the platform implements to production-trading grade, what is partial, and what is still open.
+
 ## Discord log and feedback
 
 [Join the Discord](https://discord.gg/tSGgsKnz) for release notes, the platform alerts feed, and bug submission.

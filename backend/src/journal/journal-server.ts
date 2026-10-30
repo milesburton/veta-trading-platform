@@ -5,6 +5,8 @@ import { CORS_HEADERS, corsOptions, json, jsonError, serveFetch } from "#veta/ht
 import { logger } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import type { GridQueryRequest, GridQueryResponse } from "#veta/types/grid-query";
+import { appendAudit, firstBrokenSeq, listAudit } from "../lib/audit.ts";
+import { AUDIT_TOPICS, toAuditEvent } from "./audit-ingest.ts";
 import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
@@ -292,6 +294,35 @@ createConsumer(journalGroupId, CONSUME_TOPICS).then((consumer) => {
   logger.info(`Subscribed to: ${CONSUME_TOPICS.join(", ")}`);
 });
 
+const AUDIT_WRITE_ATTEMPTS = 3;
+
+async function persistAudit(topic: string, value: unknown): Promise<void> {
+  const event = toAuditEvent(topic, value);
+  if (!event) {
+    logger.warn("Dropped malformed audit event", { topic });
+    return;
+  }
+  for (let attempt = 1; attempt <= AUDIT_WRITE_ATTEMPTS; attempt++) {
+    try {
+      await appendAudit(journalPool, event);
+      return;
+    } catch (err) {
+      if (attempt === AUDIT_WRITE_ATTEMPTS) {
+        logger.error("Failed to persist audit event", { topic, action: event.action, err });
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+  }
+}
+
+createConsumer("journal-audit", [...AUDIT_TOPICS])
+  .then((consumer) => {
+    consumer.onMessage((topic, value) => persistAudit(topic, value));
+    logger.info(`Subscribed to: ${AUDIT_TOPICS.join(", ")}`);
+  })
+  .catch((err) => logger.warn("Audit consumer unavailable", { err }));
+
 createConsumer(marketGroupId, ["market.ticks"]).then((consumer) => {
   consumer.onMessage((_topic, value) =>
     ingestTick(
@@ -435,6 +466,21 @@ async function handle(req: Request): Promise<Response> {
       24 * 60 * 60 * 1000
     );
     return json(await computeLatencyMetrics(windowMs));
+  }
+
+  if (req.method === "GET" && path === "/audit") {
+    const beforeSeq = Number(url.searchParams.get("beforeSeq"));
+    const events = await listAudit(journalPool, {
+      limit: Number(url.searchParams.get("limit") ?? 100),
+      beforeSeq: Number.isFinite(beforeSeq) && beforeSeq > 0 ? beforeSeq : undefined,
+      actorId: url.searchParams.get("actorId") ?? undefined,
+    });
+    return json(events);
+  }
+
+  if (req.method === "GET" && path === "/audit/verify") {
+    const brokenSeq = await firstBrokenSeq(journalPool);
+    return json({ ok: brokenSeq === null, brokenSeq });
   }
 
   if (req.method === "GET" && path === "/data-depth") {
