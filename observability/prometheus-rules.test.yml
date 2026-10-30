@@ -352,3 +352,70 @@ tests:
       - eval_time: 18m
         alertname: RedpandaConsumerLagSustained
         exp_alerts: []
+
+  - name: PostgresBackupStale fires when the last success is over 26h old
+    interval: 4m
+    input_series:
+      - series: 'veta_postgres_backup_last_success_timestamp_seconds'
+        values: '0x500'
+    alert_rule_test:
+      - eval_time: 30h
+        alertname: PostgresBackupStale
+        exp_alerts:
+          - exp_labels:
+              alertname: PostgresBackupStale
+              severity: critical
+            exp_annotations:
+              summary: No successful Postgres backup for over 26h
+              description: |
+                The last verified pg_dump finished more than 26 hours ago, or
+                has never succeeded. Check the postgres-backup container logs
+                and free space on the backup volume, then run a manual backup.
+
+  - name: PostgresBackupStale stays quiet while backups are fresh
+    interval: 4m
+    input_series:
+      - series: 'veta_postgres_backup_last_success_timestamp_seconds'
+        values: '0+240x500'
+    alert_rule_test:
+      - eval_time: 30h
+        alertname: PostgresBackupStale
+        exp_alerts: []
+
+  - name: PostgresBackupFailing fires after 30m of failed attempts
+    interval: 1m
+    input_series:
+      - series: 'veta_postgres_backup_last_status'
+        values: '0x45'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: PostgresBackupFailing
+        exp_alerts:
+          - exp_labels:
+              alertname: PostgresBackupFailing
+              severity: warning
+            exp_annotations:
+              summary: The latest Postgres backup attempt failed
+              description: |
+                The most recent backup attempt failed pg_dump or verification.
+                The job retries every 15 minutes. Read the postgres-backup
+                container logs for the error.
+
+  - name: PostgresBackupScrapeDown fires when the scrape target is down for 10m
+    interval: 1m
+    input_series:
+      - series: 'up{job="postgres-backup"}'
+        values: '0x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: PostgresBackupScrapeDown
+        exp_alerts:
+          - exp_labels:
+              alertname: PostgresBackupScrapeDown
+              job: postgres-backup
+              severity: warning
+            exp_annotations:
+              summary: postgres-backup scrape failing for 10m
+              description: |
+                Prometheus can't scrape veta-postgres-backup:8101/metrics.
+                Backups may have stopped without anyone noticing.

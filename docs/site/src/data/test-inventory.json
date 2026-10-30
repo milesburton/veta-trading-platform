@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 162,
-      "cases": 1808,
+      "files": 163,
+      "cases": 1814,
       "perFile": {
         "checkMigrationsSafe.test.ts": 10,
         "anthropic.test.ts": 6,
@@ -106,6 +106,7 @@
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "platform-stats.unit.test.ts": 11,
         "playbooks.unit.test.ts": 14,
+        "postgres-backup-script.unit.test.ts": 6,
         "price-fan.unit.test.ts": 7,
         "process-metrics.unit.test.ts": 4,
         "product-service.unit.test.ts": 9,

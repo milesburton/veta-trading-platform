@@ -54,6 +54,43 @@ groups:
             Prometheus can't scrape disk-monitor:8099/metrics. Disk could
             be filling without anyone seeing it. Check the container.
 
+  - name: backup
+    rules:
+      - alert: PostgresBackupStale
+        expr: time() - veta_postgres_backup_last_success_timestamp_seconds > 93600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: No successful Postgres backup for over 26h
+          description: |
+            The last verified pg_dump finished more than 26 hours ago, or
+            has never succeeded. Check the postgres-backup container logs
+            and free space on the backup volume, then run a manual backup.
+
+      - alert: PostgresBackupFailing
+        expr: veta_postgres_backup_last_status == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: The latest Postgres backup attempt failed
+          description: |
+            The most recent backup attempt failed pg_dump or verification.
+            The job retries every 15 minutes. Read the postgres-backup
+            container logs for the error.
+
+      - alert: PostgresBackupScrapeDown
+        expr: up{job="postgres-backup"} == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: postgres-backup scrape failing for 10m
+          description: |
+            Prometheus can't scrape veta-postgres-backup:8101/metrics.
+            Backups may have stopped without anyone noticing.
+
   - name: memory
     rules:
       - alert: ServiceMemoryGrowthSustained

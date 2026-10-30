@@ -165,7 +165,7 @@ sometimes time out under load. Each follow-up PR named in the
 
 | Capability                            | State    | Where                                                                          |
 | ------------------------------------- | -------- | ------------------------------------------------------------------------------ |
-| Postgres backup running on schedule | Deferred | No scheduled backup. Tracked in [#955](https://github.com/milesburton/veta-trading-platform/issues/955). |
+| Postgres backup running on schedule | Partially | [Daily verified `pg_dump`](../supporting/postgres-backup/) with retention and Prometheus alerts for stale or failing runs. Off-host copy relies on where the backup path is mounted. Tracked in [#955](https://github.com/milesburton/veta-trading-platform/issues/955) and the restore drill in [#956](https://github.com/milesburton/veta-trading-platform/issues/956). |
 | Restore drill performed at least once | Deferred | Untested. Tracked in [#956](https://github.com/milesburton/veta-trading-platform/issues/956). |
 | Redpanda topic snapshots | Deferred | No snapshotting; snapshots versus journal replay is tracked in [#977](https://github.com/milesburton/veta-trading-platform/issues/977). |
 | Documented disaster-recovery runbook | Deferred | No DR runbook. Tracked in [#957](https://github.com/milesburton/veta-trading-platform/issues/957). |
