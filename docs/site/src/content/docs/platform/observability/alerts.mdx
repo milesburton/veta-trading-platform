@@ -59,6 +59,8 @@ Service alerts are suppressed for a grace period after the gateway starts, so a 
 
 The router uses the same `DISCORD_WEBHOOK_URL` as the rest of this page, and does nothing when it is unset. Delivery failures are swallowed so they cannot affect the gateway.
 
+Each warning or critical message ends with a link to its runbook in `docs/incidents/runbooks/`. A unit test fails if an alert kind has no runbook file. Set `RUNBOOK_BASE_URL` to point the links at a different location.
+
 ## Severity filtering
 
 The gateway only fans CRITICAL and WARNING out to Discord. INFO alerts (workspace-save failures, routine notifications) stay inside the in-app alert centre and are not surfaced to ops.
