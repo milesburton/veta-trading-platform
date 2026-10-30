@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.90.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.89.0...veta-trading-platform-v1.90.0) (2026-10-30)
+
+
+### Features
+
+* **audit:** append-only hash-chained audit log for privileged actions ([#989](https://github.com/milesburton/veta-trading-platform/issues/989)) ([5ee36c0](https://github.com/milesburton/veta-trading-platform/commit/5ee36c013496a319e972ee49ab706c55200e1889))
+
 ## [1.89.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.88.15...veta-trading-platform-v1.89.0) (2026-10-30)
 
 
