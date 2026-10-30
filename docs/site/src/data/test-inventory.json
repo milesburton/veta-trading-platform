@@ -188,8 +188,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 22,
-      "cases": 241,
+      "files": 23,
+      "cases": 242,
       "perFile": {
         "algo.integration.tc.test.ts": 15,
         "analytics-services.integration.tc.test.ts": 9,
@@ -200,6 +200,7 @@
         "journal.http.tc.test.ts": 9,
         "market-data.http.tc.test.ts": 10,
         "messaging.integration.tc.test.ts": 6,
+        "postgres-restore-drill.integration.tc.test.ts": 1,
         "preferences.integration.tc.test.ts": 6,
         "product-service.integration.tc.test.ts": 8,
         "registration.integration.tc.test.ts": 5,
