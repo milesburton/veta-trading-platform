@@ -51,7 +51,7 @@ Example: `GET /api/journal/orders` is proxied to `http://localhost:5009/orders` 
 
 ## Guest order rate limiting
 
-<Source path="backend/src/gateway/gateway.ts" line={312} label="PUBLIC_GUEST_TRADING" />
+<Source path="backend/src/gateway/gateway.ts" line={318} label="PUBLIC_GUEST_TRADING" />
 
 When `PUBLIC_GUEST_TRADING=true`, anonymous/public users can place trades. A dedicated per-IP token bucket (10 burst, 1/sec sustained, roughly 3,600 orders/hour worst case per IP) stops one IP from flooding the OMS/journal pipeline. Authenticated traders are not subject to this limiter; they use the separate per-user rate limit instead.
 
@@ -65,13 +65,13 @@ State-changing methods (anything that is not `GET`/`HEAD`/`OPTIONS`) must come f
 
 ## Access-event logging
 
-<Source path="backend/src/gateway/gateway.ts" line={413} label="publishAccessEvent" />
+<Source path="backend/src/gateway/gateway.ts" line={419} label="publishAccessEvent" />
 
 Every gate decision publishes a `user.access` event to Kafka (the audit trail) and, for `auth_failure` / `ws_rate_limited` actions, also emits a WARN-level log line, since Grafana alert rules query Loki, not Kafka. A misconfigured client can produce thousands of identical `auth_failure` events per second; without a cap the stdout log fills the disk within hours. Kafka still receives every event for the audit trail, but stdout WARN emits are throttled per `(action, reason)` pair, and the next emitted line after a throttled run carries a `suppressedSince` count so the signal is not lost, only rate-limited.
 
 ## Market data fallback path
 
-<Source path="backend/src/gateway/gateway.ts" line={461} label="startConsumers" />
+<Source path="backend/src/gateway/gateway.ts" line={497} label="startConsumers" />
 
 The gateway's primary market-data path is a Kafka consumer on `market.ticks`. It also opens a direct WebSocket to `market-sim` as a fallback: if no Kafka tick has arrived in the last 3 seconds, ticks from the fallback WebSocket are broadcast instead. Once Kafka resumes flowing, the fallback WebSocket's messages are silently dropped again. This keeps the dashboard live during a Redpanda outage without the fallback path fighting the primary path for which tick wins.
 
@@ -79,7 +79,7 @@ Order events for a specific user are additionally broadcast to `compliance` and 
 
 ## Health check refresh
 
-<Source path="backend/src/gateway/gateway.ts" line={649} label="HEALTH_REFRESH_MS" />
+<Source path="backend/src/gateway/gateway.ts" line={686} label="HEALTH_REFRESH_MS" />
 
 The gateway polls `/health` on every service in `shared/serviceRegistry.ts`. Fetching health from all of them on every request would mean dozens of concurrent fetches per call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
 

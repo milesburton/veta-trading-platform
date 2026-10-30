@@ -102,6 +102,12 @@ export async function notifyDiscord(alert: AlertPayload, userId: string): Promis
   });
 }
 
+export async function notifyOperators(content: string): Promise<boolean> {
+  const url = getAlertsWebhookUrl();
+  if (!url) return false;
+  return await postToDiscord({ url, username: "VETA Operations", content });
+}
+
 export type UserTicketKind = "bug" | "feature" | "comment";
 export type UserTicketCategory = "ui" | "data" | "auth" | "performance" | "other";
 
