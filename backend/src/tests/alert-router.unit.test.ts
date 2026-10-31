@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import {
@@ -5,6 +6,8 @@ import {
   createRejectionWatch,
   createServiceWatch,
   formatAlert,
+  runbookFileFor,
+  runbookUrlFor,
   routeKillSwitchEvent,
 } from "../gateway/alert-router.ts";
 import type { ServiceStatusEntry } from "../gateway/service-status.ts";
@@ -176,4 +179,46 @@ test("[kill-switch] malformed or unrelated events are ignored", () => {
   routeKillSwitchEvent(router, "orders.resume.audit", null);
   routeKillSwitchEvent(router, "orders.filled", KILL_AUDIT);
   assertEquals(sent.length, 0);
+});
+
+const RUNBOOK_DIR = new URL("../../../docs/incidents/runbooks/", import.meta.url);
+
+test("[runbooks] every alert key maps to a runbook file that exists", () => {
+  for (const key of ["service:oms", "kill-switch", "order-rejections"]) {
+    const file = runbookFileFor(key);
+    assert(file !== null, `no runbook mapped for ${key}`);
+    assert(existsSync(new URL(file, RUNBOOK_DIR)), `runbook file missing: ${file}`);
+  }
+  assertEquals(runbookFileFor("something-else"), null);
+});
+
+test("[runbooks] the base URL can be overridden", () => {
+  assertEquals(
+    runbookUrlFor("kill-switch", "https://docs.example/rb/"),
+    "https://docs.example/rb/kill-switch.md"
+  );
+});
+
+test("[runbooks] critical and warning alerts link a runbook, recoveries do not", () => {
+  const { sent, router } = harness();
+  const services = createServiceWatch(router, 1);
+  services.observe([entry("oms", "error")]);
+  const rejections = createRejectionWatch(router, 60_000, 1);
+  rejections.record({ reason: "x" });
+  routeKillSwitchEvent(router, "orders.kill.audit", KILL_AUDIT);
+  routeKillSwitchEvent(router, "orders.resume.audit", {
+    scope: "all",
+    issuedBy: "a",
+    issuedByRole: "admin",
+    resumeAt: 1,
+    ts: 1,
+  });
+  services.observe([entry("oms", "ok")]);
+
+  const [offline, spike, kill, resume, recovered] = sent;
+  assert(offline.includes("/service-offline.md"));
+  assert(spike.includes("/order-rejection-spike.md"));
+  assert(kill.includes("/kill-switch.md"));
+  assert(!resume.includes("Runbook:"));
+  assert(!recovered.includes("Runbook:"));
 });

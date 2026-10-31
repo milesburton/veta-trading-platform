@@ -31,9 +31,36 @@ const SEVERITY_EMOJI: Record<AlertSeverity, string> = {
 
 const DEFAULT_REPEAT_MS = 30 * 60_000;
 
+const DEFAULT_RUNBOOK_BASE_URL =
+  "https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/";
+
+const RUNBOOK_FILES: ReadonlyArray<readonly [prefix: string, file: string]> = [
+  ["service:", "service-offline.md"],
+  ["kill-switch", "kill-switch.md"],
+  ["order-rejections", "order-rejection-spike.md"],
+];
+
+export function runbookFileFor(key: string): string | null {
+  return RUNBOOK_FILES.find(([prefix]) => key.startsWith(prefix))?.[1] ?? null;
+}
+
+export function runbookUrlFor(
+  key: string,
+  baseUrl: string = process.env.RUNBOOK_BASE_URL ?? DEFAULT_RUNBOOK_BASE_URL
+): string | null {
+  const file = runbookFileFor(key);
+  return file ? `${baseUrl}${file}` : null;
+}
+
 export function formatAlert(alert: OperatorAlert): string {
   const head = `${SEVERITY_EMOJI[alert.severity]} **${alert.severity}** ${alert.title}`;
-  return alert.detail ? `${head}\n> ${alert.detail}` : head;
+  const runbook = alert.severity === "INFO" ? null : runbookUrlFor(alert.key);
+  const lines = [
+    head,
+    ...(alert.detail ? [`> ${alert.detail}`] : []),
+    ...(runbook ? [`Runbook: <${runbook}>`] : []),
+  ];
+  return lines.join("\n");
 }
 
 export function createAlertRouter(options: AlertRouterOptions): AlertRouter {
