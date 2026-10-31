@@ -5,12 +5,10 @@ x-prod-image: &prod-defaults
   restart: unless-stopped
 
 secrets:
-  # Mounted as a file, never as a container environment variable. Once
-  # OpenBao holds GITHUB_TICKETING_TOKEN_SECRET, the deploy adds
-  # deploy/openbao/compose.secrets.yml, which sources it from there instead
-  # of the legacy host file (root:1993 mode 0640, 1993 being the service group).
+  # Mounted as a file, never as a container environment variable. The deploy
+  # exports GITHUB_TICKETING_TOKEN_SECRET from OpenBao veta/platform.
   github_ticketing_token:
-    file: ./secrets/github_ticketing_token
+    environment: GITHUB_TICKETING_TOKEN_SECRET
 
 services:
 

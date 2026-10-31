@@ -95,7 +95,6 @@ On a new server, also copy `~/.config/veta/openbao-approle.json` across, or issu
 ## Source
 
 - `deploy/openbao/compose.yml`, `deploy/openbao/config/openbao.hcl`
-- `deploy/openbao/compose.secrets.yml` (ticketing token overlay)
 - `scripts/lib/openbao-env.sh` (deploy loader)
 - `scripts/openbao-bootstrap.py` (first-time setup)
 - `scripts/veta-compose.sh` (compose wrapper)
