@@ -104,6 +104,27 @@ These thresholds are constants in `abuse-tracker.ts`, not environment variables.
 
 Authentication happens before the WebSocket upgrade completes, not after: once a connection is upgraded, there is no way to send an HTTP 401 back to the client, only WebSocket frames. Anonymous connections are still allowed to complete the upgrade, since read-only market data does not require a session. The client IP and User-Agent are also captured once at upgrade time, since `req.headers` is unavailable after the upgrade but both are needed later for the per-IP guest order-submit rate limit and access-event tagging. Auth is resolved eagerly (awaited) before the abuse check runs, so `upgradeDecision` knows which user it is deciding for; if the upgrade is allowed, the same resolved `pendingAuth` is reused for the socket instead of re-validating the token a second time.
 
+## Audit log
+
+Privileged actions are recorded in `audit.events`, a Postgres table that is append-only and hash-chained inside the database.
+
+| Property | How it is enforced |
+| --- | --- |
+| Append-only | Row triggers reject `UPDATE` and `DELETE`, and a statement trigger rejects `TRUNCATE`. |
+| Tamper-evident | Each row stores the SHA-256 of the previous row's hash plus its own fields. The hash is computed by an insert trigger under an advisory lock, so application code cannot supply or skip it, and concurrent writers still produce a gapless sequence. |
+| Verifiable | `audit.first_broken_seq()` recomputes the chain and returns the first inconsistent sequence number, or null. |
+
+Events reach the table through the bus. The gateway publishes an `audit.events` message when a privileged mutation succeeds (a 2xx response from an authenticated caller). The rules live in one table, `PRIVILEGED_RULES`, covering market hours, load generation, upgrade status, intelligence weights, advisory admin actions, market-data overrides and source toggles, product and sell-side RFQ handling, market-sim admin and risk-engine changes. Kill and resume are captured from the existing `orders.kill.audit` and `orders.resume.audit` topics. The journal service consumes all three topics and writes the rows.
+
+Admin and compliance users can read the log through `GET /audit/events` (filter with `actorId`, page with `beforeSeq`) and check it with `GET /audit/verify`. Other roles receive 403, including through the generic `/api/journal` proxy.
+
+Known limits, each tracked as an issue:
+
+- All services currently connect to Postgres as one user, so the table owner could disable the triggers. The hash chain makes that detectable but not impossible. A separate insert-only database role would close it.
+- Delivery goes through the message bus and is not guaranteed, so a rare dropped message means a missing audit row rather than a broken chain.
+- Truncating the newest rows leaves a valid chain. Anchoring the head hash outside the database would detect it.
+- User-service changes are not yet audited.
+
 ## Frontend input hardening
 
 <Source path="frontend/src/store/safeKey.ts" label="isSafeKey" />

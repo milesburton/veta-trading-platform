@@ -37,7 +37,7 @@ const RULES: Rule[] = [
   },
   {
     id: "truncate",
-    pattern: /\bTRUNCATE\b/i,
+    pattern: /\bTRUNCATE\b(?!\s+ON\b)/i,
     why: "empties a table the live version may still read",
   },
   {

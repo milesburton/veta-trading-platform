@@ -38,6 +38,7 @@ async function forwardWithCookie(
 }
 
 const ADMIN_ONLY = new Set(["admin"]);
+const AUDIT_READERS = new Set(["admin", "compliance"]);
 const SALES_ROLES = new Set(["sales", "admin"]);
 const RFQ_CLIENT_ROLES = new Set(["external-client", "sales", "admin"]);
 const CLIENT_RFQ_ACTIONS = new Set(["confirm", "reject"]);
@@ -349,6 +350,20 @@ export async function handleProxiedRoutes(
     const rejected = forbiddenUnlessRole(auth, ADMIN_ONLY);
     if (rejected) return rejected;
     return proxyPut(`${ctx.urls.marketData}/overrides`, req);
+  }
+  if (path === "/audit/events" && req.method === "GET") {
+    const auth = await ctx.requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, AUDIT_READERS);
+    if (rejected) return rejected;
+    return proxyGet(`${ctx.urls.journal}/audit${url.search}`, req);
+  }
+  if (path === "/audit/verify" && req.method === "GET") {
+    const auth = await ctx.requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, AUDIT_READERS);
+    if (rejected) return rejected;
+    return proxyGet(`${ctx.urls.journal}/audit/verify`, req);
   }
   const mdsToggleMatch = path.match(/^\/market-data\/sources\/([^/]+)\/toggle$/);
   if (mdsToggleMatch && req.method === "POST") {
