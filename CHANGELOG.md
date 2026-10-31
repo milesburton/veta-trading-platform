@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.91.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.90.0...veta-trading-platform-v1.91.0) (2026-10-31)
+
+
+### Features
+
+* **backup:** scheduled verified Postgres backups with retention and alerts ([#995](https://github.com/milesburton/veta-trading-platform/issues/995)) ([e06ea55](https://github.com/milesburton/veta-trading-platform/commit/e06ea55a4012744b774bc225274292b18a813441))
+
 ## [1.90.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.89.0...veta-trading-platform-v1.90.0) (2026-10-30)
 
 
