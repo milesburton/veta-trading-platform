@@ -40,6 +40,17 @@ test("flags TRUNCATE", () => {
   );
 });
 
+test("allows a trigger that guards a table against TRUNCATE", () => {
+  const v = scanSql(
+    "m.sql",
+    "CREATE TRIGGER no_truncate BEFORE TRUNCATE ON audit.events FOR EACH STATEMENT EXECUTE FUNCTION f();"
+  );
+  assertEquals(
+    v.some((x) => x.rule === "truncate"),
+    false
+  );
+});
+
 test("flags RENAME COLUMN", () => {
   const v = scanSql("m.sql", "ALTER TABLE orders RENAME COLUMN qty TO quantity;");
   assertEquals(
