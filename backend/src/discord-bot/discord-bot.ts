@@ -2,14 +2,14 @@ import "#veta/bootstrap";
 import { serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import type { ILlmProvider } from "#veta/types/llm-advisory";
+import { createAnthropicProvider } from "../llm-advisory/providers/anthropic.ts";
+import { createOllamaProvider } from "../llm-advisory/providers/ollama.ts";
 import {
   isBugReportValid,
   notifyDiscordBug,
   type UserTicketReport,
 } from "../notifications/discord-notifier.ts";
 import { createTicketForUserReport } from "../notifications/ticketing.ts";
-import { createAnthropicProvider } from "../llm-advisory/providers/anthropic.ts";
-import { createOllamaProvider } from "../llm-advisory/providers/ollama.ts";
 
 const PORT = Number(process.env.DISCORD_BOT_PORT) || 5_034;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? "";
