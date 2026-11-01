@@ -1,14 +1,14 @@
 // fallow-ignore-file unused-file
 import { CORS_HEADERS } from "#veta/http";
-import { type GatewayContext, isResponse } from "../context.ts";
 import {
   isBugReportValid,
   notifyDiscordBug,
   type UserTicketKind,
   type UserTicketReport,
-} from "../discord-notifier.ts";
+} from "../../notifications/discord-notifier.ts";
+import { createTicketForUserReport } from "../../notifications/ticketing.ts";
+import { type GatewayContext, isResponse } from "../context.ts";
 import { platformStats } from "../platform-stats.ts";
-import { createTicketForUserReport } from "../ticketing.ts";
 
 const ALLOWED_CATEGORIES = new Set(["ui", "data", "auth", "performance", "other"]);
 const ALLOWED_KINDS = new Set(["bug", "feature", "comment"]);

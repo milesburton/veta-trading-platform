@@ -973,7 +973,7 @@ export const TERMS: GlossaryTerm[] = [
     short:
       "URL credential that lets a service POST messages into a Discord channel. VETA uses one webhook to route CRITICAL and WARNING alerts from both the gateway (user-level events) and Grafana (platform alerts) into a single on-call channel. Injected via DISCORD_WEBHOOK_URL; never committed.",
     seeAlso: ["alert-routing"],
-    source: "backend/src/gateway/discord-notifier.ts",
+    source: "backend/src/notifications/discord-notifier.ts",
   },
   {
     id: "alert-routing",

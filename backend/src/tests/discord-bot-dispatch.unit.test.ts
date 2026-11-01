@@ -41,8 +41,8 @@ vi.mock("#veta/bootstrap", () => ({}));
 vi.mock("../llm-advisory/providers/ollama.ts", () => ({
   createOllamaProvider: () => h.provider,
 }));
-vi.mock("../gateway/ticketing.ts", () => ({ createTicketForUserReport: h.ticket }));
-vi.mock("../gateway/discord-notifier.ts", async (importActual) => ({
+vi.mock("../notifications/ticketing.ts", () => ({ createTicketForUserReport: h.ticket }));
+vi.mock("../notifications/discord-notifier.ts", async (importActual) => ({
   ...(await importActual<Record<string, unknown>>()),
   notifyDiscordBug: h.notify,
   isBugReportValid: () => h.valid.value,

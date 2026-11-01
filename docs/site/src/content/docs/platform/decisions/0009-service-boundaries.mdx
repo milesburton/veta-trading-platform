@@ -1,0 +1,74 @@
+---
+title: "ADR 0009: Service boundaries and the shared platform layer"
+description: "Records why the platform stays a modular monolith deployed as one container per service, which coupling is deliberate, which is being removed, and how the boundaries are enforced."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-11-01
+
+## Context
+
+The platform deploys one container image per backend service, built by the CI `docker-services`
+matrix and run from `compose.yml`. The development container instead runs every service as a
+`supervisord` program in one process tree. This raised the question of whether the platform
+should move further towards independently owned microservices.
+
+A review of the code found:
+
+- Deployment is already one container per service. `supervisord` appears only in the
+  development container.
+- Postgres is split into per-service schemas (`journal`, `risk`, `users`, `intelligence`,
+  `llm_advisory`, `scenarios`, `replay`, `fix_archive`, `market_sim`). Each schema is queried
+  only by its owning service.
+- Services share infrastructure through the `#veta/*` subpath imports: `logger`, `http`,
+  `messaging`, `db`, `telemetry`, the order and risk schemas, and the shared types.
+- One source import crossed a service boundary: the Discord bot imported the notifier and
+  ticketing modules from the gateway.
+- OMS and the FIX exchange fail closed on the risk engine.
+
+## Decision
+
+Keep the platform as a modular monolith deployed as one container per service. Do not pursue
+per-service repositories, per-service versioning or a database per service. For a platform
+operated as a single unit on one host, the coordination cost outweighs the benefit.
+
+Within that model:
+
+1. **The risk dependency stays synchronous and fail closed.** An order must not be routed
+   without a risk decision. If the risk engine is unavailable, orders stop. Making this
+   asynchronous or fail open would weaken a safety property, so it is not treated as coupling
+   to remove.
+2. **Contracts at boundaries are explicit.** The risk check request and response are validated
+   with Zod at the boundary, and consumers are covered by contract tests (tracked in
+   [#1007](https://github.com/milesburton/veta-trading-platform/issues/1007)).
+3. **The shared platform layer stays infrastructure only.** The `#veta/*` aliases carry
+   logging, HTTP, messaging, database access, telemetry, schemas and types. They carry no
+   business logic.
+4. **Code used by more than one service lives outside any one service.** The notifier,
+   ticketing and Grafana renderer modules moved from `backend/src/gateway/` to
+   `backend/src/notifications/`, because both the gateway and the Discord bot use them. A
+   service does not import another service's directory.
+5. **Each Postgres schema has one owning service.** Cross-service data access goes through the
+   owner's API or Kafka topics, not direct queries.
+
+## Alternatives considered
+
+| Option | For | Against |
+| --- | --- | --- |
+| Full microservices with per-service repositories and versions | Independent release cadence per team | One operator and one host; adds version-skew testing and release tooling with no matching benefit |
+| Single deployable monolith | Simplest operation | Loses per-service restart, resource limits and the fail-closed isolation of the risk engine |
+| Loosen the risk coupling with a queue | Looser runtime dependency | Orders could be accepted before a risk decision, which is the failure the gate exists to prevent |
+
+## Consequences
+
+- The moved modules keep their behaviour and tests. Import paths changed in the gateway, the
+  Discord bot and their tests.
+- Boundary rules are currently convention plus review. Follow-up work is tracked in
+  [#1006](https://github.com/milesburton/veta-trading-platform/issues/1006) (derive the
+  service registry from compose definitions) and
+  [#1007](https://github.com/milesburton/veta-trading-platform/issues/1007) (risk contract
+  tests).
+- The development container still differs from production. Aligning it with compose would
+  remove the remaining dev and production divergence, but it is a developer-experience change
+  and is not part of this decision.
