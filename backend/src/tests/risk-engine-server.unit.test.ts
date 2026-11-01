@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, vi } from "vitest";
+import { CheckResultSchema } from "#veta/schemas/risk";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 
@@ -342,4 +343,20 @@ test("[risk-engine] serves config history with a bounded limit", async () => {
   assertEquals(h.store.history.mock.calls[1][0], 1);
   await call("GET", "/config/history");
   assertEquals(h.store.history.mock.calls[2][0], 50);
+});
+
+test("[risk-engine] /check responses satisfy the contract consumers validate against", async () => {
+  await load();
+  for (const body of [CHECK, { ...CHECK, limitPrice: 150 }, { ...CHECK, quantity: 1e12 }]) {
+    const res = await call("POST", "/check", body);
+    assertEquals(res.status, 200);
+    assertEquals(CheckResultSchema.safeParse(await res.json()).success, true);
+  }
+});
+
+test("[risk-engine] /check refuses a request that breaks the request contract", async () => {
+  await load();
+  for (const body of [{ ...CHECK, limitPrice: undefined }, { ...CHECK, quantity: 0 }, {}]) {
+    assertEquals((await call("POST", "/check", body)).status, 400);
+  }
 });

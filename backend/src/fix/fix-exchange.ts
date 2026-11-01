@@ -7,6 +7,7 @@ import { serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer } from "#veta/messaging";
+import { checkRisk } from "#veta/risk-client";
 import { isKnownCounterparty } from "./counterparties.ts";
 import { computeFill } from "./fill-math.ts";
 import {
@@ -22,7 +23,6 @@ import {
 import { isMarketOpenForOrderEntry } from "./fix-market-session.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
-import { checkRisk } from "./risk-check.ts";
 import { validateVenueRouting } from "./venue-registry.ts";
 
 const FIX_EXCHANGE_PORT = Number(process.env.FIX_EXCHANGE_PORT) || 9_880;

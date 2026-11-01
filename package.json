@@ -63,6 +63,7 @@
     "#veta/telemetry": "./backend/src/lib/telemetry.ts",
     "#veta/bootstrap": "./backend/src/lib/bootstrap.ts",
     "#veta/market-client": "./backend/src/lib/market-sim-client.ts",
+    "#veta/risk-client": "./backend/src/lib/risk-client.ts",
     "#veta/market-hours": "./backend/src/market-sim/market-hours.ts",
     "#veta/trading-calendar": "./backend/src/lib/trading-calendar.ts",
     "#veta/market-calendars": "./backend/src/lib/market-calendars.ts",

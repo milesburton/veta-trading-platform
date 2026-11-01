@@ -38,7 +38,7 @@ OMS-specific.
 ## Decision
 
 Ship the smaller change now: `fix-exchange.ts` calls risk-engine's `POST /check` directly
-(`backend/src/fix/risk-check.ts`), blocking the acknowledgment until the check returns,
+(originally `backend/src/fix/risk-check.ts`, now the shared client in `backend/src/lib/risk-client.ts`, see [Risk architecture](../../risk-architecture/#the-risk-check-contract)), blocking the acknowledgment until the check returns,
 before any fill logic runs. On `!allowed`, it sends an `ExecutionReport` with
 `OrdStatus=Rejected` carrying the risk-engine's reasons, instead of the normal `New`
 acknowledgment. On a risk-engine failure of any kind (non-2xx, malformed body, timeout,

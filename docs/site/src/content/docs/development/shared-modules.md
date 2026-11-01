@@ -22,6 +22,7 @@ All shared backend modules use Node subpath imports (`#veta/...`) defined in the
 | `#veta/telemetry` | `lib/telemetry.ts` | `withSpan()`, `recordGauge()`, `setupProcessMetrics()` |
 | `#veta/bootstrap` | `lib/bootstrap.ts` | Side-effect import that initialises `#veta/telemetry` |
 | `#veta/market-client` | `lib/market-sim-client.ts` | `createMarketSimClient()` |
+| `#veta/risk-client` | `lib/risk-client.ts` | `checkRisk()`, `RISK_UNAVAILABLE_REASON` |
 | `#veta/market-hours` | `market-sim/market-hours.ts` | `isUsEquityRegularSession()`, `parseAllowOutOfHours()` |
 | `#veta/trading-calendar` | `lib/trading-calendar.ts` | `resolveSession()`, `isAuction()`, `TradingCalendar` |
 | `#veta/market-calendars` | `lib/market-calendars.ts` | Per-venue calendars such as `US_EQUITY_CALENDAR` |
