@@ -73,8 +73,8 @@ Within that model:
   edges are allowlisted and tracked in
   [#1011](https://github.com/milesburton/veta-trading-platform/issues/1011). The test also fails
   when an allowlisted edge disappears, so the list can only shrink.
-- Deriving the service registry from compose definitions is tracked in
-  [#1006](https://github.com/milesburton/veta-trading-platform/issues/1006).
-- The development container still differs from production. Aligning it with compose would
-  remove the remaining dev and production divergence, but it is a developer-experience change
-  and is not part of this decision.
+- The service registry stays the source of truth for service identity, with compose and
+  supervisord checked against it (see [ADR 0010](../0010-supervisord-as-dev-runner/)).
+- The development container still runs services under supervisord while production runs
+  compose. [ADR 0010](../0010-supervisord-as-dev-runner/) records why and how drift is
+  prevented.

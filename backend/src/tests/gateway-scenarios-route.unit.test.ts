@@ -13,8 +13,8 @@ const store = vi.hoisted(() => ({
 }));
 const runScenario = vi.hoisted(() => vi.fn());
 
-vi.mock("../scenarios/store.ts", () => store);
-vi.mock("../scenarios/orchestrator.ts", () => ({ runScenario }));
+vi.mock("../gateway/scenarios/store.ts", () => store);
+vi.mock("../gateway/scenarios/orchestrator.ts", () => ({ runScenario }));
 
 const { handleScenariosRoute } = await import("../gateway/routes/scenarios.ts");
 
