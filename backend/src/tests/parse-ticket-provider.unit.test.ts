@@ -30,6 +30,7 @@ test("parse-ticket provider config, defaults to anthropic then ollama", () => {
   assertEquals(config.chain, ["anthropic", "ollama"]);
   assertEquals(config.anthropicModelId, "claude-haiku-5-5");
   assertEquals(config.ollamaModelId, "qwen2.5:3b");
+  assertEquals(config.timeoutMs, 45_000);
 });
 
 test("parse-ticket provider config, reads the chain and drops unknown names", () => {
@@ -37,10 +38,12 @@ test("parse-ticket provider config, reads the chain and drops unknown names", ()
     QUICK_TRADE_LLM_PROVIDERS: " Ollama, mock ,anthropic",
     QUICK_TRADE_OLLAMA_MODEL_ID: "llama",
     LLM_OLLAMA_BASE_URL: "http://o:1",
+    QUICK_TRADE_TIMEOUT_MS: "5000",
   });
   assertEquals(config.chain, ["ollama", "anthropic"]);
   assertEquals(config.ollamaModelId, "llama");
   assertEquals(config.ollamaBaseUrl, "http://o:1");
+  assertEquals(config.timeoutMs, 5_000);
 });
 
 test("fallback provider, uses the first available provider", async () => {
@@ -80,6 +83,7 @@ test("buildParseTicketProvider, builds one provider per configured name", () => 
     anthropicModelId: "claude-haiku-5-5",
     ollamaModelId: "qwen2.5:3b",
     ollamaBaseUrl: "http://localhost:11434",
+    timeoutMs: 1_000,
   });
   assertEquals(provider.providerId, "anthropic+ollama");
   assert(provider.modelId.length > 0);

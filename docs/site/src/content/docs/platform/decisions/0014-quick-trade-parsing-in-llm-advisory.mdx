@@ -41,8 +41,8 @@ parameter CPU model to emit strict JSON.
    available provider answers, and a provider that throws hands over to the next one. The
    Anthropic model defaults to `claude-haiku-5-5` for latency; Ollama reuses the existing
    in-stack model. Parsing works with `LLM_ENABLED=false`.
-3. **Bound the request.** The handler enforces a 20 second limit and answers `504
-   llm_timeout`; the bar shows a specific message for it. `503 llm_unavailable` now means
+3. **Bound the request.** The handler enforces a limit (`QUICK_TRADE_TIMEOUT_MS`, default 45 seconds, sized for the
+   slower Ollama fallback) and answers `504 llm_timeout`; the bar shows a specific message for it. `503 llm_unavailable` now means
    no provider in the chain is reachable.
 4. **Keep the safety gate unchanged.** The result only opens a pre-filled ticket for the
    trader to review. Zod validation and the symbol allow-list check still apply.

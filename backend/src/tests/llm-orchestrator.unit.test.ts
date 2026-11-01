@@ -73,6 +73,7 @@ vi.mock("../llm-advisory/runtime-config-store.ts", async (importActual) => ({
     }),
 }));
 vi.mock("../llm-advisory/parse-ticket-provider.ts", () => ({
+  loadParseTicketProviderConfig: () => ({ timeoutMs: 1_000 }),
   buildParseTicketProvider: () => ({
     providerId: "fake",
     modelId: "fake-model",

@@ -69,6 +69,7 @@ The cap is a compile-time constant. Tune in [`backend/src/llm-advisory/orchestra
 
 | `QUICK_TRADE_LLM_PROVIDERS` | orchestrator | `anthropic,ollama` | Ordered provider chain for quick-trade parsing; independent of `LLM_ENABLED` |
 | `QUICK_TRADE_ANTHROPIC_MODEL_ID` | orchestrator | `claude-haiku-5-5` | Model used for quick-trade parsing when Anthropic is in the chain |
+| `QUICK_TRADE_TIMEOUT_MS` | orchestrator | `45000` | Time allowed for the whole provider chain before the route answers `504` |
 | `QUICK_TRADE_OLLAMA_MODEL_ID` | orchestrator | `LLM_MODEL_ID`, else `qwen2.5:3b` | Ollama model used as the fallback |
 | `ANTHROPIC_API_KEY` | orchestrator | unset | Anthropic credential, injected from the vault and never committed |
 
@@ -84,7 +85,7 @@ The orchestrator serves `POST /parse-ticket`, reached through the gateway as `/a
 | 400 | `validation_failed` | Empty input, over 200 characters, or malformed symbols |
 | 422 | `unparseable`, `schema_mismatch`, `unknown_symbol` | The model answered but the result is unusable |
 | 503 | `llm_unavailable`, `llm_generate_failed` | No provider reachable, or every provider failed |
-| 504 | `llm_timeout` | No answer within 20 seconds |
+| 504 | `llm_timeout` | No answer within `QUICK_TRADE_TIMEOUT_MS` |
 
 ## Troubleshooting
 
