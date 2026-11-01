@@ -1,6 +1,6 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import { computeActual, type OutcomeOrder } from "../scenarios/outcome.ts";
+import { computeActual, type OutcomeOrder } from "../gateway/scenarios/outcome.ts";
 
 function buy(limitPrice: number, fills: Array<{ filled: number; price: number }>): OutcomeOrder {
   return {

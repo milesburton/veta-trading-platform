@@ -1,7 +1,7 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import { diffOutcome } from "../scenarios/diff.ts";
-import type { ScenarioActual, ScenarioExpected } from "../scenarios/types.ts";
+import { diffOutcome } from "../gateway/scenarios/diff.ts";
+import type { ScenarioActual, ScenarioExpected } from "../gateway/scenarios/types.ts";
 
 const baseActual: ScenarioActual = {
   fillCount: 5,
