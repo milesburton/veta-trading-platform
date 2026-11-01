@@ -70,8 +70,8 @@ Within that model:
 - The rule that a service does not import another service's directory is enforced by a unit
   test, so it runs in the pre-commit hook and in CI (see
   [Service boundaries](../../../development/shared-modules/#service-boundaries)). The allowlist
-  is empty, and the test also fails when an allowlisted edge disappears, so any future
-  exception can only shrink.
+  is empty, and the test also fails when an allowlisted edge disappears, so the list can only
+  shrink.
 - The service registry stays the source of truth for service identity, with compose and
   supervisord checked against it (see [ADR 0010](../0010-supervisord-as-dev-runner/)).
 - The development container still runs services under supervisord while production runs
