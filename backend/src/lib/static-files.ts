@@ -22,7 +22,9 @@ const CONTENT_TYPES: Record<string, string> = {
   ".wasm": "application/wasm",
 };
 
-async function readFileOrIndex(target: string): Promise<{ path: string; body: Buffer<ArrayBuffer> }> {
+async function readFileOrIndex(
+  target: string
+): Promise<{ path: string; body: Buffer<ArrayBuffer> }> {
   try {
     return { path: target, body: await readFile(target) };
   } catch (err) {

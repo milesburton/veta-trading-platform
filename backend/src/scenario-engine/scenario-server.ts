@@ -2,9 +2,9 @@ import "#veta/bootstrap";
 import { json, serveJsonService } from "#veta/http";
 import { logger } from "#veta/logger";
 import type { FeatureVector, ScenarioShock, Signal } from "#veta/types/intelligence";
-import { armIdleExit } from "../shared/idle-exit.ts";
 import { scoreFeatureVector } from "../lib/intelligence/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../lib/intelligence/weight-store.ts";
+import { armIdleExit } from "../shared/idle-exit.ts";
 import { applyShocks } from "./apply-shocks.ts";
 
 const PORT = Number(process.env.SCENARIO_ENGINE_PORT) || 5_020;

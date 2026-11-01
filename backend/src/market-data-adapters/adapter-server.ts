@@ -4,10 +4,10 @@ import { json, serveJsonService } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createProducer } from "#veta/messaging";
 import type { MarketAdapterEvent } from "#veta/types/intelligence";
+import { createMarketEventStore } from "../lib/intelligence/market-event-store.ts";
 import { armIdleExit } from "../shared/idle-exit.ts";
 import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
-import { createMarketEventStore } from "../lib/intelligence/market-event-store.ts";
 
 const PORT = Number(process.env.MARKET_DATA_ADAPTERS_PORT) || 5_016;
 const MARKET_SIM_URL = process.env.MARKET_SIM_URL || "http://localhost:5000";

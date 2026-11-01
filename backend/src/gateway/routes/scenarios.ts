@@ -1,5 +1,6 @@
 import { CORS_HEADERS } from "#veta/http";
 import { logger } from "#veta/logger";
+import { type GatewayContext, isResponse } from "../context.ts";
 import { runScenario } from "../scenarios/orchestrator.ts";
 import { ScenarioCreateSchema, ScenarioUpdateSchema } from "../scenarios/schema.ts";
 import {
@@ -10,7 +11,6 @@ import {
   listScenarios,
   updateScenario,
 } from "../scenarios/store.ts";
-import { type GatewayContext, isResponse } from "../context.ts";
 
 const LOG = { component: "gateway-scenarios" };
 

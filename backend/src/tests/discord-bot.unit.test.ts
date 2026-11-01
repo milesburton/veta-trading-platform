@@ -255,7 +255,7 @@ test("decideTriageRequest ignores a payload missing required fields", () => {
   assertEquals(decideTriageRequest(null).shouldTriage, false);
   assertEquals(
     decideTriageRequest({ id: "1", content: "Raise. x", author: { id: "9" } }).shouldTriage,
-    false,
+    false
   );
 });
 
@@ -294,7 +294,7 @@ test("decideTriageRequest triages a message that @mentions the bot", () => {
       content: "<@1234567890> the candlestick chart shows blank bars",
       author: { id: "9", username: "alice" },
     },
-    "1234567890",
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
@@ -308,7 +308,7 @@ test("decideTriageRequest handles the nickname-mention form <@!id>", () => {
       content: "<@!1234567890> the candlestick chart shows blank bars",
       author: { id: "9", username: "alice" },
     },
-    "1234567890",
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
@@ -322,7 +322,7 @@ test("decideTriageRequest strips a mid-message mention of the bot", () => {
       content: "hey <@1234567890> the candlestick chart shows blank bars",
       author: { id: "9", username: "alice" },
     },
-    "1234567890",
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "hey   the candlestick chart shows blank bars");
@@ -336,7 +336,7 @@ test("decideTriageRequest ignores a mention-only message with no other text", ()
       content: "<@1234567890>   ",
       author: { id: "9", username: "alice" },
     },
-    "1234567890",
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, false);
 });
@@ -349,7 +349,7 @@ test("decideTriageRequest ignores a mention of a different user, not the bot", (
       content: "<@someone-else> can you look at this bug",
       author: { id: "9", username: "alice" },
     },
-    "1234567890",
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, false);
 });
@@ -372,7 +372,7 @@ test("decideTriageRequest still honours the Raise. prefix when a bot id is known
       content: "Raise. the chart is broken",
       author: { id: "9", username: "alice" },
     },
-    "1234567890",
+    "1234567890"
   );
   assertEquals(decision.shouldTriage, true);
   assertEquals(decision.request?.freeText, "the chart is broken");
@@ -397,7 +397,7 @@ test("parseTriageResponse parses a valid JSON object", () => {
 
 test("parseTriageResponse ignores braces inside JSON strings", () => {
   const result = parseTriageResponse(
-    'Here you go: {"title":"Closing } brace","description":"Shows {x} and \\"quoted }\\" text"} trailing',
+    'Here you go: {"title":"Closing } brace","description":"Shows {x} and \\"quoted }\\" text"} trailing'
   );
   assert(result.ok);
   if (result.ok) {
@@ -408,7 +408,7 @@ test("parseTriageResponse ignores braces inside JSON strings", () => {
 
 test("parseTriageResponse strips markdown fences", () => {
   const result = parseTriageResponse(
-    '```json\n{"title":"Chart bug","description":"Bars are blank"}\n```',
+    '```json\n{"title":"Chart bug","description":"Bars are blank"}\n```'
   );
   assert(result.ok);
 });
@@ -473,7 +473,7 @@ test("retryTransient retries thrown errors with exponential backoff", async () =
       return calls < 3 ? Promise.reject(new Error("tls")) : Promise.resolve("sent");
     },
     () => false,
-    { baseDelayMs: 100, sleep: (ms) => Promise.resolve(void delays.push(ms)) },
+    { baseDelayMs: 100, sleep: (ms) => Promise.resolve(void delays.push(ms)) }
   );
   assertEquals(result, "sent");
   assertEquals(calls, 3);
@@ -485,7 +485,7 @@ test("retryTransient retries transient outcomes and returns the last one", async
   const result = await retryTransient(
     () => Promise.resolve(++calls),
     () => true,
-    { maxAttempts: 3, sleep: () => Promise.resolve() },
+    { maxAttempts: 3, sleep: () => Promise.resolve() }
   );
   assertEquals(result, 3);
 });
@@ -495,7 +495,7 @@ test("retryTransient does not retry a non-transient outcome", async () => {
   await retryTransient(
     () => Promise.resolve(++calls),
     () => false,
-    { sleep: () => Promise.resolve() },
+    { sleep: () => Promise.resolve() }
   );
   assertEquals(calls, 1);
 });
@@ -509,7 +509,7 @@ test("retryTransient rethrows after exhausting attempts", async () => {
       {
         maxAttempts: 2,
         sleep: () => Promise.resolve(),
-      },
+      }
     );
   } catch (err) {
     caught = err;
@@ -520,7 +520,7 @@ test("retryTransient rethrows after exhausting attempts", async () => {
 test("triage health probe is unknown until the first refresh", () => {
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.resolve(true) },
-    true,
+    true
   );
   assertEquals(probe.current(), { provider: "ollama", enabled: true, reachable: null });
 });
@@ -528,7 +528,7 @@ test("triage health probe is unknown until the first refresh", () => {
 test("triage health probe reports provider reachability after refresh", async () => {
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.resolve(true) },
-    true,
+    true
   );
   await probe.refresh();
   assertEquals(probe.current(), { provider: "ollama", enabled: true, reachable: true });
@@ -537,7 +537,7 @@ test("triage health probe reports provider reachability after refresh", async ()
 test("triage health probe reports unreachable when the provider check throws", async () => {
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.reject(new Error("down")) },
-    true,
+    true
   );
   await probe.refresh();
   assertEquals(probe.current().reachable, false);
@@ -547,7 +547,7 @@ test("triage health probe skips the provider check when triage is disabled", asy
   let calls = 0;
   const probe = createTriageHealthProbe(
     { providerId: "ollama", isAvailable: () => Promise.resolve(++calls > 0) },
-    false,
+    false
   );
   await probe.refresh();
   assertEquals(probe.current().reachable, false);

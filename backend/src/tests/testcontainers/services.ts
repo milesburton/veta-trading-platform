@@ -392,7 +392,9 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
         ...(opts.perServiceEnv?.[name] ?? {}),
       };
 
-      const nodeArgs = coverageDir ? ["--import", EXIT_ON_SIGTERM, desc.entrypoint] : [desc.entrypoint];
+      const nodeArgs = coverageDir
+        ? ["--import", EXIT_ON_SIGTERM, desc.entrypoint]
+        : [desc.entrypoint];
       const child = spawn(process.execPath, nodeArgs, {
         cwd: REPO_ROOT,
         env: coverageDir ? { ...env, NODE_V8_COVERAGE: coverageDir } : env,
