@@ -7,6 +7,8 @@ import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
 // fallow-ignore-file unused-file
 import { serveDir } from "../lib/static-files.ts";
+import { notifyOperators, sendDailySummary } from "../notifications/discord-notifier.ts";
+import { getTicketingHealth, startTicketingHealthMonitor } from "../notifications/ticketing.ts";
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import {
   createAlertRouter,
@@ -23,7 +25,6 @@ import {
   type UserLimits,
 } from "./context.ts";
 import { startDailySummary } from "./daily-summary.ts";
-import { notifyOperators, sendDailySummary } from "./discord-notifier.ts";
 import { resolveInfraHealthPath } from "./infra-health-paths.ts";
 import { LoadAgent } from "./load-agent.ts";
 import { platformStats } from "./platform-stats.ts";
@@ -50,7 +51,6 @@ import {
   withoutMeta,
 } from "./service-status.ts";
 import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system-status.ts";
-import { getTicketingHealth, startTicketingHealthMonitor } from "./ticketing.ts";
 import { proxyWithWake } from "./wake.ts";
 
 const PORT = Number(process.env.GATEWAY_PORT) || 5_011;

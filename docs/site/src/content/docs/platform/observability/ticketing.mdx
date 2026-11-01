@@ -103,7 +103,7 @@ Labels: `prod-issue`, `auto-created`, `severity:critical`, plus `source:<name>` 
 
 Before opening, the gateway searches GitHub for an open issue with the same title created within the last hour. If found, it adds a comment to that issue rather than opening a duplicate. This keeps a flapping alert on one ticket so on-call can see escalation history in one place.
 
-The search query is exact-title within the configured repo. Dedupe is best-effort; transient GitHub search failures fall through to creating a new issue. The 1h window is set in [`backend/src/gateway/ticketing.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/ticketing.ts) as `DEDUPE_WINDOW_MS`.
+The search query is exact-title within the configured repo. Dedupe is best-effort; transient GitHub search failures fall through to creating a new issue. The 1h window is set in [`backend/src/notifications/ticketing.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/notifications/ticketing.ts) as `DEDUPE_WINDOW_MS`.
 
 ## Verifying
 

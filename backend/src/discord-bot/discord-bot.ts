@@ -6,8 +6,8 @@ import {
   isBugReportValid,
   notifyDiscordBug,
   type UserTicketReport,
-} from "../gateway/discord-notifier.ts";
-import { createTicketForUserReport } from "../gateway/ticketing.ts";
+} from "../notifications/discord-notifier.ts";
+import { createTicketForUserReport } from "../notifications/ticketing.ts";
 import { createAnthropicProvider } from "../llm-advisory/providers/anthropic.ts";
 import { createOllamaProvider } from "../llm-advisory/providers/ollama.ts";
 

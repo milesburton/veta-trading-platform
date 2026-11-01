@@ -1,11 +1,11 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
-import { buildLoadgenMessage } from "../gateway/discord-notifier.ts";
 import {
   handleLoadgenAnnounceRoute,
   parseAnnouncement,
 } from "../gateway/routes/loadgen-announce.ts";
+import { buildLoadgenMessage } from "../notifications/discord-notifier.ts";
 
 const stubContext = {} as GatewayContext;
 

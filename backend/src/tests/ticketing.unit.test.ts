@@ -9,7 +9,7 @@ import {
   createTicketForAlert,
   createTicketForUserReport,
   probeTicketingHealth,
-} from "../gateway/ticketing.ts";
+} from "../notifications/ticketing.ts";
 
 const REAL_TOKEN = process.env.GITHUB_TICKETING_TOKEN;
 const REAL_REPO = process.env.GITHUB_TICKETING_REPO;

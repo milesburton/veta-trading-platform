@@ -1,11 +1,11 @@
 // fallow-ignore-file unused-file
 import { CORS_HEADERS } from "#veta/http";
-import type { GatewayContext } from "../context.ts";
 import {
   type LoadgenAnnouncement,
   type LoadgenEvent,
   notifyDiscordLoadgen,
-} from "../discord-notifier.ts";
+} from "../../notifications/discord-notifier.ts";
+import type { GatewayContext } from "../context.ts";
 
 const ALLOWED_EVENTS = new Set<LoadgenEvent>(["start", "stop"]);
 

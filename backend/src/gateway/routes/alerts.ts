@@ -1,8 +1,8 @@
 import { CORS_HEADERS } from "#veta/http";
+import { notifyDiscord } from "../../notifications/discord-notifier.ts";
+import { createTicketForAlert } from "../../notifications/ticketing.ts";
 import { type GatewayContext, isResponse } from "../context.ts";
-import { notifyDiscord } from "../discord-notifier.ts";
 import { platformStats } from "../platform-stats.ts";
-import { createTicketForAlert } from "../ticketing.ts";
 
 export async function handleAlertsRoute(
   req: Request,

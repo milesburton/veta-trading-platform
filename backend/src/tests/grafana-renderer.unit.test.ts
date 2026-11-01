@@ -1,7 +1,11 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
 // fallow-ignore-file unused-file
-import { _internalForTests, lookupPanel, renderGrafanaPanel } from "../gateway/grafana-renderer.ts";
+import {
+  _internalForTests,
+  lookupPanel,
+  renderGrafanaPanel,
+} from "../notifications/grafana-renderer.ts";
 
 const realFetch = globalThis.fetch;
 

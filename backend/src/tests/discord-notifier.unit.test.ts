@@ -8,7 +8,7 @@ import {
   notifyDiscordBug,
   notifyDiscordLoadgen,
   sendDailySummary,
-} from "../gateway/discord-notifier.ts";
+} from "../notifications/discord-notifier.ts";
 
 const REAL_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 const realFetch = globalThis.fetch;
