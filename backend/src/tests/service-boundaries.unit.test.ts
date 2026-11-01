@@ -19,7 +19,6 @@ const PLATFORM_DIRS: ReadonlySet<string> = new Set([
 const EXEMPT_SOURCE_DIRS: ReadonlySet<string> = new Set(["tests", "test-support"]);
 
 const KNOWN_EXCEPTIONS: readonly string[] = [
-  "discord-bot -> llm-advisory",
   "gateway -> scenarios",
   "scenario-engine -> signal-engine",
   "signal-engine -> feature-engine",

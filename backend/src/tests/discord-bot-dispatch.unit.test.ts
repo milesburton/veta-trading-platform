@@ -38,7 +38,7 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock("#veta/bootstrap", () => ({}));
-vi.mock("../llm-advisory/providers/ollama.ts", () => ({
+vi.mock("../lib/llm-providers/ollama.ts", () => ({
   createOllamaProvider: () => h.provider,
 }));
 vi.mock("../notifications/ticketing.ts", () => ({ createTicketForUserReport: h.ticket }));
