@@ -12,7 +12,11 @@ if [ -z "$DATA_PATH" ] || [ ! -d "$DATA_PATH" ]; then
   exit 2
 fi
 
-SOURCE="$(findmnt -n -o SOURCE --target "$DATA_PATH")"
+SOURCE="$(findmnt -n -o SOURCE --target "$DATA_PATH" 2>/dev/null || true)"
+if [ -z "$SOURCE" ]; then
+  echo "fail: $DATA_PATH could not be resolved to a block device" >&2
+  exit 2
+fi
 LAYERS="$(lsblk -n -s -o TYPE "$SOURCE" 2>/dev/null || true)"
 
 if printf '%s\n' "$LAYERS" | grep -qx 'crypt'; then
