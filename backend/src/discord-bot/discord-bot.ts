@@ -159,7 +159,7 @@ function extractTriageText(content: string, botUserId: string | null): string | 
 /** Pure decision: given a MESSAGE_CREATE payload, should we triage it, and with what? */
 export function decideTriageRequest(
   data: unknown,
-  botUserId: string | null = null,
+  botUserId: string | null = null
 ): TriageDecision {
   const msg = (data ?? {}) as MessageCreatePayload;
   if (msg.author?.bot) return { shouldTriage: false };
@@ -308,7 +308,7 @@ export interface TriageHealthProbe {
 
 export function createTriageHealthProbe(
   provider: Pick<ILlmProvider, "providerId" | "isAvailable">,
-  enabled: boolean,
+  enabled: boolean
 ): TriageHealthProbe {
   let reachable: boolean | null = enabled ? null : false;
   return {
@@ -340,7 +340,7 @@ export function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
 export async function retryTransient<T>(
   attempt: () => Promise<T>,
   isTransient: (outcome: T) => boolean,
-  opts: { maxAttempts?: number; baseDelayMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+  opts: { maxAttempts?: number; baseDelayMs?: number; sleep?: (ms: number) => Promise<void> } = {}
 ): Promise<T> {
   const maxAttempts = opts.maxAttempts ?? POST_MAX_ATTEMPTS;
   const baseDelayMs = opts.baseDelayMs ?? POST_RETRY_BASE_DELAY_MS;
@@ -359,7 +359,7 @@ export async function retryTransient<T>(
 function buildDiscordMessageLink(
   guildId: string | null,
   channelId: string,
-  messageId: string,
+  messageId: string
 ): string {
   const guildSegment = guildId ?? "@me";
   return `https://discord.com/channels/${guildSegment}/${channelId}/${messageId}`;
@@ -374,7 +374,7 @@ async function handleMessageCreate(data: unknown): Promise<void> {
   if (isTriageRateLimited(req.authorId)) {
     await postChannelMessage(
       req.channelId,
-      `⏳ <@${req.authorId}> you've raised a few tickets recently, please wait a bit before raising another.`,
+      `⏳ <@${req.authorId}> you've raised a few tickets recently, please wait a bit before raising another.`
     );
     return;
   }
@@ -383,7 +383,7 @@ async function handleMessageCreate(data: unknown): Promise<void> {
   if (!available) {
     await postChannelMessage(
       req.channelId,
-      `⚠️ <@${req.authorId}> ticket triage is unavailable right now, try the in-app "Raise a ticket" button instead.`,
+      `⚠️ <@${req.authorId}> ticket triage is unavailable right now, try the in-app "Raise a ticket" button instead.`
     );
     return;
   }
@@ -392,14 +392,14 @@ async function handleMessageCreate(data: unknown): Promise<void> {
   try {
     const response = await withTimeout(
       triageProvider.generate(buildTriagePrompt(req.freeText), TRIAGE_SYSTEM_PROMPT),
-      TRIAGE_GENERATE_TIMEOUT_MS,
+      TRIAGE_GENERATE_TIMEOUT_MS
     );
     responseText = response.text;
   } catch (err) {
     logger.error("triage generate failed", { err });
     await postChannelMessage(
       req.channelId,
-      `⚠️ <@${req.authorId}> couldn't process that ticket in time, try the in-app "Raise a ticket" button instead.`,
+      `⚠️ <@${req.authorId}> couldn't process that ticket in time, try the in-app "Raise a ticket" button instead.`
     );
     return;
   }
@@ -408,7 +408,7 @@ async function handleMessageCreate(data: unknown): Promise<void> {
   if (!parsed.ok) {
     await postChannelMessage(
       req.channelId,
-      `🤔 <@${req.authorId}> couldn't turn that into a ticket, try adding a bit more detail about what's wrong.`,
+      `🤔 <@${req.authorId}> couldn't turn that into a ticket, try adding a bit more detail about what's wrong.`
     );
     return;
   }
@@ -423,7 +423,7 @@ async function handleMessageCreate(data: unknown): Promise<void> {
   if (!isBugReportValid(report)) {
     await postChannelMessage(
       req.channelId,
-      `🤔 <@${req.authorId}> couldn't turn that into a ticket, try adding a bit more detail about what's wrong.`,
+      `🤔 <@${req.authorId}> couldn't turn that into a ticket, try adding a bit more detail about what's wrong.`
     );
     return;
   }
@@ -436,12 +436,12 @@ async function handleMessageCreate(data: unknown): Promise<void> {
   if (githubResult.status === "fulfilled" && githubResult.value.created && githubResult.value.url) {
     await postChannelMessage(
       req.channelId,
-      `✅ <@${req.authorId}> filed as ${githubResult.value.url}`,
+      `✅ <@${req.authorId}> filed as ${githubResult.value.url}`
     );
   } else {
     await postChannelMessage(
       req.channelId,
-      `⚠️ <@${req.authorId}> couldn't file that ticket automatically, try the in-app "Raise a ticket" button instead.`,
+      `⚠️ <@${req.authorId}> couldn't file that ticket automatically, try the in-app "Raise a ticket" button instead.`
     );
   }
 }
@@ -463,7 +463,7 @@ async function postChannelMessage(channelId: string, content: string): Promise<b
           body: JSON.stringify({ content }),
           signal: AbortSignal.timeout(10_000),
         }),
-      (response) => TRANSIENT_STATUSES.has(response.status),
+      (response) => TRANSIENT_STATUSES.has(response.status)
     );
     if (!res.ok) {
       logger.warn("failed to post channel message", { status: res.status });
@@ -501,7 +501,7 @@ function identify(ws: WebSocket): void {
           GATEWAY_INTENT_MESSAGE_CONTENT,
         properties: { os: "linux", browser: "veta-discord-bot", device: "veta-discord-bot" },
       },
-    }),
+    })
   );
 }
 
@@ -515,7 +515,7 @@ export function clampHeartbeatIntervalMs(intervalMs: number): number {
 function startHeartbeat(
   ws: WebSocket,
   intervalMs: number,
-  getSequence: () => number | null,
+  getSequence: () => number | null
 ): ReturnType<typeof setInterval> {
   const clampedIntervalMs = clampHeartbeatIntervalMs(intervalMs);
   return setInterval(() => {
@@ -568,7 +568,7 @@ export function connect(gatewayUrl: string, opts: { reconnect?: boolean } = {}):
     if (action.kind === "guildMemberAdd") return handleGuildMemberAdd(action.data);
     if (action.kind === "messageCreate") {
       handleMessageCreate(action.data).catch((err) =>
-        logger.error("message triage failed", { err }),
+        logger.error("message triage failed", { err })
       );
       return;
     }
@@ -601,7 +601,7 @@ export function hasRecentMotd(
   messages: ChannelMessage[],
   botId: string | null,
   now: number,
-  windowMs: number,
+  windowMs: number
 ): boolean {
   return messages.some((m) => {
     if (!m.content?.startsWith(MOTD_HEADER)) return false;
@@ -617,16 +617,19 @@ async function motdAlreadyPosted(channelId: string): Promise<boolean> {
     return true;
   }
   try {
-    const res = await fetch(`${DISCORD_API}/channels/${BigInt(channelId).toString()}/messages?limit=50`, {
-      headers: { Authorization: `Bot ${BOT_TOKEN}` },
-      signal: AbortSignal.timeout(10_000),
-    });
+    const res = await fetch(
+      `${DISCORD_API}/channels/${BigInt(channelId).toString()}/messages?limit=50`,
+      {
+        headers: { Authorization: `Bot ${BOT_TOKEN}` },
+        signal: AbortSignal.timeout(10_000),
+      }
+    );
     if (!res.ok) return true;
     return hasRecentMotd(
       (await res.json()) as ChannelMessage[],
       botUserId,
       Date.now(),
-      MOTD_INTERVAL_MS,
+      MOTD_INTERVAL_MS
     );
   } catch (err) {
     logger.error("error checking for a recent MOTD", { err });
@@ -688,7 +691,7 @@ if (import.meta.main) {
           lastEventAt,
           triage: triageHealthProbe.current(),
         }),
-        { headers: { "Content-Type": "application/json" } },
+        { headers: { "Content-Type": "application/json" } }
       );
     }
     return new Response("not found", { status: 404 });

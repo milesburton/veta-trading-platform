@@ -7,5 +7,5 @@
   "singleQuote": false,
   "trailingComma": "es5",
   "sortImports": { "newlinesBetween": false },
-  "ignorePatterns": ["node_modules", "frontend", "docs", "coverage", "coverage-tc", "dist", "package-lock.json"]
+  "ignorePatterns": ["node_modules", "frontend", "docs", "coverage", "coverage-tc", "dist", "package-lock.json", "backend/src/tests/fixtures"]
 }

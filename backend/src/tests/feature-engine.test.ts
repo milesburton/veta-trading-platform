@@ -1,5 +1,6 @@
 import { test } from "#veta/test";
 import { assertAlmostEquals, assertEquals } from "#veta/test-assert";
+import { buildBatchInsert } from "../feature-engine/feature-store.ts";
 import {
   backoffDelayMs,
   buildSectorPeers,
@@ -12,7 +13,6 @@ import {
   computeSentimentDelta,
   flushedSymbols,
 } from "../lib/intelligence/feature-computers.ts";
-import { buildBatchInsert } from "../feature-engine/feature-store.ts";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
 
 test("computeMomentum: insufficient history → 0", () => {

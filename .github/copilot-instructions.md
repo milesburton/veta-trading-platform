@@ -8,9 +8,8 @@ existing, documented conventions. Full detail: [Contributing](https://milesburto
 - No em-dashes (U+2014) anywhere in code, comments, docs, or commit messages.
   Use commas, periods, or restructure the sentence.
 - No inline or block comments in application code. The codebase is meant
-  to be self-documenting through naming and structure. Exceptions:
-  `oxlint-disable`, `eslint-disable`, and comments explaining a genuinely
-  non-obvious constraint (a workaround, a subtle invariant) are fine.
+  to be self-documenting through naming and structure. Lint-disable
+  directives are the only accepted comments.
 - British English spelling and grammar in docs and user-facing text.
 - No ASCII-art diagrams in docs. Use mermaid (`graph LR` / `graph TD`).
 - Commit messages follow Conventional Commits:
@@ -25,12 +24,23 @@ existing, documented conventions. Full detail: [Contributing](https://milesburto
   outputs over mutable module-level state.
 - Shared types live in `backend/src/types/`, shared backend utilities in
   `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`.
-- Use import map aliases (`@veta/http`, `@veta/messaging`,
-  `@veta/types/orders`, etc.) instead of relative paths like
-  `../../lib/http.ts`.
+- Use the `#veta/` import aliases from `package.json` (for example
+  `#veta/http`, `#veta/db`) for shared code instead of relative paths like
+  `../../lib/http.ts`. Relative imports between files in the same service
+  directory are fine.
 - Runtime validation (Zod) belongs at I/O boundaries: HTTP handlers,
   Kafka consumers, external API responses. Not on internal function
   calls between trusted modules.
+
+## Do not comment on these
+
+- Import order, line length, quoting and other layout. `oxfmt` decides, and
+  the pre-commit hook runs `npm run format:check`.
+- Findings you would label minor, optional or a nit, and wording preferences
+  in prose that is already clear and correct.
+- Docs pages missing from the sidebar. `docs-sidebar.unit.test.ts` fails on
+  those.
+- Suggestions to regenerate lockfiles or touch files outside the PR's scope.
 
 ## What IS worth flagging
 

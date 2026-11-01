@@ -30,6 +30,9 @@ echo "  [1/15] Backend lint..."
 cd "$REPO_ROOT"
 npm run lint:backend --silent
 
+echo "  [1/15] Backend format check..."
+npm run format:check --silent
+
 echo "  [2/15] Backend type-check..."
 npm run check --silent
 

@@ -1,7 +1,7 @@
 import { test } from "#veta/test";
 import { assert, assertEquals, assertRejects } from "#veta/test-assert";
-import { createMockProvider } from "../llm-advisory/providers/mock.ts";
 import { createOllamaProvider } from "../lib/llm-providers/ollama.ts";
+import { createMockProvider } from "../llm-advisory/providers/mock.ts";
 
 interface Captured {
   url: string;

@@ -5,7 +5,6 @@ import { logger } from "#veta/logger";
 import { createConsumer, createProducer, sendInChunks } from "#veta/messaging";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "#veta/types/intelligence";
 import { waitForUrl } from "#veta/wait-for";
-import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import {
   backoffDelayMs,
   buildSectorPeers,
@@ -18,6 +17,7 @@ import {
   computeSentimentDelta,
   flushedSymbols,
 } from "../lib/intelligence/feature-computers.ts";
+import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import { createFeatureStore } from "./feature-store.ts";
 
 const PORT = Number(process.env.FEATURE_ENGINE_PORT) || 5_017;
