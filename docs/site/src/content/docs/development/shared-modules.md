@@ -72,3 +72,19 @@ When adding a new shared module:
 1. Create the file in `backend/src/lib/` or `backend/src/types/`
 2. Add an alias to `package.json` under `imports`
 3. Use the alias in all consumers; never use relative paths for shared code
+
+## Service boundaries
+
+Code under `backend/src/` is either a service directory (`oms`, `gateway`, `risk-engine` and so on) or a
+platform directory that any service may import: `lib`, `schemas`, `types`, `shared`, `notifications` and
+`test-support`. A service must not import another service's directory, by a relative path or through a
+`#veta/` alias that points into one. Code that two services need belongs in a platform directory.
+
+`backend/src/tests/service-boundaries.unit.test.ts` enforces this. It runs with the unit suite, so the
+pre-commit hook and CI both fail on a new cross-service import. Imports in tests are exempt.
+
+Existing exceptions are listed in `KNOWN_EXCEPTIONS` in that test and tracked in
+[#1011](https://github.com/milesburton/veta-trading-platform/issues/1011). To remove one, move the shared code
+into a platform directory and delete the entry. The test also fails when a listed exception no longer occurs,
+so the list cannot hold stale entries. See [ADR 0009](../../platform/decisions/0009-service-boundaries/) for the
+reasoning.
