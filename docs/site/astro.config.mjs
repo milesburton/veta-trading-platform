@@ -152,6 +152,7 @@ export default defineConfig({
                 { label: "veta-host-prune", slug: "platform/supporting/veta-host-prune" },
                 { label: "OpenBao", slug: "platform/supporting/openbao" },
                 { label: "Disk monitor", slug: "platform/supporting/disk-monitor" },
+                { label: "Postgres backup", slug: "platform/supporting/postgres-backup" },
                 { label: "db-migrate", slug: "platform/supporting/db-migrate" },
                 { label: "Redpanda console", slug: "platform/supporting/redpanda-console" },
                 { label: "NVIDIA Spark", slug: "platform/supporting/nvidia-spark" },
