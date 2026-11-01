@@ -125,6 +125,28 @@ Known limits, each tracked as an issue:
 - Truncating the newest rows leaves a valid chain. Anchoring the head hash outside the database would detect it.
 - User-service changes are not yet audited.
 
+## Encryption at rest
+
+Postgres data sits on a disk that is encrypted at the block layer on the server. The stack does not
+enforce this, because the encryption belongs to the host, not to a container. Nothing in
+`compose.yml` fails if the volume lands on an unencrypted disk.
+
+`scripts/check-data-encryption.sh` makes the posture checkable. It resolves the block device that
+backs a directory and exits non-zero unless an encrypted (`crypt`) layer is in its stack:
+
+```bash
+scripts/check-data-encryption.sh /path/to/postgres/data
+POSTGRES_VOLUME=veta_postgres-data scripts/check-data-encryption.sh
+```
+
+Exit 0 means encrypted, 1 means not encrypted, 2 means the path could not be resolved. Run it on
+the server after provisioning and after any storage change. The check recognises device-mapper
+encryption such as LUKS. It does not recognise file-level schemes or encryption applied below the
+host, such as a hypervisor or cloud disk, which need the provider's own attestation.
+
+Backups carry the same data, so the backup directory needs the same check. See
+[Data classification](../data-classification/) for what the dump contains.
+
 ## Frontend input hardening
 
 <Source path="frontend/src/store/safeKey.ts" label="isSafeKey" />

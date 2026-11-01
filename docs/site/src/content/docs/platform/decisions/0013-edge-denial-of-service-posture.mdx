@@ -1,0 +1,49 @@
+---
+title: "ADR 0013: Edge denial of service posture without a CDN or WAF"
+description: "Records the protections that exist at the public edge today and the decision not to add a CDN or WAF layer yet."
+---
+
+**Status:** Proposed
+
+**Date:** 2026-11-01
+
+## Context
+
+Public traffic reaches the platform through a dedicated edge server running Traefik, then a
+reverse SSH tunnel to the server's own Traefik, then the gateway. See
+[Edge architecture](../../edge-architecture/). No CDN or web application firewall sits in front
+of it, and the earlier checklist row that named a Cloudflare tunnel was wrong.
+
+## What protects the edge today
+
+| Layer | Protection |
+| --- | --- |
+| Origin exposure | The server has no inbound port open. It dials out to the edge, so the origin address is not reachable directly. |
+| Edge proxy | Per-client rate limit of 60 requests a second on average with a burst of 120, TLS termination and strict security headers. |
+| Server proxy | Tighter per-client limits on the API routes and on the FIX bridge. |
+| Gateway | Per-IP token bucket on every request and a lower per-user bucket after authentication. |
+| Tunnel | Public traffic cannot exceed what the tunnel carries, which bounds the load that reaches the server. |
+| Failure mode | When the origin is unreachable, the edge redirects visitors to a static status page hosted separately. |
+
+## Decision
+
+Do not add a CDN or WAF now. The platform is a demonstration system with no revenue at risk from
+downtime, and the layered rate limits and the status page fallback cover application-level abuse.
+
+Volumetric attacks are not mitigated. They would saturate the edge server or the tunnel, and the
+visitor sees the status page. That outcome is accepted.
+
+## Alternatives considered
+
+| Option | Why not now |
+| --- | --- |
+| Put the domain behind a CDN proxy | Hides the edge address and absorbs volumetric traffic. Moves TLS termination to a third party and needs the edge to accept only the CDN's address ranges. Reconsider if the platform is exposed to a wider audience. |
+| WAF rules at the edge proxy | Adds rule maintenance and false positives for an application that already authenticates every route. |
+| Connection limits at the host firewall | Useful, but the per-client rate limit already acts earlier for HTTP. |
+
+## Consequences
+
+- The Professional Standards row for edge protection changes from deferred to partially
+  implemented, with a link to this record.
+- Reopen the decision if the platform is announced publicly, if a volumetric attack occurs, or if
+  availability becomes a commitment.
