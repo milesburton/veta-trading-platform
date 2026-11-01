@@ -69,7 +69,7 @@ Within that model:
   [Risk architecture](../../risk-architecture/#the-risk-check-contract)).
 - The rule that a service does not import another service's directory is enforced by a unit
   test, so it runs in the pre-commit hook and in CI (see
-  [Service boundaries](../../../development/shared-modules/#service-boundaries)). Five existing
+  [Service boundaries](../../../development/shared-modules/#service-boundaries)). Any existing
   edges are allowlisted and tracked in
   [#1011](https://github.com/milesburton/veta-trading-platform/issues/1011). The test also fails
   when an allowlisted edge disappears, so the list can only shrink.

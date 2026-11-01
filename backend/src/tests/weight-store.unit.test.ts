@@ -6,7 +6,7 @@ import {
   createWeightStore,
   DEFAULT_WEIGHTS,
   type WeightMap,
-} from "../signal-engine/weight-store.ts";
+} from "../lib/intelligence/weight-store.ts";
 import { makeAsyncConnect } from "./test-helpers.ts";
 
 interface FakeClient {

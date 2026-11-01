@@ -1,7 +1,7 @@
 import { test } from "#veta/test";
 import { assertAlmostEquals, assertEquals } from "#veta/test-assert";
-import { scoreFeatureVector } from "../signal-engine/scorer.ts";
-import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
+import { scoreFeatureVector } from "../lib/intelligence/scorer.ts";
+import { DEFAULT_WEIGHTS } from "../lib/intelligence/weight-store.ts";
 import type { FeatureVector } from "../types/intelligence.ts";
 
 function makeNeutralFv(symbol = "TEST"): FeatureVector {

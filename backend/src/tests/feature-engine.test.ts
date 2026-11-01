@@ -11,7 +11,7 @@ import {
   computeSectorRelativeStrength,
   computeSentimentDelta,
   flushedSymbols,
-} from "../feature-engine/feature-computers.ts";
+} from "../lib/intelligence/feature-computers.ts";
 import { buildBatchInsert } from "../feature-engine/feature-store.ts";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
 
