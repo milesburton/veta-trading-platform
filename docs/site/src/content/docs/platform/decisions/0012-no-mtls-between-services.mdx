@@ -1,0 +1,48 @@
+---
+title: "ADR 0012: Plain HTTP between services, mTLS declared a non-goal"
+description: "Records why service-to-service traffic stays unencrypted on the internal network and which controls compensate."
+---
+
+**Status:** Proposed
+
+**Date:** 2026-11-01
+
+## Context
+
+Services call each other over plain HTTP and Kafka on the Docker network. The Professional
+Standards page lists mutual TLS as deferred. The choice is to build it or to record that it is
+out of scope and name what compensates.
+
+- The trading network is a Docker `internal: true` network. A container on it has no route to
+  the internet, and nothing outside the host can address it.
+- Only the gateway, market data, the Discord bot and the edge proxy join a second network with
+  internet access. Every other service, including the OMS, EMS and risk engine, cannot be reached
+  from outside or reach out.
+- Containers run with all capabilities dropped, no new privileges, a read-only root filesystem
+  and a non-root user, so a compromised service has limited means to sniff or inject traffic.
+- The OMS and the user service check a shared internal service token on privileged calls. The token is held in the vault.
+- The platform runs on one host. There is no network path between hosts to protect.
+
+## Decision
+
+Do not build mTLS between services. Declare it a non-goal while the platform runs on a single
+host and the controls above hold. The public edge keeps TLS.
+
+## Alternatives considered
+
+| Option | Why not |
+| --- | --- |
+| Service mesh with automatic mTLS | A control plane, sidecars and certificate rotation for traffic that never leaves one host. |
+| Per-service certificates from a private CA | Issuing, rotating and reloading about thirty certificates, with no attacker position it closes that the network isolation does not. |
+| TLS on Postgres and Redpanda only | Partial coverage that still trusts the internal network for every HTTP call. |
+
+## Consequences
+
+- A container that is already compromised on the internal network can read plain traffic to its
+  neighbours. The compensating controls reduce what such a container can reach, they do not
+  remove the exposure.
+- The decision is reopened when the platform spans more than one host, when an untrusted
+  workload shares the network, or when a counterparty requires it.
+- The egress allowlist work in
+  [#975](https://github.com/milesburton/veta-trading-platform/issues/975) narrows the second
+  network and strengthens the main compensating control.

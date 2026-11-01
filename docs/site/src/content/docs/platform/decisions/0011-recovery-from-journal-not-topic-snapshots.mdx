@@ -1,0 +1,46 @@
+---
+title: "ADR 0011: Recover from the Postgres journal, not Redpanda topic snapshots"
+description: "Records why the platform does not snapshot Redpanda topics and treats the Postgres journal and daily dump as the only recovery path for order history."
+---
+
+**Status:** Proposed
+
+**Date:** 2026-11-01
+
+## Context
+
+Redpanda carries every order, fill, risk and market event. After a host loss, the question is
+whether topic contents must be restored or whether they can be rebuilt.
+
+- Topic retention is short. The cluster default is six hours and the market data topics keep one
+  hour, set by the topic init job in `compose.yml`. A snapshot would hold at most that window.
+- Consumers subscribe with `fromBeginning: false`. A restarted service reads new events only, so
+  no service depends on historic topic content to start.
+- The order history of record is `journal.events`, written from the same topics and kept
+  indefinitely. Fills are also archived in `fix_archive.executions`.
+- The [disaster recovery runbook](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disaster-recovery.md)
+  already states that Redpanda is not restored and that topics are recreated empty.
+
+## Decision
+
+Do not snapshot Redpanda topics. The Postgres journal, restored from the daily verified dump, is
+the recovery path for order history. In-flight events that were not yet journalled when the host
+was lost are accepted as lost, which is covered by the recovery point objective of the dump.
+
+## Alternatives considered
+
+| Option | Why not |
+| --- | --- |
+| Periodic topic snapshots to object storage | Captures at most six hours of data, none of which services read on start. Adds a restore path that nothing exercises. |
+| Tiered storage with long retention | Raises disk and operating cost to keep data already held in the journal. |
+| Replay the journal into topics after a restore | No consumer needs it, and replaying orders risks re-submitting work. A read-only replay for analysis already exists in the replay service. |
+
+## Consequences
+
+- The recovery point for order data is the age of the newest Postgres dump, not the topic
+  retention. Shortening it needs a better backup cadence, tracked in
+  [#955](https://github.com/milesburton/veta-trading-platform/issues/955) and
+  [#996](https://github.com/milesburton/veta-trading-platform/issues/996).
+- Anything that is produced to a topic but never journalled has no recovery path. A new topic
+  whose content must survive a host loss needs a journal consumer in the same change.
+- The disaster recovery runbook links to this record in its Redpanda row.

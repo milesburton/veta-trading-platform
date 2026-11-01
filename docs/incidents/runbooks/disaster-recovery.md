@@ -17,7 +17,7 @@ platform. They have not been measured against a full rebuild.
 | --- | --- | --- |
 | Postgres | Orders journal, users, risk configuration, replay data | Daily verified dump. See the [restore runbook](./postgres-restore.md). |
 | OpenBao | Every platform credential | Data volume archive plus the separately held unseal key. See the [OpenBao page](https://milesburton.github.io/veta-trading-platform/platform/supporting/openbao/). |
-| Redpanda | In-flight events and retained topic history | Not restored. Topics are recreated empty by the init job. Order history of record is in Postgres. |
+| Redpanda | In-flight events and retained topic history | Not restored. Topics are recreated empty by the init job. Order history of record is in Postgres. See [ADR 0011](https://milesburton.github.io/veta-trading-platform/platform/decisions/0011-recovery-from-journal-not-topic-snapshots/). |
 | Container images | Service code | Published images in the container registry, rebuilt from source if needed. |
 | Configuration | Compose files, scripts, observability config | The git repository. |
 | Object storage | Ticket attachments | Not backed up. Loss only affects attachments on filed tickets. |
