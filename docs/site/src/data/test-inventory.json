@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 167,
-      "cases": 1853,
+      "files": 168,
+      "cases": 1866,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -77,7 +77,7 @@
         "lib-process.unit.test.ts": 2,
         "lib.unit.test.ts": 17,
         "llm-dedupe.test.ts": 13,
-        "llm-orchestrator.unit.test.ts": 17,
+        "llm-orchestrator.unit.test.ts": 20,
         "llm-pg-retry.unit.test.ts": 6,
         "llm-policy.test.ts": 20,
         "llm-providers.unit.test.ts": 5,
@@ -102,7 +102,8 @@
         "oms.test.ts": 16,
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,
-        "parse-ticket-handler.unit.test.ts": 11,
+        "parse-ticket-handler.unit.test.ts": 13,
+        "parse-ticket-provider.unit.test.ts": 8,
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "platform-stats.unit.test.ts": 11,
         "playbooks.unit.test.ts": 14,
@@ -225,7 +226,7 @@
   "frontend": {
     "unit": {
       "files": 189,
-      "cases": 2243
+      "cases": 2244
     },
     "playwright": {
       "files": 19,

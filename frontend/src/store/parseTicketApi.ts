@@ -18,7 +18,7 @@ export const parseTicketApi = createApi({
   endpoints: (builder) => ({
     parseTicket: builder.mutation<ParseTicketResponse, ParseTicketRequest>({
       query: (body) => ({
-        url: "/api/llm-worker/parse-ticket",
+        url: "/api/llm-advisory/parse-ticket",
         method: "POST",
         body,
       }),

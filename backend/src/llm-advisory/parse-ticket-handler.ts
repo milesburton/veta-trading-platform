@@ -61,9 +61,21 @@ function extractFirstJsonObject(raw: string): string | null {
   return null;
 }
 
+const DEFAULT_ABORT_MS = 20_000;
+
 export interface ParseTicketDeps {
   provider: ILlmProvider;
   abortMs?: number;
+}
+
+class GenerateTimeoutError extends Error {}
+
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new GenerateTimeoutError()), ms);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
 }
 
 export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Promise<Response> {
@@ -88,9 +100,13 @@ export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Pr
 
   let responseText: string;
   try {
-    const response = await deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT);
+    const response = await withTimeout(
+      deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT),
+      deps.abortMs ?? DEFAULT_ABORT_MS
+    );
     responseText = response.text;
-  } catch {
+  } catch (err) {
+    if (err instanceof GenerateTimeoutError) return jsonResponse({ error: "llm_timeout" }, 504);
     return jsonResponse({ error: "llm_generate_failed" }, 503);
   }
 

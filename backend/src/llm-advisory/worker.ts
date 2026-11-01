@@ -6,7 +6,6 @@ import { createProducer } from "#veta/messaging";
 import { createAnthropicProvider } from "../lib/llm-providers/anthropic.ts";
 import { createOllamaProvider } from "../lib/llm-providers/ollama.ts";
 import { createJobStore } from "./job-store.ts";
-import { handleParseTicket } from "./parse-ticket-handler.ts";
 import { isIdleWindowOpen, isWorkerAllowed, loadPolicy } from "./policy.ts";
 import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
@@ -242,11 +241,7 @@ async function processJob(jobId: string): Promise<boolean> {
   }
 }
 
-const server = serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  if (req.method === "POST" && url.pathname === "/parse-ticket") {
-    return await handleParseTicket(req, { provider });
-  }
+const server = serveFetch({ port: PORT }, (): Response => {
   return new Response(
     JSON.stringify({
       service: "llm-worker",

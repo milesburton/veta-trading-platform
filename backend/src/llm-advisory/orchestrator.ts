@@ -8,6 +8,8 @@ import type { LlmJob, LlmSubsystemStatus } from "#veta/types/llm-advisory";
 import { startProgram } from "../shared/supervisor-control.ts";
 import { shouldEnqueueJob } from "./dedupe.ts";
 import { createJobStore } from "./job-store.ts";
+import { handleParseTicket } from "./parse-ticket-handler.ts";
+import { buildParseTicketProvider } from "./parse-ticket-provider.ts";
 import {
   canAutoTrigger,
   canTriggerFromUi,
@@ -37,6 +39,8 @@ const store = createJobStore(llmAdvisoryPool);
 const runtimeConfig = await createRuntimeConfigStore(llmAdvisoryPool);
 
 await store.sweepStuckJobs(10 * 60 * 1000);
+
+const parseTicketProvider = buildParseTicketProvider();
 
 const latestSignals = new Map<string, Signal>();
 const latestFeatures = new Map<string, FeatureVector>();
@@ -234,6 +238,10 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
       status: "ok",
       trackedSymbols: latestSignals.size,
     });
+  }
+
+  if (path === "/parse-ticket" && req.method === "POST") {
+    return await handleParseTicket(req, { provider: parseTicketProvider });
   }
 
   if (path === "/admin/state" && req.method === "GET") {

@@ -1,0 +1,70 @@
+---
+title: "ADR 0014: Host quick-trade parsing in llm-advisory, not the on-demand worker"
+description: "Natural-language quick trade stopped working because its endpoint lived in the llm-worker, a batch process that is designed to exit. Records moving it to the always-on llm-advisory service with an Anthropic then Ollama provider chain."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-11-01
+
+## Context
+
+The quick trade bar turns free text such as "get me five hundred apple over half an hour"
+into a pre-filled order ticket. When the shorthand grammar does not match, the frontend
+posts to `/api/llm-worker/parse-ticket`, and the endpoint asks an LLM for a JSON intent.
+
+The endpoint was added to `llm-worker`, whose job is to drain the advisory job queue. That
+process is built to stop:
+
+- It exits when `LLM_ENABLED` or `LLM_WORKER_ENABLED` is false, which is the production
+  setting for the advisory feature.
+- It exits at start-up when the configured provider is unavailable.
+- It ends its session after the idle timeout or the per-session job cap.
+- The orchestrator starts it again only when advisory work arrives, and supervisord does
+  not restart it.
+
+A request path that must be available whenever a trader types in the bar therefore shared
+a lifecycle with an optional batch worker. When the worker was not running, the gateway's
+wake attempt failed or the worker exited again, and the user saw "AI request failed".
+Two further weaknesses compounded it: the handler's `abortMs` option was never applied, so
+a stalled model held the request until the browser gave up, and parsing relied on a 3B
+parameter CPU model to emit strict JSON.
+
+## Decision
+
+1. **Serve `POST /parse-ticket` from the `llm-advisory` orchestrator.** It is always on,
+   already routed through the gateway at `/api/llm-advisory` with the trader role allowed,
+   and has no dependency on the advisory job queue or runtime config. The frontend now
+   calls `/api/llm-advisory/parse-ticket`. The route is removed from `llm-worker`.
+2. **Use a dedicated provider chain, independent of the advisory switches.**
+   `QUICK_TRADE_LLM_PROVIDERS` is an ordered list, default `anthropic,ollama`. The first
+   available provider answers, and a provider that throws hands over to the next one. The
+   Anthropic model defaults to `claude-haiku-5-5` for latency; Ollama reuses the existing
+   in-stack model. Parsing works with `LLM_ENABLED=false`.
+3. **Bound the request.** The handler enforces a 20 second limit and answers `504
+   llm_timeout`; the bar shows a specific message for it. `503 llm_unavailable` now means
+   no provider in the chain is reachable.
+4. **Keep the safety gate unchanged.** The result only opens a pre-filled ticket for the
+   trader to review. Zod validation and the symbol allow-list check still apply.
+
+## Alternatives considered
+
+| Option | For | Against |
+| --- | --- | --- |
+| Keep it in `llm-worker` and stop the worker exiting | Smallest diff | Breaks the on-demand model the orchestrator relies on (`/admin/trigger-worker`), and still ties parsing to advisory flags |
+| New dedicated `quick-trade-parser` service | Cleanest isolation | A new service registry entry, compose service, image, CI entry and supervisord program for one stateless route |
+| Parse in the gateway | No extra hop | Puts LLM client code and a hosted-API secret in the edge service |
+| Ollama only | No data leaves the network | A CPU 3B model is slow and unreliable at strict JSON under host load, which is the failure ADR 0006 recorded |
+
+## Consequences
+
+- Trader order text (at most 200 characters) and the list of symbols leave the private
+  network when the Anthropic provider is used. No account, position or price data is sent.
+- `ANTHROPIC_API_KEY` is a new secret for `llm-advisory`. It must be held in OpenBao and
+  injected at deploy time; it is never committed. Until it is provisioned, the chain
+  falls back to Ollama, and with neither reachable the bar reports that AI is offline and
+  the shorthand grammar still works.
+- Production `llm-advisory` keeps `LLM_ENABLED=false`; only the parse route is active.
+- Per-request cost is small (a short prompt and a JSON reply) and is bounded by the
+  gateway rate limits and the trader-only role.
+- Moving to a different model or provider is configuration, not code.

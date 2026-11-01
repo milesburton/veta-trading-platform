@@ -31,6 +31,8 @@ const h = vi.hoisted(() => {
     },
     updateConfig: vi.fn(),
     startProgram: vi.fn(),
+    generate: vi.fn(),
+    available: true,
   };
 });
 
@@ -69,6 +71,14 @@ vi.mock("../llm-advisory/runtime-config-store.ts", async (importActual) => ({
       getConfig: () => Promise.resolve({ ...h.config }),
       updateConfig: h.updateConfig,
     }),
+}));
+vi.mock("../llm-advisory/parse-ticket-provider.ts", () => ({
+  buildParseTicketProvider: () => ({
+    providerId: "fake",
+    modelId: "fake-model",
+    isAvailable: () => Promise.resolve(h.available),
+    generate: h.generate,
+  }),
 }));
 vi.mock("../shared/supervisor-control.ts", () => ({ startProgram: h.startProgram }));
 
@@ -380,4 +390,52 @@ test("[llm-orchestrator] the staleness sweep refreshes symbols without a recent 
 test("[llm-orchestrator] prunes old data daily", async () => {
   await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
   assertEquals(h.store.pruneOldData.mock.calls.length >= 1, true);
+});
+
+function llmText(text: string) {
+  return { text, promptTokens: 0, completionTokens: 0, latencyMs: 1, rawResponse: "" };
+}
+
+test("[llm-orchestrator] parse-ticket turns a natural-language order into an intent without any job-queue state", async () => {
+  h.config.enabled = false;
+  h.config.workerEnabled = false;
+  h.available = true;
+  h.generate.mockResolvedValue(
+    llmText(
+      '{"side":"BUY","symbol":"AAPL","quantity":500,"strategy":"TWAP","twapDurationMinutes":30}'
+    )
+  );
+  const res = await call("POST", "/parse-ticket", {
+    input: "get me five hundred apple over half an hour",
+    symbols: ["AAPL", "MSFT"],
+  });
+  assertEquals(res.status, 200);
+  assertEquals((await res.json()).intent, {
+    side: "BUY",
+    symbol: "AAPL",
+    quantity: 500,
+    strategy: "TWAP",
+    twapDurationMinutes: 30,
+  });
+  assert(String(h.generate.mock.calls[0][0]).includes("five hundred apple"));
+  h.config.enabled = true;
+  h.config.workerEnabled = true;
+});
+
+test("[llm-orchestrator] parse-ticket answers 503 when no provider is available", async () => {
+  h.available = false;
+  const res = await call("POST", "/parse-ticket", { input: "buy 10 aapl at market" });
+  assertEquals(res.status, 503);
+  assertEquals((await res.json()).error, "llm_unavailable");
+  h.available = true;
+});
+
+test("[llm-orchestrator] parse-ticket rejects symbols outside the allowed list", async () => {
+  h.generate.mockResolvedValue(llmText('{"side":"SELL","symbol":"TSLA","quantity":5}'));
+  const res = await call("POST", "/parse-ticket", {
+    input: "sell five tesla",
+    symbols: ["AAPL"],
+  });
+  assertEquals(res.status, 422);
+  assertEquals((await res.json()).error, "unknown_symbol");
 });

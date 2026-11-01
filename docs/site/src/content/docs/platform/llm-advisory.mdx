@@ -67,9 +67,28 @@ The cap is a compile-time constant. Tune in [`backend/src/llm-advisory/orchestra
 | `LLM_TRIGGER_MODE` | orchestrator | `manual` (compose sets `on-demand-ui`) | `manual` / `on-demand-ui` / `event-driven` |
 | `LLM_WORKER_IDLE_TIMEOUT_SECONDS` | worker | `120` (supervisord) / `0` (compose) | Seconds the worker waits on an empty queue before ending its session. `0` keeps it running, which compose uses because nothing restarts the worker on demand there |
 
+| `QUICK_TRADE_LLM_PROVIDERS` | orchestrator | `anthropic,ollama` | Ordered provider chain for quick-trade parsing; independent of `LLM_ENABLED` |
+| `QUICK_TRADE_ANTHROPIC_MODEL_ID` | orchestrator | `claude-haiku-5-5` | Model used for quick-trade parsing when Anthropic is in the chain |
+| `QUICK_TRADE_OLLAMA_MODEL_ID` | orchestrator | `LLM_MODEL_ID`, else `qwen2.5:3b` | Ollama model used as the fallback |
+| `ANTHROPIC_API_KEY` | orchestrator | unset | Anthropic credential, injected from the vault and never committed |
+
 Runtime policy is also stored in postgres (`llm_advisory.runtime_config`) and overrides env on a per-row basis. Migration `0019_llm_advisory_runtime_config_seed.sql` seeds defaults on first deploy.
 
+## Quick-trade parsing
+
+The orchestrator serves `POST /parse-ticket`, reached through the gateway as `/api/llm-advisory/parse-ticket`. It turns free text from the quick trade bar into an order intent that pre-fills the ticket. It does not use the job queue, the worker, or the advisory switches, so it works when `LLM_ENABLED` is false. Providers are tried in the order set by `QUICK_TRADE_LLM_PROVIDERS`. See [ADR 0014](../decisions/0014-quick-trade-parsing-in-llm-advisory/).
+
+| Status | Error | Meaning |
+| --- | --- | --- |
+| 200 | none | `{ "intent": ... }` |
+| 400 | `validation_failed` | Empty input, over 200 characters, or malformed symbols |
+| 422 | `unparseable`, `schema_mismatch`, `unknown_symbol` | The model answered but the result is unusable |
+| 503 | `llm_unavailable`, `llm_generate_failed` | No provider reachable, or every provider failed |
+| 504 | `llm_timeout` | No answer within 20 seconds |
+
 ## Troubleshooting
+
+- **Quick trade "AI is offline".** Check `ANTHROPIC_API_KEY` is set on `llm-advisory`, or that Ollama answers at `LLM_OLLAMA_BASE_URL`. At least one provider in `QUICK_TRADE_LLM_PROVIDERS` must be reachable.
 
 - **Worker exits immediately after start.** Check `LLM_ENABLED` and `LLM_WORKER_ENABLED` in the runtime config (`SELECT * FROM llm_advisory.runtime_config WHERE id=1;`). Both must be true.
 - **No advisory notes generated even with jobs queued.** Worker can't reach Ollama. `docker exec veta-llm-worker-1 curl -sf $LLM_OLLAMA_BASE_URL/api/tags`. If it fails, fix the Ollama endpoint or model availability.
