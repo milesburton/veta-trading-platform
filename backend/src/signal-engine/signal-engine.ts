@@ -6,8 +6,8 @@ import { createConsumer, createProducer } from "#veta/messaging";
 import type { FeatureVector, Signal } from "#veta/types/intelligence";
 import { armConsumerIdleExit } from "../shared/idle-exit.ts";
 import { runReplay } from "./replay-server.ts";
-import { scoreFeatureVector } from "./scorer.ts";
-import { createWeightStore } from "./weight-store.ts";
+import { scoreFeatureVector } from "../lib/intelligence/scorer.ts";
+import { createWeightStore } from "../lib/intelligence/weight-store.ts";
 
 const PORT = Number(process.env.SIGNAL_ENGINE_PORT) || 5_018;
 const VERSION = process.env.COMMIT_SHA || "dev";

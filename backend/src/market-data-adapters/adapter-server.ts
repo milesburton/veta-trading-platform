@@ -7,7 +7,7 @@ import type { MarketAdapterEvent } from "#veta/types/intelligence";
 import { armIdleExit } from "../shared/idle-exit.ts";
 import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
-import { createMarketEventStore } from "./market-event-store.ts";
+import { createMarketEventStore } from "../lib/intelligence/market-event-store.ts";
 
 const PORT = Number(process.env.MARKET_DATA_ADAPTERS_PORT) || 5_016;
 const MARKET_SIM_URL = process.env.MARKET_SIM_URL || "http://localhost:5000";

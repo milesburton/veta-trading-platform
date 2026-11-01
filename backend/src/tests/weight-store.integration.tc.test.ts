@@ -5,7 +5,7 @@ import {
   createWeightStore,
   DEFAULT_WEIGHTS,
   type WeightMap,
-} from "../signal-engine/weight-store.ts";
+} from "../lib/intelligence/weight-store.ts";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 

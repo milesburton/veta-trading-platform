@@ -17,7 +17,7 @@ import {
   computeSectorRelativeStrength,
   computeSentimentDelta,
   flushedSymbols,
-} from "./feature-computers.ts";
+} from "../lib/intelligence/feature-computers.ts";
 import { createFeatureStore } from "./feature-store.ts";
 
 const PORT = Number(process.env.FEATURE_ENGINE_PORT) || 5_017;

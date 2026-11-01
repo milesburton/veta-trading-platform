@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { test } from "#veta/test";
 import { assert, assertEquals, assertRejects } from "#veta/test-assert";
-import { DEFAULT_WEIGHTS, type WeightStore } from "../signal-engine/weight-store.ts";
+import { DEFAULT_WEIGHTS, type WeightStore } from "../lib/intelligence/weight-store.ts";
 
 const h = vi.hoisted(() => ({
   getEvents: vi.fn(),
@@ -9,7 +9,7 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock("#veta/db", () => ({ intelligencePool: {} }));
-vi.mock("../market-data-adapters/market-event-store.ts", () => ({
+vi.mock("../lib/intelligence/market-event-store.ts", () => ({
   createMarketEventStore: () => ({ getEvents: h.getEvents }),
 }));
 
