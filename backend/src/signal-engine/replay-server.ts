@@ -5,10 +5,10 @@ import {
   computeMomentum,
   computeRealisedVol,
   computeRelativeVolume,
-} from "../feature-engine/feature-computers.ts";
-import { createMarketEventStore } from "../market-data-adapters/market-event-store.ts";
-import { scoreFeatureVector } from "./scorer.ts";
-import type { WeightStore } from "./weight-store.ts";
+} from "../lib/intelligence/feature-computers.ts";
+import { createMarketEventStore } from "../lib/intelligence/market-event-store.ts";
+import { scoreFeatureVector } from "../lib/intelligence/scorer.ts";
+import type { WeightStore } from "../lib/intelligence/weight-store.ts";
 
 const JOURNAL_URL = process.env.JOURNAL_URL || "http://localhost:5009";
 
