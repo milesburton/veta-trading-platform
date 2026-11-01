@@ -96,7 +96,6 @@ export default defineConfig({
             { label: "Risk architecture", slug: "platform/risk-architecture" },
             { label: "Data classification", slug: "platform/data-classification" },
             { label: "FIX protocol", slug: "platform/fix-protocol" },
-            { label: "Data classification", slug: "platform/data-classification" },
             { label: "Scenarios", slug: "platform/scenarios" },
             { label: "LLM advisory", slug: "platform/llm-advisory" },
           ],
