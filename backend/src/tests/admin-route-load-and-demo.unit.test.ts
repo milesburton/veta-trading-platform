@@ -78,6 +78,8 @@ async function call(req: Request, path: string, ctx: GatewayContext): Promise<Re
   return response;
 }
 
+const PRICE_ROUNDING_TOLERANCE = 0.005;
+
 async function waitFor(condition: () => boolean, timeoutMs = 2_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (!condition()) {
@@ -127,7 +129,7 @@ test("/load-test rejects an invalid JSON body and bad quantity ranges", async ()
     for (const quantityRange of invalidRanges) {
       const res = await call(post("/load-test", { quantityRange }), "/load-test", ctx);
       assertEquals(res.status, 400, JSON.stringify(quantityRange));
-      assert((await res.json()).error.includes("quantityRange"));
+      assert((await res.json()).error.includes("quantityRange"), JSON.stringify(quantityRange));
     }
   } finally {
     restore();
@@ -139,7 +141,7 @@ test("/load-test returns 500 when LOAD_TEST_USER_IDS is not configured", async (
   try {
     const res = await call(post("/load-test", {}), "/load-test", makeContext().ctx);
     assertEquals(res.status, 500);
-    assert((await res.json()).error.includes("LOAD_TEST_USER_IDS"));
+    assert((await res.json()).error.includes("LOAD_TEST_USER_IDS"), "error names the env var");
   } finally {
     restore();
   }
@@ -173,7 +175,7 @@ test("/load-test submits attributed orders, caps the count and uses live referen
     assertEquals(summary.symbols, ["AAPL"]);
     assertEquals(summary.strategy, "TWAP");
     assertEquals(summary.paced, true);
-    assert(String(summary.jobId).startsWith("load-"));
+    assert(String(summary.jobId).startsWith("load-"), `jobId ${summary.jobId}`);
 
     await waitFor(() => sent.length === 4);
 
@@ -181,14 +183,18 @@ test("/load-test submits attributed orders, caps the count and uses live referen
       assertEquals(order.asset, "AAPL");
       assertEquals(order.strategy, "TWAP");
       assertEquals(order.userRole, "trader");
-      assert(["u-1", "u-2"].includes(order.userId as string));
+      assert(["u-1", "u-2"].includes(order.userId as string), `userId ${order.userId}`);
       assertEquals(order._loadTestJobId, summary.jobId);
       const quantity = order.quantity as number;
       assert(quantity >= 5 && quantity <= 9, `quantity ${quantity}`);
       const limitPrice = order.limitPrice as number;
-      if (order.side === "BUY")
-        assert(limitPrice >= 200 * 0.98 * 1.02 && limitPrice <= 200 * 1.02 * 1.02);
-      else assert(limitPrice >= 200 * 0.98 * 0.98 && limitPrice <= 200 * 1.02 * 0.98);
+      const sideFactor = order.side === "BUY" ? 1.02 : 0.98;
+      const lowerBound = 200 * 0.98 * sideFactor - PRICE_ROUNDING_TOLERANCE;
+      const upperBound = 200 * 1.02 * sideFactor + PRICE_ROUNDING_TOLERANCE;
+      assert(
+        limitPrice >= lowerBound && limitPrice <= upperBound,
+        `${order.side} limitPrice ${limitPrice} outside [${lowerBound}, ${upperBound}]`
+      );
     }
     assertEquals(new Set(sent.map((o) => o.clientOrderId)).size, 4);
     assertEquals(accessEvents, [
@@ -242,7 +248,7 @@ test("/demo-day rejects unauthenticated, wrong-role and bus-down requests and a 
     setEnv({ LOAD_TEST_USER_IDS: undefined });
     const res = await call(post("/demo-day", {}), "/demo-day", makeContext().ctx);
     assertEquals(res.status, 500);
-    assert((await res.json()).error.includes("LOAD_TEST_USER_IDS"));
+    assert((await res.json()).error.includes("LOAD_TEST_USER_IDS"), "error names the env var");
   } finally {
     restore();
   }
