@@ -59,7 +59,7 @@ the allowlist.
 | Admin replay | `backend/src/gateway/routes/admin.ts` | Replay a saved scenario |
 | Continuous load agent | `backend/src/gateway/load-agent.ts` | Admin/oncall toggles in-platform load generator |
 | RFQ acceptance | `backend/src/rfq/rfq-service.ts` | Sales accepts a client RFQ quote |
-| Scenario orchestrator | `backend/src/scenarios/orchestrator.ts` | Deterministic scenario replay |
+| Scenario orchestrator | `backend/src/gateway/scenarios/orchestrator.ts` | Deterministic scenario replay |
 
 Every one of these passes through OMS, which performs the three
 checks above. There is no path that publishes to `orders.submitted`

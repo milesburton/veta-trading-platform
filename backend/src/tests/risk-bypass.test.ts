@@ -11,7 +11,7 @@ const ORDERS_NEW_PRODUCERS = new Set<string>([
   "gateway/routes/admin.ts",
   "gateway/load-agent.ts",
   "rfq/rfq-service.ts",
-  "scenarios/orchestrator.ts",
+  "gateway/scenarios/orchestrator.ts",
 ]);
 
 const ORDERS_SUBMITTED_PRODUCERS = new Set<string>(["oms/oms-server.ts"]);
