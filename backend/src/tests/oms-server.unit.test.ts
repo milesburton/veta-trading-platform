@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, vi } from "vitest";
+import { CheckRequestSchema } from "#veta/schemas/risk";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 
@@ -213,6 +214,49 @@ test("[oms] applies pre-trade risk checks", async () => {
 
   h.risk.fail = true;
   await submit(order({ clientOrderId: "f" }));
+  assertEquals(rejection().includes("Risk engine unavailable"), true);
+});
+
+test("[oms] sends the risk engine a request that satisfies its contract", async () => {
+  const bodies: unknown[] = [];
+  vi.stubGlobal("fetch", (input: string, init?: RequestInit) => {
+    if (String(input).endsWith("/check")) bodies.push(JSON.parse(String(init?.body)));
+    return routeFetch(input);
+  });
+  await submit(order());
+  assertEquals(bodies.length, 1);
+  assertEquals(CheckRequestSchema.safeParse(bodies[0]).success, true);
+});
+
+test("[oms] risk checks an order without a limit price at the market price", async () => {
+  const bodies: Array<Record<string, unknown>> = [];
+  vi.stubGlobal("fetch", (input: string, init?: RequestInit) => {
+    if (String(input).endsWith("/check")) bodies.push(JSON.parse(String(init?.body)));
+    return routeFetch(input);
+  });
+  await submit(order({ limitPrice: undefined }));
+  assertEquals(bodies[0]?.limitPrice, 190);
+  assertEquals(last("orders.routed")?.clientOrderId, "c-1");
+});
+
+test("[oms] rejects an order without a limit price when no market price exists", async () => {
+  h.prices = null;
+  await submit(order({ limitPrice: undefined }));
+  assertEquals(rejection().includes("No reference price available for AAPL"), true);
+  assertEquals(
+    h.requests.some((u) => u.endsWith("/check")),
+    false
+  );
+});
+
+test("[oms] blocks an order when the risk engine returns a malformed allowance", async () => {
+  vi.stubGlobal("fetch", (input: string) =>
+    String(input).endsWith("/check")
+      ? Promise.resolve(new Response(JSON.stringify({ allowed: "yes" })))
+      : routeFetch(input)
+  );
+  await submit(order());
+  assertEquals(last("orders.routed"), undefined);
   assertEquals(rejection().includes("Risk engine unavailable"), true);
 });
 

@@ -22,6 +22,7 @@ import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import type { Desk } from "#veta/primitives";
+import { checkRisk } from "#veta/risk-client";
 import {
   type OrderKillCommand,
   OrderKillCommandSchema,
@@ -305,60 +306,46 @@ consumer?.onMessage(async (_topic, raw) => {
 
   if (!RISK_ENGINE_ENABLED) {
     logger.info(`Risk-engine disabled, skipping pre-trade checks for ${order.clientOrderId}`);
-  } else
-    try {
-      const riskRes = await fetch(`${RISK_ENGINE_URL}/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.clientOrderId,
-          userId: order.userId,
-          userRole: order.userRole,
-          symbol: order.asset,
-          side: order.side,
-          quantity: order.quantity,
-          limitPrice: order.limitPrice,
-          strategy: order.strategy,
-          instrumentType: order.instrumentType,
-        }),
-        signal: AbortSignal.timeout(3_000),
-      });
-      const riskResult = (await riskRes.json()) as {
-        allowed: boolean;
-        reasons: string[];
-        warnings: string[];
-      };
-      if (!riskResult.allowed) {
-        const reason = riskResult.reasons.join("; ");
-        logger.warn(`Risk-engine rejected order ${order.clientOrderId}: ${reason}`);
-        await producer
-          ?.send("orders.rejected", {
-            clientOrderId: order.clientOrderId,
+  } else {
+    const riskPrice = orderReferencePrice(
+      order.limitPrice,
+      order.limitPrice === undefined ? await marketPrices.priceFor(order.asset) : undefined
+    );
+    const riskResult =
+      riskPrice === null
+        ? {
+            allowed: false,
+            reasons: [`No reference price available for ${order.asset}`],
+            warnings: [],
+          }
+        : await checkRisk(RISK_ENGINE_URL, {
+            orderId: order.clientOrderId,
             userId: order.userId,
-            reason: `Risk check failed: ${reason}`,
-            ts: Date.now(),
-          })
-          .catch(() => {});
-        return;
-      }
-      for (const w of riskResult.warnings) {
-        logger.info(`Risk warning for ${order.clientOrderId}: ${w}`);
-      }
-    } catch (err) {
-      logger.error(`Risk-engine unreachable, rejecting order ${order.clientOrderId}`, {
-        err: err as Error,
-      });
+            userRole: order.userRole,
+            symbol: order.asset,
+            side: order.side,
+            quantity: order.quantity,
+            limitPrice: riskPrice,
+            strategy: order.strategy,
+            instrumentType: order.instrumentType,
+          });
+    if (!riskResult.allowed) {
+      const reason = riskResult.reasons.join("; ");
+      logger.warn(`Risk-engine rejected order ${order.clientOrderId}: ${reason}`);
       await producer
         ?.send("orders.rejected", {
           clientOrderId: order.clientOrderId,
           userId: order.userId,
-          reason:
-            "Risk engine unavailable, all orders are blocked until the risk service is restored",
+          reason: `Risk check failed: ${reason}`,
           ts: Date.now(),
         })
         .catch(() => {});
       return;
     }
+    for (const w of riskResult.warnings) {
+      logger.info(`Risk warning for ${order.clientOrderId}: ${w}`);
+    }
+  }
 
   if (desk === "fi") {
     if (!order.bondSpec) {

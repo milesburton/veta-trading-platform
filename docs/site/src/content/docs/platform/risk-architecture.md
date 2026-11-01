@@ -32,10 +32,10 @@ The OMS performs three pre-trade checks before publishing
    (position concentration, order count, kill-switch state, etc.)
    and returns `{ allowed, reasons, warnings }`.
 3. **Risk-engine availability gate**. If the risk-engine call fails
-   (timeout, network error, non-200), the OMS publishes
-   `orders.rejected` with reason `"Risk engine unavailable. All orders
-   are blocked until the risk service is restored"`. Fail-closed,
-   not fail-open.
+   (timeout, network error, non-200, or a response that breaks the
+   contract below), the order is rejected with reason `"Risk engine
+   unavailable, all orders are blocked until the risk service is
+   restored"`. Fail-closed, not fail-open.
 
 If any check rejects, the order is published to `orders.rejected`
 with a structured reason and never reaches `orders.submitted`. No
@@ -72,13 +72,44 @@ or downstream topics directly.
   acts on that topic (the gateway reads it only to push events to
   clients). Bypassing risk
   requires modifying OMS, not a new feature service.
-- **Risk-engine outages reject, not allow.** The catch branch in
-  OMS publishes `orders.rejected` with a "risk service unavailable"
-  reason. The platform is unavailable when risk is down, by design.
+- **Risk-engine outages reject, not allow.** The shared risk client
+  turns every failure into a rejection with a "risk service
+  unavailable" reason. The platform is unavailable when risk is down,
+  by design.
+- **A malformed risk response rejects, not allows.** The response is
+  validated with `CheckResultSchema`, so a body such as
+  `{ "allowed": "yes" }` is blocked instead of being read as truthy.
 - **Per-user limits are versioned.** Migration `0014_risk_config_versions`
   added a versioned config table so risk rules can be changed
   without restarting services and so a regression in rule behaviour
   is auditable to a specific config version.
+
+## The risk check contract
+
+OMS and the FIX exchange both call `POST /check` through one shared client,
+`checkRisk` in `#veta/risk-client` (`backend/src/lib/risk-client.ts`). The
+contract is defined once, in `backend/src/schemas/risk.ts`:
+
+| Direction | Schema | Rules |
+| --- | --- | --- |
+| Request | `CheckRequestSchema` | `userId`, `symbol`, `side`, positive `quantity` and positive `limitPrice` are required |
+| Response | `CheckResultSchema` | `allowed` must be a boolean; `reasons` and `warnings` must be string arrays; extra fields are ignored |
+
+The client fails closed on a non-2xx status, an unparseable body, a body that
+fails `CheckResultSchema`, a timeout (3 seconds) and a network error. An order
+without a limit price is checked at the latest market price, and is rejected
+when no price is available.
+
+Tests pin both sides of the contract:
+
+- Provider: the risk engine's `/check` responses are parsed with `CheckResultSchema`,
+  and requests that break `CheckRequestSchema` return 400.
+- Consumers: the request OMS sends is parsed with `CheckRequestSchema`, and the client
+  blocks the order for every malformed or failed response.
+
+These run in the unit suite, which gates the image build, so a risk-engine change that
+breaks a consumer cannot be published. Changing either schema is a coordinated change to
+the engine and both consumers, and the tests fail until they agree.
 
 ## Residual risks (honest)
 
