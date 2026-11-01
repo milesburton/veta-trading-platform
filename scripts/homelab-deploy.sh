@@ -122,8 +122,8 @@ load_secrets() {
     # shellcheck source=lib/openbao-env.sh
     . "$STACK_DIR/scripts/lib/openbao-env.sh"
     if ! openbao_configured; then
-        log "⚠️  No OpenBao AppRole credentials at $OPENBAO_APPROLE_FILE; secrets still come from .env until scripts/openbao-bootstrap.py has run"
-        return 0
+        log "No OpenBao AppRole credentials at $OPENBAO_APPROLE_FILE; run scripts/openbao-bootstrap.py"
+        return 1
     fi
     openbao_export platform || return 1
     if [[ "${LOADGEN_ENABLED:-false}" == "true" ]]; then
@@ -159,25 +159,15 @@ fi
 #   The loadgen profile also disables gateway rate limiting, so orphaned
 #   loadgen credentials must not re-enable a load storm on the next deploy.
 #   Both LOADGEN_ENABLED=true and LOADGEN_OAUTH_PASSWORD (from OpenBao's
-#   veta/loadgen, or the legacy .env.loadgen) are required.
+#   veta/loadgen) are required.
 COMPOSE_FILES=(-f compose.yml -f compose.prod.yml -f compose.observability.yml)
-if [[ -n "${GITHUB_TICKETING_TOKEN_SECRET:-}" ]]; then
-    COMPOSE_FILES+=(-f deploy/openbao/compose.secrets.yml)
-fi
 PROFILES=(--profile trading)
-LOADGEN_ENV_FILE="$STACK_DIR/.env.loadgen"
-if [[ "${LOADGEN_ENABLED:-false}" == "true" && -z "${LOADGEN_OAUTH_PASSWORD:-}" && -f "$LOADGEN_ENV_FILE" ]]; then
-    set -a
-    # shellcheck disable=SC1090
-    . "$LOADGEN_ENV_FILE"
-    set +a
-fi
 if [[ "${LOADGEN_ENABLED:-false}" == "true" && -n "${LOADGEN_OAUTH_PASSWORD:-}" ]]; then
     log "Loadgen explicitly enabled, including compose.loadgen.yml"
     COMPOSE_FILES+=(-f compose.loadgen.yml)
     PROFILES+=(--profile loadgen)
 elif [[ "${LOADGEN_ENABLED:-false}" == "true" ]]; then
-    log "⚠️  LOADGEN_ENABLED=true but no loadgen credentials in OpenBao veta/loadgen or $LOADGEN_ENV_FILE; skipping loadgen profile"
+    log "⚠️  LOADGEN_ENABLED=true but no loadgen credentials in OpenBao veta/loadgen; skipping loadgen profile"
 fi
 
 log "Pulling latest images..."

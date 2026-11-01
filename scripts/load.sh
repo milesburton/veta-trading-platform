@@ -8,13 +8,11 @@
 #   load.sh logs     # tail logs from all loadgen containers
 #
 # Reads platform secrets and LOADGEN_OAUTH_PASSWORD from OpenBao
-# (veta/platform, veta/loadgen), or from the legacy $STACK_DIR/.env.loadgen
-# until scripts/openbao-bootstrap.py has run. Refuses to start without them.
+# (veta/platform, veta/loadgen). Refuses to start without them.
 
 set -euo pipefail
 
 STACK_DIR="${STACK_DIR:-/opt/stacks/veta}"
-ENV_FILE="$STACK_DIR/.env.loadgen"
 
 COMPOSE_FILES=(
   -f "$STACK_DIR/compose.yml"
@@ -33,17 +31,11 @@ fail() { echo "[load] ERROR: $*" >&2; exit 1; }
 load_env() {
   # shellcheck source=lib/openbao-env.sh
   . "$(dirname "${BASH_SOURCE[0]}")/lib/openbao-env.sh"
-  if openbao_configured; then
-    openbao_export platform || fail "could not load platform secrets from OpenBao"
-    openbao_export_if_present loadgen || fail "could not load loadgen secrets from OpenBao"
-  elif [[ -f "$ENV_FILE" ]]; then
-    set -a
-    # shellcheck disable=SC1090
-    . "$ENV_FILE"
-    set +a
-  fi
+  openbao_configured || fail "no OpenBao AppRole credentials at $OPENBAO_APPROLE_FILE"
+  openbao_export platform || fail "could not load platform secrets from OpenBao"
+  openbao_export_if_present loadgen || fail "could not load loadgen secrets from OpenBao"
   [[ -n "${LOADGEN_OAUTH_PASSWORD:-}" ]] \
-    || fail "no LOADGEN_OAUTH_PASSWORD in OpenBao veta/loadgen or $ENV_FILE; see scripts/loadgen/README.md"
+    || fail "no LOADGEN_OAUTH_PASSWORD in OpenBao veta/loadgen; see scripts/loadgen/README.md"
 }
 
 cmd_on() {
