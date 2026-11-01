@@ -716,7 +716,7 @@ export const TERMS: GlossaryTerm[] = [
       "Saved description of a single trade, symbol, side, qty, price, strategy plus a numeric seed, that can be replayed deterministically.",
     long: "A scenario binds a market-sim seed to an order spec so re-running the saved row reproduces the same fills. Used to detect algo regressions across releases and as the data shape that would back RTS 6 conformance testing if the platform were ever production-bound.",
     seeAlso: ["determinism", "rts-6"],
-    source: "backend/src/scenarios/types.ts",
+    source: "backend/src/gateway/scenarios/types.ts",
   },
   {
     id: "determinism",
