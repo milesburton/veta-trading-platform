@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.91.1...veta-trading-platform-v1.92.0) (2026-11-01)
+
+
+### Features
+
+* **risk:** share one fail-closed risk client and pin the /check contract ([#1009](https://github.com/milesburton/veta-trading-platform/issues/1009)) ([3eed138](https://github.com/milesburton/veta-trading-platform/commit/3eed138f678ba0d27d798708d764da2665cc9b6f))
+
 ## [1.91.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.91.0...veta-trading-platform-v1.91.1) (2026-11-01)
 
 
