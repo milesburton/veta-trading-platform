@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 164,
-      "cases": 1827,
+      "cases": 1838,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -51,7 +51,6 @@
         "fix-dictionary.unit.test.ts": 5,
         "fix-gateway-server.unit.test.ts": 7,
         "fix-market-session.unit.test.ts": 4,
-        "fix-risk-check.unit.test.ts": 5,
         "fix-session.unit.test.ts": 21,
         "fix-venue-registry.unit.test.ts": 7,
         "fixParser.test.ts": 19,
@@ -98,7 +97,7 @@
         "news-aggregator.unit.test.ts": 10,
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
-        "oms-server.unit.test.ts": 28,
+        "oms-server.unit.test.ts": 32,
         "oms.test.ts": 16,
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,
@@ -123,7 +122,8 @@
         "rfq-service.unit.test.ts": 12,
         "risk-bypass.test.ts": 2,
         "risk-checks.unit.test.ts": 38,
-        "risk-engine-server.unit.test.ts": 14,
+        "risk-client.unit.test.ts": 10,
+        "risk-engine-server.unit.test.ts": 16,
         "risk-schema.unit.test.ts": 20,
         "rng.test.ts": 9,
         "runtime-config-store.test.ts": 13,
