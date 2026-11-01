@@ -18,9 +18,7 @@ const PLATFORM_DIRS: ReadonlySet<string> = new Set([
 
 const EXEMPT_SOURCE_DIRS: ReadonlySet<string> = new Set(["tests", "test-support"]);
 
-const KNOWN_EXCEPTIONS: readonly string[] = [
-  "discord-bot -> llm-advisory",
-];
+const KNOWN_EXCEPTIONS: readonly string[] = [];
 
 const IMPORT_SPECIFIER = /(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+)["']/g;
 

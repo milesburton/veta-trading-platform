@@ -3,14 +3,14 @@ import { llmAdvisoryPool } from "#veta/db";
 import { serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createProducer } from "#veta/messaging";
+import { createAnthropicProvider } from "../lib/llm-providers/anthropic.ts";
+import { createOllamaProvider } from "../lib/llm-providers/ollama.ts";
 import { createJobStore } from "./job-store.ts";
 import { handleParseTicket } from "./parse-ticket-handler.ts";
 import { isIdleWindowOpen, isWorkerAllowed, loadPolicy } from "./policy.ts";
 import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
-import { createAnthropicProvider } from "./providers/anthropic.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 import { createMockProvider } from "./providers/mock.ts";
-import { createOllamaProvider } from "./providers/ollama.ts";
 import { createRuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
 
 const PORT = Number(process.env.LLM_WORKER_PORT) || 5_033;

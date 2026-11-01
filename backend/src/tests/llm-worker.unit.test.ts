@@ -85,13 +85,13 @@ vi.mock("../llm-advisory/providers/mock.ts", () => ({
     return provider();
   },
 }));
-vi.mock("../llm-advisory/providers/ollama.ts", () => ({
+vi.mock("../lib/llm-providers/ollama.ts", () => ({
   createOllamaProvider: (...args: unknown[]) => {
     h.providerFactory("ollama", ...args);
     return provider();
   },
 }));
-vi.mock("../llm-advisory/providers/anthropic.ts", () => ({
+vi.mock("../lib/llm-providers/anthropic.ts", () => ({
   createAnthropicProvider: (...args: unknown[]) => {
     h.providerFactory("anthropic", ...args);
     return provider();
