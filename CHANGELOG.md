@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.91.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.91.0...veta-trading-platform-v1.91.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **deploy:** remove pre-OpenBao secret fallbacks ([#999](https://github.com/milesburton/veta-trading-platform/issues/999)) ([d1702ee](https://github.com/milesburton/veta-trading-platform/commit/d1702ee7d62f7f6436945a2cae7615ef9ff96d2b))
+
 ## [1.91.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.90.0...veta-trading-platform-v1.91.0) (2026-10-31)
 
 
