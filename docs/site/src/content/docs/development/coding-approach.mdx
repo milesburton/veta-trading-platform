@@ -17,7 +17,7 @@ The repository ships a `.devcontainer/devcontainer.json` that configures VS Code
 - **Node 24** for the React frontend
 - **PostgreSQL 16** for journal, user, and replay data
 - **Redpanda** (Kafka-compatible) for the message bus
-- **Supervisord** managing the trading microservices (more than 40 programs), with Postgres and Redpanda run through Docker Compose
+- **Supervisord** managing the trading microservices (more than 40 programs) in the development container only, with Postgres and Redpanda run through Docker Compose. Production runs one compose container per service ([ADR 0010](../../platform/decisions/0010-supervisord-as-dev-runner/))
 
 When you open the repository in VS Code and accept "Reopen in Container", you get a functional trading platform with zero local setup. The MOTD shows available commands.
 

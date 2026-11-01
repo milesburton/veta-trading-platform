@@ -1,0 +1,66 @@
+---
+title: "ADR 0010: Keep supervisord as the development runner and guard parity with compose"
+description: "Records why the development container keeps running services under supervisord while production runs one compose container per service, and how drift between the two is prevented."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-11-01
+
+## Context
+
+Production runs one container per service from `compose.yml`. The development container
+instead runs the same services as `supervisord` programs, with Postgres and Redpanda in
+Docker. This is the "hybrid" described in [ADR 0009](../0009-service-boundaries/). The
+question was whether the development container should also run compose, so that both
+environments are the same.
+
+Three facts constrain the answer:
+
+- **The Docker daemon is on a different filesystem from the editor.** Source cannot be
+  bind-mounted into compose containers from the development container, so a compose-based
+  development stack would rebuild an image after every change and lose hot reload.
+- **On-demand wake depends on supervisord.** The gateway (`gateway/wake.ts`), the LLM
+  orchestrator and `scripts/start-trading.sh` start and stop idle-safe services through
+  `supervisorctl`. A compose equivalent needs access to the Docker socket from inside a
+  service, which the platform's security posture avoids.
+- **The sources of truth are already split by purpose.** `shared/serviceRegistry.ts` holds
+  service identity, port, category and hibernation tier. It already generates the gateway
+  `*_HOST` block in `compose.yml`. `compose.yml` holds deployment. `supervisord.conf` holds the
+  development process list. A measurement on 2026-11-01 found the entry scripts and ports
+  identical across all three, apart from three renamed programs that the registry maps with
+  `supervisorProgram`.
+
+## Decision
+
+Keep `supervisord` as a development-only runner. Production does not use it.
+
+Keep the service registry as the source of truth for service identity, and treat compose and
+`supervisord.conf` as derived or checked artefacts of it. Prevent drift with tests, not
+generation:
+
+| Test | Guards |
+| --- | --- |
+| `service-registry.unit.test.ts` | Gateway host block in compose matches the registry; every override and on-demand service names a real supervisord program |
+| `supervisord-conf.unit.test.ts` | Program set, autostart and group membership |
+| `service-parity.unit.test.ts` | Compose and supervisord run the same entry script, and the compose healthcheck port matches the registry port |
+
+## Alternatives considered
+
+| Option | For | Against |
+| --- | --- | --- |
+| Run compose in the development container | One runtime everywhere | Rebuild per change, no hot reload, needs a new wake mechanism and Docker socket access |
+| Generate `supervisord.conf` from compose | One file to edit | Compose lacks the tier and group metadata, and the generated file would lose hand-tuned development overrides, for almost no drift to fix |
+| Derive the registry from compose | Removes a list | Reverses the existing design: the registry carries names, descriptions, tiers and categories that compose does not, and it already generates part of compose |
+| Move development to a daemon that shares the editor filesystem | Enables bind-mounted compose with watch | An environment change outside this repository |
+
+## Consequences
+
+- Adding a service means editing the registry, `compose.yml` and `supervisord.conf`. The tests
+  fail until the three agree on the entry script and port.
+- Development and production still differ in how processes are supervised. Behaviour that
+  depends on the runner, such as on-demand wake, works in development only.
+- Issue #1006 asked to derive the registry from compose. It is closed in favour of the parity
+  test above.
+- If the development environment later gets a daemon that shares the editor filesystem, a
+  bind-mounted compose development stack becomes practical and this decision should be revisited.
