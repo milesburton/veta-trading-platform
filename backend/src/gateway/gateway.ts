@@ -35,7 +35,7 @@ import {
   makeAuditPublisher,
   runWithAudit,
 } from "./privileged-audit.ts";
-import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
+import { LONG_POST_TIMEOUT_MS, proxyGet, proxyPost, proxyPut } from "./proxy.ts";
 import { createRefPriceCache } from "./ref-prices.ts";
 import { classifyRequestSource } from "./request-source.ts";
 import { handleAdminRoute } from "./routes/admin.ts";
@@ -119,6 +119,8 @@ const REDPANDA_ADMIN_URL = `http://${process.env.REDPANDA_ADMIN_HOST ?? "localho
 const OLLAMA_URL = `http://${process.env.OLLAMA_HOST ?? "localhost"}:${process.env.OLLAMA_PORT ?? "11434"}`;
 const GRAFANA_URL = `http://${process.env.GRAFANA_HOST ?? "localhost"}:${process.env.GRAFANA_PORT ?? "3000"}`;
 const PROMETHEUS_URL = `http://${process.env.PROMETHEUS_HOST ?? "localhost"}:${process.env.PROMETHEUS_PORT ?? "9090"}`;
+
+const LONG_RUNNING_POSTS: ReadonlySet<string> = new Set(["llm-advisory/parse-ticket"]);
 
 const SVC_PROXY: Record<string, string> = {
   "market-sim": MARKET_SIM_URL,
@@ -1135,7 +1137,13 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
           : call();
       }
       if (req.method === "POST" || req.method === "PUT") {
-        const proxyFn = req.method === "POST" ? proxyPost : proxyPut;
+        const postTimeoutMs = LONG_RUNNING_POSTS.has(`${svcName}${svcPath}`)
+          ? LONG_POST_TIMEOUT_MS
+          : undefined;
+        const proxyFn =
+          req.method === "POST"
+            ? (url: string, r: Request, body?: string) => proxyPost(url, r, body, postTimeoutMs)
+            : proxyPut;
         if (tier < 1) return auditedProxy(() => proxyFn(targetUrl, req));
         // req.text() can only be called once, but a wake retry calls proxyFn twice.
         const presetBody = await req.text();

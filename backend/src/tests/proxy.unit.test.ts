@@ -1,6 +1,12 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
-import { isConnectionRefusedError, proxyGet, proxyPost, proxyPut } from "../gateway/proxy.ts";
+import {
+  isConnectionRefusedError,
+  LONG_POST_TIMEOUT_MS,
+  proxyGet,
+  proxyPost,
+  proxyPut,
+} from "../gateway/proxy.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -19,6 +25,25 @@ test("[proxyPost] forwards the request body read from req when no presetBody is 
     assertEquals(res.status, 200);
     assertEquals(seenBodies, [JSON.stringify({ orderId: "abc" })]);
   } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("[proxyPost] applies the default timeout unless a longer one is given", async () => {
+  const realTimeout = AbortSignal.timeout;
+  const seenTimeouts: number[] = [];
+  AbortSignal.timeout = ((ms: number) => {
+    seenTimeouts.push(ms);
+    return realTimeout.call(AbortSignal, ms);
+  }) as typeof AbortSignal.timeout;
+  globalThis.fetch = (() => Promise.resolve(new Response("{}", { status: 200 }))) as typeof fetch;
+  try {
+    const make = () => new Request("http://localhost/x", { method: "POST", body: "{}" });
+    await proxyPost("http://svc/x", make());
+    await proxyPost("http://svc/x", make(), undefined, LONG_POST_TIMEOUT_MS);
+    assertEquals(seenTimeouts, [15_000, LONG_POST_TIMEOUT_MS]);
+  } finally {
+    AbortSignal.timeout = realTimeout;
     globalThis.fetch = realFetch;
   }
 });

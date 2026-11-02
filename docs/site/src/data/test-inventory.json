@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 168,
-      "cases": 1866,
+      "cases": 1868,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -103,7 +103,7 @@
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,
         "parse-ticket-handler.unit.test.ts": 13,
-        "parse-ticket-provider.unit.test.ts": 8,
+        "parse-ticket-provider.unit.test.ts": 9,
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "platform-stats.unit.test.ts": 11,
         "playbooks.unit.test.ts": 14,
@@ -113,7 +113,7 @@
         "process-metrics.unit.test.ts": 4,
         "product-service.unit.test.ts": 9,
         "prompt-builder.unit.test.ts": 15,
-        "proxy.unit.test.ts": 9,
+        "proxy.unit.test.ts": 10,
         "rate-limit.test.ts": 9,
         "recommendation-engine.unit.test.ts": 8,
         "redpanda-init-topic-wait.unit.test.ts": 3,

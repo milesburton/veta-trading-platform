@@ -16,7 +16,7 @@ This page is a historical snapshot taken in May 2026, before the operations stra
 
 - **1,825 vitest** unit tests covering frontend slices, middleware, components, and parsers.
 - **147 Playwright** end-to-end tests, but against the **Vite dev server**, not the built container.
-- **13 backend handler** and **8 provider-chain** unit tests for the LLM parse-ticket endpoint.
+- **11 backend handler** unit tests for the LLM parse-ticket endpoint.
 - **`*.integration.tc.test.ts`** suites use Testcontainers. These are the only tests that exercise real wired services, and they only run in CI.
 - The legacy localhost-or-`VETA_BASE_URL` smoke suite has been ported to `smoke.full.tc.test.ts`; see the [smoke testing page](../../../development/testing/smoke/).
 

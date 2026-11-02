@@ -5,7 +5,8 @@ import { createOllamaProvider } from "../lib/llm-providers/ollama.ts";
 const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-5-5";
 const DEFAULT_OLLAMA_MODEL = "qwen2.5:3b";
 const DEFAULT_CHAIN = "anthropic,ollama";
-const DEFAULT_TIMEOUT_MS = 45_000;
+export const DEFAULT_TIMEOUT_MS = 45_000;
+export const MAX_TIMEOUT_MS = 55_000;
 
 export interface ParseTicketProviderConfig {
   chain: readonly string[];
@@ -26,7 +27,7 @@ export function loadParseTicketProviderConfig(
     anthropicModelId: env.QUICK_TRADE_ANTHROPIC_MODEL_ID ?? DEFAULT_ANTHROPIC_MODEL,
     ollamaModelId: env.QUICK_TRADE_OLLAMA_MODEL_ID ?? env.LLM_MODEL_ID ?? DEFAULT_OLLAMA_MODEL,
     ollamaBaseUrl: env.LLM_OLLAMA_BASE_URL ?? "http://localhost:11434",
-    timeoutMs: Number(env.QUICK_TRADE_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
+    timeoutMs: Math.min(Number(env.QUICK_TRADE_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS),
   };
 }
 

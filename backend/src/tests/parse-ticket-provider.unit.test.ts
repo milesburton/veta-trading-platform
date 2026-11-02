@@ -5,6 +5,7 @@ import {
   buildParseTicketProvider,
   createFallbackProvider,
   loadParseTicketProviderConfig,
+  MAX_TIMEOUT_MS,
 } from "../llm-advisory/parse-ticket-provider.ts";
 
 function fake(id: string, opts: { available?: boolean; fail?: boolean } = {}): ILlmProvider {
@@ -44,6 +45,11 @@ test("parse-ticket provider config, reads the chain and drops unknown names", ()
   assertEquals(config.ollamaModelId, "llama");
   assertEquals(config.ollamaBaseUrl, "http://o:1");
   assertEquals(config.timeoutMs, 5_000);
+});
+
+test("parse-ticket provider config, caps the timeout below the gateway proxy limit", () => {
+  const config = loadParseTicketProviderConfig({ QUICK_TRADE_TIMEOUT_MS: "300000" });
+  assertEquals(config.timeoutMs, MAX_TIMEOUT_MS);
 });
 
 test("fallback provider, uses the first available provider", async () => {

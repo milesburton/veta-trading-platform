@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEOUT_MS } from "./parse-ticket-provider.ts";
 import { ParseTicketRequestSchema, QuickTradeIntentSchema } from "./parse-ticket-schema.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 
@@ -61,8 +62,6 @@ function extractFirstJsonObject(raw: string): string | null {
   return null;
 }
 
-const DEFAULT_ABORT_MS = 20_000;
-
 export interface ParseTicketDeps {
   provider: ILlmProvider;
   abortMs?: number;
@@ -102,7 +101,7 @@ export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Pr
   try {
     const response = await withTimeout(
       deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT),
-      deps.abortMs ?? DEFAULT_ABORT_MS
+      deps.abortMs ?? DEFAULT_TIMEOUT_MS
     );
     responseText = response.text;
   } catch (err) {

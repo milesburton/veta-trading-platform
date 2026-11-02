@@ -69,7 +69,7 @@ The cap is a compile-time constant. Tune in [`backend/src/llm-advisory/orchestra
 
 | `QUICK_TRADE_LLM_PROVIDERS` | orchestrator | `anthropic,ollama` | Ordered provider chain for quick-trade parsing; independent of `LLM_ENABLED` |
 | `QUICK_TRADE_ANTHROPIC_MODEL_ID` | orchestrator | `claude-haiku-5-5` | Model used for quick-trade parsing when Anthropic is in the chain |
-| `QUICK_TRADE_TIMEOUT_MS` | orchestrator | `45000` | Time allowed for the whole provider chain before the route answers `504` |
+| `QUICK_TRADE_TIMEOUT_MS` | orchestrator | `45000` | Time allowed for the whole provider chain before the route answers `504`. Capped at `55000` so it stays inside the gateway's 60 second proxy limit for this route |
 | `QUICK_TRADE_OLLAMA_MODEL_ID` | orchestrator | `LLM_MODEL_ID`, else `qwen2.5:3b` | Ollama model used as the fallback |
 | `ANTHROPIC_API_KEY` | orchestrator | unset | Anthropic credential, injected from the vault and never committed |
 
