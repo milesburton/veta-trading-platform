@@ -239,6 +239,18 @@ describe("QuickTradeBar, LLM fallback", () => {
     );
   });
 
+  it("surfaces a timeout message (504)", async () => {
+    setMutationResult({ error: { status: 504, data: { error: "llm_timeout" } } });
+    renderBar(makeStore());
+    fireEvent.change(screen.getByTestId("quick-trade-input"), {
+      target: { value: "buy some apple stock please" },
+    });
+    fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
+    await waitFor(() =>
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("took too long")
+    );
+  });
+
   it("surfaces 422 unparseable message", async () => {
     setMutationResult({ error: { status: 422, data: { error: "unparseable" } } });
     renderBar(makeStore());

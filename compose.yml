@@ -1678,6 +1678,8 @@ services:
     environment:
       LLM_ADVISORY_PORT: "5024"
       LLM_ADVISORY_DB_PATH: /app/data/llm-advisory.db
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      QUICK_TRADE_LLM_PROVIDERS: ${QUICK_TRADE_LLM_PROVIDERS:-anthropic,ollama}
       LLM_ENABLED: "true"
       LLM_WORKER_ENABLED: "true"
       LLM_PROVIDER: ollama

@@ -71,6 +71,8 @@ export function QuickTradeBar() {
       const status = (err as { status?: number }).status;
       if (status === 503) {
         flash.value = { kind: "err", msg: "AI is offline, try the shorthand grammar instead" };
+      } else if (status === 504) {
+        flash.value = { kind: "err", msg: "AI took too long, try again or use shorthand" };
       } else if (status === 422) {
         flash.value = { kind: "err", msg: "AI couldn't parse that, rephrase or use shorthand" };
       } else {

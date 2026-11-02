@@ -37,7 +37,6 @@ const h = vi.hoisted(() => ({
   },
   generate: vi.fn(),
   providerFactory: vi.fn(),
-  parseTicket: vi.fn(),
   serverClose: vi.fn(),
 }));
 
@@ -72,7 +71,6 @@ vi.mock("../llm-advisory/runtime-config-store.ts", async (importActual) => ({
   ...(await importActual<Record<string, unknown>>()),
   createRuntimeConfigStore: () => Promise.resolve({ getConfig: () => Promise.resolve(h.config) }),
 }));
-vi.mock("../llm-advisory/parse-ticket-handler.ts", () => ({ handleParseTicket: h.parseTicket }));
 const provider = () => ({
   providerId: "fake",
   modelId: "fake-model",
@@ -148,13 +146,7 @@ beforeEach(() => {
     updatedAt: 0,
     updatedBy: "t",
   };
-  for (const fn of [
-    ...Object.values(h.store),
-    h.generate,
-    h.providerFactory,
-    h.parseTicket,
-    h.serverClose,
-  ]) {
+  for (const fn of [...Object.values(h.store), h.generate, h.providerFactory, h.serverClose]) {
     fn.mockReset();
   }
   h.store.insertWorkerSession.mockResolvedValue("sess-1");
@@ -305,8 +297,7 @@ test("[llm-worker] falls back to a neutral signal when upstream context is unava
   assertEquals(JSON.parse(note.signalSnapshot), { symbol: "AAPL", contextHash: "hash" });
 });
 
-test("[llm-worker] serves status and delegates ticket parsing", async () => {
-  h.parseTicket.mockResolvedValue(new Response("parsed", { status: 201 }));
+test("[llm-worker] serves status and no longer hosts ticket parsing", async () => {
   await runWorker({ LLM_WORKER_IDLE_TIMEOUT_SECONDS: "1" });
   assert(h.handler);
 
@@ -317,6 +308,6 @@ test("[llm-worker] serves status and delegates ticket parsing", async () => {
   assertEquals(body.provider, "fake");
 
   const parsed = await h.handler(new Request("http://w/parse-ticket", { method: "POST" }));
-  assertEquals(parsed.status, 201);
-  assertEquals(h.parseTicket.mock.calls.length, 1);
+  const parsedBody = await parsed.json();
+  assertEquals(parsedBody.service, "llm-worker");
 });

@@ -201,3 +201,20 @@ test("handleParseTicket, rejects invalid JSON body with 400", async () => {
   const res = await handleParseTicket(req, { provider: makeProvider() });
   assertEquals(res.status, 400);
 });
+
+test("handleParseTicket, a provider that never answers yields 504 llm_timeout", async () => {
+  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+    provider: makeProvider({ generate: () => new Promise(() => {}) }),
+    abortMs: 20,
+  });
+  assertEquals(res.status, 504);
+  assertEquals((await res.json()).error, "llm_timeout");
+});
+
+test("handleParseTicket, a throwing provider yields 503 llm_generate_failed", async () => {
+  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+    provider: makeProvider({ generate: () => Promise.reject(new Error("boom")) }),
+  });
+  assertEquals(res.status, 503);
+  assertEquals((await res.json()).error, "llm_generate_failed");
+});

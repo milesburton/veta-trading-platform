@@ -1,12 +1,14 @@
 import { CORS_HEADERS } from "#veta/http";
 
 const POST_TIMEOUT_MS = 15_000;
+export const LONG_POST_TIMEOUT_MS = 60_000;
 const GET_PUT_TIMEOUT_MS = 8_000;
 
 export async function proxyPost(
   internalUrl: string,
   req: Request,
-  presetBody?: string
+  presetBody?: string,
+  timeoutMs: number = POST_TIMEOUT_MS
 ): Promise<Response> {
   try {
     const body = presetBody ?? (await req.text());
@@ -14,7 +16,7 @@ export async function proxyPost(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
-      signal: AbortSignal.timeout(POST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const resBody = await res.arrayBuffer();
     const headers: Record<string, string> = {

@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEOUT_MS } from "./parse-ticket-provider.ts";
 import { ParseTicketRequestSchema, QuickTradeIntentSchema } from "./parse-ticket-schema.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 
@@ -66,6 +67,16 @@ export interface ParseTicketDeps {
   abortMs?: number;
 }
 
+class GenerateTimeoutError extends Error {}
+
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new GenerateTimeoutError()), ms);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+}
+
 export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Promise<Response> {
   let bodyJson: unknown;
   try {
@@ -88,9 +99,13 @@ export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Pr
 
   let responseText: string;
   try {
-    const response = await deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT);
+    const response = await withTimeout(
+      deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT),
+      deps.abortMs ?? DEFAULT_TIMEOUT_MS
+    );
     responseText = response.text;
-  } catch {
+  } catch (err) {
+    if (err instanceof GenerateTimeoutError) return jsonResponse({ error: "llm_timeout" }, 504);
     return jsonResponse({ error: "llm_generate_failed" }, 503);
   }
 
