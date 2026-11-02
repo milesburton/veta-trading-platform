@@ -68,6 +68,7 @@ jobs:
       docs: ${{ fromJSON(steps.filter.outputs.outputs).docs }}
       electron: ${{ fromJSON(steps.filter.outputs.outputs).electron }}
       fallow: ${{ fromJSON(steps.filter.outputs.outputs).fallow }}
+      frontend: ${{ fromJSON(steps.filter.outputs.outputs).frontend }}
       prometheus_rules: ${{ fromJSON(steps.filter.outputs.outputs).prometheus_rules }}
     steps:
       - uses: actions/checkout@v5
@@ -100,6 +101,12 @@ jobs:
                 - 'backend/**'
                 - 'frontend/**'
                 - 'shared/**'
+                - '.github/workflows/ci.yml'
+              frontend:
+                - 'frontend/**'
+                - 'shared/**'
+                - 'package.json'
+                - 'package-lock.json'
                 - '.github/workflows/ci.yml'
               prometheus_rules:
                 - 'observability/prometheus-rules.yml'
@@ -188,16 +195,20 @@ jobs:
   frontend:
     name: Frontend lint & type-check
     runs-on: ubuntu-latest
+    needs: changes
     permissions:
       contents: write
     outputs:
       frontend-coverage: ${{ steps.frontend_coverage.outputs.value }}
+    env:
+      RUN_FRONTEND: ${{ github.ref == 'refs/heads/main' || needs.changes.outputs.frontend == 'true' }}
     steps:
       - uses: actions/checkout@v5
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Vite+
+        if: env.RUN_FRONTEND == 'true'
         uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
@@ -208,10 +219,12 @@ jobs:
               args: ['--frozen-lockfile']
 
       - name: Lint and format check
+        if: env.RUN_FRONTEND == 'true'
         working-directory: frontend
         run: npm run lint
 
       - name: TypeScript type-check
+        if: env.RUN_FRONTEND == 'true'
         working-directory: frontend
         run: npm run typecheck
 
@@ -233,6 +246,7 @@ jobs:
           echo "No private IPs in public docs."
 
       - name: Vitest unit tests with coverage
+        if: env.RUN_FRONTEND == 'true'
         working-directory: frontend
         run: |
           npm run test:coverage 2>&1 | tee /tmp/frontend-test-output.txt
@@ -240,13 +254,13 @@ jobs:
           echo "FRONTEND_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
 
       - name: Generate frontend test badge
-        if: github.ref == 'refs/heads/main'
+        if: env.RUN_FRONTEND == 'true' && (github.ref == 'refs/heads/main')
         run: |
           COUNT="${FRONTEND_TESTS_PASSED:-0}"
           echo "{\"schemaVersion\":1,\"label\":\"frontend tests\",\"message\":\"${COUNT} passed\",\"color\":\"brightgreen\"}" > docs/badges/frontend-tests.json
 
       - name: Upload frontend coverage
-        if: github.ref == 'refs/heads/main'
+        if: env.RUN_FRONTEND == 'true' && (github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v6
         with:
           name: frontend-coverage
@@ -254,6 +268,7 @@ jobs:
           retention-days: 14
 
       - name: Extract frontend line coverage
+        if: env.RUN_FRONTEND == 'true'
         id: frontend_coverage
         run: |
           if [ -f frontend/coverage/coverage-summary.json ]; then
@@ -262,6 +277,7 @@ jobs:
           fi
 
       - name: Enforce frontend coverage threshold (>=80%)
+        if: env.RUN_FRONTEND == 'true'
         run: |
           python3 - <<'PY'
           import json
@@ -293,7 +309,7 @@ jobs:
           PY
 
       - name: Commit frontend test badge
-        if: github.ref == 'refs/heads/main'
+        if: env.RUN_FRONTEND == 'true' && (github.ref == 'refs/heads/main')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -685,7 +701,7 @@ jobs:
   playwright-ui:
     name: Playwright UI tests (${{ matrix.shard }})
     runs-on: ubuntu-24.04
-    needs: [frontend]
+    needs: [frontend, changes]
     strategy:
       fail-fast: false
       matrix:
@@ -696,12 +712,15 @@ jobs:
             artifact_suffix: 2-2
     permissions:
       contents: read
+    env:
+      RUN_FRONTEND: ${{ github.ref == 'refs/heads/main' || needs.changes.outputs.frontend == 'true' }}
     steps:
       - uses: actions/checkout@v5
         with:
           token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Vite+
+        if: env.RUN_FRONTEND == 'true'
         uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
@@ -712,6 +731,7 @@ jobs:
               args: ['--frozen-lockfile']
 
       - name: Cache Playwright browsers
+        if: env.RUN_FRONTEND == 'true'
         uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
@@ -720,10 +740,12 @@ jobs:
             playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
+        if: env.RUN_FRONTEND == 'true'
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright UI tests (headless)
+        if: env.RUN_FRONTEND == 'true'
         id: run_playwright
         working-directory: frontend
         env:
@@ -735,13 +757,13 @@ jobs:
           echo "passed=${PASSED}" >> "$GITHUB_OUTPUT"
 
       - name: Save shard test count
-        if: github.ref == 'refs/heads/main'
+        if: env.RUN_FRONTEND == 'true' && (github.ref == 'refs/heads/main')
         run: |
           mkdir -p /tmp/e2e-count
           printf '%s\n' "${{ steps.run_playwright.outputs.passed }}" > /tmp/e2e-count/passed.txt
 
       - name: Upload shard test count
-        if: github.ref == 'refs/heads/main'
+        if: env.RUN_FRONTEND == 'true' && (github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v6
         with:
           name: e2e-count-${{ matrix.artifact_suffix }}
@@ -749,7 +771,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Playwright report on failure
-        if: failure()
+        if: env.RUN_FRONTEND == 'true' && (failure())
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-${{ matrix.artifact_suffix }}
@@ -911,8 +933,8 @@ jobs:
   pr-screenshots:
     name: PR screenshot diff
     runs-on: ubuntu-24.04
-    needs: [frontend]
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: [frontend, changes]
+    if: needs.changes.outputs.frontend == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: write
@@ -1024,15 +1046,18 @@ jobs:
   pr-visual-anomalies:
     name: PR visual anomalies
     runs-on: ubuntu-24.04
-    needs: [frontend]
+    needs: [frontend, changes]
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: write
+    env:
+      RUN_FRONTEND: ${{ github.ref == 'refs/heads/main' || needs.changes.outputs.frontend == 'true' }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Setup Vite+
+        if: env.RUN_FRONTEND == 'true'
         uses: voidzero-dev/setup-vp@6a033122543ee100d01838245fe74a26a038da6d
         with:
           node-version: "24"
@@ -1043,6 +1068,7 @@ jobs:
               args: ['--frozen-lockfile']
 
       - name: Cache Playwright browsers
+        if: env.RUN_FRONTEND == 'true'
         uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
@@ -1051,16 +1077,19 @@ jobs:
             playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
+        if: env.RUN_FRONTEND == 'true'
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
       - name: Run visual anomaly checks
+        if: env.RUN_FRONTEND == 'true'
         working-directory: frontend
         run: npx playwright test tests/visual-anomalies.spec.ts --reporter=list
         env:
           CI: true
 
       - name: Build comment body
+        if: env.RUN_FRONTEND == 'true'
         id: body
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -1094,7 +1123,7 @@ jobs:
           } >>"$GITHUB_OUTPUT"
 
       - name: Upload report
-        if: always()
+        if: env.RUN_FRONTEND == 'true' && (always())
         uses: actions/upload-artifact@v6
         with:
           name: pr-visual-anomalies-${{ github.event.pull_request.number }}
@@ -1102,6 +1131,7 @@ jobs:
           retention-days: 14
 
       - name: Find existing comment
+        if: env.RUN_FRONTEND == 'true'
         id: find-comment
         uses: peter-evans/find-comment@v3
         with:
@@ -1110,6 +1140,7 @@ jobs:
           body-includes: "<!-- pr-visual-anomalies-bot -->"
 
       - name: Upsert PR comment
+        if: env.RUN_FRONTEND == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
@@ -1118,6 +1149,7 @@ jobs:
           edit-mode: replace
 
       - name: Enforce clean visual anomaly report
+        if: env.RUN_FRONTEND == 'true'
         run: |
           REPORT=docs/visual-anomalies/report.json
           if [ ! -f "$REPORT" ]; then
