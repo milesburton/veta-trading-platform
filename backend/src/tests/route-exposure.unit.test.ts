@@ -84,8 +84,16 @@ function generate(): string {
   ].join("\n");
 }
 
-const embed = (doc: string, body: string): string =>
-  `${doc.slice(0, doc.indexOf(START) + START.length)}\n\n${body}\n\n${doc.slice(doc.indexOf(END))}`;
+const embed = (doc: string, body: string): string => {
+  const start = doc.indexOf(START);
+  const end = doc.indexOf(END);
+  assertEquals(
+    start >= 0 && end > start,
+    true,
+    "route-exposure.md is missing its START/END markers"
+  );
+  return `${doc.slice(0, start + START.length)}\n\n${body}\n\n${doc.slice(end)}`;
+};
 
 test("[exposure] the router inventory is found in compose.prod.yml", () => {
   assertEquals(ROUTERS.length >= MIN_ROUTERS, true);

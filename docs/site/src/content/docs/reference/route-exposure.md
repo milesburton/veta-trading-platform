@@ -3,8 +3,9 @@ title: Route exposure
 description: Which routes are reachable from the internet and which stay on the internal network, generated from the production compose file.
 ---
 
-The platform has one public entry point, the gateway, served through the edge proxy and the
-server's Traefik. Every other service is reachable only on the internal Docker network.
+The platform exposes three services publicly through the edge proxy and the server's Traefik: the
+frontend, the gateway (which also serves the `/health` router) and the FIX gateway. Every other
+service is reachable only on the internal Docker network.
 
 A router is public when its container sets `traefik.enable=true` and the router uses the
 `websecure` entrypoint, the TLS entrypoint that the edge proxy forwards to. A container with
