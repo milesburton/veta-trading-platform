@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 import { CORS_HEADERS } from "#veta/http";
 import {
   type LoadgenAnnouncement,
@@ -25,7 +24,6 @@ export function parseAnnouncement(body: unknown): LoadgenAnnouncement | null {
   return { event: b.event as LoadgenEvent, runner: b.runner, note };
 }
 
-// fallow-ignore-next-line unused-export
 export async function handleLoadgenAnnounceRoute(
   req: Request,
   path: string,

@@ -32,7 +32,7 @@ export interface OptionQuoteResponse {
   computedAt: number; // unix ms
 }
 
-export interface ScenarioShock {
+interface ScenarioShock {
   spotPct: number; // e.g. -0.10 = -10%
   volPct: number; // e.g.  0.20 = vol +20pp
   timeDays: number; // e.g. 7 = 7 days elapsed
@@ -81,7 +81,7 @@ export interface ScenarioResponse {
 export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
 
 /** @deprecated Use string[] in Recommendation.reasons, kept only for type compat. */
-export type SignalReason =
+type SignalReason =
   | "DEEP_ITM"
   | "DEEP_OTM"
   | "ATM_HIGH_VOL"

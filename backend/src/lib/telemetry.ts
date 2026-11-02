@@ -368,7 +368,6 @@ export async function withExtractedContext<T>(
   }
 }
 
-// fallow-ignore-next-line unused-export
 export function __setOtelApiLoaderForTests(loader: (() => Promise<OTelApiLike>) | null): void {
   otelApiLoader = loader;
   tracerCache = null;
@@ -378,7 +377,6 @@ export function __setOtelApiLoaderForTests(loader: (() => Promise<OTelApiLike>) 
   processMetricsHandle = null;
 }
 
-// fallow-ignore-next-line unused-export
 export function __resetTelemetryForTests(): void {
   otelApiLoader = null;
   tracerCache = null;

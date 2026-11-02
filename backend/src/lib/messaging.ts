@@ -60,7 +60,6 @@ function maxInFlightFromEnv(): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_MAX_IN_FLIGHT;
 }
 
-// fallow-ignore-next-line unused-type
 export interface KafkaFactoryLike {
   producer(): Producer;
   consumer(config: { groupId: string }): Consumer;
@@ -418,7 +417,7 @@ export function createConsumer(
   });
 }
 
-export interface TopicBinding<T> {
+interface TopicBinding<T> {
   topic: string;
   schema: z.ZodType<T>;
   handler(value: T): Promise<void> | void;
@@ -479,7 +478,6 @@ export function createTypedConsumer(
   });
 }
 
-// fallow-ignore-next-line unused-export
 export function __setMessagingTestHooks(
   hooks: {
     kafkaFactory?: KafkaFactory;

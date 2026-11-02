@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ScenarioSpecSchema = z.object({
+const ScenarioSpecSchema = z.object({
   seed: z.number().int(),
   symbol: z.string().min(1).max(16),
   side: z.enum(["BUY", "SELL"]),
@@ -16,7 +16,7 @@ export const ScenarioSpecSchema = z.object({
     .optional(),
 });
 
-export const ScenarioExpectedSchema = z.object({
+const ScenarioExpectedSchema = z.object({
   fillCount: z.number().int().nonnegative().optional(),
   totalFilled: z.number().int().nonnegative().optional(),
   avgFillPriceBps: z.number().optional(),
@@ -44,5 +44,5 @@ export const ScenarioUpdateSchema = z.object({
   expected: ScenarioExpectedSchema.nullable().optional(),
 });
 
-export type ScenarioCreateInput = z.infer<typeof ScenarioCreateSchema>;
-export type ScenarioUpdateInput = z.infer<typeof ScenarioUpdateSchema>;
+type ScenarioCreateInput = z.infer<typeof ScenarioCreateSchema>;
+type ScenarioUpdateInput = z.infer<typeof ScenarioUpdateSchema>;

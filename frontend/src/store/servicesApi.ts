@@ -126,7 +126,7 @@ const ServicesStatusSchema = z.object({
 });
 
 export type ServiceStatusEntry = z.infer<typeof ServiceStatusEntrySchema>;
-export type ServicesStatus = z.infer<typeof ServicesStatusSchema>;
+type ServicesStatus = z.infer<typeof ServicesStatusSchema>;
 
 const STATE_BY_STATUS: Record<ServiceStatusEntry["status"], ServiceState> = {
   ok: "ok",
@@ -259,14 +259,14 @@ interface DataDepth {
   symbols: DataDepthSymbol[];
 }
 
-export interface PlatformStatsLastCritical {
+interface PlatformStatsLastCritical {
   severity: string;
   source: string;
   message: string;
   ts: number;
 }
 
-export interface PlatformStatsSnapshot {
+interface PlatformStatsSnapshot {
   windowStart: number;
   windowEnd: number;
   alertsBySeverity: Record<string, number>;
@@ -278,7 +278,7 @@ export interface PlatformStatsSnapshot {
   lastDeploySha: string | null;
 }
 
-export interface PlatformStatus {
+interface PlatformStatus {
   version: string;
   environment: string;
   startedAt: number;

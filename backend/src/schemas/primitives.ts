@@ -39,14 +39,14 @@ export const DeskSchema = z.enum([
   "commodities",
 ]) satisfies z.ZodType<Desk>;
 
-export const AssetClassSchema = z.enum([
+const AssetClassSchema = z.enum([
   "equity",
   "fx",
   "commodity",
   "bond",
 ]) satisfies z.ZodType<AssetClass>;
 
-export const OrderStatusSchema = z.enum([
+const OrderStatusSchema = z.enum([
   "pending",
   "working",
   "filled",
@@ -62,20 +62,20 @@ export const LiquidityFlagSchema = z.enum([
 ]) satisfies z.ZodType<LiquidityFlag>;
 
 export const OrderIdSchema = z.string().min(1);
-export type OrderId = z.infer<typeof OrderIdSchema>;
+type OrderId = z.infer<typeof OrderIdSchema>;
 
 export const ChildOrderIdSchema = z.string().min(1);
-export type ChildOrderId = z.infer<typeof ChildOrderIdSchema>;
+type ChildOrderId = z.infer<typeof ChildOrderIdSchema>;
 
 export const UserIdSchema = z.string().min(1);
-export type UserId = z.infer<typeof UserIdSchema>;
+type UserId = z.infer<typeof UserIdSchema>;
 
 export const ClientOrderIdSchema = z.string().min(1);
-export type ClientOrderId = z.infer<typeof ClientOrderIdSchema>;
+type ClientOrderId = z.infer<typeof ClientOrderIdSchema>;
 
 export const SymbolSchema = z.string().min(1).max(32);
-export type Symbol = z.infer<typeof SymbolSchema>;
+type Symbol = z.infer<typeof SymbolSchema>;
 
-export const PositiveNumberSchema = z.number().positive().finite();
-export const NonNegativeNumberSchema = z.number().nonnegative().finite();
+const PositiveNumberSchema = z.number().positive().finite();
+const NonNegativeNumberSchema = z.number().nonnegative().finite();
 export const TimestampMsSchema = z.number().int().nonnegative();

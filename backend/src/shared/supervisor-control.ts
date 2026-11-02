@@ -7,7 +7,7 @@ function supervisordConf(): string {
 
 export type SupervisorctlRunner = (args: string[]) => Promise<{ ok: boolean; output: string }>;
 
-export const defaultSupervisorctlRunner: SupervisorctlRunner = async (args) => {
+const defaultSupervisorctlRunner: SupervisorctlRunner = async (args) => {
   try {
     const result = await runCommand("supervisorctl", ["-c", supervisordConf(), ...args]);
     const stdout = result.stdout.trim();

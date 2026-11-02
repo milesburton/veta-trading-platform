@@ -1,6 +1,6 @@
 export type LlmJobStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 
-export type AdvisoryStatus = "not-requested" | "queued" | "running" | "ready" | "failed" | "stale";
+type AdvisoryStatus = "not-requested" | "queued" | "running" | "ready" | "failed" | "stale";
 
 export type LlmSubsystemState = "disabled" | "armed" | "active" | "cooldown" | "error";
 

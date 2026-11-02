@@ -131,4 +131,4 @@ export const ladderTest = base.extend<LadderFixtures>({
   },
 });
 
-export { expect, PRICES, DEFAULT_READY_BODY };
+export { expect, PRICES };

@@ -1,7 +1,7 @@
 import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticketTypes";
 
 export const SPREAD_WARNING_THRESHOLD_BPS = 50;
-export const SPREAD_ERROR_THRESHOLD_BPS = 200;
+const SPREAD_ERROR_THRESHOLD_BPS = 200;
 
 export function runSpreadCheck(ctx: TicketContext): Diagnostic[] {
   const { spreadBps, instrument } = ctx;

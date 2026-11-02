@@ -175,4 +175,4 @@ export async function handleTicketAttachmentsRoute(
   );
 }
 
-export const _internalForTests = { sha256Hex, sanitizeFileName, readMinioConfig };
+const _internalForTests = { sha256Hex, sanitizeFileName, readMinioConfig };

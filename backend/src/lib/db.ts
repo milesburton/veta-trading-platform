@@ -106,4 +106,4 @@ export const riskPool = lazyExport("RISK", 3, true);
 export const scenariosPool = lazyExport("SCENARIOS", 4, true);
 export const marketSimPool = lazyExport("MARKET_SIM", 2, true);
 
-export const _SPECS = SPECS;
+const _SPECS = SPECS;

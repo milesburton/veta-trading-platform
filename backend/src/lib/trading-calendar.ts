@@ -97,11 +97,11 @@ export function resolveSession(phase: MarketPhase, nextTransitionAt?: number): S
   }
 }
 
-export function isStrategyAllowedInSession(session: SessionState, strategy: Strategy): boolean {
+function isStrategyAllowedInSession(session: SessionState, strategy: Strategy): boolean {
   return session.supportedStrategies.includes(strategy);
 }
 
-export function isAuction(phase: MarketPhase): boolean {
+function isAuction(phase: MarketPhase): boolean {
   return phase === "OPENING_AUCTION" || phase === "CLOSING_AUCTION";
 }
 

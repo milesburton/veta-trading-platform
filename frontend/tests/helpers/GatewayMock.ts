@@ -67,7 +67,7 @@ export interface GatewayOutbound {
   payload: Record<string, unknown>;
 }
 
-export interface GatewayInbound {
+interface GatewayInbound {
   event: string;
   data: Record<string, unknown>;
 }

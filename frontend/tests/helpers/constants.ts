@@ -34,7 +34,7 @@ export {
  * Standardised gateway-ready response body used by GatewayMock and
  * individual spec files that mock the /api/gateway/ready endpoint.
  */
-export function buildReadyBody(extraServices?: Record<string, boolean>): Record<string, unknown> {
+function buildReadyBody(extraServices?: Record<string, boolean>): Record<string, unknown> {
   return {
     ready: true,
     startedAt: Date.now() - 300_000,
@@ -109,7 +109,7 @@ export const PRICES: Record<string, number> = {
 /**
  * Default volumes used alongside PRICES in market-update mocks.
  */
-export const VOLUMES: Record<string, number> = Object.fromEntries(
+const VOLUMES: Record<string, number> = Object.fromEntries(
   Object.keys(PRICES).map((s) => [s, 1_000])
 );
 
@@ -118,7 +118,7 @@ export const VOLUMES: Record<string, number> = Object.fromEntries(
 /**
  * Sample archetype identifiers used in registration and auth-flow tests.
  */
-export const SAMPLE_ARCHETYPE_IDS = {
+const SAMPLE_ARCHETYPE_IDS = {
   trader: "archetype-trader-001",
   analyst: "archetype-analyst-001",
   admin: "archetype-admin-001",

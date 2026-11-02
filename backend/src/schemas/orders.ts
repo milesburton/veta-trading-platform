@@ -83,7 +83,7 @@ export const OrderSubmittedSchema = z.object({
   bondSpec: BondSpecSchema.optional(),
   optionSpec: OptionSpecSchema.optional(),
 });
-export type OrderSubmitted = z.infer<typeof OrderSubmittedSchema>;
+type OrderSubmitted = z.infer<typeof OrderSubmittedSchema>;
 
 export const RoutedOrderSchema = OrderSubmittedSchema.extend({
   routedAt: TimestampMsSchema,
@@ -150,7 +150,7 @@ export const FillEventSchema = z.object({
 });
 export type FillEvent = z.infer<typeof FillEventSchema>;
 
-export const OrderExpiredSchema = z.object({
+const OrderExpiredSchema = z.object({
   orderId: OrderIdSchema.optional(),
   clientOrderId: ClientOrderIdSchema.optional(),
   userId: UserIdSchema.optional(),
@@ -164,7 +164,7 @@ export const OrderExpiredSchema = z.object({
   reason: z.string().optional(),
   ts: TimestampMsSchema,
 });
-export type OrderExpired = z.infer<typeof OrderExpiredSchema>;
+type OrderExpired = z.infer<typeof OrderExpiredSchema>;
 
 export const OrderRejectedSchema = z.object({
   orderId: OrderIdSchema.optional(),
@@ -173,7 +173,7 @@ export const OrderRejectedSchema = z.object({
   reason: z.string(),
   ts: TimestampMsSchema,
 });
-export type OrderRejected = z.infer<typeof OrderRejectedSchema>;
+type OrderRejected = z.infer<typeof OrderRejectedSchema>;
 
 export const OrderCancelledSchema = z.object({
   orderId: OrderIdSchema.optional(),
@@ -187,7 +187,7 @@ export const OrderCancelledSchema = z.object({
   issuedByRole: z.string().optional(),
   ts: TimestampMsSchema,
 });
-export type OrderCancelled = z.infer<typeof OrderCancelledSchema>;
+type OrderCancelled = z.infer<typeof OrderCancelledSchema>;
 
 export const OrderKillCommandSchema = z.object({
   scope: KillScopeSchema,
@@ -214,14 +214,14 @@ export const OrderKillAuditSchema = OrderKillCommandSchema.extend({
   cancelledCount: z.number().int().nonnegative(),
   cancelledIds: z.array(z.string()),
 });
-export type OrderKillAudit = z.infer<typeof OrderKillAuditSchema>;
+type OrderKillAudit = z.infer<typeof OrderKillAuditSchema>;
 
 export const OrderResumeAuditSchema = OrderResumeCommandSchema.extend({
   resumeAt: TimestampMsSchema,
 });
-export type OrderResumeAudit = z.infer<typeof OrderResumeAuditSchema>;
+type OrderResumeAudit = z.infer<typeof OrderResumeAuditSchema>;
 
-export const OrderResumedSchema = z.object({
+const OrderResumedSchema = z.object({
   scope: KillScopeSchema,
   scopeValue: z.string().optional(),
   targetUserId: UserIdSchema.optional(),
@@ -229,15 +229,15 @@ export const OrderResumedSchema = z.object({
   issuedByRole: z.string().min(1),
   ts: TimestampMsSchema,
 });
-export type OrderResumed = z.infer<typeof OrderResumedSchema>;
+type OrderResumed = z.infer<typeof OrderResumedSchema>;
 
-export const OrderHoldCommandSchema = z.object({
+const OrderHoldCommandSchema = z.object({
   clientOrderId: ClientOrderIdSchema,
   issuedBy: z.string().min(1),
   issuedByRole: z.string().min(1),
   ts: TimestampMsSchema,
 });
-export type OrderHoldCommand = z.infer<typeof OrderHoldCommandSchema>;
+type OrderHoldCommand = z.infer<typeof OrderHoldCommandSchema>;
 
-export const OrderFiRfqSchema = RoutedOrderSchema;
-export type OrderFiRfq = z.infer<typeof OrderFiRfqSchema>;
+const OrderFiRfqSchema = RoutedOrderSchema;
+type OrderFiRfq = z.infer<typeof OrderFiRfqSchema>;

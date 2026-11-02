@@ -1,11 +1,11 @@
 import type { Locator, Page } from "@playwright/test";
 
-export interface ErrorMarker {
+interface ErrorMarker {
   label: string;
   text: RegExp;
 }
 
-export const ERROR_MARKERS: ErrorMarker[] = [
+const ERROR_MARKERS: ErrorMarker[] = [
   { label: "flexlayout render error", text: /Error rendering component/i },
   { label: "app error boundary", text: /Something went wrong/i },
   { label: "news-aggregator unreachable", text: /Could not reach news-aggregator/i },

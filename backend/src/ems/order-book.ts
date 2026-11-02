@@ -129,6 +129,6 @@ export function bestAsk(book: OrderBook): number | undefined {
   return book.asks[0]?.price;
 }
 
-export function depthAtPrice(side: RestingOrder[], price: number): number {
+function depthAtPrice(side: RestingOrder[], price: number): number {
   return side.filter((o) => o.price === price).reduce((sum, o) => sum + o.remainingQty, 0);
 }

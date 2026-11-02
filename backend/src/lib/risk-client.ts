@@ -1,7 +1,7 @@
 import { logger } from "#veta/logger";
 import { type CheckRequest, type CheckResult, CheckResultSchema } from "#veta/schemas/risk";
 
-export const RISK_UNAVAILABLE_REASON =
+const RISK_UNAVAILABLE_REASON =
   "Risk engine unavailable, all orders are blocked until the risk service is restored";
 
 const CHECK_TIMEOUT_MS = 3_000;

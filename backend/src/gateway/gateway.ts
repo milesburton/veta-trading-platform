@@ -5,7 +5,6 @@ import { logger, registerLogSink } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
-// fallow-ignore-file unused-file
 import { serveDir } from "../lib/static-files.ts";
 import { notifyOperators, sendDailySummary } from "../notifications/discord-notifier.ts";
 import { getTicketingHealth, startTicketingHealthMonitor } from "../notifications/ticketing.ts";

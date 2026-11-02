@@ -10,7 +10,7 @@ export const VENUES = [
 
 export type VenueMIC = (typeof VENUES)[number]["mic"];
 
-export const VENUE_SPREAD_MULT: Record<string, number> = {
+const VENUE_SPREAD_MULT: Record<string, number> = {
   XNAS: 1.0,
   ARCX: 1.08,
   BATS: 0.95,
@@ -34,12 +34,12 @@ export const VALID_VENUES = new Set(Object.keys(VENUE_SPREAD_MULT));
 
 export const PARTICIPATION_CAP_DEFAULT = 0.2;
 export const IMPACT_PER_1000_DEFAULT = 1.0;
-export const UNFILLED_IMPACT_COEFF_BPS_DEFAULT = 10;
-export const COMMISSION_PER_SHARE = 0.005;
+const UNFILLED_IMPACT_COEFF_BPS_DEFAULT = 10;
+const COMMISSION_PER_SHARE = 0.005;
 export const SEC_FEE_RATE = 0.000_008;
 export const FINRA_TAF_PER_SHARE = 0.000_119;
-export const FINRA_TAF_CAP_USD = 5.95;
-export const MAKER_REBATE_PER_SHARE = -0.002;
+const FINRA_TAF_CAP_USD = 5.95;
+const MAKER_REBATE_PER_SHARE = -0.002;
 
 export function computeFill(
   qty: number,

@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 167,
-      "cases": 1853,
+      "files": 166,
+      "cases": 1849,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -168,7 +168,6 @@
         "vol-surface.unit.test.ts": 2,
         "volatility-estimator.unit.test.ts": 9,
         "weight-store.unit.test.ts": 3,
-        "yield-curve-store.unit.test.ts": 4,
         "yield-curve.unit.test.ts": 6,
         "zod-helpers.unit.test.ts": 9
       }

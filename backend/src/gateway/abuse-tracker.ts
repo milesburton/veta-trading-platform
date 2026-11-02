@@ -15,7 +15,7 @@ export interface AbuseConfig {
   userBackoffMs: number;
 }
 
-export const DEFAULT_ABUSE_CONFIG: AbuseConfig = {
+const DEFAULT_ABUSE_CONFIG: AbuseConfig = {
   perSocketThreshold: ABUSE_PER_SOCKET_THRESHOLD,
   perSocketWindowMs: ABUSE_PER_SOCKET_WINDOW_MS,
   userForceCloseThreshold: ABUSE_USER_FORCE_CLOSE_THRESHOLD,
@@ -105,11 +105,6 @@ export class AbuseTracker {
   /** Free per-socket state on disconnect. */
   forgetSocket(socket: object): void {
     this.#socketStates.delete(socket);
-  }
-
-  /** Test helper: inspect user state. */
-  userStateFor(userId: string | null): UserState | undefined {
-    return this.#userStates.get(this.#userKey(userId));
   }
 
   #userKey(userId: string | null): string {
