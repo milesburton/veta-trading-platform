@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 169,
-      "cases": 1868,
+      "files": 170,
+      "cases": 1873,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -112,6 +112,7 @@
         "price-fan.unit.test.ts": 7,
         "privileged-audit.unit.test.ts": 9,
         "process-metrics.unit.test.ts": 4,
+        "prod-secrets-fail-closed.unit.test.ts": 5,
         "product-service.unit.test.ts": 9,
         "prompt-builder.unit.test.ts": 15,
         "proxy.unit.test.ts": 10,
