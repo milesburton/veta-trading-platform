@@ -2,8 +2,11 @@ name: Post-deploy probe
 
 # Runs after every push to main that changes something a Docker image is
 # built from. Images are published only when CI passes on that commit, so
-# it first waits for CI to finish (a CI failure or cancellation means no
-# new images, and the probe is skipped), then polls the gateway's /health endpoint until its reported
+# it first waits for the gateway's gated publish job (a failure, a
+# cancellation or a timeout means no new images, and the probe is skipped
+# with a warning rather than failed; the runner watchdog alerts when CI is
+# stuck). It does not wait for the whole CI run, because the homelab-only
+# Integration tests job does not gate publishing. It then polls the gateway's /health endpoint until its reported
 # commit SHA matches the merged commit (the server's 5-minute auto-pull
 # timer picks up the new commit and rolls out the new images), then runs
 # the synthetic probe against the public URL. Waiting for the SHA to go
@@ -101,26 +104,38 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           MAX_CI_WAIT_MIN: "40"
+          PUBLISH_JOB: "Publish gateway :latest (gated)"
         run: |
-          echo "Waiting for CI on ${GITHUB_SHA:0:7} (images are published only after CI passes)..."
+          echo "Waiting for '${PUBLISH_JOB}' on ${GITHUB_SHA:0:7}..."
           deadline=$(( $(date +%s) + MAX_CI_WAIT_MIN * 60 ))
           while [ "$(date +%s)" -lt "$deadline" ]; do
-            read -r status conclusion < <(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --event push \
-              --json status,conclusion --jq '.[0] | "\(.status // "missing") \(.conclusion // "none")"')
-            if [ "$status" = "completed" ]; then
-              if [ "$conclusion" = "success" ]; then
-                echo "deployable=true" >> "$GITHUB_OUTPUT"
-              else
-                echo "CI finished with '${conclusion}'; no new images were published, skipping the probe."
-                echo "deployable=false" >> "$GITHUB_OUTPUT"
+            run_id=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --event push \
+              --json databaseId --jq '.[0].databaseId // empty')
+            if [ -n "$run_id" ]; then
+              read -r job_status job_conclusion run_status < <(gh run view "$run_id" --json status,jobs \
+                | jq -r --arg name "$PUBLISH_JOB" '[.jobs[] | select(.name == $name)][0] as $j | "\($j.status // "missing") \($j.conclusion // "none") \(.status)"')
+              if [ "$job_status" = "completed" ]; then
+                if [ "$job_conclusion" = "success" ]; then
+                  echo "deployable=true" >> "$GITHUB_OUTPUT"
+                else
+                  echo "'${PUBLISH_JOB}' finished with '${job_conclusion}'; no new images were published, skipping the probe."
+                  echo "deployable=false" >> "$GITHUB_OUTPUT"
+                fi
+                exit 0
               fi
-              exit 0
+              if [ "$job_status" = "missing" ] && [ "$run_status" = "completed" ]; then
+                echo "CI finished without running '${PUBLISH_JOB}'; skipping the probe."
+                echo "deployable=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "  '${PUBLISH_JOB}' is '${job_status}', waiting 30s..."
+            else
+              echo "  CI run for ${GITHUB_SHA:0:7} not found yet, waiting 30s..."
             fi
-            echo "  CI is '${status}', waiting 30s..."
             sleep 30
           done
-          echo "::error::CI for ${GITHUB_SHA:0:7} did not finish within ${MAX_CI_WAIT_MIN}m."
-          exit 1
+          echo "::warning::'${PUBLISH_JOB}' for ${GITHUB_SHA:0:7} did not finish within ${MAX_CI_WAIT_MIN}m; skipping the probe."
+          echo "deployable=false" >> "$GITHUB_OUTPUT"
 
       - name: Wait for the new commit to be live
         if: steps.ci.outputs.deployable != 'false'
