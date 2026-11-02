@@ -47,6 +47,15 @@ The metrics are `veta_postgres_backup_last_success_timestamp_seconds`,
 `veta_postgres_backup_last_status`, `veta_postgres_backup_last_size_bytes`
 and `veta_postgres_backup_files`.
 
+## Checking that it is running
+
+```bash
+docker ps -a --format '{{.Names}} {{.Status}}' | grep postgres-backup
+docker logs --tail 20 veta-postgres-backup
+```
+
+A healthy container stays up and logs one line per run. A container that shows `Restarting (0)` with no logs is not running the script. Check that `/opt/stacks/veta/scripts/postgres-backup.sh` is a regular file. If it is an empty directory the script was never synced, see [Troubleshooting the auto-pull deploy](../../../development/deployment/#troubleshooting-the-auto-pull-deploy). The `PostgresBackupStale` alert fires after 26 hours without a verified backup, so this state raises an alert rather than passing silently.
+
 ## Not yet covered
 
 - Copying backups off the host automatically. Today this relies on where
