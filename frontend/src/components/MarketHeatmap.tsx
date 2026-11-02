@@ -138,7 +138,7 @@ export function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
 // the same synthetic "+N" tile collapseSmallTiles already produces for
 // tiles that are too small to render individually.
 const MAX_TILES_PER_SECTOR = 150;
-export const DRILLDOWN_TILE_CAP = 400;
+const DRILLDOWN_TILE_CAP = 400;
 
 export function capItemsPerSector(
   items: TileData[],

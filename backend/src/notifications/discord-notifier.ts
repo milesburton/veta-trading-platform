@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 import { lookupPanel, renderGrafanaPanel } from "./grafana-renderer.ts";
 
 const SEVERITY_EMOJI: Record<string, string> = {
@@ -120,8 +119,6 @@ export interface UserTicketReport {
   userAgent?: string;
   attachments?: string[];
 }
-
-export type BugReport = UserTicketReport;
 
 const TITLE_MAX = 120;
 const DESCRIPTION_MAX = 2_000;

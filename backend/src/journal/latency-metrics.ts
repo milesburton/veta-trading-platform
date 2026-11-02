@@ -21,13 +21,13 @@ export interface LatencyMetrics {
   };
 }
 
-export function percentile(sorted: number[], p: number): number {
+function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
   const idx = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
   return sorted[Math.max(0, idx)];
 }
 
-export function summarise(samples: number[]): StageStats {
+function summarise(samples: number[]): StageStats {
   if (samples.length === 0) {
     return { count: 0, p50: 0, p95: 0, p99: 0, max: 0 };
   }

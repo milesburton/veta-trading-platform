@@ -11,7 +11,7 @@ export interface BugEvent {
   ts: number;
 }
 
-export interface ServiceSnapshot {
+interface ServiceSnapshot {
   ts: number;
   up: number;
   total: number;

@@ -32,3 +32,4 @@ frontend/playwright-gate-report/
 .private-network-denylist
 coverage-tc/
 coverage-tc.lcov
+frontend/.npm-ci-lock.sha256

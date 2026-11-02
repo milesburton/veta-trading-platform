@@ -39,7 +39,7 @@ const MAX_AUTO_STOP_MS = 24 * 60 * 60 * 1000;
 const MAX_RATE_PER_SECOND = 1000;
 const TICK_INTERVAL_MS = 100;
 
-export const DEFAULT_STRATEGY_MIX: ReadonlyArray<{ strategy: string; weight: number }> = [
+const DEFAULT_STRATEGY_MIX: ReadonlyArray<{ strategy: string; weight: number }> = [
   { strategy: "LIMIT", weight: 30 },
   { strategy: "TWAP", weight: 20 },
   { strategy: "VWAP", weight: 15 },

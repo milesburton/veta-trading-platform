@@ -1,6 +1,6 @@
 {
   "name": "veta-trading-platform",
-  "version": "1.92.0",
+  "version": "1.92.1",
   "private": true,
   "description": "VETA Trading Platform, real-time market simulation with algorithmic trading strategies.",
   "scripts": {
@@ -78,7 +78,6 @@
     "#veta/schemas/risk": "./backend/src/schemas/risk.ts",
     "#veta/schemas/user": "./backend/src/schemas/user.ts",
     "#veta/schemas/news": "./backend/src/schemas/news.ts",
-    "#veta/types/orders": "./backend/src/types/orders.ts",
     "#veta/types/trade": "./backend/src/types/types.ts",
     "#veta/types/intelligence": "./backend/src/types/intelligence.ts",
     "#veta/types/llm-advisory": "./backend/src/types/llm-advisory.ts",
@@ -100,5 +99,8 @@
     "testcontainers": "^12.2.1",
     "typescript": "^7.0.2",
     "vite-plus": "1.4.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
   }
 }

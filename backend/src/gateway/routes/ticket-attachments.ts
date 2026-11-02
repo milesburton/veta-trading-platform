@@ -50,11 +50,6 @@ function toHex(buf: ArrayBuffer): string {
     .join("");
 }
 
-async function sha256Hex(data: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data));
-  return toHex(digest);
-}
-
 async function hmacSha256(key: ArrayBuffer | Uint8Array, data: string): Promise<ArrayBuffer> {
   const keyBytes = key instanceof Uint8Array ? key : new Uint8Array(key);
   const cryptoKey = await crypto.subtle.importKey(
@@ -174,5 +169,3 @@ export async function handleTicketAttachmentsRoute(
     200
   );
 }
-
-export const _internalForTests = { sha256Hex, sanitizeFileName, readMinioConfig };

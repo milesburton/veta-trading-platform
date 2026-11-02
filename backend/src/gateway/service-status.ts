@@ -74,11 +74,7 @@ function metaOf(result: ProbeResult): { version: string; meta: Record<string, un
   return { version: version === undefined ? "n/a" : String(version), meta };
 }
 
-export function toEntry(
-  spec: ServiceSpec,
-  result: ProbeResult,
-  checkedAt: number
-): ServiceStatusEntry {
+function toEntry(spec: ServiceSpec, result: ProbeResult, checkedAt: number): ServiceStatusEntry {
   return {
     id: spec.id,
     name: spec.displayName,
@@ -104,7 +100,7 @@ export async function pollServices(
   return targets.map(({ spec }, i) => toEntry(spec, results[i], checkedAt));
 }
 
-export function gatewayEntry(version: string, checkedAt: number): ServiceStatusEntry {
+function gatewayEntry(version: string, checkedAt: number): ServiceStatusEntry {
   return {
     id: "gateway",
     name: "Gateway",

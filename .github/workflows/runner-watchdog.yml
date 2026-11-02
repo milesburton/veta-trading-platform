@@ -1,0 +1,57 @@
+name: Runner watchdog
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  homelab-runner:
+    name: Homelab runner is picking up jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Find jobs stuck waiting for the homelab runner
+        id: stuck
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAX_QUEUED_MIN: "30"
+        run: |
+          set -euo pipefail
+          cutoff=$(( $(date +%s) - MAX_QUEUED_MIN * 60 ))
+          stuck=0
+          for status in queued in_progress; do
+            run_ids=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=${status}&per_page=50" --jq '.workflow_runs[].id')
+            for run_id in $run_ids; do
+              count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+                | jq --argjson cutoff "$cutoff" \
+                  '[.jobs[] | select(.status == "queued" and (.labels | index("homelab")) and (.created_at | fromdateiso8601) < $cutoff)] | length')
+              stuck=$(( stuck + count ))
+            done
+          done
+          echo "stuck=${stuck}" >> "$GITHUB_OUTPUT"
+          echo "${stuck} homelab job(s) queued for more than ${MAX_QUEUED_MIN} minutes."
+
+      - name: Alert Discord
+        if: steps.stuck.outputs.stuck != '0'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STUCK: ${{ steps.stuck.outputs.stuck }}
+          RUNNERS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runners
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set; skipping"
+          else
+            CONTENT="🚨 **Homelab CI runner** has ${STUCK} job(s) queued for over 30 minutes. The runner is probably offline.\n<${RUNNERS_URL}>"
+            PAYLOAD=$(jq -nc --arg c "$CONTENT" '{username:"VETA CI",content:$c,allowed_mentions:{parse:[]}}')
+            curl --fail-with-body --show-error --silent --retry 2 \
+              -X POST -H "Content-Type: application/json" \
+              -d "$PAYLOAD" \
+              "$DISCORD_WEBHOOK_URL"
+          fi
+          echo "::error::${STUCK} homelab job(s) have been queued for over 30 minutes."
+          exit 1

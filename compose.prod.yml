@@ -353,10 +353,9 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=false"
       - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
-      - "traefik.http.routers.fix-archive.entrypoints=websecure"
-      - "traefik.http.routers.fix-archive.tls=true"
+      - "traefik.http.routers.fix-archive.entrypoints=web"
       - "traefik.http.routers.fix-archive.middlewares=fix-archive-strip"
       - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
       - "traefik.http.routers.fix-archive.priority=10"

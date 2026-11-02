@@ -12,7 +12,8 @@
     "@veta/rate-limit",
     "jsr:@std",
     "@preact/signals-react-transform",
-    "vite-plugin-electron-renderer"
+    "vite-plugin-electron-renderer",
+    "husky"
   ],
   "dynamicallyLoaded": [
     "electron/preload.ts",
