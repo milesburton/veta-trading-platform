@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 168,
-      "cases": 1865,
+      "files": 169,
+      "cases": 1868,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -129,6 +129,7 @@
         "risk-engine-server.unit.test.ts": 16,
         "risk-schema.unit.test.ts": 20,
         "rng.test.ts": 9,
+        "route-exposure.unit.test.ts": 3,
         "runtime-config-store.test.ts": 13,
         "scenario-server.unit.test.ts": 6,
         "scenarios.diff.test.ts": 5,
