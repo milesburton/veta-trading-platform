@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.92.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.0...veta-trading-platform-v1.92.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **compose:** serve fix-archive only through the gateway, and test the production public service set ([#1020](https://github.com/milesburton/veta-trading-platform/issues/1020)) ([b532086](https://github.com/milesburton/veta-trading-platform/commit/b5320861e61d85fdfaa89a53bc7e7d602d4bab1c))
+* **deps:** force minimatch 11.0.1 or later in the root workspace ([3c37b6f](https://github.com/milesburton/veta-trading-platform/commit/3c37b6feba8cf6a72e13c4706179c92adab764a5))
+* **deps:** force minimatch 11.0.1 or later in the root workspace ([3340a6f](https://github.com/milesburton/veta-trading-platform/commit/3340a6f7c72dd8a44d27fb28fdd04b4205035df4))
+
 ## [1.92.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.91.1...veta-trading-platform-v1.92.0) (2026-11-01)
 
 
