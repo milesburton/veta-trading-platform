@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.1...veta-trading-platform-v1.92.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* **llm:** get natural-language quick trade working ([#1022](https://github.com/milesburton/veta-trading-platform/issues/1022)) ([d0cb15b](https://github.com/milesburton/veta-trading-platform/commit/d0cb15bbeba5a674dbe425291c06f5a75b0b354b))
+
 ## [1.92.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.0...veta-trading-platform-v1.92.1) (2026-11-02)
 
 
