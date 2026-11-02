@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.2...veta-trading-platform-v1.92.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* **deploy:** sync the postgres backup, health and disk monitor scripts to the host ([#1040](https://github.com/milesburton/veta-trading-platform/issues/1040)) ([0e5369b](https://github.com/milesburton/veta-trading-platform/commit/0e5369b9810758a7581cbbd7549ea6c91747ae5b))
+
 ## [1.92.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.1...veta-trading-platform-v1.92.2) (2026-11-02)
 
 
