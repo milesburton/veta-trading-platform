@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 import { CORS_HEADERS } from "#veta/http";
 import { recordGauge } from "#veta/telemetry";
 import { type GatewayContext, isResponse } from "../context.ts";
@@ -91,7 +90,6 @@ const METHOD_HANDLERS: Record<string, HandlerForMethod | undefined> = {
   GET: (_req, user) => handleGet(user.role),
 };
 
-// fallow-ignore-next-line unused-export
 export async function handleTelemetryRoute(
   req: Request,
   path: string,

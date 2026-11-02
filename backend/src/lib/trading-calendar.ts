@@ -97,14 +97,6 @@ export function resolveSession(phase: MarketPhase, nextTransitionAt?: number): S
   }
 }
 
-export function isStrategyAllowedInSession(session: SessionState, strategy: Strategy): boolean {
-  return session.supportedStrategies.includes(strategy);
-}
-
-export function isAuction(phase: MarketPhase): boolean {
-  return phase === "OPENING_AUCTION" || phase === "CLOSING_AUCTION";
-}
-
 export interface MarketHours {
   preOpenMinutes: number;
   openingAuctionMinutes: number;

@@ -169,7 +169,6 @@ export function serveFetch(
   return server;
 }
 
-// fallow-ignore-next-line unused-export
 export function serveJsonService(options: {
   port: number;
   service: string;

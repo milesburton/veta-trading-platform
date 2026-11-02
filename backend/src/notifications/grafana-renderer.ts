@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 const DEFAULT_GRAFANA_URL = "http://lgtm-grafana:3000/grafana";
 const RENDER_TIMEOUT_MS = 15_000;
 const MAX_PNG_BYTES = 6 * 1024 * 1024;

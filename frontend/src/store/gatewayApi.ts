@@ -83,7 +83,7 @@ const MarketHoursConfigSchema = z.object({
   }),
 });
 
-export interface UpdateMarketHoursRequest {
+interface UpdateMarketHoursRequest {
   assetClass?: MarketHoursAssetClass;
   allowOutOfHours: boolean;
 }
@@ -91,7 +91,7 @@ export interface UpdateMarketHoursRequest {
 export type BugCategory = "ui" | "data" | "auth" | "performance" | "other";
 export type TicketKind = "bug" | "feature" | "comment";
 
-export interface BugReportRequest {
+interface BugReportRequest {
   kind?: TicketKind;
   title: string;
   description: string;
@@ -100,13 +100,13 @@ export interface BugReportRequest {
   attachments?: string[];
 }
 
-export interface AttachmentPresignRequest {
+interface AttachmentPresignRequest {
   fileName: string;
   contentType: string;
   sizeBytes: number;
 }
 
-export interface AttachmentPresignResponse {
+interface AttachmentPresignResponse {
   postUrl: string;
   formFields: Record<string, string>;
   objectUrl: string;
@@ -114,7 +114,7 @@ export interface AttachmentPresignResponse {
   expiresAt: number;
 }
 
-export interface BugReportResponse {
+interface BugReportResponse {
   ok: boolean;
   discordDelivered?: boolean;
   ticket?: {

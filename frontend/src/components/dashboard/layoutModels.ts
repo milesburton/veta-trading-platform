@@ -3,17 +3,6 @@ import type { IJsonModel } from "flexlayout-react";
 import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
-export const ALL_TRADER_STYLES: TradingStyle[] = [
-  "high_touch",
-  "low_touch",
-  "fi_voice",
-  "fx_electronic",
-  "commodities_voice",
-  "derivatives_high_touch",
-  "derivatives_low_touch",
-  "oversight",
-];
-
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
 export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v24`;
 

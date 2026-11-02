@@ -59,24 +59,6 @@ function resolveUrl(serviceKey: string): string {
   return url;
 }
 
-interface PoolSpec {
-  key: string;
-  size: number;
-  lazy: boolean;
-}
-
-const SPECS: PoolSpec[] = [
-  { key: "JOURNAL", size: 12, lazy: true },
-  { key: "FIX_ARCHIVE", size: 3, lazy: true },
-  { key: "USERS", size: 12, lazy: true },
-  { key: "INTELLIGENCE", size: 3, lazy: true },
-  { key: "LLM_ADVISORY", size: 12, lazy: true },
-  { key: "REPLAY", size: 3, lazy: true },
-  { key: "RISK", size: 3, lazy: true },
-  { key: "SCENARIOS", size: 4, lazy: true },
-  { key: "MARKET_SIM", size: 2, lazy: true },
-];
-
 const cache: Record<string, Pool> = {};
 
 function getPool(key: string, size: number, lazy: boolean): Pool {
@@ -105,5 +87,3 @@ export const replayPool = lazyExport("REPLAY", 3, true);
 export const riskPool = lazyExport("RISK", 3, true);
 export const scenariosPool = lazyExport("SCENARIOS", 4, true);
 export const marketSimPool = lazyExport("MARKET_SIM", 2, true);
-
-export const _SPECS = SPECS;

@@ -43,7 +43,6 @@ All shared backend modules use Node subpath imports (`#veta/...`) defined in the
 | `#veta/schemas/risk` | `schemas/risk.ts` | Risk schemas |
 | `#veta/schemas/user` | `schemas/user.ts` | User schemas |
 | `#veta/schemas/news` | `schemas/news.ts` | News schemas |
-| `#veta/types/orders` | `types/orders.ts` | `RoutedOrder`, `FillEvent` |
 | `#veta/types/trade` | `types/types.ts` | `Trade` interface |
 | `#veta/types/intelligence` | `types/intelligence.ts` | `FeatureVector`, `Signal`, etc. |
 | `#veta/types/llm-advisory` | `types/llm-advisory.ts` | `LlmJob`, `LlmPolicy`, etc. |
@@ -54,7 +53,7 @@ All shared backend modules use Node subpath imports (`#veta/...`) defined in the
 ```typescript
 import { json, corsOptions } from "#veta/http";
 import { createConsumer } from "#veta/messaging";
-import type { RoutedOrder } from "#veta/types/orders";
+import type { Trade } from "#veta/types/trade";
 ```
 
 ## Frontend shared utilities

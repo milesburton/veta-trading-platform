@@ -1,4 +1,4 @@
-import type { OrderSide } from "./orders.ts";
+import type { OrderSide } from "#veta/primitives";
 
 export interface Trade {
   asset: string;

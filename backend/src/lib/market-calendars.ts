@@ -114,7 +114,7 @@ export const FX_CALENDAR: TradingCalendar = {
 // open/closed) should check this set directly.
 export const FX_REDUCED_LIQUIDITY_DATES = new Set(["2026-12-24", "2026-12-25", "2026-01-01"]);
 
-export const XLON_CALENDAR: TradingCalendar = {
+const XLON_CALENDAR: TradingCalendar = {
   exchangeMic: "XLON",
   timezone: "Europe/London",
   openHour: 8,
@@ -139,7 +139,7 @@ export const XLON_CALENDAR: TradingCalendar = {
   earlyCloses: {},
 };
 
-export const EURONEXT_CALENDAR: TradingCalendar = {
+const EURONEXT_CALENDAR: TradingCalendar = {
   exchangeMic: "XPAR", // also covers XAMS, same trading calendar
   timezone: "Europe/Paris",
   openHour: 9,
@@ -162,7 +162,7 @@ export const EURONEXT_CALENDAR: TradingCalendar = {
   earlyCloses: {},
 };
 
-export const XETR_CALENDAR: TradingCalendar = {
+const XETR_CALENDAR: TradingCalendar = {
   exchangeMic: "XETR",
   timezone: "Europe/Berlin",
   openHour: 9,

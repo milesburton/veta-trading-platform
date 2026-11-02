@@ -1,6 +1,6 @@
 // Loughran-McDonald financial sentiment lexicon (condensed).
 // Source: Loughran & McDonald (2011), "When Is a Liability Not a Liability?"
-export const LM_POSITIVE = new Set([
+const LM_POSITIVE = new Set([
   "able",
   "abundance",
   "abundant",
@@ -208,7 +208,7 @@ export const LM_POSITIVE = new Set([
 ]);
 
 // Negative terms (LM Negative word list, financial-domain subset)
-export const LM_NEGATIVE = new Set([
+const LM_NEGATIVE = new Set([
   "abandon",
   "abuse",
   "accusation",
@@ -353,7 +353,7 @@ export const LM_NEGATIVE = new Set([
   "writeoff",
 ]);
 
-export const IGNORE_TICKERS = new Set([
+const IGNORE_TICKERS = new Set([
   "CEO",
   "CFO",
   "COO",

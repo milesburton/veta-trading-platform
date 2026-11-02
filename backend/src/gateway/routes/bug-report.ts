@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 import { CORS_HEADERS } from "#veta/http";
 import {
   isBugReportValid,

@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-// fallow-ignore-file unused-file
 import { logger } from "#veta/logger";
 import { recordGauge } from "#veta/telemetry";
 
