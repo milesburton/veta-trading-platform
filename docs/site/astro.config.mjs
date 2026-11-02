@@ -212,6 +212,7 @@ export default defineConfig({
           items: [
             { label: "Glossary", slug: "reference/glossary" },
             { label: "API gateway", slug: "reference/api-gateway" },
+            { label: "Route exposure", slug: "reference/route-exposure" },
             { label: "RBAC & permissions", slug: "reference/rbac" },
             { label: "Panel reference", slug: "reference/panels" },
             { label: "Migrations", slug: "reference/migrations" },
