@@ -43,6 +43,3 @@ export const ScenarioUpdateSchema = z.object({
   spec: ScenarioSpecSchema.optional(),
   expected: ScenarioExpectedSchema.nullable().optional(),
 });
-
-type ScenarioCreateInput = z.infer<typeof ScenarioCreateSchema>;
-type ScenarioUpdateInput = z.infer<typeof ScenarioUpdateSchema>;

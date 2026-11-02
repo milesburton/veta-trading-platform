@@ -32,12 +32,6 @@ export interface OptionQuoteResponse {
   computedAt: number; // unix ms
 }
 
-interface ScenarioShock {
-  spotPct: number; // e.g. -0.10 = -10%
-  volPct: number; // e.g.  0.20 = vol +20pp
-  timeDays: number; // e.g. 7 = 7 days elapsed
-}
-
 export interface ScenarioCell {
   spotPct: number;
   volPct: number;
@@ -81,19 +75,6 @@ export interface ScenarioResponse {
 export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
 
 /** @deprecated Use string[] in Recommendation.reasons, kept only for type compat. */
-type SignalReason =
-  | "DEEP_ITM"
-  | "DEEP_OTM"
-  | "ATM_HIGH_VOL"
-  | "LOW_TIME_VALUE"
-  | "HIGH_THETA_DECAY"
-  | "POSITIVE_DELTA_TREND"
-  | "NEGATIVE_DELTA_TREND"
-  | "VOL_PREMIUM_ELEVATED"
-  | "VOL_DISCOUNT"
-  | "NEAR_EXPIRY_RISK"
-  | "WIDE_BID_ASK_PROXY"
-  | "FAVOURABLE_RISK_REWARD";
 
 export interface SignalInput {
   score: number; // -1 to +1 from intelligence pipeline

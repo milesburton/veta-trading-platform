@@ -120,8 +120,6 @@ export interface UserTicketReport {
   attachments?: string[];
 }
 
-type BugReport = UserTicketReport;
-
 const TITLE_MAX = 120;
 const DESCRIPTION_MAX = 2_000;
 const URL_MAX = 500;

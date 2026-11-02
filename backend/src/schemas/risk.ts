@@ -19,7 +19,6 @@ export const RiskConfigSchema = z.object({
 export type RiskConfig = z.infer<typeof RiskConfigSchema>;
 
 export const RiskConfigUpdateSchema = RiskConfigSchema.partial();
-type RiskConfigUpdate = z.infer<typeof RiskConfigUpdateSchema>;
 
 export const CheckRequestSchema = z.object({
   orderId: z.string().optional(),
@@ -49,7 +48,6 @@ export const BreakerFireSchema = z.object({
   threshold: z.number(),
   firedAt: z.number().int().nonnegative(),
 });
-type BreakerFire = z.infer<typeof BreakerFireSchema>;
 
 export const TestPositionSchema = z.object({
   userId: UserIdSchema,
@@ -58,10 +56,8 @@ export const TestPositionSchema = z.object({
   avgPrice: z.number().nonnegative(),
   realisedPnl: z.number().optional(),
 });
-type TestPosition = z.infer<typeof TestPositionSchema>;
 
 export const TestTickSchema = z.object({
   prices: z.record(z.string(), z.number()).optional(),
   openPrices: z.record(z.string(), z.number()).optional(),
 });
-type TestTick = z.infer<typeof TestTickSchema>;

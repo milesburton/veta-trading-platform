@@ -2,7 +2,6 @@ import { test as base, expect } from "@playwright/test";
 import {
   DEFAULT_ASSETS,
   DEFAULT_LIMITS,
-  DEFAULT_READY_BODY,
   PRICES,
 } from "./constants.ts";
 import type { GatewayMock } from "./GatewayMock.ts";
