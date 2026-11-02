@@ -21,10 +21,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MAX_QUEUED_MIN: "30"
         run: |
+          set -euo pipefail
           cutoff=$(( $(date +%s) - MAX_QUEUED_MIN * 60 ))
           stuck=0
           for status in queued in_progress; do
-            for run_id in $(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=${status}&per_page=50" --jq '.workflow_runs[].id'); do
+            run_ids=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=${status}&per_page=50" --jq '.workflow_runs[].id')
+            for run_id in $run_ids; do
               count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
                 | jq --argjson cutoff "$cutoff" \
                   '[.jobs[] | select(.status == "queued" and (.labels | index("homelab")) and (.created_at | fromdateiso8601) < $cutoff)] | length')
