@@ -82,6 +82,29 @@ docker exec veta-openbao bao status
 
 On a new server, also copy `~/.config/veta/openbao-approle.json` across, or issue a new secret ID as `admin`.
 
+## Recovering admin access
+
+Use this when nobody can log in as `admin` and no root token exists. It needs the recovery key, which is shown once at initialisation and is not stored on the server. Keep it in the password manager, labelled for this vault. The unseal key in the `veta-openbao-unseal` volume is a different secret and cannot be used for recovery. A recovery key from another OpenBao instance fails with `recovery key does not match submitted values`.
+
+Check the audit log first. It shows whether anyone reached the vault and why a login failed, for example `invalid credentials` against `auth/userpass/login/admin`:
+
+```bash
+docker exec veta-openbao tail -n 20 /openbao/logs/audit.log
+```
+
+With the static seal, `bao operator generate-root` fails with `403 permission denied` because the CLI calls `sys/generate-root-token/attempt`, which needs a token. The unauthenticated `sys/generate-root` endpoint still works, so drive it over the API from the server:
+
+1. Write the recovery key to a file only you can read. Set the mode explicitly, because a file created without `umask 077` is world-readable: `umask 077; read -rs K && printf %s "$K" > ~/.recovery-key; chmod 600 ~/.recovery-key`.
+2. Generate a 26-character alphanumeric one-time pad, then `PUT http://127.0.0.1:8200/v1/sys/generate-root/attempt` with `{"otp": "<pad>"}`. The response carries a `nonce`.
+3. `PUT /v1/sys/generate-root/update` with `{"key": "<recovery key>", "nonce": "<nonce>"}`. With one recovery share the response is `complete` and holds `encoded_token`.
+4. Base64-decode `encoded_token` (add `=` padding) and XOR it byte for byte with the pad. The result is the root token. Write it to a mode 600 file and never print it.
+5. Use the token to repair what is broken, for example `bao write auth/userpass/users/admin/password password=-`, or `bao kv patch -mount=secret veta/platform ...` for a secret.
+6. Revoke the token with `bao token revoke -self`, then shred the token file and the recovery key file.
+
+If a step fails, `DELETE /v1/sys/generate-root/attempt` cancels the attempt so the next one starts clean. Send the secret values to the vault over stdin so they never appear in a process list, and check results with the `veta-deploy` token by testing for presence and for known defaults, not by printing values.
+
+If the recovery key is lost, the data cannot be reached for writes. The remaining option is to initialise a new vault and run `scripts/openbao-bootstrap.py`, after dumping `secret/veta/platform` and `secret/veta/loadgen` with the read-only deploy token.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -90,6 +113,10 @@ On a new server, also copy `~/.config/veta/openbao-approle.json` across, or issu
 | Deploy log: `AppRole login ... failed` | Vault down or sealed, or the secret ID was destroyed | `bao status`; if unsealed, issue a new secret ID as `admin` |
 | Deploy log: `could not read .../veta/platform` | Path deleted, or the `veta-deploy` policy changed | `bao kv get secret/veta/platform` as `admin`; restore with `bao kv rollback` |
 | Every request returns `500` and the log says `no audit backend succeeded` | The audit volume is full or unwritable. OpenBao refuses requests it cannot audit | Free space on the server, then restart the container |
+| `admin` login returns `invalid credentials`, or a saved root token returns `permission denied` | The password changed or the root token was revoked after setup, which is the intended state | [Recovering admin access](#recovering-admin-access) |
+| `bao operator generate-root` returns `403` | The CLI uses an authenticated path under the static seal | Use the `sys/generate-root` API as described above |
+| `recovery key does not match submitted values` | The key belongs to another vault, or was copied incorrectly | Find the key labelled for this vault. Do not retry in a loop |
+| The deploy aborts with `is a known compose default` or `is not set` | `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD` or `INTERNAL_SERVICE_TOKEN` is missing or still a development default in `secret/veta/platform` | Set a real value as `admin`, rotating the live credential first. See the deployment page |
 | A service starts with a default password after a manual command | It was recreated with a bare `docker compose` | Recreate it with `scripts/veta-compose.sh up -d <service>` |
 
 ## Source

@@ -120,4 +120,16 @@ Move the recovery key into your password manager and shred the init file, then d
 
 Rerunning the script is safe. It leaves an existing key, server, admin user and credentials alone and never overwrites a KV path that already exists. Configuring an already initialised OpenBao needs a root token (`bao operator generate-root` with the recovery key).
 
-Until the bootstrap has run, a deploy that finds no AppRole credentials logs a warning and uses `.env` as before.
+A deploy that finds no AppRole credentials aborts before touching any container. There is no fallback to `.env`.
+
+## Troubleshooting the auto-pull deploy
+
+`veta-auto-pull.timer` polls `origin/main` every five minutes. When a deploy fails it leaves `state/last-deployed-sha` unchanged and retries on the next tick, so a stuck deploy shows as an old SHA there and an error in `journalctl -u veta-auto-pull`.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `deploy-managed paths in /opt/stacks/veta are not owned by` the deploy user, naming a script | Docker created an empty root-owned directory at the source of a single-file bind mount because the file had not been synced. A restarting container recreates it whenever it is removed | Add the file to `CONFIG_PATHS` in `scripts/homelab-deploy.sh` (a unit test fails when a bind-mounted script is missing). Stop the restarting container, remove the empty directory, and let the next tick sync the file |
+| A container restart-loops with exit code 0 and no log output | Its bind-mounted script is a directory, so the shell exits at once | As above |
+| Deploys stop after a secrets change | The pre-deploy guard rejected a missing or default credential | Read the message in the journal and fix the value in the vault |
+
+After any manual `docker compose` change, recreate with `scripts/veta-compose.sh`, which loads the secrets. A bare `docker compose` recreates services with default passwords.
