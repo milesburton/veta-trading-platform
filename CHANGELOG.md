@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.93.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.4...veta-trading-platform-v1.93.0) (2026-11-04)
+
+
+### Features
+
+* **gateway:** alert when the audit log hash chain breaks ([#990](https://github.com/milesburton/veta-trading-platform/issues/990)) ([#1049](https://github.com/milesburton/veta-trading-platform/issues/1049)) ([d21eddd](https://github.com/milesburton/veta-trading-platform/commit/d21eddd424760ed729aaf6969983c998f76337b3))
+
+
+### Bug Fixes
+
+* **discord-bot:** check the MOTD at startup and accept a /raise prefix ([#1047](https://github.com/milesburton/veta-trading-platform/issues/1047)) ([72f2c26](https://github.com/milesburton/veta-trading-platform/commit/72f2c261b11966092e17ce416550bd8826e2541f))
+
 ## [1.92.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.3...veta-trading-platform-v1.92.4) (2026-11-04)
 
 
