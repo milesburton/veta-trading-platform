@@ -129,6 +129,8 @@ load_secrets() {
         return 1
     fi
     openbao_export platform || return 1
+    . "$STACK_DIR/scripts/lib/require-real-secrets.sh"
+    require_real_secrets || return 1
     if [[ "${LOADGEN_ENABLED:-false}" == "true" ]]; then
         openbao_export_if_present loadgen || return 1
     fi

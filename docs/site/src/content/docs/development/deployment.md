@@ -91,6 +91,20 @@ Piping the value through `read -rs` keeps it out of shell history and the proces
 
 To rotate the deploy credential, issue a new secret ID as `admin` (`bao write -f auth/approle/role/veta-deploy/secret-id`), put it in `openbao-approle.json`, then destroy the old one: `bao list auth/approle/role/veta-deploy/secret-id` shows the accessors, and `bao write auth/approle/role/veta-deploy/secret-id-accessor/destroy secret_id_accessor=<accessor>` removes one.
 
+### Required secrets and rotation
+
+`POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD` and `INTERNAL_SERVICE_TOKEN` must be set in `secret/veta/platform` to values other than the development defaults in `compose.yml`. `scripts/lib/require-real-secrets.sh` runs after the secrets are loaded, and the deploy aborts before touching any container if one is missing or equal to a default. `compose.prod.yml` also refuses to render without `POSTGRES_PASSWORD`.
+
+Postgres stores its role password in the data directory and MinIO reads its root password from the environment at start, so changing the vault value alone does not rotate a running stack. Rotate in this order, in a planned window:
+
+1. Take a verified backup with `scripts/postgres-backup.sh` and confirm it restores.
+2. Generate each new value with `openssl rand -base64 33` and write it with `bao kv patch` as described above, using `read -rs` so it never reaches shell history. Note the KV version numbers for rollback.
+3. Change the Postgres role password inside the running container: `docker exec -it veta-postgres-1 sh -c 'psql -U "$POSTGRES_USER" -c "\password"'`. Existing connections stay up, new ones need the new password.
+4. Run the normal deploy. It loads the new values, recreates the services that depend on them and runs the post-deploy checks. MinIO picks up the new root password when it restarts.
+5. Run the smoke check and confirm the backup job and the Loki, Tempo and Mimir pipelines can still reach their stores.
+
+To roll back, restore the previous KV version with `bao kv rollback`, set the Postgres role password back with `\password`, and redeploy.
+
 ### First-time setup
 
 Run `scripts/openbao-bootstrap.py` on the server as the deploy user, from the synced stack directory, after a deploy has put `deploy/openbao/` there. It:
