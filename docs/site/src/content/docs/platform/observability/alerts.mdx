@@ -39,13 +39,14 @@ flowchart LR
 
 ## Operator alert router
 
-The gateway runs an alert router that delivers three event classes to the webhook regardless of whether any user has a browser tab open:
+The gateway runs an alert router that delivers four event classes to the webhook regardless of whether any user has a browser tab open:
 
 | Event | Source | Behaviour |
 | --- | --- | --- |
 | Service offline | Gateway health poll of every non-optional service | Raised after consecutive failed checks, then repeated at most every 30 minutes while it persists. A recovery message is sent when the service returns. |
 | Kill switch and resume | `orders.kill.audit` and `orders.resume.audit` | Delivered for every event, with scope, issuer and the number of orders cancelled. |
 | Order rejection spike | `orders.rejected` | Raised when rejections in a rolling window reach a threshold, with the most common reason. A recovery message is sent when the rate falls. |
+| Audit chain broken | Journal `/audit/verify`, polled periodically | Critical alert with the first broken sequence number, repeated at most every 30 minutes while it persists. A recovery message is sent when verification passes. An unreachable journal or malformed response raises nothing. |
 
 Service alerts are suppressed for a grace period after the gateway starts, so a rolling deploy does not page for services that are still coming up.
 
@@ -56,6 +57,7 @@ Service alerts are suppressed for a grace period after the gateway starts, so a 
 | `ALERT_STARTUP_GRACE_MS` | `120000` | Service alerts are held back for this long after gateway start. |
 | `ALERT_REJECTION_WINDOW_MS` | `60000` | Rolling window for counting rejections. |
 | `ALERT_REJECTION_THRESHOLD` | `10` | Rejections within the window that raise an alert. |
+| `ALERT_AUDIT_VERIFY_INTERVAL_MS` | `300000` | How often the gateway verifies the audit log hash chain. |
 
 The router uses the same `DISCORD_WEBHOOK_URL` as the rest of this page, and does nothing when it is unset. Delivery failures are swallowed so they cannot affect the gateway.
 
