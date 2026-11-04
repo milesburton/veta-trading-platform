@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.94.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.93.1...veta-trading-platform-v1.94.0) (2026-11-04)
+
+
+### Features
+
+* **logger:** redact credentials from every log path ([#962](https://github.com/milesburton/veta-trading-platform/issues/962)) ([#1056](https://github.com/milesburton/veta-trading-platform/issues/1056)) ([284dda1](https://github.com/milesburton/veta-trading-platform/commit/284dda183404e25836d42b185046b3da987a7b6d))
+
 ## [1.93.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.93.0...veta-trading-platform-v1.93.1) (2026-11-04)
 
 
