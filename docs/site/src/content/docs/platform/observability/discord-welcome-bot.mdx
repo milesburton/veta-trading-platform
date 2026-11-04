@@ -5,7 +5,7 @@ description: How the discord-bot service greets new members on join and triages 
 
 import { Aside } from "@astrojs/starlight/components";
 
-The `discord-bot` service connects to the Discord Gateway, posts a welcome message whenever someone joins the VETA Discord server, and triages `Raise. <message>` or `@VETA <message>` posts in any channel it can read into GitHub tickets via an LLM. This is a separate integration from [alert routing](../alerts/) and [ticketing](../ticketing/): those use outbound-only webhooks, but greeting new members on join and reading channel messages both require a real bot with a persistent connection, since webhooks cannot observe server membership or message events.
+The `discord-bot` service connects to the Discord Gateway, posts a welcome message whenever someone joins the VETA Discord server, and triages `Raise. <message>`, `/raise <message>` or `@VETA <message>` posts in any channel it can read into GitHub tickets via an LLM. This is a separate integration from [alert routing](../alerts/) and [ticketing](../ticketing/): those use outbound-only webhooks, but greeting new members on join and reading channel messages both require a real bot with a persistent connection, since webhooks cannot observe server membership or message events.
 
 ## Flow
 
@@ -107,7 +107,7 @@ Type `Raise. <what's wrong>` or @mention this bot with a description to file a b
 💻 Trade on the real platform: https://veta.mnetcs.com
 ```
 
-The interval timer is armed once, in `start()`, guarded by `DISCORD_MOTD_ENABLED`; it is independent of the Gateway reconnect loop, so a dropped and re-established Gateway connection does not reset or duplicate the timer. Before each post the bot checks the channel's recent messages and skips the post if it already posted a MOTD within the interval, so restarts or a second instance sharing the token don't repost.
+The check runs once 30 seconds after the bot starts and then every interval, guarded by `DISCORD_MOTD_ENABLED`, so frequent deploys that restart the bot do not stop the message from posting. It is independent of the Gateway reconnect loop, so a dropped and re-established Gateway connection does not reset or duplicate the timer. Before each post the bot checks the channel's recent messages and skips the post if it already posted a MOTD within the interval, so restarts or a second instance sharing the token don't repost.
 
 ## Ticket triage
 
