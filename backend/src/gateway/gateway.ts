@@ -11,6 +11,7 @@ import { getTicketingHealth, startTicketingHealthMonitor } from "../notification
 import { decideAccessLog, type ThrottleEntry } from "./access-log-throttle.ts";
 import {
   createAlertRouter,
+  createAuditChainWatch,
   createRejectionWatch,
   createServiceWatch,
   routeKillSwitchEvent,
@@ -485,8 +486,16 @@ const rejectionWatch = createRejectionWatch(
   Number(process.env.ALERT_REJECTION_THRESHOLD) || 10
 );
 
+const AUDIT_VERIFY_INTERVAL_MS = Number(process.env.ALERT_AUDIT_VERIFY_INTERVAL_MS) || 300_000;
+const auditChainWatch = createAuditChainWatch(alertRouter, async () => {
+  const res = await fetch(`${JOURNAL_URL}/audit/verify`, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) throw new Error(`audit verify returned ${res.status}`);
+  return res.json();
+});
+
 function startAlertRouting(): void {
   if (!ALERT_ROUTER_ENABLED) return;
+  setInterval(() => void auditChainWatch.check(), AUDIT_VERIFY_INTERVAL_MS);
   createConsumer("gateway-alert-router", [
     "orders.kill.audit",
     "orders.resume.audit",

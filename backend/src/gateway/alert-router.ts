@@ -38,6 +38,7 @@ const RUNBOOK_FILES: ReadonlyArray<readonly [prefix: string, file: string]> = [
   ["service:", "service-offline.md"],
   ["kill-switch", "kill-switch.md"],
   ["order-rejections", "order-rejection-spike.md"],
+  ["audit-chain", "audit-chain-broken.md"],
 ];
 
 export function runbookFileFor(key: string): string | null {
@@ -188,6 +189,40 @@ export function createRejectionWatch(
       if (samples.length >= threshold && !router.isActive(key)) evaluate(at);
     },
     evaluate,
+  };
+}
+
+export interface AuditChainWatch {
+  check: () => Promise<void>;
+}
+
+const AUDIT_CHAIN_KEY = "audit-chain";
+
+function brokenSeqOf(body: unknown): number | null | undefined {
+  const parsed = body as { ok?: unknown; brokenSeq?: unknown } | null;
+  if (parsed?.ok === true) return null;
+  return typeof parsed?.brokenSeq === "number" ? parsed.brokenSeq : undefined;
+}
+
+export function createAuditChainWatch(
+  router: AlertRouter,
+  fetchVerify: () => Promise<unknown>
+): AuditChainWatch {
+  return {
+    check: async () => {
+      const brokenSeq = await fetchVerify().then(brokenSeqOf, () => undefined);
+      if (brokenSeq === undefined) return;
+      if (brokenSeq === null) {
+        router.resolve(AUDIT_CHAIN_KEY, "the audit log hash chain verifies again");
+        return;
+      }
+      router.raise({
+        key: AUDIT_CHAIN_KEY,
+        severity: "CRITICAL",
+        title: "Audit log hash chain is broken",
+        detail: `First broken sequence: ${brokenSeq}. Rows may have been altered or removed.`,
+      });
+    },
   };
 }
 

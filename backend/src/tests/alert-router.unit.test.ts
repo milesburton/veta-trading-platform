@@ -3,6 +3,7 @@ import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import {
   createAlertRouter,
+  createAuditChainWatch,
   createRejectionWatch,
   createServiceWatch,
   formatAlert,
@@ -184,7 +185,7 @@ test("[kill-switch] malformed or unrelated events are ignored", () => {
 const RUNBOOK_DIR = new URL("../../../docs/incidents/runbooks/", import.meta.url);
 
 test("[runbooks] every alert key maps to a runbook file that exists", () => {
-  for (const key of ["service:oms", "kill-switch", "order-rejections"]) {
+  for (const key of ["service:oms", "kill-switch", "order-rejections", "audit-chain"]) {
     const file = runbookFileFor(key);
     assert(file !== null, `no runbook mapped for ${key}`);
     assert(existsSync(new URL(file, RUNBOOK_DIR)), `runbook file missing: ${file}`);
@@ -221,4 +222,28 @@ test("[runbooks] critical and warning alerts link a runbook, recoveries do not",
   assert(kill.includes("/kill-switch.md"));
   assert(!resume.includes("Runbook:"));
   assert(!recovered.includes("Runbook:"));
+});
+
+test("[audit-chain] a broken chain raises one critical alert and recovery resolves it", async () => {
+  const { sent, router } = harness();
+  let body: unknown = { ok: false, brokenSeq: 42 };
+  const watch = createAuditChainWatch(router, async () => body);
+  await watch.check();
+  await watch.check();
+  assertEquals(sent.length, 1);
+  assert(sent[0].includes("CRITICAL"));
+  assert(sent[0].includes("42"));
+  body = { ok: true, brokenSeq: null };
+  await watch.check();
+  assertEquals(sent.length, 2);
+  assert(sent[1].includes("Recovered"));
+});
+
+test("[audit-chain] verifier errors and malformed bodies raise nothing", async () => {
+  const { sent, router } = harness();
+  await createAuditChainWatch(router, async () => {
+    throw new Error("journal down");
+  }).check();
+  await createAuditChainWatch(router, async () => ({ unexpected: true })).check();
+  assertEquals(sent.length, 0);
 });
