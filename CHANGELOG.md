@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.3...veta-trading-platform-v1.92.4) (2026-11-04)
+
+
+### Bug Fixes
+
+* **deploy:** fail closed on default database and object-store credentials ([#1037](https://github.com/milesburton/veta-trading-platform/issues/1037)) ([#1039](https://github.com/milesburton/veta-trading-platform/issues/1039)) ([f5a0c3b](https://github.com/milesburton/veta-trading-platform/commit/f5a0c3be6f9b2c9ba5b97a9ae5ca0a432c5d635f))
+
 ## [1.92.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.2...veta-trading-platform-v1.92.3) (2026-11-02)
 
 
