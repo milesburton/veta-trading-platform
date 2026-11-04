@@ -276,6 +276,27 @@ test("decideTriageRequest extracts fields for a valid Raise. message", () => {
   assertEquals(decision.request?.freeText, "the candlestick chart shows blank bars");
 });
 
+test("decideTriageRequest accepts a /raise prefix", () => {
+  const decision = decideTriageRequest({
+    id: "1",
+    channel_id: "c1",
+    content: "/raise The MOTD is no longer showing",
+    author: { id: "9", username: "alice" },
+  });
+  assertEquals(decision.shouldTriage, true);
+  assertEquals(decision.request?.freeText, "The MOTD is no longer showing");
+});
+
+test("decideTriageRequest ignores words that merely start with /raise", () => {
+  const decision = decideTriageRequest({
+    id: "1",
+    channel_id: "c1",
+    content: "/raised a point",
+    author: { id: "9", username: "alice" },
+  });
+  assertEquals(decision.shouldTriage, false);
+});
+
 test("decideTriageRequest falls back to author id when username is missing", () => {
   const decision = decideTriageRequest({
     id: "1",

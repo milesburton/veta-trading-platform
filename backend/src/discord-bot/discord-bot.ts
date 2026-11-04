@@ -127,7 +127,7 @@ export function decideWelcomePost(data: unknown, welcomeChannelId: string): Welc
   return { shouldPost: true, channelId: welcomeChannelId, message: buildWelcomeMessage(mention) };
 }
 
-const RAISE_PREFIX = /^raise\.\s*/i;
+const RAISE_PREFIX = /^(?:raise\.|\/raise\b)\s*/i;
 
 export interface TriageRequest {
   authorId: string;
@@ -638,6 +638,15 @@ async function motdAlreadyPosted(channelId: string): Promise<boolean> {
 }
 
 let motdTimer: ReturnType<typeof setInterval> | null = null;
+const MOTD_STARTUP_DELAY_MS = 30_000;
+
+async function postMotdIfDue(): Promise<void> {
+  if (await motdAlreadyPosted(WELCOME_CHANNEL_ID)) return;
+  const posted = await postChannelMessage(WELCOME_CHANNEL_ID, buildMotd(DOCS_URL, PLATFORM_URL));
+  if (!posted) {
+    logger.warn("failed to post MOTD to welcome channel", { channelId: WELCOME_CHANNEL_ID });
+  }
+}
 
 function startMotdTimer(): void {
   if (!MOTD_ENABLED || motdTimer) return;
@@ -645,13 +654,8 @@ function startMotdTimer(): void {
     logger.warn("DISCORD_WELCOME_CHANNEL_ID not set; MOTD timer not started");
     return;
   }
-  motdTimer = setInterval(async () => {
-    if (await motdAlreadyPosted(WELCOME_CHANNEL_ID)) return;
-    const posted = await postChannelMessage(WELCOME_CHANNEL_ID, buildMotd(DOCS_URL, PLATFORM_URL));
-    if (!posted) {
-      logger.warn("failed to post MOTD to welcome channel", { channelId: WELCOME_CHANNEL_ID });
-    }
-  }, MOTD_INTERVAL_MS);
+  setTimeout(() => void postMotdIfDue(), MOTD_STARTUP_DELAY_MS);
+  motdTimer = setInterval(() => void postMotdIfDue(), MOTD_INTERVAL_MS);
 }
 
 async function start(): Promise<void> {
