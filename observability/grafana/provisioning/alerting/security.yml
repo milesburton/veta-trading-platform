@@ -63,6 +63,7 @@ groups:
         annotations:
           description: 'More than 5 auth_failure events from the gateway in the last 5 minutes. Possible credential-stuffing or scanning attempt. Loki query: `{service_name="gateway"} |= "auth_failure" | json` to investigate.'
           summary: Auth failure rate exceeded threshold
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/auth-failure-spike.md
         labels:
           severity: high
         isPaused: false
@@ -117,6 +118,7 @@ groups:
         annotations:
           description: 'More than 20 ws_rate_limited events from the gateway in 5 minutes. One client is repeatedly hitting the per-socket frame rate limit, investigate whether this is a misbehaving client or an attack.'
           summary: WebSocket frame rate-limit triggered repeatedly
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/websocket-abuse.md
         labels:
           severity: medium
         isPaused: false
@@ -171,6 +173,7 @@ groups:
         annotations:
           description: 'More than 3 ws_disconnected_abuse events in 5 minutes. The gateway escalated past rate-limiting to force-closing sockets. Check the userId in the log lines, if one user is repeatedly hitting this, consider revoking their session.'
           summary: WebSocket sockets force-closed for abuse
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/websocket-abuse.md
         labels:
           severity: high
         isPaused: false
@@ -225,6 +228,7 @@ groups:
         annotations:
           description: 'A user-level WebSocket backoff is active. The gateway accumulated enough force-closes for one userId in 5 minutes to refuse new upgrades. Find the userId in the ws_blocked log line; the backoff auto-clears after 5 minutes but if it recurs, treat as a real abuse case.'
           summary: WebSocket user-level backoff engaged
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/websocket-abuse.md
         labels:
           severity: high
         isPaused: false

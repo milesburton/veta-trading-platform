@@ -8,6 +8,7 @@ groups:
           severity: warning
         annotations:
           summary: GitHub user-ticket delivery unavailable for 10m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/ticketing-unavailable.md
           description: |
             The VETA gateway cannot validate its GitHub ticketing credential or reach the
             configured repository. User bug reports may still reach Discord, but GitHub issues
@@ -23,6 +24,7 @@ groups:
           severity: warning
         annotations:
           summary: Host disk above 80% for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
           description: |
             disk_used_percent is {{ $value }}%. Past incident: kafka-relay
             log spam filled the disk at 100% and took out the site. Investigate
@@ -36,6 +38,7 @@ groups:
           severity: critical
         annotations:
           summary: Host disk above 92%, imminent outage
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
           description: |
             disk_used_percent is {{ $value }}%. Docker exec, healthchecks,
             and Traefik label reads start failing around 95%. Truncate the
@@ -50,6 +53,7 @@ groups:
           severity: warning
         annotations:
           summary: disk-monitor scrape failing for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
           description: |
             Prometheus can't scrape disk-monitor:8099/metrics. Disk could
             be filling without anyone seeing it. Check the container.
@@ -63,6 +67,7 @@ groups:
           severity: critical
         annotations:
           summary: No successful Postgres backup for over 26h
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/postgres-backup-alert.md
           description: |
             The last verified pg_dump finished more than 26 hours ago, or
             has never succeeded. Check the postgres-backup container logs
@@ -75,6 +80,7 @@ groups:
           severity: warning
         annotations:
           summary: The latest Postgres backup attempt failed
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/postgres-backup-alert.md
           description: |
             The most recent backup attempt failed pg_dump or verification.
             The job retries every 15 minutes. Read the postgres-backup
@@ -87,6 +93,7 @@ groups:
           severity: warning
         annotations:
           summary: postgres-backup scrape failing for 10m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/postgres-backup-alert.md
           description: |
             Prometheus can't scrape veta-postgres-backup:8101/metrics.
             Backups may have stopped without anyone noticing.
@@ -100,6 +107,7 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.job }} heap growing >1 MiB/s for 15m"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/memory-pressure.md
           description: |
             v8js_memory_heap_size_bytes for {{ $labels.job }} has been
             growing at {{ $value | humanize }} bytes/s for 15 minutes.
@@ -114,6 +122,7 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.job }} heap above 1.5 GiB for 10m"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/memory-pressure.md
           description: |
             v8js_memory_heap_size_bytes is {{ $value | humanize }}.
             The 12 GiB homelab VM has limited headroom across 21 services;
@@ -126,6 +135,7 @@ groups:
           severity: critical
         annotations:
           summary: "{{ $labels.job }} heap above 3 GiB, imminent OOM"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/memory-pressure.md
           description: |
             v8js_memory_heap_size_bytes is {{ $value | humanize }}.
             Node usually OOMs around 4 GiB without --max-old-space-size.
@@ -141,6 +151,7 @@ groups:
           severity: warning
         annotations:
           summary: Browser heap above 2 GiB across at least one user for 10m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/memory-pressure.md
           description: |
             frontend_memory_heap_used_max_bytes is {{ $value | humanize }}.
             At least one live browser session is sitting on >2 GiB heap.
@@ -154,6 +165,7 @@ groups:
           severity: critical
         annotations:
           summary: Browser heap above 4 GiB, likely frozen tab imminent
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/memory-pressure.md
           description: |
             frontend_memory_heap_used_max_bytes is {{ $value | humanize }}.
             At 4 GiB Firefox typically starts swapping. Get the user to
@@ -169,6 +181,7 @@ groups:
           severity: warning
         annotations:
           summary: Redpanda scrape failing for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Prometheus can't scrape redpanda:9644/public_metrics. Topic
             growth, consumer lag, and partition health are invisible
@@ -188,6 +201,7 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.redpanda_topic }} producing >512 KiB/s for 30m"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >512 KiB/s
             sustained, that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
@@ -214,6 +228,7 @@ groups:
           severity: critical
         annotations:
           summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s for 10m, disk-fill imminent"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >2 MiB/s.
             That's ~7 GiB/hour. Per-partition retention.bytes will
@@ -234,6 +249,7 @@ groups:
           severity: critical
         annotations:
           summary: market.ticks has stopped despite at least one asset class being open
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/market-ticks-silent.md
           description: |
             market-sim reports at least one asset class open
             (market_sim_asset_class_open == 1) but market.ticks has taken
@@ -268,6 +284,7 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.redpanda_group }} on {{ $labels.redpanda_topic }} lagging >100k offsets for 15m"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Consumer group {{ $labels.redpanda_group }} on topic {{ $labels.redpanda_topic }}
             partition {{ $labels.redpanda_partition }} has >100k unconsumed
@@ -284,6 +301,7 @@ groups:
           severity: critical
         annotations:
           summary: Redpanda has {{ $value }} partitions without quorum
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             redpanda_cluster_unavailable_partitions is {{ $value }}.
             Producers writing to these partitions block; consumers

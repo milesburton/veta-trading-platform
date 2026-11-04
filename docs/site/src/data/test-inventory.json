@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 172,
-      "cases": 1885,
+      "files": 173,
+      "cases": 1886,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -12,6 +12,7 @@
         "admin-route-load-and-demo.unit.test.ts": 12,
         "admin-route.unit.test.ts": 16,
         "alert-router.unit.test.ts": 18,
+        "alert-rule-runbooks.unit.test.ts": 1,
         "alerts-route.unit.test.ts": 15,
         "algo-common-http.unit.test.ts": 9,
         "algo-depth-cap-book.unit.test.ts": 6,
