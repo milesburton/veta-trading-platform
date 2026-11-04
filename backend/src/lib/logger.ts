@@ -1,3 +1,5 @@
+import { redactString, redactValue } from "./log-redaction.ts";
+
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 const LEVEL_ORDER: Record<LogLevel, number> = {
@@ -21,25 +23,9 @@ const THRESHOLD = resolveThreshold();
 
 type Ctx = Record<string, unknown>;
 
-function serializeErr(err: Error): Record<string, string> {
-  return {
-    name: err.name,
-    message: err.message,
-    stack: err.stack ?? "",
-  };
-}
-
 function serializeCtx(ctx: Ctx | undefined): Ctx {
   if (!ctx) return {};
-  const out: Ctx = {};
-  for (const [key, value] of Object.entries(ctx)) {
-    if (value instanceof Error) {
-      out[key] = serializeErr(value);
-    } else {
-      out[key] = value;
-    }
-  }
-  return out;
+  return redactValue(ctx) as Ctx;
 }
 
 export type LogSink = (level: LogLevel, msg: string, line: string, ctx?: Ctx) => void;
@@ -62,7 +48,7 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
       ts: new Date().toISOString(),
       level,
       service: SERVICE,
-      msg,
+      msg: redactString(msg),
       ...serializeCtx(ctx),
     };
     line = `${JSON.stringify(record)}\n`;
@@ -71,8 +57,8 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
       ts: new Date().toISOString(),
       level,
       service: SERVICE,
-      msg,
-      _serializeError: err instanceof Error ? err.message : String(err),
+      msg: redactString(msg),
+      _serializeError: redactString(err instanceof Error ? err.message : String(err)),
     };
     line = `${JSON.stringify(fallback)}\n`;
   }
@@ -83,7 +69,7 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
   }
   for (const sink of sinks) {
     try {
-      sink(level, msg, line.trimEnd(), ctx);
+      sink(level, redactString(msg), line.trimEnd(), serializeCtx(ctx));
     } catch {
       // Sinks must not break the logger
     }

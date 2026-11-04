@@ -144,7 +144,7 @@ sometimes time out under load. Each follow-up PR named in the
 | ------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
 | Data classification documented | Implemented | Every table and external store is classified in [Data classification](../data-classification/). |
 | Retention policy per data class | Deferred | Journal events are retained indefinitely. Tracked in [#964](https://github.com/milesburton/veta-trading-platform/issues/964). |
-| Log scrubbing (no PII / tokens leaking into logs) | Deferred | The logger performs no redaction and no test covers it. Tracked in [#962](https://github.com/milesburton/veta-trading-platform/issues/962). |
+| Log scrubbing (no PII / tokens leaking into logs) | Implemented | The logger redacts sensitive key names and credential patterns from messages, context and errors before stdout and sinks, with a corpus test. See [Logs](../observability/logs/#redaction). Personal data such as names is not pattern-matched. |
 | Encryption at rest | Partially | Postgres on an encrypted disk on the server. `scripts/check-data-encryption.sh` fails when the data directory is not on an encrypted device, but it is run by hand, not enforced by the stack. See [Security posture](../security/#encryption-at-rest). |
 | Encryption in transit (public surfaces only)      | Implemented | TLS at the public edge proxy.                                         |
 

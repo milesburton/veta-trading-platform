@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 171,
-      "cases": 1879,
+      "files": 172,
+      "cases": 1885,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -86,6 +86,7 @@
         "llm-worker.unit.test.ts": 10,
         "load-agent.test.ts": 8,
         "loadgen-announce.unit.test.ts": 14,
+        "log-redaction.unit.test.ts": 6,
         "logger.unit.test.ts": 17,
         "margin-math.unit.test.ts": 21,
         "market-data-adapter-events.unit.test.ts": 8,
