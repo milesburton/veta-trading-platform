@@ -11,6 +11,15 @@ The platform's <Svc name="kafka-relay" /> subscribes to a curated set of Redpand
 
 The relay also exposes `POST /events/batch` for the frontend. The browser's [error transport middleware](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/errorTransportMiddleware.ts) posts uncaught errors here, so client-side failures show up in Loki alongside backend events.
 
+## Redaction
+
+Every record passes through `lib/log-redaction.ts` before it reaches stdout or a log sink, so neither Loki nor the in-app log search receives raw credentials. Two rules apply to the message, to every context value and to error messages and stacks:
+
+- **Key names.** Any context key containing `password`, `passwd`, `passphrase`, `secret`, `token`, `authorization`, `cookie`, `apikey`, `api_key`, `privatekey` or `credential`, or equal to `pass`, `pwd`, `pw`, `sid` or `jwt`, has its value replaced with `[REDACTED]`, at any depth.
+- **Value patterns.** Strings are scanned for bearer and basic authorisation values, JWTs, GitHub, Anthropic, Slack and AWS keys, OpenBao tokens, Discord bot tokens and webhook secrets, passwords inside connection URLs, private key blocks and `name=value` pairs for session, token and password names.
+
+Nesting beyond eight levels is replaced with `[Truncated]`. A unit test feeds a corpus of tokens, cookies, passwords and keys through every level and the sink path, and fails if any appears in the output. Add a pattern to `log-redaction.ts` and the corpus when a new kind of credential is introduced.
+
 ## In-app log search
 
 The trading UI's header has a **Logs** button that opens a drawer for searching backend log output without leaving the platform. It hits `GET /api/gateway/logs/query` with optional `service`, `level`, `q` (free-text), `since` (5m / 15m / 1h / 6h), and `limit` parameters.
