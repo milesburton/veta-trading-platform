@@ -14,7 +14,9 @@ const GOOD = {
 };
 
 const runGuard = (env: Record<string, string>) =>
-  runCommand("bash", ["-c", `. "${GUARD}"; require_real_secrets`], { env });
+  runCommand("bash", ["-c", `. "${GUARD}"; require_real_secrets`], {
+    env: { ...process.env, ...env },
+  });
 
 test("[prod-secrets] the guard accepts real values", async () => {
   assertEquals((await runGuard(GOOD)).code, 0);
