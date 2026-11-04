@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.93.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.93.0...veta-trading-platform-v1.93.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **backup:** serve metrics with nc because the alpine postgres image has no httpd ([#1046](https://github.com/milesburton/veta-trading-platform/issues/1046)) ([#1052](https://github.com/milesburton/veta-trading-platform/issues/1052)) ([60b40d5](https://github.com/milesburton/veta-trading-platform/commit/60b40d59a9fa1f42f67196a61a15e02458d82758))
+
 ## [1.93.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.92.4...veta-trading-platform-v1.93.0) (2026-11-04)
 
 
