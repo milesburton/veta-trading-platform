@@ -167,3 +167,9 @@ test("[postgres-backup] recent dumps are never pruned", async () => {
     await box.cleanup();
   }
 });
+
+test("[postgres-backup] the metrics server uses nc, because the alpine image has no httpd applet", async () => {
+  const script = await readFile(SCRIPT, "utf8");
+  assert(!/^\s*httpd\b/m.test(script), "httpd is not available in postgres:16-alpine");
+  assert(/\bnc -l -p "\$BACKUP_METRICS_PORT"/.test(script));
+});

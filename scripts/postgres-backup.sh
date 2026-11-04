@@ -118,7 +118,15 @@ fi
 
 read_state
 write_metrics
-httpd -f -p "$BACKUP_METRICS_PORT" -h "$METRICS_DIR" &
+serve_metrics() {
+  while true; do
+    {
+      printf 'HTTP/1.1 200 OK\r\nContent-Type: text/plain; version=0.0.4\r\nConnection: close\r\n\r\n'
+      cat "$METRICS_FILE"
+    } | nc -l -p "$BACKUP_METRICS_PORT" >/dev/null 2>&1
+  done
+}
+serve_metrics &
 
 while true; do
   if is_due; then
