@@ -65,7 +65,7 @@ function extractFirstJsonObject(raw: string): string | null {
 export interface ParseTicketDeps {
   provider: ILlmProvider;
   abortMs?: number;
-  enabled?: boolean;
+  enabled: boolean;
 }
 
 class GenerateTimeoutError extends Error {}
@@ -79,7 +79,7 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
 }
 
 export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Promise<Response> {
-  if (deps.enabled === false) {
+  if (!deps.enabled) {
     return jsonResponse({ error: "quick_trade_disabled" }, 503);
   }
 

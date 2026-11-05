@@ -30,7 +30,7 @@ export function QuickTradeBar() {
   const assets = useAppSelector((s) => s.market.assets);
   const ticketSize = useAppSelector(selectOrderTicketWindowSize);
   const [parseTicket, parseTicketState] = useParseTicketMutation();
-  const { data: features } = useGetFeaturesQuery();
+  const { data: features } = useGetFeaturesQuery(undefined, { skip: user?.role !== "trader" });
   const aiEnabled = features?.quickTradeAi === true;
 
   const input = useSignal("");

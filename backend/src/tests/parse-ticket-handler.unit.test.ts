@@ -1,7 +1,11 @@
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import type { ILlmProvider, LlmProviderResponse } from "#veta/types/llm-advisory";
-import { handleParseTicket } from "../llm-advisory/parse-ticket-handler.ts";
+import { handleParseTicket, type ParseTicketDeps } from "../llm-advisory/parse-ticket-handler.ts";
+
+function handle(req: Request, deps: Omit<ParseTicketDeps, "enabled">): Promise<Response> {
+  return handleParseTicket(req, { enabled: true, ...deps });
+}
 
 interface FakeProviderOpts {
   available?: boolean;
@@ -37,7 +41,7 @@ function jsonRequest(body: unknown): Request {
 }
 
 test("handleParseTicket, happy path returns parsed intent", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl @ 200" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl @ 200" }), {
     provider: makeProvider(),
   });
   assertEquals(res.status, 200);
@@ -49,11 +53,11 @@ test("handleParseTicket, happy path returns parsed intent", async () => {
 });
 
 test("handleParseTicket, rejects empty / oversize input with 400", async () => {
-  const empty = await handleParseTicket(jsonRequest({ input: "" }), { provider: makeProvider() });
+  const empty = await handle(jsonRequest({ input: "" }), { provider: makeProvider() });
   assertEquals(empty.status, 400);
   await empty.body?.cancel();
 
-  const oversize = await handleParseTicket(jsonRequest({ input: "x".repeat(300) }), {
+  const oversize = await handle(jsonRequest({ input: "x".repeat(300) }), {
     provider: makeProvider(),
   });
   assertEquals(oversize.status, 400);
@@ -70,7 +74,7 @@ test("handleParseTicket, returns 503 quick_trade_disabled when the switch is off
 });
 
 test("handleParseTicket, returns 503 when provider not available", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({ available: false }),
   });
   assertEquals(res.status, 503);
@@ -79,7 +83,7 @@ test("handleParseTicket, returns 503 when provider not available", async () => {
 });
 
 test("handleParseTicket, returns 503 when provider throws", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({
       generate: () => Promise.reject(new Error("boom")),
     }),
@@ -90,7 +94,7 @@ test("handleParseTicket, returns 503 when provider throws", async () => {
 });
 
 test("handleParseTicket, strips markdown fences from model output", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl @ 200" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl @ 200" }), {
     provider: makeProvider({
       generate: () =>
         Promise.resolve({
@@ -108,7 +112,7 @@ test("handleParseTicket, strips markdown fences from model output", async () => 
 });
 
 test("handleParseTicket, returns 422 on schema-mismatched response", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({
       generate: () =>
         Promise.resolve({
@@ -124,7 +128,7 @@ test("handleParseTicket, returns 422 on schema-mismatched response", async () =>
 });
 
 test("handleParseTicket, returns 422 when model emits explicit error", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "hedge half my book" }), {
+  const res = await handle(jsonRequest({ input: "hedge half my book" }), {
     provider: makeProvider({
       generate: () =>
         Promise.resolve({
@@ -142,7 +146,7 @@ test("handleParseTicket, returns 422 when model emits explicit error", async () 
 });
 
 test("handleParseTicket, returns 422 when symbol not in allowed list", async () => {
-  const res = await handleParseTicket(
+  const res = await handle(
     jsonRequest({ input: "buy 500 unknownsym", symbols: ["AAPL", "MSFT"] }),
     {
       provider: makeProvider({
@@ -163,27 +167,24 @@ test("handleParseTicket, returns 422 when symbol not in allowed list", async () 
 });
 
 test("handleParseTicket, passes through symbol when in allowed list", async () => {
-  const res = await handleParseTicket(
-    jsonRequest({ input: "buy 500 aapl", symbols: ["AAPL", "MSFT"] }),
-    {
-      provider: makeProvider({
-        generate: () =>
-          Promise.resolve({
-            text: '{"side":"BUY","symbol":"AAPL","quantity":500}',
-            promptTokens: 0,
-            completionTokens: 0,
-            latencyMs: 1,
-            rawResponse: "",
-          }),
-      }),
-    }
-  );
+  const res = await handle(jsonRequest({ input: "buy 500 aapl", symbols: ["AAPL", "MSFT"] }), {
+    provider: makeProvider({
+      generate: () =>
+        Promise.resolve({
+          text: '{"side":"BUY","symbol":"AAPL","quantity":500}',
+          promptTokens: 0,
+          completionTokens: 0,
+          latencyMs: 1,
+          rawResponse: "",
+        }),
+    }),
+  });
   assertEquals(res.status, 200);
 });
 
 test("handleParseTicket, sanitises control chars from input before prompt", async () => {
   let receivedPrompt = "";
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl\n\rmalicious" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl\n\rmalicious" }), {
     provider: makeProvider({
       generate: (prompt) => {
         receivedPrompt = prompt;
@@ -207,12 +208,12 @@ test("handleParseTicket, rejects invalid JSON body with 400", async () => {
     headers: { "Content-Type": "application/json" },
     body: "not json",
   });
-  const res = await handleParseTicket(req, { provider: makeProvider() });
+  const res = await handle(req, { provider: makeProvider() });
   assertEquals(res.status, 400);
 });
 
 test("handleParseTicket, a provider that never answers yields 504 llm_timeout", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({ generate: () => new Promise(() => {}) }),
     abortMs: 20,
   });
@@ -221,7 +222,7 @@ test("handleParseTicket, a provider that never answers yields 504 llm_timeout", 
 });
 
 test("handleParseTicket, a throwing provider yields 503 llm_generate_failed", async () => {
-  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+  const res = await handle(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({ generate: () => Promise.reject(new Error("boom")) }),
   });
   assertEquals(res.status, 503);
