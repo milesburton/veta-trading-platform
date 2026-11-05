@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.96.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.95.0...veta-trading-platform-v1.96.0) (2026-11-05)
+
+
+### Features
+
+* **llm:** gate natural-language quick trade behind a switch, default Ollama ([#1021](https://github.com/milesburton/veta-trading-platform/issues/1021)) ([#1059](https://github.com/milesburton/veta-trading-platform/issues/1059)) ([4289979](https://github.com/milesburton/veta-trading-platform/commit/42899797a8dc0621b98ab1b32a26ad21bae21a78))
+
 ## [1.95.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.94.0...veta-trading-platform-v1.95.0) (2026-11-05)
 
 
