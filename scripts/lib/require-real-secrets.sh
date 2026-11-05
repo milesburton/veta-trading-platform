@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-REQUIRED_SECRETS=(POSTGRES_PASSWORD MINIO_ROOT_PASSWORD INTERNAL_SERVICE_TOKEN)
-KNOWN_DEFAULT_SECRETS=(veta change-me-in-production veta-dev-service-token)
+REQUIRED_SECRETS=(POSTGRES_PASSWORD AUDIT_DB_PASSWORD MINIO_ROOT_PASSWORD INTERNAL_SERVICE_TOKEN)
+KNOWN_DEFAULT_SECRETS=(veta veta_audit change-me-in-production veta-dev-service-token)
 
 require_real_secrets() {
     local name value default bad=0

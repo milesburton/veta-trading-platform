@@ -9,6 +9,7 @@ const DEPLOY = readFileSync(new URL("../../../scripts/homelab-deploy.sh", import
 
 const GOOD = {
   POSTGRES_PASSWORD: "p-9f3c",
+  AUDIT_DB_PASSWORD: "a-4e18",
   MINIO_ROOT_PASSWORD: "m-71aa",
   INTERNAL_SERVICE_TOKEN: "t-5b20",
 };
@@ -30,6 +31,7 @@ test("[prod-secrets] the guard rejects a missing secret", async () => {
 test("[prod-secrets] the guard rejects each known compose default", async () => {
   const defaults = {
     POSTGRES_PASSWORD: "veta",
+    AUDIT_DB_PASSWORD: "veta_audit",
     MINIO_ROOT_PASSWORD: "change-me-in-production",
     INTERNAL_SERVICE_TOKEN: "veta-dev-service-token",
   };

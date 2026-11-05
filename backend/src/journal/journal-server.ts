@@ -1,5 +1,5 @@
 import "#veta/bootstrap";
-import { journalPool } from "#veta/db";
+import { auditPool, journalPool } from "#veta/db";
 import { applyExprGroup, applySort } from "#veta/grid-query";
 import { CORS_HEADERS, corsOptions, json, jsonError, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
@@ -304,7 +304,7 @@ async function persistAudit(topic: string, value: unknown): Promise<void> {
   }
   for (let attempt = 1; attempt <= AUDIT_WRITE_ATTEMPTS; attempt++) {
     try {
-      await appendAudit(journalPool, event);
+      await appendAudit(auditPool, event);
       return;
     } catch (err) {
       if (attempt === AUDIT_WRITE_ATTEMPTS) {
@@ -470,7 +470,7 @@ async function handle(req: Request): Promise<Response> {
 
   if (req.method === "GET" && path === "/audit") {
     const beforeSeq = Number(url.searchParams.get("beforeSeq"));
-    const events = await listAudit(journalPool, {
+    const events = await listAudit(auditPool, {
       limit: Number(url.searchParams.get("limit") ?? 100),
       beforeSeq: Number.isFinite(beforeSeq) && beforeSeq > 0 ? beforeSeq : undefined,
       actorId: url.searchParams.get("actorId") ?? undefined,
@@ -479,7 +479,7 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "GET" && path === "/audit/verify") {
-    const brokenSeq = await firstBrokenSeq(journalPool);
+    const brokenSeq = await firstBrokenSeq(auditPool);
     return json({ ok: brokenSeq === null, brokenSeq });
   }
 

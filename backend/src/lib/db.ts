@@ -52,7 +52,7 @@ export class Pool {
 }
 
 function resolveUrl(serviceKey: string): string {
-  const url = process.env[`${serviceKey}_DATABASE_URL`] ?? process.env.DATABASE_URL;
+  const url = process.env[`${serviceKey}_DATABASE_URL`] || process.env.DATABASE_URL;
   if (!url) {
     throw new Error(`DATABASE_URL is required (set ${serviceKey}_DATABASE_URL or DATABASE_URL)`);
   }
@@ -78,6 +78,7 @@ function lazyExport(key: string, size: number, lazy: boolean): Pool {
   });
 }
 
+export const auditPool = lazyExport("AUDIT", 4, true);
 export const journalPool = lazyExport("JOURNAL", 12, true);
 export const fixArchivePool = lazyExport("FIX_ARCHIVE", 3, true);
 export const usersPool = lazyExport("USERS", 12, true);

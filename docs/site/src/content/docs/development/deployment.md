@@ -93,7 +93,7 @@ To rotate the deploy credential, issue a new secret ID as `admin` (`bao write -f
 
 ### Required secrets and rotation
 
-`POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD` and `INTERNAL_SERVICE_TOKEN` must be set in `secret/veta/platform` to values other than the development defaults in `compose.yml`. `scripts/lib/require-real-secrets.sh` runs after the secrets are loaded, and the deploy aborts before touching any container if one is missing or equal to a default. `compose.prod.yml` also refuses to render without `POSTGRES_PASSWORD`.
+`POSTGRES_PASSWORD`, `AUDIT_DB_PASSWORD`, `MINIO_ROOT_PASSWORD` and `INTERNAL_SERVICE_TOKEN` must be set in `secret/veta/platform` to values other than the development defaults in `compose.yml`. `scripts/lib/require-real-secrets.sh` runs after the secrets are loaded, and the deploy aborts before touching any container if one is missing or equal to a default. `compose.prod.yml` also refuses to render without `POSTGRES_PASSWORD`.
 
 Postgres stores its role password in the data directory and MinIO reads its root password from the environment at start, so changing the vault value alone does not rotate a running stack. Rotate in this order, in a planned window:
 

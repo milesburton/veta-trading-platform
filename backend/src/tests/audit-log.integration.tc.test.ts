@@ -1,6 +1,7 @@
 import { Pool } from "#veta/db";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
+import { AUDIT_LOGIN_ROLE, provisionAuditLogin } from "../../db/auditRole.ts";
 import { appendAudit, firstBrokenSeq, listAudit } from "../lib/audit.ts";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
@@ -111,5 +112,54 @@ test({
       }
       assertEquals(await firstBrokenSeq(pool), 2);
     });
+  },
+});
+
+function loginUrl(adminUrl: string, password: string): string {
+  const url = new URL(adminUrl);
+  url.username = AUDIT_LOGIN_ROLE;
+  url.password = password;
+  return url.toString();
+}
+
+test({
+  name: "audit: the insert-only login can append and read but cannot tamper",
+  ignore: !SHOULD_RUN,
+  async fn() {
+    const pg = await startEphemeralPostgres();
+    const admin = new Pool(pg.url, 2, false);
+    try {
+      await applyMigrations(pg.url);
+      await provisionAuditLogin(pg.url, "it's a p@ss:word/with?chars");
+      await provisionAuditLogin(pg.url, "rotated");
+      const writer = new Pool(loginUrl(pg.url, "rotated"), 2, false);
+      try {
+        await appendAudit(writer, EVENT);
+        await appendAudit(writer, { ...EVENT, action: "orders_resume" });
+        assertEquals(
+          (await listAudit(writer)).map((r) => r.seq),
+          [2, 1]
+        );
+        assertEquals(await firstBrokenSeq(writer), null);
+
+        for (const sql of [
+          "UPDATE audit.events SET action = 'x'",
+          "DELETE FROM audit.events",
+          "TRUNCATE audit.events",
+          "ALTER TABLE audit.events DISABLE TRIGGER events_no_update",
+          "DROP TABLE audit.events",
+          "CREATE TABLE audit.shadow (id int)",
+          "SELECT count(*) FROM public.schema_migrations",
+        ]) {
+          assert((await rejects(writer, sql)) !== "", `expected rejection: ${sql}`);
+        }
+        assertEquals((await listAudit(admin)).length, 2);
+      } finally {
+        await writer.end();
+      }
+    } finally {
+      await admin.end();
+      await pg.teardown();
+    }
   },
 });

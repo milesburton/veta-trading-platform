@@ -113,6 +113,7 @@ Privileged actions are recorded in `audit.events`, a Postgres table that is appe
 | Append-only | Row triggers reject `UPDATE` and `DELETE`, and a statement trigger rejects `TRUNCATE`. |
 | Tamper-evident | Each row stores the SHA-256 of the previous row's hash plus its own fields. The hash is computed by an insert trigger under an advisory lock, so application code cannot supply or skip it, and concurrent writers still produce a gapless sequence. |
 | Verifiable | `audit.first_broken_seq()` recomputes the chain and returns the first inconsistent sequence number, or null. |
+| Insert-only writer | The journal reads and writes the log as `veta_audit`, a login in the `audit_writer` group. It holds `SELECT` and `INSERT` on `audit.events` and `EXECUTE` on the audit functions, and nothing else. It cannot update, delete, truncate, alter or drop, and cannot read any other table. Its password is `AUDIT_DB_PASSWORD` in `secret/veta/platform`, and `db-migrate` creates or rotates the login on every run. |
 
 Events reach the table through the bus. The gateway publishes an `audit.events` message when a privileged mutation succeeds (a 2xx response from an authenticated caller). The rules live in one table, `PRIVILEGED_RULES`, covering market hours, load generation, upgrade status, intelligence weights, advisory admin actions, market-data overrides and source toggles, product and sell-side RFQ handling, market-sim admin and risk-engine changes. Kill and resume are captured from the existing `orders.kill.audit` and `orders.resume.audit` topics. The journal service consumes all three topics and writes the rows.
 
@@ -120,7 +121,7 @@ Admin and compliance users can read the log through `GET /audit/events` (filter 
 
 Known limits, each tracked as an issue:
 
-- All services currently connect to Postgres as one user, so the table owner could disable the triggers. The hash chain makes that detectable but not impossible. A separate insert-only database role would close it.
+- The other services still connect as the shared `veta` user, which owns the table and could disable the triggers. The insert-only role limits what a compromised journal can do, but closing this fully needs table ownership moved to a dedicated migration role. The hash chain makes tampering detectable in the meantime.
 - Delivery goes through the message bus and is not guaranteed, so a rare dropped message means a missing audit row rather than a broken chain.
 - Truncating the newest rows leaves a valid chain. Anchoring the head hash outside the database would detect it.
 - User-service changes are not yet audited.
