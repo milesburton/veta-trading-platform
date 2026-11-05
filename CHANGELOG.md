@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.95.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.94.0...veta-trading-platform-v1.95.0) (2026-11-05)
+
+
+### Features
+
+* **alerts:** link a runbook from every Prometheus and Grafana alert rule ([#968](https://github.com/milesburton/veta-trading-platform/issues/968)) ([#1054](https://github.com/milesburton/veta-trading-platform/issues/1054)) ([78e5314](https://github.com/milesburton/veta-trading-platform/commit/78e531410b4758d23dd33179bf4426c7751d9cc7))
+
 ## [1.94.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.93.1...veta-trading-platform-v1.94.0) (2026-11-04)
 
 
