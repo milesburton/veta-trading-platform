@@ -156,9 +156,9 @@ hurdles in order.
    - **Control**: the edge sets a Content-Security-Policy with
      `default-src 'self'` and `connect-src` limited to the platform
      origin, which restricts where data can be sent. `script-src`
-     still allows `'unsafe-inline'`, so it does not stop injected
-     inline script; the main defences remain React's escaping and
-     the `httpOnly` cookie.
+     is `'self'` only, so injected inline script does not run;
+     `style-src` still allows `'unsafe-inline'`. React's escaping and
+     the `httpOnly` cookie remain the primary defences.
 
 ### Chain 6: Replay attack with an old auth token after revocation
 

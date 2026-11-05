@@ -3,7 +3,7 @@
 # (the contentSecurityPolicy field and the customResponseHeaders
 # fallback) so they can't drift.
 x-anchors:
-  csp: &csp "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  csp: &csp "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
 tls:
   stores:
@@ -74,11 +74,8 @@ http:
         browserXssFilter: true
         referrerPolicy: "strict-origin-when-cross-origin"
         frameDeny: true
-        # script-src 'unsafe-inline' is required by frontend/index.html which
-        # has a sync <script> for theme persistence (runs before paint to
-        # avoid FOUC). Tightening this requires either a build-time SHA-256
-        # hash or moving the script to an external file with a CSP nonce,
-        # see follow-up TODO in audit doc.
+        # script-src is 'self' only: the theme persistence script lives in
+        # frontend/public/theme-init.js and index.html has no inline script.
         # style-src 'unsafe-inline' is required by React inline-style props
         # used across the codebase. Tightening means refactoring to CSS
         # modules / classes.

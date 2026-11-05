@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 174,
-      "cases": 1897,
+      "files": 175,
+      "cases": 1899,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -47,6 +47,7 @@
         "docs-drift.unit.test.ts": 10,
         "docs-sidebar.unit.test.ts": 3,
         "duration-ladder.unit.test.ts": 9,
+        "edge-csp.unit.test.ts": 2,
         "ems.unit.test.ts": 28,
         "feature-engine-service.unit.test.ts": 10,
         "feature-engine.test.ts": 26,
