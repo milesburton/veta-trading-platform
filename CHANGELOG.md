@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.99.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.98.0...veta-trading-platform-v1.99.0) (2026-11-05)
+
+
+### Features
+
+* **security:** drop script-src unsafe-inline from the edge CSP ([#967](https://github.com/milesburton/veta-trading-platform/issues/967)) ([#1060](https://github.com/milesburton/veta-trading-platform/issues/1060)) ([7ce310c](https://github.com/milesburton/veta-trading-platform/commit/7ce310cf047107f75b4c72c13b200fad7fa2412e))
+
 ## [1.98.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.97.0...veta-trading-platform-v1.98.0) (2026-11-05)
 
 
