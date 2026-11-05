@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { json, jsonError, parseBody } from "#veta/http";
 import { isAllowedAttachmentType } from "../../../../shared/attachmentTypes.ts";
+import { deriveSigningKey, hmacSha256, toHex } from "../../lib/sigv4.ts";
 import { type GatewayContext, isResponse } from "../context.ts";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -42,35 +43,6 @@ function sanitizeFileName(name: string): string {
     .replace(/[^a-zA-Z0-9._-]/g, "_")
     .replace(/\.{2,}/g, "_")
     .slice(-100);
-}
-
-function toHex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function hmacSha256(key: ArrayBuffer | Uint8Array, data: string): Promise<ArrayBuffer> {
-  const keyBytes = key instanceof Uint8Array ? key : new Uint8Array(key);
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    keyBytes.slice().buffer,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data));
-}
-
-async function deriveSigningKey(
-  secretKey: string,
-  dateStamp: string,
-  region: string
-): Promise<ArrayBuffer> {
-  const kDate = await hmacSha256(new TextEncoder().encode(`AWS4${secretKey}`), dateStamp);
-  const kRegion = await hmacSha256(kDate, region);
-  const kService = await hmacSha256(kRegion, "s3");
-  return hmacSha256(kService, "aws4_request");
 }
 
 interface PresignedPost {

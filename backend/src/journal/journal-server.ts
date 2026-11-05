@@ -5,7 +5,7 @@ import { CORS_HEADERS, corsOptions, json, jsonError, serveFetch } from "#veta/ht
 import { logger } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import type { GridQueryRequest, GridQueryResponse } from "#veta/types/grid-query";
-import { appendAudit, firstBrokenSeq, listAudit } from "../lib/audit.ts";
+import { appendAudit, auditHead, firstBrokenSeq, listAudit } from "../lib/audit.ts";
 import { AUDIT_TOPICS, toAuditEvent } from "./audit-ingest.ts";
 import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
@@ -481,6 +481,13 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "GET" && path === "/audit/verify") {
     const brokenSeq = await firstBrokenSeq(auditPool);
     return json({ ok: brokenSeq === null, brokenSeq });
+  }
+
+  if (req.method === "GET" && path === "/audit/head") {
+    const atSeq = Number(url.searchParams.get("seq"));
+    return json(
+      await auditHead(auditPool, Number.isInteger(atSeq) && atSeq > 0 ? atSeq : undefined)
+    );
   }
 
   if (req.method === "GET" && path === "/data-depth") {
