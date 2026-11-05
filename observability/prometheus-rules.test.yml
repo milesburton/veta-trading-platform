@@ -21,6 +21,7 @@ tests:
               job: gateway
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/ticketing-unavailable.md
               summary: GitHub user-ticket delivery unavailable for 10m
               description: |
                 The VETA gateway cannot validate its GitHub ticketing credential or reach the
@@ -42,6 +43,7 @@ tests:
               redpanda_topic: orders.new
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
               summary: "orders.new producing >512 KiB/s for 30m"
               description: |
                 Topic orders.new is taking writes at >512 KiB/s
@@ -102,6 +104,7 @@ tests:
               redpanda_topic: orders.new
               severity: critical
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
               summary: "orders.new producing >2 MiB/s for 10m, disk-fill imminent"
               description: |
                 Topic orders.new is taking writes at >2 MiB/s.
@@ -138,6 +141,7 @@ tests:
               alertname: MarketTicksSilentWhileMarketOpen
               severity: critical
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/market-ticks-silent.md
               summary: market.ticks has stopped despite at least one asset class being open
               description: |
                 market-sim reports at least one asset class open
@@ -207,6 +211,7 @@ tests:
               alertname: DiskUsageHigh
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
               summary: Host disk above 80% for 5m
               description: |
                 disk_used_percent is 85%. Past incident: kafka-relay
@@ -237,6 +242,7 @@ tests:
               alertname: DiskUsageCritical
               severity: critical
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
               summary: "Host disk above 92%, imminent outage"
               description: |
                 disk_used_percent is 94%. Docker exec, healthchecks,
@@ -262,6 +268,7 @@ tests:
               job: disk-monitor
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
               summary: disk-monitor scrape failing for 5m
               description: |
                 Prometheus can't scrape disk-monitor:8099/metrics. Disk could
@@ -281,6 +288,7 @@ tests:
               job: redpanda
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
               summary: Redpanda scrape failing for 5m
               description: |
                 Prometheus can't scrape redpanda:9644/public_metrics. Topic
@@ -301,6 +309,7 @@ tests:
               alertname: RedpandaUnavailablePartitions
               severity: critical
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
               summary: Redpanda has 2 partitions without quorum
               description: |
                 redpanda_cluster_unavailable_partitions is 2.
@@ -329,6 +338,7 @@ tests:
               redpanda_partition: "0"
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
               summary: "group-b on orders.new lagging >100k offsets for 15m"
               description: |
                 Consumer group group-b on topic orders.new
@@ -366,6 +376,7 @@ tests:
               alertname: PostgresBackupStale
               severity: critical
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/postgres-backup-alert.md
               summary: No successful Postgres backup for over 26h
               description: |
                 The last verified pg_dump finished more than 26 hours ago, or
@@ -395,6 +406,7 @@ tests:
               alertname: PostgresBackupFailing
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/postgres-backup-alert.md
               summary: The latest Postgres backup attempt failed
               description: |
                 The most recent backup attempt failed pg_dump or verification.
@@ -415,6 +427,7 @@ tests:
               job: postgres-backup
               severity: warning
             exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/postgres-backup-alert.md
               summary: postgres-backup scrape failing for 10m
               description: |
                 Prometheus can't scrape veta-postgres-backup:8101/metrics.

@@ -61,6 +61,7 @@ groups:
         for: 5m
         annotations:
           summary: Host disk above 80% for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
           description: |
             disk_used_percent is above 80%. Past incident: kafka-relay
             log spam filled the disk at 100% and took out the site.
@@ -107,6 +108,7 @@ groups:
         for: 1m
         annotations:
           summary: Host disk above 92%, imminent outage
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
           description: |
             disk_used_percent is above 92%. Docker exec, healthchecks,
             and Traefik label reads start failing around 95%. Truncate
@@ -154,6 +156,7 @@ groups:
         for: 5m
         annotations:
           summary: disk-monitor scrape failing for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/disk-usage.md
           description: |
             Prometheus can't scrape disk-monitor:8099/metrics. Disk
             could be filling without anyone seeing it. Check the
@@ -205,6 +208,7 @@ groups:
         for: 5m
         annotations:
           summary: Redpanda scrape failing for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Prometheus can't scrape redpanda:9644/public_metrics.
             Topic growth, consumer lag and partition health are
@@ -257,6 +261,7 @@ groups:
         for: 30m
         annotations:
           summary: "{{ $labels.redpanda_topic }} producing >512 KiB/s for 30m"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >512 KiB/s
             sustained, that's ~1.5 GiB/hour, ~36 GiB/day. At the
@@ -314,6 +319,7 @@ groups:
         for: 10m
         annotations:
           summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s, disk-fill imminent"
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             Topic {{ $labels.redpanda_topic }} is taking writes at >2 MiB/s. That's
             ~7 GiB/hour. Per-partition retention.bytes will tombstone,
@@ -361,6 +367,7 @@ groups:
         for: 2m
         annotations:
           summary: Redpanda has partitions without quorum
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/redpanda.md
           description: |
             redpanda_cluster_unavailable_partitions is non-zero.
             Producers writing to these partitions block; consumers
