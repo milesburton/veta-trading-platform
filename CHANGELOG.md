@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.98.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.97.0...veta-trading-platform-v1.98.0) (2026-11-05)
+
+
+### Features
+
+* **security:** anchor the audit chain head to object-locked storage and the operator channel ([#992](https://github.com/milesburton/veta-trading-platform/issues/992)) ([#1066](https://github.com/milesburton/veta-trading-platform/issues/1066)) ([4485fe6](https://github.com/milesburton/veta-trading-platform/commit/4485fe61309df4425f35e510b974835e4a32dd7a))
+
 ## [1.97.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.96.0...veta-trading-platform-v1.97.0) (2026-11-05)
 
 
