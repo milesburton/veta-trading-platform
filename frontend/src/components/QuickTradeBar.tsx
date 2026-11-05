@@ -5,7 +5,10 @@ import {
   QuickTradeIntentSchema,
 } from "@veta/frontend/domain/quickTrade/parse.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
-import { useParseTicketMutation } from "@veta/frontend/store/parseTicketApi.ts";
+import {
+  useGetFeaturesQuery,
+  useParseTicketMutation,
+} from "@veta/frontend/store/parseTicketApi.ts";
 import { selectOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
 import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
 import type React from "react";
@@ -27,6 +30,8 @@ export function QuickTradeBar() {
   const assets = useAppSelector((s) => s.market.assets);
   const ticketSize = useAppSelector(selectOrderTicketWindowSize);
   const [parseTicket, parseTicketState] = useParseTicketMutation();
+  const { data: features } = useGetFeaturesQuery(undefined, { skip: user?.role !== "trader" });
+  const aiEnabled = features?.quickTradeAi === true;
 
   const input = useSignal("");
   const flash = useSignal<{ kind: "ok" | "err"; msg: string } | null>(null);
@@ -37,7 +42,8 @@ export function QuickTradeBar() {
   if (user?.role !== "trader") return null;
 
   const regexIntent = parseQuickTrade(input.value, { knownSymbols });
-  const canAskAi = !regexIntent && input.value.trim().length >= 8 && !parseTicketState.isLoading;
+  const canAskAi =
+    aiEnabled && !regexIntent && input.value.trim().length >= 8 && !parseTicketState.isLoading;
 
   function send() {
     if (!regexIntent) {
@@ -122,8 +128,16 @@ export function QuickTradeBar() {
           if (flash.value) flash.value = null;
         }}
         onKeyDown={onKeyDown}
-        placeholder="buy 500 aapl @ 200 twap 30m, or describe in natural language"
-        aria-label="Quick trade, natural-language order entry"
+        placeholder={
+          aiEnabled
+            ? "buy 500 aapl @ 200 twap 30m, or describe in natural language"
+            : "buy 500 aapl @ 200 twap 30m"
+        }
+        aria-label={
+          aiEnabled
+            ? "Quick trade, natural-language order entry"
+            : "Quick trade, shorthand order entry"
+        }
         className="flex-1 bg-surface border border-panel rounded px-3 py-1 text-sm font-mono text-primary placeholder:text-subtle focus:outline-none focus:border-emerald-600"
         autoComplete="off"
         spellCheck={false}
@@ -148,16 +162,18 @@ export function QuickTradeBar() {
       >
         Send → Ticket
       </button>
-      <button
-        type="button"
-        data-testid="quick-trade-ask-ai"
-        onClick={askAi}
-        disabled={!canAskAi}
-        title="Use the LLM to parse free-form instructions"
-        className="shrink-0 px-2 py-0.5 rounded border border-semantic-status-success/40 hover:bg-semantic-status-success/6 disabled:opacity-30 disabled:cursor-not-allowed text-semantic-status-success text-[11px] font-semibold uppercase tracking-wide transition-colors"
-      >
-        {parseTicketState.isLoading ? "Asking…" : "Ask AI"}
-      </button>
+      {aiEnabled && (
+        <button
+          type="button"
+          data-testid="quick-trade-ask-ai"
+          onClick={askAi}
+          disabled={!canAskAi}
+          title="Use the LLM to parse free-form instructions"
+          className="shrink-0 px-2 py-0.5 rounded border border-semantic-status-success/40 hover:bg-semantic-status-success/6 disabled:opacity-30 disabled:cursor-not-allowed text-semantic-status-success text-[11px] font-semibold uppercase tracking-wide transition-colors"
+        >
+          {parseTicketState.isLoading ? "Asking…" : "Ask AI"}
+        </button>
+      )}
       {flash.value && (
         <span
           data-testid="quick-trade-flash"

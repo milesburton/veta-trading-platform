@@ -837,6 +837,15 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     return handleHealth(VERSION);
   }
 
+  if (path === "/features" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return new Response(
+      JSON.stringify({ quickTradeAi: process.env.QUICK_TRADE_LLM_ENABLED === "true" }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req) } }
+    );
+  }
+
   if (path === "/platform-status" && req.method === "GET") {
     const tokenCookie = getCookieToken(req);
     const auth = tokenCookie ? await validateToken(tokenCookie) : null;

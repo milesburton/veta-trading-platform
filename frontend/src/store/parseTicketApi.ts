@@ -16,6 +16,9 @@ export const parseTicketApi = createApi({
     credentials: "include",
   }),
   endpoints: (builder) => ({
+    getFeatures: builder.query<{ quickTradeAi: boolean }, void>({
+      query: () => "/features",
+    }),
     parseTicket: builder.mutation<ParseTicketResponse, ParseTicketRequest>({
       query: (body) => ({
         url: "/api/llm-advisory/parse-ticket",
@@ -26,4 +29,4 @@ export const parseTicketApi = createApi({
   }),
 });
 
-export const { useParseTicketMutation } = parseTicketApi;
+export const { useGetFeaturesQuery, useParseTicketMutation } = parseTicketApi;

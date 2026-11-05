@@ -9,9 +9,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 const parseTicketMock = vi.fn();
 const useParseTicketMutationMock = vi.fn();
+const useGetFeaturesQueryMock = vi.fn();
 
 vi.mock("../../store/parseTicketApi", () => ({
   useParseTicketMutation: () => useParseTicketMutationMock(),
+  useGetFeaturesQuery: () => useGetFeaturesQueryMock(),
 }));
 
 function setMutationResult(opts: { loading?: boolean; result?: unknown; error?: unknown } = {}) {
@@ -32,6 +34,7 @@ function setMutationResult(opts: { loading?: boolean; result?: unknown; error?: 
 import { QuickTradeBar } from "@veta/frontend/components/QuickTradeBar";
 
 beforeEach(() => {
+  useGetFeaturesQueryMock.mockReturnValue({ data: { quickTradeAi: true } });
   setMutationResult();
 });
 
@@ -182,6 +185,24 @@ describe("QuickTradeBar, regex path", () => {
       target: { value: "buy 500 unknownsym @ 200" },
     });
     expect(screen.getByTestId("quick-trade-send")).toBeDisabled();
+  });
+});
+
+describe("QuickTradeBar, AI switched off", () => {
+  it("hides Ask AI and the natural-language hint", () => {
+    useGetFeaturesQueryMock.mockReturnValue({ data: { quickTradeAi: false } });
+    renderBar(makeStore());
+    expect(screen.queryByTestId("quick-trade-ask-ai")).toBeNull();
+    expect(screen.getByTestId("quick-trade-input")).toHaveAttribute(
+      "placeholder",
+      "buy 500 aapl @ 200 twap 30m"
+    );
+  });
+
+  it("hides Ask AI until the feature flag has loaded", () => {
+    useGetFeaturesQueryMock.mockReturnValue({ data: undefined });
+    renderBar(makeStore());
+    expect(screen.queryByTestId("quick-trade-ask-ai")).toBeNull();
   });
 });
 
