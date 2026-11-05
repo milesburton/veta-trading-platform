@@ -37,7 +37,7 @@ parameter CPU model to emit strict JSON.
    and has no dependency on the advisory job queue or runtime config. The frontend now
    calls `/api/llm-advisory/parse-ticket`. The route is removed from `llm-worker`.
 2. **Use a dedicated provider chain, independent of the advisory switches.**
-   `QUICK_TRADE_LLM_PROVIDERS` is an ordered list, default `anthropic,ollama`. The first
+   `QUICK_TRADE_LLM_PROVIDERS` is an ordered list, default `ollama`; Anthropic is opt-in. The first
    available provider answers, and a provider that throws hands over to the next one. The
    Anthropic model defaults to `claude-haiku-5-5` for latency; Ollama reuses the existing
    in-stack model. Parsing works with `LLM_ENABLED=false`.
@@ -57,6 +57,8 @@ parameter CPU model to emit strict JSON.
 | Ollama only | No data leaves the network | A CPU 3B model is slow and unreliable at strict JSON under host load, which is the failure ADR 0006 recorded |
 
 ## Consequences
+
+- Parsing ships behind `QUICK_TRADE_LLM_ENABLED`, default `false`, because the in-stack CPU model is too slow under host load. When off, the quick trade bar offers the shorthand grammar only.
 
 - Trader order text (at most 200 characters) and the list of symbols leave the private
   network when the Anthropic provider is used. No account, position or price data is sent.

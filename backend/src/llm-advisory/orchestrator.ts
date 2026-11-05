@@ -248,6 +248,7 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     return await handleParseTicket(req, {
       provider: parseTicketProvider,
       abortMs: parseTicketConfig.timeoutMs,
+      enabled: parseTicketConfig.enabled,
     });
   }
 

@@ -4,11 +4,12 @@ import { createOllamaProvider } from "../lib/llm-providers/ollama.ts";
 
 const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-5-5";
 const DEFAULT_OLLAMA_MODEL = "qwen2.5:3b";
-const DEFAULT_CHAIN = "anthropic,ollama";
+const DEFAULT_CHAIN = "ollama";
 export const DEFAULT_TIMEOUT_MS = 45_000;
 export const MAX_TIMEOUT_MS = 55_000;
 
 export interface ParseTicketProviderConfig {
+  enabled: boolean;
   chain: readonly string[];
   anthropicModelId: string;
   ollamaModelId: string;
@@ -20,6 +21,7 @@ export function loadParseTicketProviderConfig(
   env: NodeJS.ProcessEnv = process.env
 ): ParseTicketProviderConfig {
   return {
+    enabled: env.QUICK_TRADE_LLM_ENABLED === "true",
     chain: (env.QUICK_TRADE_LLM_PROVIDERS ?? DEFAULT_CHAIN)
       .split(",")
       .map((name) => name.trim().toLowerCase())

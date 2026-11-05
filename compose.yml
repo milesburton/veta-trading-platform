@@ -1679,7 +1679,8 @@ services:
       LLM_ADVISORY_PORT: "5024"
       LLM_ADVISORY_DB_PATH: /app/data/llm-advisory.db
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      QUICK_TRADE_LLM_PROVIDERS: ${QUICK_TRADE_LLM_PROVIDERS:-anthropic,ollama}
+      QUICK_TRADE_LLM_ENABLED: ${QUICK_TRADE_LLM_ENABLED:-false}
+      QUICK_TRADE_LLM_PROVIDERS: ${QUICK_TRADE_LLM_PROVIDERS:-ollama}
       LLM_ENABLED: "true"
       LLM_WORKER_ENABLED: "true"
       LLM_PROVIDER: ollama
@@ -1773,6 +1774,7 @@ services:
         condition: service_completed_successfully
     environment:
       GATEWAY_PORT: "5011"
+      QUICK_TRADE_LLM_ENABLED: ${QUICK_TRADE_LLM_ENABLED:-false}
       DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       SCENARIOS_DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       LOAD_TEST_USER_IDS: ${LOAD_TEST_USER_IDS:-alice,amelia,bob,dave}

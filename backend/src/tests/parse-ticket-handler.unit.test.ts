@@ -60,6 +60,15 @@ test("handleParseTicket, rejects empty / oversize input with 400", async () => {
   await oversize.body?.cancel();
 });
 
+test("handleParseTicket, returns 503 quick_trade_disabled when the switch is off", async () => {
+  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
+    provider: makeProvider(),
+    enabled: false,
+  });
+  assertEquals(res.status, 503);
+  assertEquals((await res.json()).error, "quick_trade_disabled");
+});
+
 test("handleParseTicket, returns 503 when provider not available", async () => {
   const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl" }), {
     provider: makeProvider({ available: false }),

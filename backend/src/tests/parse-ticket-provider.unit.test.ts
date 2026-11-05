@@ -26,12 +26,18 @@ function fake(id: string, opts: { available?: boolean; fail?: boolean } = {}): I
   };
 }
 
-test("parse-ticket provider config, defaults to anthropic then ollama", () => {
+test("parse-ticket provider config, defaults to ollama only and disabled", () => {
   const config = loadParseTicketProviderConfig({});
-  assertEquals(config.chain, ["anthropic", "ollama"]);
+  assertEquals(config.enabled, false);
+  assertEquals(config.chain, ["ollama"]);
   assertEquals(config.anthropicModelId, "claude-haiku-5-5");
   assertEquals(config.ollamaModelId, "qwen2.5:3b");
   assertEquals(config.timeoutMs, 45_000);
+});
+
+test("parse-ticket provider config, enabled only for the literal true", () => {
+  assertEquals(loadParseTicketProviderConfig({ QUICK_TRADE_LLM_ENABLED: "true" }).enabled, true);
+  assertEquals(loadParseTicketProviderConfig({ QUICK_TRADE_LLM_ENABLED: "1" }).enabled, false);
 });
 
 test("parse-ticket provider config, reads the chain and drops unknown names", () => {
@@ -85,6 +91,7 @@ test("fallback provider, is unavailable when none are available or none are conf
 
 test("buildParseTicketProvider, builds one provider per configured name", () => {
   const provider = buildParseTicketProvider({
+    enabled: true,
     chain: ["anthropic", "ollama"],
     anthropicModelId: "claude-haiku-5-5",
     ollamaModelId: "qwen2.5:3b",
