@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.97.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.96.0...veta-trading-platform-v1.97.0) (2026-11-05)
+
+
+### Features
+
+* **security:** write the audit log through a dedicated insert-only database role ([#991](https://github.com/milesburton/veta-trading-platform/issues/991)) ([#1064](https://github.com/milesburton/veta-trading-platform/issues/1064)) ([ce19237](https://github.com/milesburton/veta-trading-platform/commit/ce1923751e7d98f2c7e99016c543ffc4a1c4cf44))
+
 ## [1.96.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.95.0...veta-trading-platform-v1.96.0) (2026-11-05)
 
 
