@@ -291,6 +291,8 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/journal:latest
     build: !reset null
     profiles: !reset []
+    environment:
+      AUDIT_DATABASE_URL: postgres://veta_audit:${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must come from OpenBao}@postgres:5432/${POSTGRES_DB:-veta}
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.journal.rule=PathPrefix(`/api/journal`)"
@@ -708,6 +710,8 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/db-migrate:latest
     build: !reset null
     profiles: !reset []
+    environment:
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must come from OpenBao}
     restart: "no"
     labels:
       - "traefik.enable=false"

@@ -199,11 +199,11 @@
     },
     "testcontainers": {
       "files": 24,
-      "cases": 246,
+      "cases": 247,
       "perFile": {
         "algo.integration.tc.test.ts": 15,
         "analytics-services.integration.tc.test.ts": 9,
-        "audit-log.integration.tc.test.ts": 4,
+        "audit-log.integration.tc.test.ts": 5,
         "fix.integration.tc.test.ts": 14,
         "integration.tc.test.ts": 21,
         "intelligence.integration.tc.test.ts": 11,

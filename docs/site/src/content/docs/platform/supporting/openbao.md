@@ -116,7 +116,7 @@ If the recovery key is lost, the data cannot be reached for writes. The remainin
 | `admin` login returns `invalid credentials`, or a saved root token returns `permission denied` | The password changed or the root token was revoked after setup, which is the intended state | [Recovering admin access](#recovering-admin-access) |
 | `bao operator generate-root` returns `403` | The CLI uses an authenticated path under the static seal | Use the `sys/generate-root` API as described above |
 | `recovery key does not match submitted values` | The key belongs to another vault, or was copied incorrectly | Find the key labelled for this vault. Do not retry in a loop |
-| The deploy aborts with `is a known compose default` or `is not set` | `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD` or `INTERNAL_SERVICE_TOKEN` is missing or still a development default in `secret/veta/platform` | Set a real value as `admin`, rotating the live credential first. See the deployment page |
+| The deploy aborts with `is a known compose default` or `is not set` | `POSTGRES_PASSWORD`, `AUDIT_DB_PASSWORD`, `MINIO_ROOT_PASSWORD` or `INTERNAL_SERVICE_TOKEN` is missing or still a development default in `secret/veta/platform` | Set a real value as `admin`, rotating the live credential first. See the deployment page |
 | A service starts with a default password after a manual command | It was recreated with a bare `docker compose` | Recreate it with `scripts/veta-compose.sh up -d <service>` |
 
 ## Source
