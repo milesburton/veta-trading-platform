@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 173,
-      "cases": 1888,
+      "files": 174,
+      "cases": 1897,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -23,6 +23,7 @@
         "analytics-server.unit.test.ts": 16,
         "analytics.unit.test.ts": 22,
         "apply-shocks.unit.test.ts": 7,
+        "audit-anchor.unit.test.ts": 9,
         "black-scholes.unit.test.ts": 6,
         "bond-pricing.unit.test.ts": 11,
         "bug-report-route.unit.test.ts": 14,
@@ -198,12 +199,12 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 24,
-      "cases": 247,
+      "files": 25,
+      "cases": 249,
       "perFile": {
         "algo.integration.tc.test.ts": 15,
         "analytics-services.integration.tc.test.ts": 9,
-        "audit-log.integration.tc.test.ts": 5,
+        "audit-log.integration.tc.test.ts": 6,
         "fix.integration.tc.test.ts": 14,
         "integration.tc.test.ts": 21,
         "intelligence.integration.tc.test.ts": 11,
@@ -216,6 +217,7 @@
         "product-service.integration.tc.test.ts": 8,
         "registration.integration.tc.test.ts": 5,
         "risk-rejection.integration.tc.test.ts": 7,
+        "s3-minio.integration.tc.test.ts": 1,
         "scenarios.integration.tc.test.ts": 2,
         "smoke.full.tc.test.ts": 65,
         "smoke.tc.test.ts": 11,

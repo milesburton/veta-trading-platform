@@ -454,6 +454,9 @@ services:
           mc mb -p local/ticket-attachments || true
           mc anonymous set download local/ticket-attachments
           echo "MinIO ticket-attachments bucket ready"
+          mc mb -p --with-lock local/audit-anchors || true
+          mc retention set --default COMPLIANCE 30d local/audit-anchors
+          echo "MinIO audit-anchors bucket ready"
     labels:
       - "traefik.enable=false"
 

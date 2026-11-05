@@ -2,7 +2,7 @@ import { Pool } from "#veta/db";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
 import { AUDIT_LOGIN_ROLE, provisionAuditLogin } from "../../db/auditRole.ts";
-import { appendAudit, firstBrokenSeq, listAudit } from "../lib/audit.ts";
+import { appendAudit, auditHead, firstBrokenSeq, listAudit } from "../lib/audit.ts";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 
@@ -161,5 +161,22 @@ test({
       await admin.end();
       await pg.teardown();
     }
+  },
+});
+
+test({
+  name: "audit: head reports the newest row and the hash at a requested sequence",
+  ignore: !SHOULD_RUN,
+  async fn() {
+    await withAuditDb(async (pool) => {
+      assertEquals(await auditHead(pool), { head: null, at: null });
+      await appendAudit(pool, EVENT);
+      await appendAudit(pool, { ...EVENT, action: "orders_resume" });
+      const [newest, first] = await listAudit(pool);
+      const report = await auditHead(pool, 1);
+      assertEquals(report.head, { seq: 2, hash: newest.hash });
+      assertEquals(report.at, { seq: 1, hash: first.hash });
+      assertEquals((await auditHead(pool, 99)).at, null);
+    });
   },
 });

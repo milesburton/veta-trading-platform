@@ -5,6 +5,7 @@ import { logger, registerLogSink } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+import { createS3Client } from "../lib/s3.ts";
 import { serveDir } from "../lib/static-files.ts";
 import { notifyOperators, sendDailySummary } from "../notifications/discord-notifier.ts";
 import { getTicketingHealth, startTicketingHealthMonitor } from "../notifications/ticketing.ts";
@@ -16,6 +17,11 @@ import {
   createServiceWatch,
   routeKillSwitchEvent,
 } from "./alert-router.ts";
+import {
+  type AuditAnchorWatch,
+  createAuditAnchorWatch,
+  createS3AnchorStore,
+} from "./audit-anchor.ts";
 import { makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
@@ -493,9 +499,42 @@ const auditChainWatch = createAuditChainWatch(alertRouter, async () => {
   return res.json();
 });
 
+const auditAnchorWatch = createAuditAnchorWatchFromEnv();
+
+function createAuditAnchorWatchFromEnv(): AuditAnchorWatch | null {
+  const endpoint = process.env.MINIO_ENDPOINT;
+  const accessKey = process.env.MINIO_ROOT_USER;
+  const secretKey = process.env.MINIO_ROOT_PASSWORD;
+  if (!endpoint || !accessKey || !secretKey) return null;
+  const s3 = createS3Client({
+    endpoint,
+    accessKey,
+    secretKey,
+    bucket: process.env.AUDIT_ANCHOR_BUCKET ?? "audit-anchors",
+  });
+  return createAuditAnchorWatch({
+    router: alertRouter,
+    store: createS3AnchorStore(s3),
+    fetchHead: async (atSeq) => {
+      const query = atSeq === undefined ? "" : `?seq=${atSeq}`;
+      const res = await fetch(`${JOURNAL_URL}/audit/head${query}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`audit head returned ${res.status}`);
+      return res.json();
+    },
+    publish: (anchor) =>
+      notifyOperators(`Audit chain anchor: sequence ${anchor.seq}, hash \`${anchor.hash}\``),
+    publishIntervalMs: Number(process.env.AUDIT_ANCHOR_INTERVAL_MS) || undefined,
+  });
+}
+
 function startAlertRouting(): void {
   if (!ALERT_ROUTER_ENABLED) return;
   setInterval(() => void auditChainWatch.check(), AUDIT_VERIFY_INTERVAL_MS);
+  if (auditAnchorWatch) {
+    setInterval(() => void auditAnchorWatch.check(), AUDIT_VERIFY_INTERVAL_MS);
+  }
   createConsumer("gateway-alert-router", [
     "orders.kill.audit",
     "orders.resume.audit",

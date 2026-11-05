@@ -96,3 +96,32 @@ export async function listAudit(
     client.release();
   }
 }
+
+export interface AuditAnchor {
+  seq: number;
+  hash: string;
+}
+
+export interface AuditHeadReport {
+  head: AuditAnchor | null;
+  at: AuditAnchor | null;
+}
+
+export async function auditHead(pool: Pool, atSeq?: number): Promise<AuditHeadReport> {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.queryObject<{ seq: bigint; hash: string }>(
+      `(SELECT seq, hash FROM audit.events ORDER BY seq DESC LIMIT 1)
+       UNION ALL
+       (SELECT seq, hash FROM audit.events WHERE seq = $1::bigint)`,
+      [atSeq ?? null]
+    );
+    const toAnchor = (row?: { seq: bigint; hash: string }): AuditAnchor | null =>
+      row ? { seq: Number(row.seq), hash: row.hash } : null;
+    const head = toAnchor(rows[0]);
+    const at = atSeq === undefined ? null : toAnchor(rows.find((r) => Number(r.seq) === atSeq));
+    return { head, at };
+  } finally {
+    client.release();
+  }
+}
