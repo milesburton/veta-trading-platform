@@ -77,6 +77,7 @@ const RECONNECT_DELAY_INITIAL_MS = 2_000;
 const RECONNECT_DELAY_MAX_MS = 15_000;
 const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 20_000;
 const SHOW_BANNER_AFTER_FAILURES = 3;
+const CANDLE_SEED_MIN_INTERVAL_MS = 60_000;
 
 const OrderRejectedSchema = z.object({
   reason: z
@@ -162,6 +163,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   let reconnectDelay = RECONNECT_DELAY_INITIAL_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let consecutiveFailures = 0;
+  let candleSeedInFlight: Promise<void> | null = null;
+  let lastCandleSeedStartedAt = Number.NEGATIVE_INFINITY;
   let started = false;
   let visibilityListenerInstalled = false;
   let breakerJanitorTimer: ReturnType<typeof setInterval> | null = null;
@@ -756,7 +759,19 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     }
   }
 
-  async function fetchAssetsAndSeedCandles() {
+  function fetchAssetsAndSeedCandles(): Promise<void> {
+    if (candleSeedInFlight) return candleSeedInFlight;
+    if (Date.now() - lastCandleSeedStartedAt < CANDLE_SEED_MIN_INTERVAL_MS) {
+      return Promise.resolve();
+    }
+    lastCandleSeedStartedAt = Date.now();
+    candleSeedInFlight = seedAssetsAndCandles().finally(() => {
+      candleSeedInFlight = null;
+    });
+    return candleSeedInFlight;
+  }
+
+  async function seedAssetsAndCandles() {
     try {
       const r = await fetch(`${GATEWAY_URL}/assets`, { credentials: "include" });
       if (!r.ok) return;
