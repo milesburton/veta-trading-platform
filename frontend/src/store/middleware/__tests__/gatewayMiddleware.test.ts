@@ -598,6 +598,71 @@ describe("gatewayMiddleware – browser recovery signals", () => {
   });
 });
 
+describe("gatewayMiddleware – candle seeding", () => {
+  const identityFrame = {
+    event: "authIdentity",
+    data: {
+      user: { id: "x", name: "X", role: "admin", avatar_emoji: "🙂" },
+      limits: {
+        max_order_qty: 1,
+        max_daily_notional: 1,
+        allowed_strategies: [],
+        allowed_desks: [],
+        dark_pool_access: false,
+      },
+    },
+  };
+
+  function candleCalls() {
+    return (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(([url]) =>
+      String(url).includes("/candles?")
+    );
+  }
+
+  async function settle() {
+    await vi.advanceTimersByTimeAsync(2_000);
+  }
+
+  function stubAssets() {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) =>
+      String(url).endsWith("/assets")
+        ? { ok: true, json: async () => [{ symbol: "AAA" }, { symbol: "BBB" }] }
+        : { ok: true, json: async () => [] }
+    );
+  }
+
+  it("seeds candles once when authIdentity repeats in quick succession", async () => {
+    vi.useFakeTimers();
+    stubAssets();
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "x", name: "X", role: "admin", avatar_emoji: "🙂" }));
+    const ws = FakeWebSocket.instances[0];
+
+    for (let i = 0; i < 5; i++) {
+      ws.receive(identityFrame);
+      await settle();
+    }
+
+    expect(candleCalls()).toHaveLength(4);
+  });
+
+  it("seeds again once the minimum interval has elapsed", async () => {
+    vi.useFakeTimers();
+    stubAssets();
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "x", name: "X", role: "admin", avatar_emoji: "🙂" }));
+    const ws = FakeWebSocket.instances[0];
+
+    ws.receive(identityFrame);
+    await settle();
+    await vi.advanceTimersByTimeAsync(61_000);
+    ws.receive(identityFrame);
+    await settle();
+
+    expect(candleCalls()).toHaveLength(8);
+  });
+});
+
 describe("parseCandles", () => {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
