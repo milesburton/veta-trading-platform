@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.99.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.99.0...veta-trading-platform-v1.99.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **frontend:** single-flight candle seeding with a 60s minimum interval ([#1070](https://github.com/milesburton/veta-trading-platform/issues/1070)) ([03147e6](https://github.com/milesburton/veta-trading-platform/commit/03147e6f7d55e827ae41b59f9f033acd9bf5a3f6)), closes [#1069](https://github.com/milesburton/veta-trading-platform/issues/1069)
+
 ## [1.99.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.98.0...veta-trading-platform-v1.99.0) (2026-11-05)
 
 
