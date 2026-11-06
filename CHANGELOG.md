@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.99.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.99.1...veta-trading-platform-v1.99.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* **frontend:** keep a single live gateway socket ([#1075](https://github.com/milesburton/veta-trading-platform/issues/1075)) ([5ad188d](https://github.com/milesburton/veta-trading-platform/commit/5ad188dd3a4d5d231bd158c5755197aae25ee835))
+
 ## [1.99.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.99.0...veta-trading-platform-v1.99.1) (2026-11-06)
 
 
