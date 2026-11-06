@@ -14,6 +14,11 @@ class FakeWebSocket {
   onclose: ((ev?: unknown) => void) | null = null;
   onerror: ((ev?: unknown) => void) | null = null;
   closeCalled = 0;
+  static readonly CONNECTING = 0;
+  static readonly OPEN = 1;
+  static readonly CLOSING = 2;
+  static readonly CLOSED = 3;
+  readyState = 0;
 
   constructor(url: string) {
     this.url = url;
@@ -21,6 +26,7 @@ class FakeWebSocket {
   }
   close() {
     this.closeCalled++;
+    this.readyState = 3;
     this.onclose?.();
   }
   receive(payload: unknown) {
@@ -498,6 +504,62 @@ describe("gatewayMiddleware – setSelectedAsset triggers news hydration", () =>
     expect(dispatched.some((a) => typeof a.type === "string" && a.type.includes("newsApi"))).toBe(
       true
     );
+  });
+});
+
+describe("gatewayMiddleware – single live socket", () => {
+  const user = { id: "a", name: "A", role: "trader" as const, avatar_emoji: "🙂" };
+
+  async function flush() {
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+  }
+
+  it("ignores reconnect nudges while a socket is still connecting", async () => {
+    vi.useFakeTimers();
+    const { store } = makeStore();
+    store.dispatch(setUser(user));
+    expect(FakeWebSocket.instances).toHaveLength(1);
+
+    for (let i = 0; i < 5; i++) {
+      store.dispatch({ type: "gateway/reconnect" });
+      await flush();
+      await vi.advanceTimersByTimeAsync(6_000);
+    }
+
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it("replaces an open socket with exactly one new socket on manual reconnect", async () => {
+    vi.useFakeTimers();
+    const { store } = makeStore();
+    store.dispatch(setUser(user));
+    const first = FakeWebSocket.instances[0];
+    first.readyState = 1;
+    first.onopen?.();
+
+    store.dispatch({ type: "gateway/reconnect" });
+    await flush();
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    expect(first.closeCalled).toBe(1);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+  });
+
+  it("runs only one reconnect probe at a time", async () => {
+    vi.useFakeTimers();
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    fetchMock.mockImplementation(() => new Promise(() => {}));
+    const { store } = makeStore();
+    store.dispatch(setUser(user));
+    FakeWebSocket.instances[0].onclose?.();
+
+    for (let i = 0; i < 5; i++) {
+      store.dispatch({ type: "gateway/reconnect" });
+      await flush();
+    }
+
+    const probes = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/health"));
+    expect(probes).toHaveLength(1);
   });
 });
 

@@ -251,6 +251,19 @@ sequenceDiagram
     FE-->>Trader: Blotter updated
 ```
 
+## Browser gateway connection
+
+The browser holds one WebSocket to the gateway, owned by `gatewayMiddleware`. The gateway sends `authIdentity` on every connect, and the frontend seeds assets and candles when it arrives, so each extra connection costs a burst of HTTP requests.
+
+The middleware keeps this to a single live socket:
+
+- `connect()` detaches the handlers of any existing socket and closes it before opening a new one, so an orphaned socket can never schedule its own reconnects.
+- Reconnect nudges (browser online, tab visible, focus, click while disconnected) are ignored while a socket is still connecting.
+- Only one reconnect health probe runs at a time.
+- Candle seeding is single-flight with a 60 second minimum interval.
+
+Symptom of a regression: many `Client connected user=...` lines in the gateway log for one browser session, or a flood of `/candles` requests after login. See issue #1069.
+
 ## Bus topics
 
 | Category     | Topics                                                                                                                                      |

@@ -162,6 +162,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   let ws: WebSocket | null = null;
   let reconnectDelay = RECONNECT_DELAY_INITIAL_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let reconnectInFlight = false;
   let consecutiveFailures = 0;
   let candleSeedInFlight: Promise<void> | null = null;
   let lastCandleSeedStartedAt = Number.NEGATIVE_INFINITY;
@@ -340,13 +341,15 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
-    ws = new WebSocket(GATEWAY_WS_URL);
+    discardSocket();
+    const socket = new WebSocket(GATEWAY_WS_URL);
+    ws = socket;
 
-    ws.onopen = () => {
+    socket.onopen = () => {
       console.log("[gateway] Connected");
       reconnectDelay = 2_000;
       consecutiveFailures = 0;
-      setGatewayWs(ws);
+      setGatewayWs(socket);
       storeAPI.dispatch(connectionRecovered());
       storeAPI.dispatch(marketSlice.actions.setConnected(true));
       fetch(`${GATEWAY_URL}/ready`, { credentials: "include" })
@@ -364,11 +367,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         .catch(() => {});
     };
 
-    ws.onmessage = (event) => {
+    socket.onmessage = (event) => {
       handleGatewayMessage(event);
     };
 
-    ws.onclose = (event?: CloseEvent) => {
+    socket.onclose = (event?: CloseEvent) => {
+      if (ws === socket) ws = null;
       setGatewayWs(null);
       storeAPI.dispatch(marketSlice.actions.setConnected(false));
       storeAPI.dispatch(connectionFailed());
@@ -400,7 +404,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       }, nextDelay);
     };
 
-    ws.onerror = (event) => {
+    socket.onerror = (event) => {
       console.warn("[gateway] WebSocket error", event);
       storeAPI.dispatch(
         reportError({
@@ -409,8 +413,21 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           severity: "warn",
         })
       );
-      ws?.close();
+      socket.close();
     };
+  }
+
+  function discardSocket() {
+    const previous = ws;
+    if (!previous) return;
+    ws = null;
+    previous.onopen = null;
+    previous.onmessage = null;
+    previous.onclose = null;
+    previous.onerror = null;
+    try {
+      previous.close();
+    } catch {}
   }
 
   function handleGatewayMessage(event: MessageEvent) {
@@ -654,6 +671,16 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   };
 
   async function scheduledReconnect() {
+    if (reconnectInFlight) return;
+    reconnectInFlight = true;
+    try {
+      await probeThenConnect();
+    } finally {
+      reconnectInFlight = false;
+    }
+  }
+
+  async function probeThenConnect() {
     try {
       const probe = await fetch(`${GATEWAY_URL}/health`, {
         credentials: "include",
@@ -685,6 +712,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
+    if (ws && ws.readyState === WebSocket.CONNECTING) return;
     consecutiveFailures = 0;
     reconnectDelay = RECONNECT_DELAY_INITIAL_MS;
     storeAPI.dispatch(connectionRecovered());
