@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.102.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.101.0...veta-trading-platform-v1.102.0) (2026-11-08)
+
+
+### Features
+
+* **ci:** sign published images and attach SBOMs ([#1086](https://github.com/milesburton/veta-trading-platform/issues/1086)) ([3d0a9b9](https://github.com/milesburton/veta-trading-platform/commit/3d0a9b934f6eb30bbc14ce31afefe821c94e5238))
+
 ## [1.101.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.100.0...veta-trading-platform-v1.101.0) (2026-11-08)
 
 
