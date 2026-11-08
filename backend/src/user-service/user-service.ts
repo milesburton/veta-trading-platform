@@ -19,7 +19,11 @@ import {
   STARTER_MAX_DAILY_NOTIONAL,
   STARTER_MAX_ORDER_QTY,
 } from "#veta/trader-archetypes";
-import { buildRegisterAuditEvent } from "./account-audit.ts";
+import {
+  buildLimitsUpdateAuditEvent,
+  buildRegisterAuditEvent,
+  type LimitsSnapshot,
+} from "./account-audit.ts";
 import { hashPassword, verifyPassword } from "./credentials.ts";
 
 const AUTH_ROLES = [
@@ -559,17 +563,37 @@ async function handle(req: Request): Promise<Response> {
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
         const [cur_qty, cur_notional, cur_strategies, cur_desks, cur_dark_pool] = rows[0];
+        const before: LimitsSnapshot = {
+          max_order_qty: cur_qty as number,
+          max_daily_notional: cur_notional as number,
+          allowed_strategies: splitCsv(cur_strategies as string),
+          allowed_desks: splitCsv(cur_desks as string),
+          dark_pool_access: cur_dark_pool as boolean,
+        };
+        const after: LimitsSnapshot = {
+          max_order_qty: body.max_order_qty ?? before.max_order_qty,
+          max_daily_notional: body.max_daily_notional ?? before.max_daily_notional,
+          allowed_strategies: body.allowed_strategies ?? before.allowed_strategies,
+          allowed_desks: body.allowed_desks ?? before.allowed_desks,
+          dark_pool_access: body.dark_pool_access ?? before.dark_pool_access,
+        };
         await client.queryArray(
           "UPDATE users.trading_limits SET max_order_qty=$1, max_daily_notional=$2, allowed_strategies=$3, allowed_desks=$4, dark_pool_access=$5 WHERE user_id=$6",
           [
-            body.max_order_qty ?? cur_qty,
-            body.max_daily_notional ?? cur_notional,
-            body.allowed_strategies ? body.allowed_strategies.join(",") : cur_strategies,
-            body.allowed_desks ? body.allowed_desks.join(",") : cur_desks,
-            body.dark_pool_access ?? cur_dark_pool,
+            after.max_order_qty,
+            after.max_daily_notional,
+            after.allowed_strategies.join(","),
+            after.allowed_desks.join(","),
+            after.dark_pool_access,
             userId,
           ]
         );
+        producer
+          ?.send(
+            "audit.events",
+            buildLimitsUpdateAuditEvent(caller, userId, before, after, Date.now())
+          )
+          .catch(() => {});
         return json({ success: true });
       } finally {
         client.release();
