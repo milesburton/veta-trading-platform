@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.101.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.100.0...veta-trading-platform-v1.101.0) (2026-11-08)
+
+
+### Features
+
+* **audit:** record admin changes to user trading limits ([#1079](https://github.com/milesburton/veta-trading-platform/issues/1079)) ([3028589](https://github.com/milesburton/veta-trading-platform/commit/3028589242fa58b5f2688fe372849766bed208ca))
+
 ## [1.100.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.99.2...veta-trading-platform-v1.100.0) (2026-11-08)
 
 
