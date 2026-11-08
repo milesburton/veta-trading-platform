@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.100.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.99.2...veta-trading-platform-v1.100.0) (2026-11-08)
+
+
+### Features
+
+* **audit:** record account registration in the audit log ([#1077](https://github.com/milesburton/veta-trading-platform/issues/1077)) ([9c88a34](https://github.com/milesburton/veta-trading-platform/commit/9c88a34a4d33dfb3a28dbd33d82a6421676bdcf2))
+
 ## [1.99.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.99.1...veta-trading-platform-v1.99.2) (2026-11-06)
 
 
