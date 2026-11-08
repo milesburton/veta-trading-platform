@@ -134,8 +134,8 @@ sometimes time out under load. Each follow-up PR named in the
 | Dependency scanning                           | Implemented | Dependabot alerts and security updates are enabled. |
 | Secret scanning                               | Implemented | GitHub secret scanning with push protection and generic-secret patterns. Pre-commit blocks staged secret files. |
 | Static analysis                               | Implemented | CodeQL `javascript-typescript` through GitHub default setup, on pull requests, pushes to main and a weekly schedule. |
-| SBOM generation per build | Deferred | Planned: `syft` in the image build. Tracked in [#965](https://github.com/milesburton/veta-trading-platform/issues/965). |
-| Container image signatures | Deferred | Planned: `cosign` in the image publish workflow. Tracked in [#965](https://github.com/milesburton/veta-trading-platform/issues/965). |
+| SBOM generation per build | Partially | `syft` generates an SPDX SBOM for every image published from `main`. It is attached to the image as a signed attestation and kept as a workflow artifact. See [supply chain](../security/#supply-chain). Not yet proven on a live publish run. Tracked in [#965](https://github.com/milesburton/veta-trading-platform/issues/965). |
+| Container image signatures | Partially | Images published from `main` are signed with `cosign` keyless signing through the public Sigstore services. Deploys do not yet verify the signature, and a key-based option is planned. Tracked in [#965](https://github.com/milesburton/veta-trading-platform/issues/965). |
 | Reproducible builds with pinned image digests | Partially | Compose uses `:latest` tags from GHCR; digest pinning tracked in [#966](https://github.com/milesburton/veta-trading-platform/issues/966). |
 
 ## Data classification and retention

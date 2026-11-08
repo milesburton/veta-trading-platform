@@ -1663,6 +1663,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     strategy:
       fail-fast: false
       max-parallel: 12
@@ -1806,3 +1807,39 @@ jobs:
 
           echo "publish failed after 3 attempts for ${{ matrix.service }}" >&2
           exit 1
+
+      - name: Resolve ${{ matrix.service }} image digest
+        id: digest
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          repo="ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}"
+          digest=$(docker buildx imagetools inspect "${repo}:${{ steps.sha.outputs.short }}" --format '{{.Manifest.Digest}}')
+          echo "ref=${repo}@${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Install cosign
+        if: steps.digest.outcome == 'success'
+        continue-on-error: true
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532
+
+      - name: Generate ${{ matrix.service }} SBOM
+        id: sbom
+        if: steps.digest.outcome == 'success'
+        continue-on-error: true
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
+        with:
+          image: ${{ steps.digest.outputs.ref }}
+          format: spdx-json
+          output-file: sbom-${{ matrix.service }}.spdx.json
+          artifact-name: sbom-${{ matrix.service }}.spdx.json
+
+      - name: Sign ${{ matrix.service }} image and attest its SBOM
+        if: steps.digest.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          ref="${{ steps.digest.outputs.ref }}"
+          cosign sign --yes "$ref"
+          if [[ "${{ steps.sbom.outcome }}" == "success" ]]; then
+            cosign attest --yes --type spdxjson --predicate "sbom-${{ matrix.service }}.spdx.json" "$ref"
+          fi

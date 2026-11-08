@@ -128,6 +128,36 @@ Known limits, each tracked as an issue:
 - Rows written after the last anchor can still be removed undetected, so the window is up to one hour. The anchors share a host with the database, so only the Discord copy survives a full host compromise, and it is a manual check.
 - Only account registration and limit changes are audited in the user service. Login, logout and preferences are not, and the user service has no admin disable, reset or password change yet. Audit events for those should be added with the features, and a delivery guarantee (an outbox or a direct insert) is tracked in [#993](https://github.com/milesburton/veta-trading-platform/issues/993).
 
+## Supply chain
+
+Every image published from `main` is signed and has an SBOM.
+
+| Property | How it works |
+| --- | --- |
+| Signature | After the gated publish, CI signs each image digest with `cosign` keyless signing. The signing identity is the CI workflow, issued by Sigstore Fulcio from the GitHub OIDC token, and every signature is recorded in the public Rekor transparency log. No long-lived signing key exists. |
+| SBOM | `syft` generates an SPDX JSON SBOM for each image digest. CI attaches it to the image as a signed `cosign` attestation and keeps a copy as a workflow artifact named `sbom-<service>.spdx.json`. |
+| Failure mode | The signing steps never block publishing or deployment. A failed step is marked failed inside the publish job, which still passes, and the image stays unsigned until the next publish. |
+
+Verify an image before running it. Replace `<service>` and `<digest>`:
+
+```bash
+IMAGE=ghcr.io/milesburton/veta-trading-platform/<service>@sha256:<digest>
+IDENTITY=https://github.com/milesburton/veta-trading-platform/.github/workflows/ci.yml@refs/heads/main
+ISSUER=https://token.actions.githubusercontent.com
+
+cosign verify "$IMAGE" \
+  --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER"
+
+cosign verify-attestation "$IMAGE" --type spdxjson \
+  --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER"
+```
+
+Known limits:
+
+- The signature identifies the workflow that built the image. It does not prove the code is safe.
+- Deploys do not yet verify signatures before pulling. Enforcing it in the deploy script is a follow-up.
+- Keyless signing depends on the public Sigstore services, and the transparency log is public. A key-based option with the key held in OpenBao is planned as a migration.
+
 ## Encryption at rest
 
 Postgres data sits on a disk that is encrypted at the block layer on the server. The stack does not
