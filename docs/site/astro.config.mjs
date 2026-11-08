@@ -161,6 +161,7 @@ export default defineConfig({
             },
             { label: "Security posture", slug: "platform/security" },
             { label: "Threat model", slug: "platform/threat-model" },
+            { label: "Security audit, May 2026", slug: "platform/security-audit-2026-05-11" },
             { label: "Professional standards", slug: "platform/professional-standards" },
             { label: "Screenshots", slug: "platform/screenshots" },
           ],

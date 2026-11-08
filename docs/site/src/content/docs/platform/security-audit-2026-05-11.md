@@ -1,4 +1,9 @@
-# Security audit: public-internet readiness (2026-05-11)
+---
+title: Security audit, May 2026
+description: Point-in-time review of the platform's readiness for the public internet, with numbered findings F-1 to F-17.
+---
+
+This is a report as of 2026-05-11 and is not updated. Some findings have been addressed since. See [Security posture](../security/) and [Professional standards](../professional-standards/) for the current state.
 
 ## Scope and threat model
 
