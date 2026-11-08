@@ -19,6 +19,7 @@ import {
   STARTER_MAX_DAILY_NOTIONAL,
   STARTER_MAX_ORDER_QTY,
 } from "#veta/trader-archetypes";
+import { buildRegisterAuditEvent } from "./account-audit.ts";
 import { hashPassword, verifyPassword } from "./credentials.ts";
 
 const AUTH_ROLES = [
@@ -1010,6 +1011,9 @@ async function handle(req: Request): Promise<Response> {
           archetype: archetype.id,
           ts: Date.now(),
         })
+        .catch(() => {});
+      producer
+        ?.send("audit.events", buildRegisterAuditEvent(userId, archetype.id, Date.now()))
         .catch(() => {});
       return json({ userId, name: body.name.trim(), role: "trader", archetype: archetype.id }, 201);
     } finally {
