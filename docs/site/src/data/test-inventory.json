@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 183,
-      "cases": 2005,
+      "files": 185,
+      "cases": 2022,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -72,6 +72,7 @@
         "gateway-role-matrix.unit.test.ts": 2,
         "gateway-route-auth-inventory.unit.test.ts": 4,
         "gateway-scenarios-route.unit.test.ts": 11,
+        "gateway-scenarios-store.unit.test.ts": 9,
         "gateway-system-status.unit.test.ts": 8,
         "gateway-wake.unit.test.ts": 9,
         "gateway-websocket-route.unit.test.ts": 18,
@@ -164,6 +165,7 @@
         "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-disabled.unit.test.ts": 1,
         "synthetic-trader-enabled.unit.test.ts": 8,
+        "synthetic-trader-gateway-frames.unit.test.ts": 8,
         "synthetic-trader-gateway-socket.unit.test.ts": 4,
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-payloads.unit.test.ts": 13,
