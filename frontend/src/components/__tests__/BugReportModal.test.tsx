@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { BugReportModal } from "@veta/frontend/components/BugReportModal";
+import * as attachmentUpload from "@veta/frontend/lib/ticketAttachmentUpload";
 import { gatewayApi } from "@veta/frontend/store/gatewayApi";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -445,5 +446,62 @@ describe("BugReportModal", () => {
       expect(screen.getByTestId("bug-report-error")).toHaveTextContent(/up to 5 files/i);
     });
     expect(mockPresign).toHaveBeenCalledTimes(5);
+  });
+
+  it("explains when screenshot capture is cancelled", async () => {
+    vi.mocked(attachmentUpload.captureScreenshotBlob).mockRejectedValueOnce(new Error("denied"));
+    renderModal();
+
+    fireEvent.click(screen.getByTestId("bug-report-capture-screenshot"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-error")).toHaveTextContent(
+        /cancelled or is not supported/i
+      );
+    });
+  });
+
+  it("uploads a captured screenshot and includes its URL on submit", async () => {
+    const blob = new Blob(["png"], { type: "image/png" });
+    const objectUrl = "http://localhost:3000/attachments/ticket-attachments/u-1/shot.png";
+    const presigned = {
+      postUrl: "http://minio.example/ticket-attachments",
+      formFields: { key: "u-1/shot.png" },
+      objectUrl,
+      objectKey: "u-1/shot.png",
+      expiresAt: Date.now() + 60_000,
+    };
+    vi.mocked(attachmentUpload.captureScreenshotBlob).mockResolvedValueOnce(blob);
+    mockPresign.mockReturnValue({ unwrap: () => Promise.resolve(presigned) });
+    mockSubmit.mockResolvedValueOnce({ data: { ok: true } });
+    renderModal();
+
+    fireEvent.click(screen.getByTestId("bug-report-capture-screenshot"));
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText("Done")
+      ).toBeInTheDocument();
+    });
+    expect(attachmentUpload.uploadAttachment).toHaveBeenCalledWith(blob, presigned);
+
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+
+    await waitFor(() => expect(mockSubmit).toHaveBeenCalledTimes(1));
+    expect(mockSubmit.mock.calls[0][0].attachments).toEqual([objectUrl]);
+  });
+
+  it("opens the file picker from the attach button", () => {
+    renderModal();
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const click = vi.spyOn(input, "click").mockImplementation(() => {});
+
+    fireEvent.click(screen.getByTestId("bug-report-attach-file"));
+
+    expect(click).toHaveBeenCalledTimes(1);
   });
 });
