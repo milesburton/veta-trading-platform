@@ -57,7 +57,7 @@ test("[latency-metrics] derives every stage from the earliest event per order an
   const m = await computeLatencyMetrics(60_000);
   assertEquals(m.sampleSize, 2);
   assertEquals(m.stages.submittedToArrived.count, 1);
-  assertEquals(m.stages.submittedToArrived.max, 90);
+  assertEquals(m.stages.submittedToArrived.max, 10);
   assertEquals(m.stages.submittedToRouted.count, 2);
   assertEquals(m.stages.submittedToRouted.max, 130);
   assertEquals(m.stages.routedToChild.count, 2);
@@ -78,4 +78,16 @@ test("[latency-metrics] percentiles pick ranked samples", async () => {
   const m = await computeLatencyMetrics(1_000);
   const s = m.stages.submittedToArrived;
   assertEquals([s.count, s.p50, s.p95, s.p99, s.max], [100, 50, 95, 99, 100]);
+});
+
+test("[latency-metrics] arrival time stays paired with the earliest submission regardless of row order", async () => {
+  const rows = [
+    ["o1", null, "orders.submitted", at(50), at(60)],
+    ["o1", null, "orders.submitted", at(100), at(140)],
+  ];
+  for (const ordered of [rows, [...rows].reverse()]) {
+    h.rows = ordered;
+    const m = await computeLatencyMetrics(60_000);
+    assertEquals(m.stages.submittedToArrived.max, 10);
+  }
 });

@@ -83,9 +83,9 @@ export async function computeLatencyMetrics(windowMs: number): Promise<LatencyMe
       }
 
       if (eventType === "orders.submitted") {
-        if (entry.submitted == null || tsMs < entry.submitted) entry.submitted = tsMs;
-        if (arrivedMs != null && entry.submittedArrived == null) {
-          entry.submittedArrived = arrivedMs;
+        if (entry.submitted == null || tsMs < entry.submitted) {
+          entry.submitted = tsMs;
+          entry.submittedArrived = arrivedMs ?? undefined;
         }
       } else if (eventType === "orders.routed") {
         if (entry.routed == null || tsMs < entry.routed) entry.routed = tsMs;
