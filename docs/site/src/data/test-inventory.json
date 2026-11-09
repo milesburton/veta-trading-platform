@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 178,
-      "cases": 1957,
+      "files": 181,
+      "cases": 1980,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -25,6 +25,7 @@
         "analytics.unit.test.ts": 22,
         "apply-shocks.unit.test.ts": 7,
         "audit-anchor.unit.test.ts": 9,
+        "audit-lib.unit.test.ts": 5,
         "black-scholes.unit.test.ts": 6,
         "bond-pricing.unit.test.ts": 11,
         "bug-report-route.unit.test.ts": 14,
@@ -39,6 +40,7 @@
         "dark-pool-matching.unit.test.ts": 12,
         "dark-pool-server.unit.test.ts": 7,
         "data-depth-cache.unit.test.ts": 3,
+        "db-migrations.unit.test.ts": 13,
         "demo-day-attribution.unit.test.ts": 3,
         "deploy-sync-bind-mounts.unit.test.ts": 1,
         "devcontainer.unit.test.ts": 7,
@@ -139,6 +141,7 @@
         "rng.test.ts": 9,
         "route-exposure.unit.test.ts": 3,
         "runtime-config-store.test.ts": 13,
+        "s3-client.unit.test.ts": 5,
         "scenario-server.unit.test.ts": 6,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,

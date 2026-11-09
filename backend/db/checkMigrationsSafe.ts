@@ -87,8 +87,7 @@ async function migrationFiles(dir: string): Promise<string[]> {
   return files.sort();
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+export async function main(args: string[] = process.argv.slice(2)): Promise<void> {
   const dirname = import.meta.dirname;
   if (!dirname) {
     console.error("checkMigrationsSafe requires import.meta.dirname");
