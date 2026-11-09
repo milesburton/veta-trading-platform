@@ -653,6 +653,65 @@ describe("WorkspaceSidebar", () => {
     expect(await screen.findByText("Link copied!")).toBeInTheDocument();
   });
 
+  test("share falls back to showing the URL when the clipboard rejects", async () => {
+    publishSharedWorkspaceMock.mockResolvedValueOnce("shared-9");
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      configurable: true,
+    });
+    renderSidebar({
+      layouts: { "ws-2": { toJson: () => ({ layout: { type: "row", children: [] } }) } },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Share workspace Research" }));
+    fireEvent.click(screen.getByRole("button", { name: /share & copy link/i }));
+
+    expect(await screen.findByText(/\?shared=shared-9/)).toBeInTheDocument();
+  });
+
+  test("cancelling the share dialog publishes nothing", () => {
+    renderSidebar({
+      layouts: { "ws-2": { toJson: () => ({ layout: { type: "row", children: [] } }) } },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Share workspace Research" }));
+    fireEvent.click(screen.getByTitle("Cancel sharing"));
+
+    expect(screen.queryByPlaceholderText(/add a description/i)).not.toBeInTheDocument();
+    expect(publishSharedWorkspaceMock).not.toHaveBeenCalled();
+  });
+
+  test("closing the shared workspace browser hides it", () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: /browse shared workspaces/i }));
+    fireEvent.click(screen.getByText("close-browser"));
+
+    expect(screen.queryByTestId("shared-workspace-browser")).not.toBeInTheDocument();
+  });
+
+  test("unpinning persists the choice and collapses on mouse leave", () => {
+    vi.useFakeTimers();
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Unpin sidebar" }));
+    expect(localStorage.getItem("sidebar-pinned")).toBe("false");
+
+    const nav = screen.getByTestId("workspace-sidebar");
+    fireEvent.mouseEnter(nav);
+    expect(screen.getByRole("button", { name: "Pin sidebar open" })).toBeInTheDocument();
+    fireEvent.mouseLeave(nav);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(screen.queryByRole("button", { name: "Pin sidebar open" })).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(nav);
+    fireEvent.click(screen.getByRole("button", { name: "Pin sidebar open" }));
+    expect(localStorage.getItem("sidebar-pinned")).toBe("true");
+  });
+
   test("browse shared workspaces supports clone callback", () => {
     const { onSelect, onWorkspacesChange, onCloneWorkspace } = renderSidebar();
 

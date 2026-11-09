@@ -7,6 +7,7 @@ vi.mock("@veta/frontend/components/ExchangeBadge.tsx", () => ({
   useExchangeStatus: () => null,
 }));
 
+const reorderMock = vi.fn();
 let incomingChannel: unknown = null;
 let channelIn = {
   selectedOrderId: null as string | null,
@@ -58,7 +59,7 @@ vi.mock("../../hooks/useColumnLayout.ts", () => ({
     getWidth: () => 90,
     getStickyProps: () => null,
     onResize: () => {},
-    onReorder: () => {},
+    onReorder: (...args: unknown[]) => reorderMock(...args),
     onToggleFreeze: () => {},
   }),
 }));
@@ -72,10 +73,35 @@ vi.mock("../grid/FilterBar.tsx", () => ({
   FilterBar: () => <div>filter-bar</div>,
 }));
 vi.mock("../grid/CfRuleEditor.tsx", () => ({
-  CfRuleEditor: () => <div>cf-editor</div>,
+  CfRuleEditor: ({ onClose }: { onClose: () => void }) => (
+    <div>
+      cf-editor
+      <button type="button" onClick={onClose}>
+        close-cf
+      </button>
+    </div>
+  ),
 }));
 vi.mock("../grid/ResizableHeader.tsx", () => ({
-  ResizableHeader: ({ children }: { children: React.ReactNode }) => <th>{children}</th>,
+  ResizableHeader: ({
+    children,
+    colKey,
+    onColumnDragStart,
+    onColumnDrop,
+  }: {
+    children: React.ReactNode;
+    colKey: string;
+    onColumnDragStart?: (k: string) => void;
+    onColumnDrop?: (k: string) => void;
+  }) => (
+    <th
+      data-testid={`th-${colKey}`}
+      onDragStart={() => onColumnDragStart?.(colKey)}
+      onDrop={() => onColumnDrop?.(colKey)}
+    >
+      {children}
+    </th>
+  ),
 }));
 vi.mock("../PopOutButton.tsx", () => ({
   PopOutButton: () => <button type="button">pop</button>,
@@ -330,5 +356,41 @@ describe("ExecutionsPanel", () => {
     render(<ExecutionsPanel />);
     expect(screen.getByText("TSLA")).toBeInTheDocument();
     expect(screen.getByText("SELL")).toBeInTheDocument();
+  });
+
+  it("opens and closes the conditional formatting editor", () => {
+    render(<ExecutionsPanel />);
+
+    fireEvent.click(screen.getByTitle("Conditional formatting rules"));
+    expect(screen.getByText(/cf-editor/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("close-cf"));
+    expect(screen.queryByText(/cf-editor/)).not.toBeInTheDocument();
+  });
+
+  it("reorders columns when a header is dropped on another", () => {
+    reorderMock.mockReset();
+    rows = [
+      {
+        id: "o-1",
+        submittedAt: Date.now(),
+        asset: "AAPL",
+        side: "BUY",
+        strategy: "TWAP",
+        status: "working",
+        quantity: 100,
+        filled: 20,
+        limitPrice: 100,
+        children: [],
+      },
+    ];
+    render(<ExecutionsPanel />);
+
+    fireEvent.dragStart(screen.getByTestId("th-asset"));
+    fireEvent.drop(screen.getByTestId("th-side"));
+    fireEvent.drop(screen.getByTestId("th-status"));
+
+    expect(reorderMock).toHaveBeenCalledTimes(1);
+    expect(reorderMock).toHaveBeenCalledWith("asset", "side");
   });
 });
