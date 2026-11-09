@@ -185,6 +185,7 @@ export const OrderCancelledSchema = z.object({
   issuedByRole: z.string().optional(),
   ts: TimestampMsSchema,
 });
+export type OrderCancelled = z.infer<typeof OrderCancelledSchema>;
 
 export const OrderKillCommandSchema = z.object({
   scope: KillScopeSchema,

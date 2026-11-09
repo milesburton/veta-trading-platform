@@ -59,6 +59,10 @@
     "GET /ccp/settlements": "all",
     "GET /ccp/settlements/x": "all",
     "GET /ccp/stats": "all",
+    "GET /compliance/algo-controls": [
+      "admin",
+      "compliance"
+    ],
     "GET /data-depth": "all",
     "GET /intelligence/features": "all",
     "GET /intelligence/recommendations": "all",

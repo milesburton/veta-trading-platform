@@ -139,6 +139,19 @@ test("[scenario-store] reports whether a delete removed a row", async () => {
   assertEquals(await store.deleteScenario("u1", "sc-1"), false);
 });
 
+test("[scenario-store] records the algo evidence a run was executed against", async () => {
+  h.rows = [runRow()];
+  await store.createRun("sc-1", "u1", {
+    algoId: "VETA-TWAP",
+    algoVersion: "1.0.0",
+    commitSha: "abc123",
+  });
+  assertEquals(h.queries[0].params.slice(3), ["VETA-TWAP", "1.0.0", "abc123"]);
+  h.rows = [runRow()];
+  await store.createRun("sc-1", "u1");
+  assertEquals(h.queries[1].params.slice(3), [null, null, null]);
+});
+
 test("[scenario-store] creates and completes runs", async () => {
   h.rows = [runRow()];
   const run = await store.createRun("sc-1", "u1");

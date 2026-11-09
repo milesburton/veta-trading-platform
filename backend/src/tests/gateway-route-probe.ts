@@ -3,6 +3,7 @@ import { handleAdminRoute } from "../gateway/routes/admin.ts";
 import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
 import { handleAnalyticsRoute } from "../gateway/routes/analytics.ts";
 import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
+import { handleComplianceRoute } from "../gateway/routes/compliance.ts";
 import { handleLlmAdvisoryRoute } from "../gateway/routes/llm-advisory.ts";
 import { handleLoadgenAnnounceRoute } from "../gateway/routes/loadgen-announce.ts";
 import { handleLogsRoute } from "../gateway/routes/logs.ts";
@@ -26,6 +27,7 @@ export const HANDLERS: Record<string, RouteHandler> = {
   "loadgen-announce.ts": handleLoadgenAnnounceRoute,
   "logs.ts": handleLogsRoute,
   "proxied.ts": handleProxiedRoutes,
+  "compliance.ts": handleComplianceRoute,
   "scenarios.ts": handleScenariosRoute,
   "telemetry.ts": handleTelemetryRoute,
   "ticket-attachments.ts": handleTicketAttachmentsRoute,

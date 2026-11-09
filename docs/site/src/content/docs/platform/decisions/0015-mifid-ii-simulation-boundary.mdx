@@ -1,0 +1,56 @@
+---
+title: "ADR 0015: MiFID II controls are a simulation with a stated boundary"
+description: "Records what the platform implements for MiFID II order record keeping, clock synchronisation, transaction reporting and algorithmic trading controls, and what it deliberately does not claim."
+---
+
+**Status:** Accepted
+
+**Date:** 2026-11-09
+
+## Context
+
+VETA is a simulated trading platform that aims to look and behave like a regulated firm's
+stack. MiFID II shapes the data a real firm keeps: who decided, which algorithm executed,
+when it happened and how long the record survives. Building those shapes makes the
+platform more realistic and exercises real engineering problems, such as tamper evidence
+and clock traceability.
+
+It does not make the platform a regulated firm. There is no authorisation, no legal entity
+identifier of its own, no approved reporting mechanism connection and no regulator.
+Claiming compliance would be false, and quietly implementing half a control is worse than
+documenting its absence.
+
+## Decision
+
+Implement the data shapes, controls, reports and evidence for four areas, test them, and
+state their limits in the documentation.
+
+| Area | Implemented | Not implemented |
+| --- | --- | --- |
+| Order record keeping (RTS 24) | Regulatory identifiers on orders and fills, an append-only hash-chained order record, five year object-locked export | Legal retention guarantees, off-site storage SLAs |
+| Clock synchronisation (RTS 25) | Microsecond timestamps, SNTP drift measurement, alerts at 1 ms | Traceable UTC source, 100 microsecond accuracy evidence |
+| Transaction reporting (RTS 22) | A documented field subset as JSON and CSV for compliance users | Submission to an approved reporting mechanism, ISIN, natural person identifiers, amendments |
+| Algorithmic trading (RTS 6) | Algo registry with versions, kill switch that stops child orders, risk engine disabled audit event, scenario runs recorded with algo version and commit, a controls report | Annual self-assessment, market abuse surveillance, real-time monitoring staff |
+
+Specific choices:
+
+- **No new secrets for the regulatory record.** It reuses the audit writer role and
+  connection, which keeps the OpenBao surface unchanged.
+- **Reports are generated on demand from the immutable record**, not stored, so the record
+  is the single source of truth.
+- **Cancellation is enforced at the EMS.** Algorithms do not consume cancellation events,
+  so the execution management service refuses child orders whose parent was cancelled.
+  This covers every strategy at one point instead of nine.
+- **Identifiers fall back to the user id** when no client or decision maker code is
+  configured, and the firm LEI stays empty unless `FIRM_LEI` is set. Nothing is invented.
+
+## Consequences
+
+- The platform can demonstrate each control end to end, and tests prove the immutability,
+  suppression and access rules.
+- Every page that describes these controls states the simulation boundary, so a reader
+  cannot mistake the output for a compliance artefact.
+- Closing a gap, such as adding ISIN support or a real reporting submission, is additive:
+  the record already carries the payloads needed.
+- A kill still lets an algorithm schedule slices that are then dropped. That is wasted work
+  rather than a market impact, and a future change could stop the algorithm earlier.

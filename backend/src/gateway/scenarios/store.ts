@@ -184,15 +184,32 @@ export async function deleteScenario(userId: string, id: string): Promise<boolea
   }
 }
 
-export async function createRun(scenarioId: string, userId: string): Promise<ScenarioRun> {
+export interface RunEvidence {
+  algoId?: string;
+  algoVersion?: string;
+  commitSha?: string;
+}
+
+export async function createRun(
+  scenarioId: string,
+  userId: string,
+  evidence: RunEvidence = {}
+): Promise<ScenarioRun> {
   const id = `run-${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
   const client = await scenariosPool.connect();
   try {
     const res = await client.queryObject<RunRow>(
-      `INSERT INTO scenarios.runs (id, scenario_id, user_id, status)
-       VALUES ($1, $2, $3, 'pending')
+      `INSERT INTO scenarios.runs (id, scenario_id, user_id, status, algo_id, algo_version, commit_sha)
+       VALUES ($1, $2, $3, 'pending', $4, $5, $6)
        RETURNING id, scenario_id, user_id, triggered_at, completed_at, parent_order_id, actual, diff, status, error`,
-      [id, scenarioId, userId]
+      [
+        id,
+        scenarioId,
+        userId,
+        evidence.algoId ?? null,
+        evidence.algoVersion ?? null,
+        evidence.commitSha ?? null,
+      ]
     );
     return rowToRun(res.rows[0]);
   } finally {
