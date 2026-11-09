@@ -53,3 +53,19 @@ The journal exports each completed UTC day to the `regulatory-records` bucket ev
 Integrity checks are exposed by the journal at `/regulatory/verify` and `/regulatory/head`. The retention runbook is [Regulatory record retention](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/regulatory-retention.md).
 
 This is a simulation. Five year retention here means the controls exist and are tested, not that the deployment meets a regulator's availability or audit requirements. Postgres backups default to 14 days (`POSTGRES_BACKUP_RETENTION_DAYS`), so the object-locked export, not the backup, is the long-term copy.
+
+## Clock synchronisation and timestamps
+
+RTS 25 requires the clocks used to timestamp reportable events to stay within a stated divergence from UTC: 1 ms for algorithmic trading, 100 microseconds for high frequency techniques and one second for other activity.
+
+| Piece | Behaviour |
+| --- | --- |
+| `backend/src/lib/clock.ts` | `nowMicros()` returns epoch microseconds from the wall clock at start plus the monotonic clock, and a minimal SNTP client measures offset from a reference |
+| Gateway monitor | When `NTP_SERVER` is set the gateway queries it every minute and records `veta_clock_offset_microseconds` and `veta_clock_sync_healthy` |
+| `ClockDriftHigh` | Warns when the absolute offset stays above 1000 microseconds for 5 minutes, mirrored in Grafana |
+| `ClockSyncUnavailable` | Warns when the reference cannot be reached for 15 minutes |
+| `tsMicros` | Stamped by the OMS on accepted orders and by the EMS on fills, stored in `journal.events.ts_micros` and in the regulatory record payload |
+
+The millisecond `ts` field is unchanged for compatibility. The runbook is [Clock drift](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md).
+
+Limits of the simulation: SNTP over the internet is accurate to about a millisecond, so the monitor shows gross drift, not proof of 100 microsecond traceability. `tsMicros` has microsecond resolution but the source is the host clock, and each service stamps independently, so ordering across services is only as good as the measured offset. Gateway receipt time is not yet stamped separately.

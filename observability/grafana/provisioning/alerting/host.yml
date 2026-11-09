@@ -71,6 +71,53 @@ groups:
           severity: warning
         isPaused: false
 
+      - uid: clock-drift-high
+        title: Clock drift above 1 ms
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: abs(veta_clock_offset_microseconds)
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              instant: true
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator: { params: [1000], type: gt }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: System clock more than 1 ms from the NTP reference for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md
+          description: |
+            veta_clock_offset_microseconds is outside the 1 ms tolerance MiFID II RTS 25
+            sets for algorithmic trading.
+        labels:
+          severity: warning
+        isPaused: false
+
       - uid: disk-usage-critical
         title: Host disk usage above 92%
         condition: B

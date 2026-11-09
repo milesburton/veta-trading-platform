@@ -61,6 +61,7 @@ interface KafkaEventValue {
   marketPrice?: number;
   marketImpactBps?: number;
   algoParams?: Record<string, unknown>;
+  tsMicros?: number;
   [key: string]: unknown;
 }
 
@@ -82,6 +83,7 @@ function extractFields(topic: string, value: KafkaEventValue) {
     market_price: value.marketPrice ?? null,
     market_impact_bps: value.marketImpactBps ?? null,
     algo_params: value.algoParams ?? null,
+    ts_micros: value.tsMicros ?? null,
   };
 }
 
@@ -104,6 +106,7 @@ type PendingRow = [
   unknown,
   unknown,
   Date,
+  number | null,
 ];
 
 const writeQueue: PendingRow[] = [];
@@ -127,8 +130,8 @@ async function flushWriteQueue() {
         `INSERT INTO journal.events
            (event_id, event_type, ts, user_id, algo, instrument, side, order_id, child_id,
             quantity, limit_price, fill_price, filled_qty, market_price, market_impact_bps,
-            algo_params, raw, arrived_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+            algo_params, raw, arrived_at, ts_micros)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
          ON CONFLICT (event_id) DO NOTHING`,
         row
       );
@@ -238,6 +241,7 @@ async function ingest(topic: string, value: KafkaEventValue): Promise<void> {
     fields.algo_params,
     value,
     arrivedAt,
+    fields.ts_micros,
   ]);
 }
 

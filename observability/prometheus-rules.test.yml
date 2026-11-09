@@ -432,3 +432,57 @@ tests:
               description: |
                 Prometheus can't scrape veta-postgres-backup:8101/metrics.
                 Backups may have stopped without anyone noticing.
+
+  - name: ClockDriftHigh fires only after a sustained offset above 1 ms
+    interval: 1m
+    input_series:
+      - series: 'veta_clock_offset_microseconds{job="gateway"}'
+        values: '-2500x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: ClockDriftHigh
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: ClockDriftHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: ClockDriftHigh
+              job: gateway
+              severity: warning
+            exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md
+              summary: System clock more than 1 ms from the NTP reference for 5m
+              description: |
+                The gateway host clock differs from the configured NTP reference by more than
+                1000 microseconds. MiFID II RTS 25 allows 1 ms for algorithmic trading. Order and
+                fill timestamps recorded while this alert is firing may be outside tolerance.
+
+  - name: ClockDriftHigh stays quiet within tolerance
+    interval: 1m
+    input_series:
+      - series: 'veta_clock_offset_microseconds{job="gateway"}'
+        values: '400x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: ClockDriftHigh
+        exp_alerts: []
+
+  - name: ClockSyncUnavailable fires when the reference is unreachable
+    interval: 1m
+    input_series:
+      - series: 'veta_clock_sync_healthy{job="gateway"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ClockSyncUnavailable
+        exp_alerts:
+          - exp_labels:
+              alertname: ClockSyncUnavailable
+              job: gateway
+              severity: warning
+            exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md
+              summary: NTP reference unreachable for 15m
+              description: |
+                The gateway could not complete an SNTP query to the configured NTP server, so
+                clock drift is not being measured. Check NTP_SERVER and outbound UDP port 123.

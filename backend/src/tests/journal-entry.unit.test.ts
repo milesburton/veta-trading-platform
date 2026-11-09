@@ -308,6 +308,17 @@ test("[journal] dual-writes order lifecycle events to the regulatory record", as
   assertEquals(JSON.parse(regulatory[0].params[5] as string).quantity, 3);
 });
 
+test("[journal] stores microsecond timestamps alongside millisecond ones", async () => {
+  const consume = h.consumers.get("journal-group");
+  assert(consume);
+  consume("orders.child", { childId: "c8", orderId: "o8", ts: 5, tsMicros: 5_000_123 });
+  consume("orders.child", { childId: "c9", orderId: "o9", ts: 5 });
+  await vi.advanceTimersByTimeAsync(100);
+  const inserts = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.events"));
+  assertEquals(inserts[0].params[18], 5_000_123);
+  assertEquals(inserts[1].params[18], null);
+});
+
 test("[journal] health reports hot and regulatory retention", async () => {
   const health = (await json(await call("/health"))) as Record<string, number>;
   assertEquals(health.retentionDays, 2);

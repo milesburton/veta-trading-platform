@@ -32,6 +32,7 @@ import {
   OrderResumeCommandSchema,
 } from "#veta/schemas/orders";
 import { waitForUrl } from "#veta/wait-for";
+import { nowMicros } from "../lib/clock.ts";
 import {
   createDailyNotionalLedger,
   createMarketPriceSource,
@@ -494,6 +495,7 @@ consumer?.onMessage(async (_topic, raw) => {
     marketType,
     bondSpec: order.bondSpec,
     optionSpec: order.optionSpec,
+    tsMicros: nowMicros(),
     ...buildRegulatoryFields({
       userId: order.userId,
       strategy,
