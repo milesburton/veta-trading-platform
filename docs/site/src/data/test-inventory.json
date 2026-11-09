@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 185,
-      "cases": 2023,
+      "files": 186,
+      "cases": 2030,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -148,6 +148,7 @@
         "scenario-server.unit.test.ts": 6,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,
+        "seed-route.unit.test.ts": 7,
         "service-boundaries.unit.test.ts": 8,
         "service-parity.unit.test.ts": 4,
         "service-registry.unit.test.ts": 8,
