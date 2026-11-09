@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 181,
-      "cases": 1980,
+      "files": 183,
+      "cases": 2005,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -30,6 +30,7 @@
         "bond-pricing.unit.test.ts": 11,
         "bug-report-route.unit.test.ts": 14,
         "ccp-service.unit.test.ts": 11,
+        "cli-trader.unit.test.ts": 8,
         "compose-mem-limits.unit.test.ts": 1,
         "compose-prod-public-services.unit.test.ts": 1,
         "compose-registry-coverage.unit.test.ts": 1,
@@ -81,6 +82,7 @@
         "infra-health-paths.unit.test.ts": 6,
         "job-store.unit.test.ts": 2,
         "journal-candles.unit.test.ts": 2,
+        "journal-entry.unit.test.ts": 17,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
         "lib-process.unit.test.ts": 2,
