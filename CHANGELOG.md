@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.102.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.102.0...veta-trading-platform-v1.102.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **journal:** pair submission arrival time with the earliest submitted event ([#1092](https://github.com/milesburton/veta-trading-platform/issues/1092)) ([2f3ab37](https://github.com/milesburton/veta-trading-platform/commit/2f3ab37abf9c0db7928e7ca3f7e9e1e36e99ee23))
+
 ## [1.102.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.101.0...veta-trading-platform-v1.102.0) (2026-11-08)
 
 
