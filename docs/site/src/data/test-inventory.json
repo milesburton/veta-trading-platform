@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 187,
-      "cases": 2034,
+      "files": 189,
+      "cases": 2042,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -20,6 +20,7 @@
         "algo-depth-cap.unit.test.ts": 9,
         "algo-fill-progress.unit.test.ts": 13,
         "algo-idle-exit.unit.test.ts": 5,
+        "algo-registry.unit.test.ts": 3,
         "algo.unit.test.ts": 44,
         "analytics-server.unit.test.ts": 16,
         "analytics.unit.test.ts": 22,
@@ -83,7 +84,7 @@
         "infra-health-paths.unit.test.ts": 6,
         "job-store.unit.test.ts": 2,
         "journal-candles.unit.test.ts": 2,
-        "journal-entry.unit.test.ts": 17,
+        "journal-entry.unit.test.ts": 18,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
         "latency-metrics.unit.test.ts": 4,
@@ -112,7 +113,8 @@
         "news-aggregator.unit.test.ts": 10,
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
-        "oms-server.unit.test.ts": 32,
+        "oms-regulatory.unit.test.ts": 3,
+        "oms-server.unit.test.ts": 33,
         "oms.test.ts": 16,
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,

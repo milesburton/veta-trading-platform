@@ -290,6 +290,21 @@ test("[journal] writes consumed events to the journal in batches", async () => {
   assert(h.queries.some((q) => q.sql === "COMMIT"));
 });
 
+test("[journal] keeps every partial fill of a child and retains the full payload", async () => {
+  const consume = h.consumers.get("journal-group");
+  assert(consume);
+  const fill = { childId: "c1", parentOrderId: "o1", filledQty: 5, algoId: "VETA-TWAP" };
+  consume("orders.filled", { ...fill, execId: "EX-1" });
+  consume("orders.filled", { ...fill, execId: "EX-2" });
+  consume("orders.child", { childId: "c1", orderId: "o1", algo: "TWAP" });
+  await vi.advanceTimersByTimeAsync(100);
+  const inserts = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.events"));
+  const ids = inserts.map((q) => q.params[0]);
+  assertEquals(ids, ["orders.filled:c1:EX-1", "orders.filled:c1:EX-2", "orders.child:c1"]);
+  assertEquals((inserts[0].params[16] as Record<string, unknown>).algoId, "VETA-TWAP");
+  assertEquals((inserts[2].params[16] as Record<string, unknown>).algo, "TWAP");
+});
+
 test("[journal] rolls back a failed batch without crashing", async () => {
   h.failSql = /INSERT INTO journal\.events/;
   h.consumers.get("journal-group")?.("orders.child", { childId: "c9" });

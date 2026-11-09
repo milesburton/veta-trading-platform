@@ -149,6 +149,28 @@ test("[oms] routes an accepted equity order to the lit venue", async () => {
   assertEquals(String(routed?.orderId).startsWith("oms-"), true);
 });
 
+test("[oms] stamps regulatory identifiers on submitted and routed orders", async () => {
+  vi.stubEnv("FIRM_LEI", "529900T8BM49AURSDO55");
+  h.limits = {
+    "trader-1": {
+      status: 200,
+      body: { ...FULL_LIMITS, client_code: "CLIENT-9", decision_maker_code: "DM-7" },
+    },
+  };
+  await load({ FIRM_LEI: "529900T8BM49AURSDO55" });
+  await submit(order({ strategy: "TWAP" }));
+  for (const topic of ["orders.submitted", "orders.routed"]) {
+    const payload = last(topic);
+    assertEquals(payload?.algoId, "VETA-TWAP");
+    assertEquals(payload?.algoVersion, "1.0.0");
+    assertEquals(payload?.orderType, "LIMIT");
+    assertEquals(payload?.lei, "529900T8BM49AURSDO55");
+    assertEquals(payload?.clientCode, "CLIENT-9");
+    assertEquals(payload?.decisionMakerCode, "DM-7");
+    assertEquals(payload?.executionDecisionCode, "VETA-TWAP");
+  }
+});
+
 test("[oms] derives time in force from the expiry", async () => {
   await submit(order({ clientOrderId: "a", expiresAt: 30 }));
   assertEquals(last("orders.submitted")?.timeInForce, "IOC");

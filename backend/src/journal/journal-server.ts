@@ -52,8 +52,9 @@ interface KafkaEventValue {
 
 function extractFields(topic: string, value: KafkaEventValue) {
   const baseId = value.childId ?? value.orderId ?? value.token ?? null;
+  const execSuffix = topic === "orders.filled" && value.execId ? `:${value.execId}` : "";
   return {
-    event_id: baseId ? `${topic}:${baseId}` : null,
+    event_id: baseId ? `${topic}:${baseId}${execSuffix}` : null,
     user_id: value.userId ?? null,
     algo: value.algo ?? null,
     instrument: value.asset ?? null,
@@ -174,7 +175,6 @@ function ingest(topic: string, value: KafkaEventValue) {
   const arrivedAt = new Date();
   const ts = new Date(value.ts ?? arrivedAt.getTime());
   const fields = extractFields(topic, value);
-  const raw = topic === "orders.child" || topic === "orders.filled" ? null : value;
   writeQueue.push([
     fields.event_id,
     topic,
@@ -192,7 +192,7 @@ function ingest(topic: string, value: KafkaEventValue) {
     fields.market_price,
     fields.market_impact_bps,
     fields.algo_params,
-    raw,
+    value,
     arrivedAt,
   ]);
 }

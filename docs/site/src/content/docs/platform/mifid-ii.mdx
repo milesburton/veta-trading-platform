@@ -1,0 +1,29 @@
+---
+title: MiFID II
+description: How the platform models MiFID II order record-keeping, clock synchronisation, transaction reporting and algorithmic trading controls.
+---
+
+The platform is a simulator. It produces the data shapes, controls and evidence a regulated firm would keep under MiFID II, but it makes no claim of legal compliance and submits nothing to an Approved Reporting Mechanism.
+
+## Regulatory identifiers on orders
+
+The OMS stamps regulatory identifiers on `orders.submitted` and `orders.routed`. The EMS adds the algorithm identifier to `orders.filled`. The journal keeps the full payload of every event, so reports can be rebuilt from stored records.
+
+| Field | Source | Notes |
+| --- | --- | --- |
+| `algoId`, `algoVersion` | `shared/algoRegistry.ts` | Set for algorithmic strategies only. `LIMIT` is not treated as an algorithm. |
+| `orderType` | OMS | `LIMIT` when a limit price is present, otherwise `MARKET`. |
+| `lei` | `FIRM_LEI` environment variable | Executing entity. Dropped unless it matches the 20 character LEI format. |
+| `clientCode` | `users.trading_limits.client_code` | Pseudonymous code. Falls back to the user id. |
+| `decisionMakerCode` | `users.trading_limits.decision_maker_code` | Investment decision within the firm. Falls back to the user id. |
+| `executionDecisionCode` | OMS | The algorithm identifier when an algorithm executes the order, otherwise the decision maker code. |
+
+No national identifiers are stored. Codes are pseudonyms that an operator maps to natural persons outside the platform.
+
+## Algorithm registry
+
+Every strategy has a registry entry with a stable identifier and a semantic version. Bump the version in `shared/algoRegistry.ts` whenever an algorithm's behaviour changes, so that fills and test records can be tied to the code that produced them.
+
+## Journal behaviour
+
+Fill events are keyed by execution id, so repeated partial fills of one child order are all retained. Previously only the first fill of a child was stored.
