@@ -24,7 +24,7 @@ class MockWebSocket {
   }
 }
 
-function createHarness() {
+function createHarness(marketPrices: Record<string, number> = {}) {
   const dispatched: Array<{ type?: string; payload?: unknown }> = [];
   const storeAPI = {
     dispatch: (action: { type?: string; payload?: unknown }) => {
@@ -34,6 +34,7 @@ function createHarness() {
     getState: () => ({
       ui: { selectedAsset: null },
       breakers: { active: [] },
+      market: { prices: marketPrices },
     }),
   };
   const next = vi.fn((action) => action);
@@ -851,5 +852,42 @@ describe("gatewayMiddleware", () => {
 
       expect(dispatched.some((a) => a.type === "market/connectionRecovered")).toBe(true);
     });
+  });
+
+  it("reports the close code and reason on disconnect", () => {
+    const { dispatched, invoke } = createHarness();
+    invoke(setUser({ id: "u1", name: "Trader", role: "trader", avatar_emoji: ":test:" } as const));
+    const ws = MockWebSocket.instances[0];
+
+    ws.onclose?.({ code: 1006, reason: "abnormal" } as CloseEvent);
+
+    const report = dispatched.find((a) => a.type === "observability/reportError");
+    expect(JSON.stringify(report)).toContain("1006");
+    expect(JSON.stringify(report)).toContain("abnormal");
+  });
+
+  it("reports a socket error and closes the socket", () => {
+    const { dispatched, invoke } = createHarness();
+    invoke(setUser({ id: "u1", name: "Trader", role: "trader", avatar_emoji: ":test:" } as const));
+    const ws = MockWebSocket.instances[0];
+
+    ws.onerror?.({} as Event);
+
+    expect(JSON.stringify(dispatched)).toContain("WebSocket error event");
+    expect(ws.closeCalled).toBe(true);
+  });
+
+  it("carries the last known price into a volume-only tick", () => {
+    const { dispatched, invoke } = createHarness({ AAPL: 101 });
+    invoke(setUser({ id: "u1", name: "Trader", role: "trader", avatar_emoji: ":test:" } as const));
+    const ws = MockWebSocket.instances[0];
+    const send = (data: unknown) =>
+      ws.onmessage?.({ data: JSON.stringify({ event: "marketUpdate", data }) } as MessageEvent);
+
+    send({ volumes: { AAPL: 5 } });
+    vi.advanceTimersByTime(250);
+
+    const ticks = dispatched.filter((a) => a.type === "market/tickReceived");
+    expect(ticks.at(-1)?.payload).toMatchObject({ prices: { AAPL: 101 }, volumes: { AAPL: 5 } });
   });
 });
