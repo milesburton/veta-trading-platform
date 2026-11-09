@@ -193,11 +193,14 @@ fetchMock.mockImplementation(() =>
   )
 );
 
+vi.useFakeTimers();
 await import("../gateway/gateway.ts");
 await vi.waitFor(() => assert(h.consumers.size > 5));
 await vi.waitFor(() => assert(h.handler));
 
 afterAll(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
