@@ -595,9 +595,21 @@ test("[gateway] publishes access events for authenticated requests", async () =>
   assert(actions.includes("http_request"));
 });
 
-test("[gateway] routes kill-switch and rejection events to the alert router", () => {
+test("[gateway] routes kill-switch and rejection events to the alert router", async () => {
+  const { notifyOperators } = await import("../notifications/discord-notifier.ts");
+  const notify = vi.mocked(notifyOperators).mockClear().mockResolvedValue(true);
   const router = h.consumers.get("gateway-alert-router");
   assert(router);
   router("orders.rejected", { reason: "x" });
-  router("orders.kill.audit", { scope: "all", userId: "u" });
+  router("orders.kill.audit", {
+    scope: "all",
+    issuedBy: "u",
+    issuedByRole: "admin",
+    ts: Date.now(),
+    cancelledCount: 0,
+    cancelledIds: [],
+  });
+  assertEquals(notify.mock.calls.length, 1);
+  assert(notify.mock.calls[0][0].includes("Kill switch engaged"));
+  assert(notify.mock.calls[0][0].includes("Issued by u (admin); 0 orders cancelled"));
 });
