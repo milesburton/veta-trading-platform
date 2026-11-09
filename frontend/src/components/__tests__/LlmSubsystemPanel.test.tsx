@@ -150,4 +150,41 @@ describe("LlmSubsystemPanel", () => {
     });
     expect(await screen.findByText(/Worker started/i)).toBeInTheDocument();
   });
+
+  it("toggles advisory and worker policy flags", async () => {
+    renderPanel();
+    const toggle = (label: string) =>
+      screen.getByText(label).parentElement?.querySelector("button") as HTMLButtonElement;
+
+    fireEvent.click(toggle("Advisory enabled"));
+    await waitFor(() => expect(updateState).toHaveBeenCalledWith({ enabled: false }));
+
+    fireEvent.click(toggle("Worker enabled"));
+    await waitFor(() => expect(updateState).toHaveBeenCalledWith({ workerEnabled: false }));
+  });
+
+  it("shows an error when a policy update fails", async () => {
+    updateState.mockReturnValue({ unwrap: () => Promise.reject(new Error("nope")) });
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "event-driven" }));
+
+    expect(await screen.findByText(/Failed to update LLM subsystem state/i)).toBeInTheDocument();
+  });
+
+  it("reports how many advisory jobs a watchlist brief queued", async () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /Generate watchlist brief/i }));
+
+    expect(await screen.findByText("Queued 2 advisory job(s)")).toBeInTheDocument();
+  });
+
+  it("shows an error when the worker fails to start", async () => {
+    triggerWorker.mockReturnValue({ unwrap: () => Promise.reject(new Error("off")) });
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: /Start LLM worker/i }));
+
+    expect(await screen.findByText(/Failed to start worker/i)).toBeInTheDocument();
+  });
 });
