@@ -541,22 +541,17 @@ test("[gateway] routes rfq, dark pool and ccp events to the right audience", () 
 });
 
 test("[gateway] batches signal and feature updates per symbol", async () => {
-  vi.useFakeTimers();
-  try {
-    const signals = h.consumers.get("gateway-signals");
-    const features = h.consumers.get("gateway-features");
-    assert(signals && features);
-    signals("market.signals", { symbol: "AAPL", v: 1 });
-    signals("market.signals", { symbol: "AAPL", v: 2 });
-    signals("market.signals", { symbol: "MSFT", v: 3 });
-    features("market.features", { symbol: "AAPL", v: 1 });
-    await vi.advanceTimersByTimeAsync(600);
-    const events = h.broadcastAll.mock.calls.map((c) => c[0].event);
-    assertEquals(events.filter((e: string) => e === "signalUpdate").length, 2);
-    assertEquals(events.filter((e: string) => e === "featureUpdate").length, 1);
-  } finally {
-    vi.useRealTimers();
-  }
+  const signals = h.consumers.get("gateway-signals");
+  const features = h.consumers.get("gateway-features");
+  assert(signals && features);
+  signals("market.signals", { symbol: "AAPL", v: 1 });
+  signals("market.signals", { symbol: "AAPL", v: 2 });
+  signals("market.signals", { symbol: "MSFT", v: 3 });
+  features("market.features", { symbol: "AAPL", v: 1 });
+  await vi.advanceTimersByTimeAsync(600);
+  const events = h.broadcastAll.mock.calls.map((c) => c[0].event);
+  assertEquals(events.filter((e: string) => e === "signalUpdate").length, 2);
+  assertEquals(events.filter((e: string) => e === "featureUpdate").length, 1);
 });
 
 test("[gateway] falls back to the market-sim socket only when the bus is quiet", () => {
@@ -570,26 +565,21 @@ test("[gateway] falls back to the market-sim socket only when the bus is quiet",
 });
 
 test("[gateway] relays market-sim socket data and survives bad frames", () => {
-  vi.useFakeTimers();
-  try {
-    const socket = h.sockets.at(-1);
-    assert(socket?.onmessage);
-    vi.setSystemTime(Date.now() + 10_000);
-    const before = h.broadcastAll.mock.calls.length;
-    socket.onmessage({ data: JSON.stringify({ event: "marketUpdate", data: { y: 1 } }) });
-    socket.onmessage({ data: JSON.stringify({ event: "other" }) });
-    socket.onmessage({ data: "not json" });
-    assertEquals(h.broadcastAll.mock.calls.length, before + 1);
+  const socket = h.sockets.at(-1);
+  assert(socket?.onmessage);
+  vi.setSystemTime(Date.now() + 10_000);
+  const before = h.broadcastAll.mock.calls.length;
+  socket.onmessage({ data: JSON.stringify({ event: "marketUpdate", data: { y: 1 } }) });
+  socket.onmessage({ data: JSON.stringify({ event: "other" }) });
+  socket.onmessage({ data: "not json" });
+  assertEquals(h.broadcastAll.mock.calls.length, before + 1);
 
-    const count = h.sockets.length;
-    socket.onclose?.();
-    vi.advanceTimersByTime(5_000);
-    assertEquals(h.sockets.length, count + 1);
-    socket.onerror?.();
-    assertEquals(socket.close.mock.calls.length, 1);
-  } finally {
-    vi.useRealTimers();
-  }
+  const count = h.sockets.length;
+  socket.onclose?.();
+  vi.advanceTimersByTime(5_000);
+  assertEquals(h.sockets.length, count + 1);
+  socket.onerror?.();
+  assertEquals(socket.close.mock.calls.length, 1);
 });
 
 test("[gateway] publishes access events for authenticated requests", async () => {
