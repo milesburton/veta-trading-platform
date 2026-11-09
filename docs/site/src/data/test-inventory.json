@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 177,
-      "cases": 1932,
+      "files": 178,
+      "cases": 1957,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -175,6 +175,7 @@
         "trigger-rules.unit.test.ts": 17,
         "unit.test.ts": 16,
         "user-schema.unit.test.ts": 14,
+        "user-service-entry.unit.test.ts": 25,
         "venue-router.unit.test.ts": 8,
         "vol-surface.unit.test.ts": 2,
         "volatility-estimator.unit.test.ts": 9,
