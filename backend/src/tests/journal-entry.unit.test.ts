@@ -341,7 +341,10 @@ test("[journal] ingests market ticks into candles", async () => {
   assert(ticks);
   await ticks("market.ticks", { prices: { AAPL: 100 }, volumes: { AAPL: 5 } });
   const inserts = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.candles"));
-  assertEquals(inserts.map((q) => q.params[1]), ["1m", "5m"]);
+  assertEquals(
+    inserts.map((q) => q.params[1]),
+    ["1m", "5m"]
+  );
   for (const { params } of inserts) {
     assertEquals([params[0], params[3], params[4]], [["AAPL"], [100], [5 / 240]]);
   }

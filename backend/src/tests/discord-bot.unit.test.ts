@@ -590,3 +590,8 @@ test("[discord-bot] hasRecentMotd only counts the bot's own MOTD inside the wind
   assertEquals(hasRecentMotd([msg("hello", hour)], "bot", now, 24 * hour), false);
   assertEquals(hasRecentMotd([], "bot", now, 24 * hour), false);
 });
+
+test("[discord-bot] parseTriageResponse rejects unbalanced or invalid JSON", () => {
+  assertEquals(parseTriageResponse('{"title": "x"'), { ok: false, reason: "unparseable" });
+  assertEquals(parseTriageResponse("{not json}"), { ok: false, reason: "unparseable" });
+});
