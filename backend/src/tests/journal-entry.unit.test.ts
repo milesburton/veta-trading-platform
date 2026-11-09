@@ -32,7 +32,7 @@ const fakeClient = () => ({
 vi.mock("#veta/bootstrap", () => ({}));
 vi.mock("#veta/db", () => ({
   journalPool: { connect: () => Promise.resolve(fakeClient()) },
-  auditPool: {},
+  auditPool: { connect: () => Promise.resolve(fakeClient()) },
 }));
 vi.mock("#veta/http", async (importActual) => ({
   ...(await importActual<Record<string, unknown>>()),
@@ -294,6 +294,24 @@ test("[journal] reconciles missing executions with per-execution quantities", as
       ["orders.filled:c2:e2", 20, 5],
     ]
   );
+});
+
+test("[journal] dual-writes order lifecycle events to the regulatory record", async () => {
+  const consume = h.consumers.get("journal-group");
+  assert(consume);
+  consume("orders.child", { childId: "c7", orderId: "o7", ts: 5, quantity: 3 });
+  await vi.advanceTimersByTimeAsync(100);
+  const regulatory = h.queries.filter((q) => q.sql.includes("INSERT INTO regulatory.order_events"));
+  assertEquals(regulatory.length, 1);
+  assertEquals(regulatory[0].params.slice(0, 2), ["orders.child:c7", "orders.child"]);
+  assertEquals(regulatory[0].params[3], "o7");
+  assertEquals(JSON.parse(regulatory[0].params[5] as string).quantity, 3);
+});
+
+test("[journal] health reports hot and regulatory retention", async () => {
+  const health = (await json(await call("/health"))) as Record<string, number>;
+  assertEquals(health.retentionDays, 2);
+  assertEquals(health.regulatoryRetentionYears, 5);
 });
 
 test("[journal] writes consumed events to the journal in batches", async () => {

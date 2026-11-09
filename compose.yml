@@ -457,6 +457,9 @@ services:
           mc mb -p --with-lock local/audit-anchors || true
           mc retention set --default COMPLIANCE 30d local/audit-anchors
           echo "MinIO audit-anchors bucket ready"
+          mc mb -p --with-lock local/regulatory-records || true
+          mc retention set --default COMPLIANCE 1825d local/regulatory-records
+          echo "MinIO regulatory-records bucket ready"
     labels:
       - "traefik.enable=false"
 
@@ -1245,6 +1248,10 @@ services:
       REDPANDA_BROKERS: redpanda:9092
       FIX_ARCHIVE_HOST: fix-archive
       FIX_ARCHIVE_PORT: "5012"
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-veta}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-in-production}
+      REGULATORY_BUCKET: regulatory-records
     healthcheck:
       test: ["CMD-SHELL", "curl -sf -m 3 http://localhost:5009/health || exit 1"]
       interval: 10s
