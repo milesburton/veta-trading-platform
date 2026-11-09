@@ -419,9 +419,8 @@ describe("ordersSlice – command thunks without a connection", () => {
     ["unholdOrders", unholdOrdersThunk],
   ] as const)("%s sends nothing while disconnected", async (_type, thunk) => {
     setGatewayWs(null);
-    await expect(
-      thunk(["o1"])(vi.fn() as never, vi.fn() as never, undefined)
-    ).resolves.toBeDefined();
+    const result = await thunk(["o1"])(vi.fn() as never, vi.fn() as never, undefined);
+    expect(result.meta.requestStatus).toBe("fulfilled");
   });
 });
 
