@@ -9,6 +9,7 @@ import {
   setFilterExpr,
   setFilters,
   setSort,
+  toggleFrozenColumn,
 } from "@veta/frontend/store/gridPrefsSlice.ts";
 import type { AllGridPrefs } from "@veta/frontend/types/gridPrefs.ts";
 import { describe, expect, it } from "vite-plus/test";
@@ -413,5 +414,14 @@ describe("gridPrefsSlice – loadGridPrefs lifecycle", () => {
       loadGridPrefs.rejected(new Error("network"), "req-x", undefined)
     );
     expect(state.loading).toBe(false);
+  });
+});
+
+describe("gridPrefsSlice – toggleFrozenColumn", () => {
+  it("freezes a column then unfreezes it on the second toggle", () => {
+    const frozen = reducer(initial, toggleFrozenColumn({ gridId: "orderBlotter", key: "asset" }));
+    expect(frozen.orderBlotter.frozenColumns).toEqual(["asset"]);
+    const thawed = reducer(frozen, toggleFrozenColumn({ gridId: "orderBlotter", key: "asset" }));
+    expect(thawed.orderBlotter.frozenColumns).toEqual([]);
   });
 });

@@ -745,3 +745,42 @@ describe("exprGroupToDisplay", () => {
     expect(exprGroupToDisplay(g, fields)).toBe("Qty > 5000 AND (Side = BUY OR Status = expired)");
   });
 });
+
+describe("exprGroupToDisplay range and set rules", () => {
+  const fields = [
+    { key: "quantity", label: "Qty", type: "number" as const },
+    { key: "status", label: "Status", type: "enum" as const },
+  ];
+
+  it("renders a between rule as a range", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "quantity", op: "between", value: [10, 20] }],
+    };
+    expect(exprGroupToDisplay(g, fields)).toBe("Qty 10–20");
+  });
+
+  it("renders an in rule as a set", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "status", op: "in", value: ["filled", "working"] }],
+    };
+    expect(exprGroupToDisplay(g, fields)).toBe("Status ∈ {filled, working}");
+  });
+});
+
+describe("evalExprGroup with an unknown operator", () => {
+  it("treats the rule as matching", () => {
+    const g = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "asset", op: "unknown", value: "x" }],
+    } as unknown as ExprGroup;
+    expect(evalExprGroup({ asset: "AAPL" }, g)).toBe(true);
+  });
+});
