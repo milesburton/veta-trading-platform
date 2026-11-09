@@ -3,6 +3,7 @@ import {
   authSlice,
   clearUser,
   DEFAULT_LIMITS,
+  sessionExpired,
   setLimits,
   setStatus,
   setUser,
@@ -99,6 +100,20 @@ describe("authSlice", () => {
     it("transitions to unauthenticated", () => {
       const state = reducer(undefined, setStatus("unauthenticated"));
       expect(state.status).toBe("unauthenticated");
+    });
+  });
+
+  describe("sessionExpired", () => {
+    it("clears the user and flags the session as expired", () => {
+      const signedIn = reducer(
+        undefined,
+        setUserWithLimits({ user: TRADER, limits: CUSTOM_LIMITS })
+      );
+      const state = reducer(signedIn, sessionExpired());
+      expect(state.user).toBeNull();
+      expect(state.limits).toEqual(DEFAULT_LIMITS);
+      expect(state.status).toBe("unauthenticated");
+      expect(state.sessionExpired).toBe(true);
     });
   });
 });

@@ -1,5 +1,8 @@
 import {
   cancelOrdersThunk,
+  holdOrdersThunk,
+  resumeOrdersThunk,
+  unholdOrdersThunk,
   childAdded,
   fillReceived,
   killOrdersThunk,
@@ -383,5 +386,108 @@ describe("ordersSlice – cancelOrdersThunk", () => {
     expect(sent.type).toBe("cancelOrders");
     expect(sent.payload.orderIds).toEqual(["ord-1", "ord-2"]);
     setGatewayWs(null);
+  });
+});
+
+describe("ordersSlice – command thunks without a connection", () => {
+  afterEach(() => {
+    setGatewayWs(null);
+    vi.restoreAllMocks();
+  });
+
+  it("warns when kill is requested while disconnected", async () => {
+    setGatewayWs(null);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await killOrdersThunk({ scope: "all" })(vi.fn() as never, vi.fn() as never, undefined);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("kill command not sent"));
+  });
+
+  it("warns when resume is requested while disconnected", async () => {
+    setGatewayWs(null);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await resumeOrdersThunk({ scope: "all" } as never)(
+      vi.fn() as never,
+      vi.fn() as never,
+      undefined
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("resume command not sent"));
+  });
+
+  it.each([
+    ["cancelOrders", cancelOrdersThunk],
+    ["holdOrders", holdOrdersThunk],
+    ["unholdOrders", unholdOrdersThunk],
+  ] as const)("%s sends nothing while disconnected", async (_type, thunk) => {
+    setGatewayWs(null);
+    const result = await thunk(["o1"])(vi.fn() as never, vi.fn() as never, undefined);
+    expect(result.meta.requestStatus).toBe("fulfilled");
+  });
+});
+
+describe("ordersSlice – command thunks over an open connection", () => {
+  const ws = { readyState: 1, send: vi.fn() };
+
+  beforeEach(() => {
+    ws.send.mockClear();
+    setGatewayWs(ws as unknown as WebSocket);
+  });
+
+  afterEach(() => {
+    setGatewayWs(null);
+  });
+
+  it("sends resumeOrders with its payload", async () => {
+    await resumeOrdersThunk({ scope: "all" } as never)(
+      vi.fn() as never,
+      vi.fn() as never,
+      undefined
+    );
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toMatchObject({ type: "resumeOrders" });
+  });
+
+  it.each([
+    ["cancelOrders", cancelOrdersThunk],
+    ["holdOrders", holdOrdersThunk],
+    ["unholdOrders", unholdOrdersThunk],
+  ] as const)("%s sends the order ids", async (type, thunk) => {
+    await thunk(["o1", "o2"])(vi.fn() as never, vi.fn() as never, undefined);
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({
+      type,
+      payload: { orderIds: ["o1", "o2"] },
+    });
+  });
+});
+
+describe("ordersSlice – limitOrdersChecked transitions", () => {
+  it("moves an untriggered pending order to working", () => {
+    let state = reducer(
+      initial,
+      orderAdded(makeOrder({ side: "BUY", limitPrice: 100, status: "pending" }))
+    );
+    state = reducer(state, limitOrdersChecked({ AAPL: 150 }));
+    expect(state.orders[0].status).toBe("working");
+  });
+
+  it("leaves an untriggered working order unchanged", () => {
+    let state = reducer(
+      initial,
+      orderAdded(makeOrder({ side: "BUY", limitPrice: 100, status: "working" }))
+    );
+    state = reducer(state, limitOrdersChecked({ AAPL: 150 }));
+    expect(state.orders[0].status).toBe("working");
+  });
+});
+
+describe("ordersSlice – childAdded updates", () => {
+  it("merges into an existing child instead of duplicating it", () => {
+    const child = { id: "c1", filled: 0 } as unknown as ChildOrder;
+    let state = reducer(initial, orderAdded(makeOrder()));
+    state = reducer(state, childAdded({ parentId: "order-1", child }));
+    state = reducer(
+      state,
+      childAdded({ parentId: "order-1", child: { ...child, filled: 5 } as ChildOrder })
+    );
+    expect(state.orders[0].children).toHaveLength(1);
+    expect((state.orders[0].children[0] as unknown as { filled: number }).filled).toBe(5);
   });
 });

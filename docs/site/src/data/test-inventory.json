@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 176,
-      "cases": 1903,
+      "files": 185,
+      "cases": 2022,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -25,10 +25,12 @@
         "analytics.unit.test.ts": 22,
         "apply-shocks.unit.test.ts": 7,
         "audit-anchor.unit.test.ts": 9,
+        "audit-lib.unit.test.ts": 5,
         "black-scholes.unit.test.ts": 6,
         "bond-pricing.unit.test.ts": 11,
         "bug-report-route.unit.test.ts": 14,
         "ccp-service.unit.test.ts": 11,
+        "cli-trader.unit.test.ts": 8,
         "compose-mem-limits.unit.test.ts": 1,
         "compose-prod-public-services.unit.test.ts": 1,
         "compose-registry-coverage.unit.test.ts": 1,
@@ -39,6 +41,7 @@
         "dark-pool-matching.unit.test.ts": 12,
         "dark-pool-server.unit.test.ts": 7,
         "data-depth-cache.unit.test.ts": 3,
+        "db-migrations.unit.test.ts": 13,
         "demo-day-attribution.unit.test.ts": 3,
         "deploy-sync-bind-mounts.unit.test.ts": 1,
         "devcontainer.unit.test.ts": 7,
@@ -63,11 +66,13 @@
         "fixParser.test.ts": 19,
         "frontend-image-files.unit.test.ts": 1,
         "gateway-analytics-llm-routes.unit.test.ts": 12,
+        "gateway-entry.unit.test.ts": 29,
         "gateway-logs-route.unit.test.ts": 7,
         "gateway-proxied-routes.unit.test.ts": 18,
         "gateway-role-matrix.unit.test.ts": 2,
         "gateway-route-auth-inventory.unit.test.ts": 4,
         "gateway-scenarios-route.unit.test.ts": 11,
+        "gateway-scenarios-store.unit.test.ts": 9,
         "gateway-system-status.unit.test.ts": 8,
         "gateway-wake.unit.test.ts": 9,
         "gateway-websocket-route.unit.test.ts": 18,
@@ -78,6 +83,7 @@
         "infra-health-paths.unit.test.ts": 6,
         "job-store.unit.test.ts": 2,
         "journal-candles.unit.test.ts": 2,
+        "journal-entry.unit.test.ts": 17,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
         "lib-process.unit.test.ts": 2,
@@ -138,6 +144,7 @@
         "rng.test.ts": 9,
         "route-exposure.unit.test.ts": 3,
         "runtime-config-store.test.ts": 13,
+        "s3-client.unit.test.ts": 5,
         "scenario-server.unit.test.ts": 6,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,
@@ -158,6 +165,7 @@
         "synthetic-trader-desk-calendar.unit.test.ts": 7,
         "synthetic-trader-disabled.unit.test.ts": 1,
         "synthetic-trader-enabled.unit.test.ts": 8,
+        "synthetic-trader-gateway-frames.unit.test.ts": 8,
         "synthetic-trader-gateway-socket.unit.test.ts": 4,
         "synthetic-trader-pacing.unit.test.ts": 3,
         "synthetic-trader-payloads.unit.test.ts": 13,
@@ -174,6 +182,7 @@
         "trigger-rules.unit.test.ts": 17,
         "unit.test.ts": 16,
         "user-schema.unit.test.ts": 14,
+        "user-service-entry.unit.test.ts": 25,
         "venue-router.unit.test.ts": 8,
         "vol-surface.unit.test.ts": 2,
         "volatility-estimator.unit.test.ts": 9,
@@ -234,8 +243,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 189,
-      "cases": 2251
+      "files": 190,
+      "cases": 2277
     },
     "playwright": {
       "files": 19,

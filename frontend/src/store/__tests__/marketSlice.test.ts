@@ -3,10 +3,13 @@ import {
   applyTickMut,
   bucketStart,
   candlesSeeded,
+  connectionFailed,
+  connectionRecovered,
   type MarketState,
   marketSlice,
   orderBookUpdated,
   setAssets,
+  setSessionPhase,
   tickReceived,
 } from "@veta/frontend/store/marketSlice";
 import type { OhlcCandle } from "@veta/frontend/types";
@@ -651,5 +654,25 @@ describe("tickReceived, sessionOpen", () => {
     const s1 = tick({ AAPL: 189.5, MSFT: 421.0 });
     expect(s1.sessionOpen.AAPL).toBe(189.5);
     expect(s1.sessionOpen.MSFT).toBe(421.0);
+  });
+});
+
+describe("market connection and session reducers", () => {
+  it("counts connection failures and resets them on recovery", () => {
+    const failed = reducer(reducer(initialState, connectionFailed()), connectionFailed());
+    expect(failed.connectionFailures).toBe(2);
+    expect(reducer(failed, connectionRecovered()).connectionFailures).toBe(0);
+  });
+
+  it("stores the session phase", () => {
+    expect(reducer(initialState, setSessionPhase("closed" as never)).sessionPhase).toBe("closed");
+  });
+
+  it("prefers server-sent open prices over the first tick seen", () => {
+    const state = reducer(
+      initialState,
+      tickReceived({ prices: { AAPL: 155 }, openPrices: { AAPL: 150 }, ts: 1_700_000_000_000 })
+    );
+    expect(state.sessionOpen.AAPL).toBe(150);
   });
 });

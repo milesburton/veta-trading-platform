@@ -188,3 +188,20 @@ describe("wouldCreateCycleIn", () => {
     expect(wouldCreateCycleIn(2, "a", items)).toBe(false);
   });
 });
+
+describe("cycle traversal through intermediate panels", () => {
+  it("wouldCreateCycleOut follows a chain of receivers without finding a cycle", () => {
+    const items = [item("a", undefined, 4), item("b", 2, 1), item("c", undefined, 2)];
+    expect(wouldCreateCycleOut(1, "a", items)).toBe(false);
+  });
+
+  it("wouldCreateCycleOut finds a cycle two hops away", () => {
+    const items = [item("a", undefined, 3), item("b", 2, 1), item("c", 3, 2)];
+    expect(wouldCreateCycleOut(1, "a", items)).toBe(true);
+  });
+
+  it("wouldCreateCycleIn follows downstream channels without finding a cycle", () => {
+    const items = [item("a", 1, undefined), item("b", 2, 1), item("c", 4, 2)];
+    expect(wouldCreateCycleIn(3, "a", items)).toBe(false);
+  });
+});
