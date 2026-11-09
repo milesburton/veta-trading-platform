@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 185,
-      "cases": 2022,
+      "cases": 2023,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -46,7 +46,7 @@
         "deploy-sync-bind-mounts.unit.test.ts": 1,
         "devcontainer.unit.test.ts": 7,
         "discord-bot-dispatch.unit.test.ts": 17,
-        "discord-bot.unit.test.ts": 59,
+        "discord-bot.unit.test.ts": 60,
         "discord-notifier.unit.test.ts": 18,
         "docs-drift.unit.test.ts": 10,
         "docs-sidebar.unit.test.ts": 3,
