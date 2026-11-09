@@ -461,18 +461,38 @@ describe("BugReportModal", () => {
     });
   });
 
-  it("uploads a captured screenshot", async () => {
-    vi.mocked(attachmentUpload.captureScreenshotBlob).mockResolvedValueOnce(
-      new Blob(["png"], { type: "image/png" })
-    );
-    mockPresign.mockReturnValue({
-      unwrap: () => Promise.resolve({ uploadUrl: "https://s3/x", url: "https://s3/x", key: "k" }),
-    });
+  it("uploads a captured screenshot and includes its URL on submit", async () => {
+    const blob = new Blob(["png"], { type: "image/png" });
+    const objectUrl = "http://localhost:3000/attachments/ticket-attachments/u-1/shot.png";
+    const presigned = {
+      postUrl: "http://minio.example/ticket-attachments",
+      formFields: { key: "u-1/shot.png" },
+      objectUrl,
+      objectKey: "u-1/shot.png",
+      expiresAt: Date.now() + 60_000,
+    };
+    vi.mocked(attachmentUpload.captureScreenshotBlob).mockResolvedValueOnce(blob);
+    mockPresign.mockReturnValue({ unwrap: () => Promise.resolve(presigned) });
+    mockSubmit.mockResolvedValueOnce({ data: { ok: true } });
     renderModal();
 
     fireEvent.click(screen.getByTestId("bug-report-capture-screenshot"));
 
-    await waitFor(() => expect(mockPresign).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("bug-report-attachments")).getByText("Done")
+      ).toBeInTheDocument();
+    });
+    expect(attachmentUpload.uploadAttachment).toHaveBeenCalledWith(blob, presigned);
+
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+
+    await waitFor(() => expect(mockSubmit).toHaveBeenCalledTimes(1));
+    expect(mockSubmit.mock.calls[0][0].attachments).toEqual([objectUrl]);
   });
 
   it("opens the file picker from the attach button", () => {

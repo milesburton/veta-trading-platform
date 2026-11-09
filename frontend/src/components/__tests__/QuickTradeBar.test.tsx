@@ -338,11 +338,18 @@ describe("QuickTradeBar, AI fallbacks and keyboard", () => {
     );
   });
 
-  it("Escape clears the input and the flash message", () => {
+  it("Escape clears the input and a visible flash message", async () => {
+    setMutationResult({ result: { error: "ambiguous symbol" } });
     renderBar(makeStore());
     const input = screen.getByTestId("quick-trade-input") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "hedge half my position" } });
+    fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
+    await waitFor(() =>
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("AI: ambiguous symbol")
+    );
+
     fireEvent.keyDown(input, { key: "Escape" });
+
     expect(input.value).toBe("");
     expect(screen.queryByTestId("quick-trade-flash")).toBeNull();
   });
