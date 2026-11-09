@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 186,
-      "cases": 2030,
+      "files": 187,
+      "cases": 2033,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "anthropic.test.ts": 6,
@@ -86,6 +86,7 @@
         "journal-entry.unit.test.ts": 17,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
+        "latency-metrics.unit.test.ts": 3,
         "lib-process.unit.test.ts": 2,
         "lib.unit.test.ts": 17,
         "llm-dedupe.test.ts": 13,
