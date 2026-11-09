@@ -118,8 +118,9 @@ describe("servicesApi requests", () => {
   it("getServicesStatus requests the status route and validates the schema", async () => {
     vi.stubGlobal("fetch", stubFetch({ nonsense: true }));
     const store = makeStore();
-    await store.dispatch(servicesApi.endpoints.getServicesStatus.initiate());
+    const result = await store.dispatch(servicesApi.endpoints.getServicesStatus.initiate());
     expect(captured[0]).toMatchObject({ url: "/api/gateway/services/status", method: "GET" });
+    expect(result.isError).toBe(true);
   });
 
   it("submitBugReport posts JSON to the bug-report route", async () => {
