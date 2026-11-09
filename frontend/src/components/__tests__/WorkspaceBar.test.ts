@@ -622,6 +622,59 @@ describe("WorkspaceSidebar", () => {
     expect(next.map((w) => w.id)).toEqual(["ws-1"]);
   });
 
+  test("cancelling the delete confirmation keeps the workspace", () => {
+    const { onWorkspacesChange } = renderSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete workspace Research" }));
+    fireEvent.click(screen.getByTitle("Cancel delete"));
+
+    expect(onWorkspacesChange).not.toHaveBeenCalled();
+    expect(screen.queryByTitle("Cancel delete")).not.toBeInTheDocument();
+  });
+
+  test("clicking a workspace selects it", () => {
+    const { onSelect } = renderSidebar();
+
+    fireEvent.click(screen.getByText("Research"));
+
+    expect(onSelect).toHaveBeenCalledWith("ws-2");
+  });
+
+  test("escape cancels a rename without committing", () => {
+    const { onWorkspacesChange } = renderSidebar();
+
+    fireEvent.contextMenu(screen.getByText("Research"));
+    const input = screen.getByLabelText("Rename workspace Research");
+    fireEvent.change(input, { target: { value: "Renamed" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(screen.queryByLabelText("Rename workspace Research")).not.toBeInTheDocument();
+    expect(onWorkspacesChange).not.toHaveBeenCalled();
+  });
+
+  test("right click on a user-locked workspace unlocks it", () => {
+    const { onWorkspacesChange } = renderSidebar({
+      workspaces: [
+        { id: "ws-1", name: "Trading", locked: true },
+        { id: "ws-2", name: "Research", userLocked: true },
+      ],
+    });
+
+    fireEvent.contextMenu(screen.getByText("Research"));
+
+    const [next] = onWorkspacesChange.mock.calls[0] as [Workspace[]];
+    expect(next.find((w) => w.id === "ws-2")?.userLocked).toBe(false);
+  });
+
+  test("collapsed sidebar tabs select their workspace", () => {
+    localStorage.setItem("sidebar-pinned", "false");
+    const { onSelect } = renderSidebar();
+
+    fireEvent.click(screen.getByTestId("workspace-tab-ws-2"));
+
+    expect(onSelect).toHaveBeenCalledWith("ws-2");
+  });
+
   test("share flow opens dialog and copies generated URL", async () => {
     publishSharedWorkspaceMock.mockResolvedValueOnce("shared-123");
     const writeText = vi.fn().mockResolvedValue(undefined);

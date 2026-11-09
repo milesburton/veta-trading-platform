@@ -312,3 +312,38 @@ describe("QuickTradeBar, LLM fallback", () => {
     );
   });
 });
+
+describe("QuickTradeBar, AI fallbacks and keyboard", () => {
+  it("shows the error the AI returns", async () => {
+    setMutationResult({ result: { error: "ambiguous symbol" } });
+    renderBar(makeStore());
+    fireEvent.change(screen.getByTestId("quick-trade-input"), {
+      target: { value: "hedge half my position" },
+    });
+    fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
+    await waitFor(() =>
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("AI: ambiguous symbol")
+    );
+  });
+
+  it("shows a generic message for other AI failures", async () => {
+    setMutationResult({ error: { status: 500 } });
+    renderBar(makeStore());
+    fireEvent.change(screen.getByTestId("quick-trade-input"), {
+      target: { value: "hedge half my position" },
+    });
+    fireEvent.click(screen.getByTestId("quick-trade-ask-ai"));
+    await waitFor(() =>
+      expect(screen.getByTestId("quick-trade-flash")).toHaveTextContent("AI request failed")
+    );
+  });
+
+  it("Escape clears the input and the flash message", () => {
+    renderBar(makeStore());
+    const input = screen.getByTestId("quick-trade-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "hedge half my position" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(input.value).toBe("");
+    expect(screen.queryByTestId("quick-trade-flash")).toBeNull();
+  });
+});

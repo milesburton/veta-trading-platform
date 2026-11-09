@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { BugReportModal } from "@veta/frontend/components/BugReportModal";
+import * as attachmentUpload from "@veta/frontend/lib/ticketAttachmentUpload";
 import { gatewayApi } from "@veta/frontend/store/gatewayApi";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -445,5 +446,42 @@ describe("BugReportModal", () => {
       expect(screen.getByTestId("bug-report-error")).toHaveTextContent(/up to 5 files/i);
     });
     expect(mockPresign).toHaveBeenCalledTimes(5);
+  });
+
+  it("explains when screenshot capture is cancelled", async () => {
+    vi.mocked(attachmentUpload.captureScreenshotBlob).mockRejectedValueOnce(new Error("denied"));
+    renderModal();
+
+    fireEvent.click(screen.getByTestId("bug-report-capture-screenshot"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-error")).toHaveTextContent(
+        /cancelled or is not supported/i
+      );
+    });
+  });
+
+  it("uploads a captured screenshot", async () => {
+    vi.mocked(attachmentUpload.captureScreenshotBlob).mockResolvedValueOnce(
+      new Blob(["png"], { type: "image/png" })
+    );
+    mockPresign.mockReturnValue({
+      unwrap: () => Promise.resolve({ uploadUrl: "https://s3/x", url: "https://s3/x", key: "k" }),
+    });
+    renderModal();
+
+    fireEvent.click(screen.getByTestId("bug-report-capture-screenshot"));
+
+    await waitFor(() => expect(mockPresign).toHaveBeenCalledTimes(1));
+  });
+
+  it("opens the file picker from the attach button", () => {
+    renderModal();
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const click = vi.spyOn(input, "click").mockImplementation(() => {});
+
+    fireEvent.click(screen.getByTestId("bug-report-attach-file"));
+
+    expect(click).toHaveBeenCalledTimes(1);
   });
 });
