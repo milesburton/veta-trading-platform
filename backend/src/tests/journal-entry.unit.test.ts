@@ -256,27 +256,44 @@ test("[journal] reports data depth from candle history", async () => {
   assertEquals(depth.avgDays, 2);
 });
 
-test("[journal] reconciles fills missing from the FIX archive", async () => {
-  const exec = (clOrdId: string) => ({
-    execId: `e-${clOrdId}`,
+test("[journal] reconciles missing executions with per-execution quantities", async () => {
+  const exec = (clOrdId: string, execId: string, cumQty: number) => ({
+    execId,
     clOrdId,
     origClOrdId: "o1",
     symbol: "AAPL",
     side: "2",
-    cumQty: 5,
+    cumQty,
     avgPx: 10,
+    lastQty: 5,
+    lastPx: 10 + cumQty,
     leavesQty: 0,
     commission: 1,
     ts: 5,
   });
   fetchMock.mockResolvedValueOnce(
-    new Response(JSON.stringify([exec("c-new"), exec("c-old")]), { status: 200 })
+    new Response(
+      JSON.stringify([
+        exec("c1", "e1", 5),
+        exec("c1", "e2", 10),
+        exec("c2", "e1", 5),
+        exec("c2", "e2", 10),
+      ]),
+      { status: 200 }
+    )
   );
-  when(/SELECT DISTINCT child_id/, () => [["c-old"]]);
+  when(/SELECT event_id/, () => [["orders.filled:c1:e1"]]);
   await vi.advanceTimersByTimeAsync(5_000);
   await vi.advanceTimersByTimeAsync(100);
   const inserted = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.events"));
-  assertEquals(inserted.length, 1);
+  assertEquals(
+    inserted.map((q) => [q.params[0], q.params[11], q.params[12]]),
+    [
+      ["orders.filled:c1:e2", 20, 5],
+      ["orders.filled:c2:e1", 15, 5],
+      ["orders.filled:c2:e2", 20, 5],
+    ]
+  );
 });
 
 test("[journal] writes consumed events to the journal in batches", async () => {
