@@ -182,4 +182,51 @@ describe("ScenarioMatrixPanel", () => {
     }
     expect(screen.getByTestId("scenario-table")).toBeInTheDocument();
   });
+
+  it("sends the edited strike, expiry and shock ranges", async () => {
+    render(<ScenarioMatrixPanel />);
+
+    fireEvent.change(screen.getByLabelText(/Strike/i), { target: { value: "175" } });
+    fireEvent.change(screen.getByLabelText(/Expiry/i), {
+      target: { value: String(60 * 86_400) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Ranges/ }));
+    fireEvent.change(screen.getByLabelText(/Spot shock/i), { target: { value: "20" } });
+    fireEvent.change(screen.getByLabelText(/Vol shock/i), { target: { value: "10" } });
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+
+    await waitFor(() => expect(getScenario).toHaveBeenCalledTimes(1));
+    expect(getScenario.mock.calls[0][0]).toMatchObject({
+      strike: 175,
+      expirySecs: 60 * 86_400,
+      spotShocks: [-0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2],
+      volShocks: [-0.1, -0.05, 0, 0.05, 0.1],
+    });
+  });
+
+  it("formats the P&L % metric as signed percentages", async () => {
+    render(<ScenarioMatrixPanel />);
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+    await screen.findByTestId("scenario-table");
+
+    fireEvent.click(screen.getByRole("button", { name: "P&L (%)" }));
+
+    expect(screen.getAllByText(/^[+-]\d+\.\d%$/).length).toBeGreaterThan(0);
+  });
+
+  it("keeps the tooltip following the pointer while hovering a cell", async () => {
+    render(<ScenarioMatrixPanel />);
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+    const table = await screen.findByTestId("scenario-table");
+    const cell = table.querySelector("tbody td:nth-child(2)") as HTMLElement;
+
+    fireEvent.mouseEnter(cell, { clientX: 10, clientY: 20 });
+    const tooltip = () => document.querySelector<HTMLElement>("div[style*='left']");
+    expect(tooltip()?.style.left).toBe("22px");
+
+    fireEvent.mouseMove(cell, { clientX: 40, clientY: 60 });
+
+    expect(tooltip()?.style.left).toBe("52px");
+    expect(tooltip()?.style.top).toBe("52px");
+  });
 });
