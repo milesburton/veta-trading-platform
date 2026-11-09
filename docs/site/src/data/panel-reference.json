@@ -1,7 +1,7 @@
 {
-  "totalPanels": 56,
+  "totalPanels": 57,
   "rendered": 55,
-  "skipped": 1,
+  "skipped": 2,
   "panels": [
     {
       "panelId": "market-ladder",
@@ -447,6 +447,14 @@
       "panelId": "fix-sessions",
       "title": "FIX Sessions",
       "description": "Live FIX counterparty sessions and recent execution reports",
+      "rendered": false,
+      "notes": "not yet captured by walkthrough",
+      "screenshot": null
+    },
+    {
+      "panelId": "regulatory-reports",
+      "title": "Regulatory Reports",
+      "description": "Download RTS 22 style transaction reports for a trading day",
       "rendered": false,
       "notes": "not yet captured by walkthrough",
       "screenshot": null

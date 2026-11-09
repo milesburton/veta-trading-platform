@@ -38,6 +38,7 @@ import { PlatformStatusPanel } from "@veta/frontend/components/PlatformStatusPan
 import { PriceFanPanel } from "@veta/frontend/components/PriceFanPanel.tsx";
 import { ProductBookPanel } from "@veta/frontend/components/ProductBookPanel.tsx";
 import { ProductBuilderPanel } from "@veta/frontend/components/ProductBuilderPanel.tsx";
+import { RegulatoryReportsPanel } from "@veta/frontend/components/RegulatoryReportsPanel.tsx";
 import { ResearchRadarPanel } from "@veta/frontend/components/ResearchRadarPanel.tsx";
 import { RiskDashboardPanel } from "@veta/frontend/components/RiskDashboardPanel.tsx";
 import { SalesWorkbenchPanel } from "@veta/frontend/components/SalesWorkbenchPanel.tsx";
@@ -125,3 +126,4 @@ registerPanel("scenarios", ScenariosPanel);
 registerPanel("order-routing-sankey", OrderRoutingSankeyPanel);
 registerPanel("world-clocks", WorldClocksPanel);
 registerPanel("fix-sessions", FixSessionsPanel);
+registerPanel("regulatory-reports", RegulatoryReportsPanel);

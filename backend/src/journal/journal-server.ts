@@ -12,6 +12,7 @@ import {
   isRegulatoryTopic,
   regulatoryEventsBetween,
   regulatoryHead,
+  regulatorySubmissions,
 } from "../lib/regulatory-records.ts";
 import { createS3Client } from "../lib/s3.ts";
 import { AUDIT_TOPICS, toAuditEvent } from "./audit-ingest.ts";
@@ -23,6 +24,12 @@ import { decodeOrderId, summariseFills } from "./order-progress.ts";
 import { reconstructOrdersFromRows } from "./order-reconstruction.ts";
 import { exportMissingDays } from "./regulatory-export.ts";
 import { hotRetentionMs, pruneJournalEvents, resolveRetention } from "./retention.ts";
+import {
+  buildTransactionReports,
+  parseReportDate,
+  toCsv,
+  UNSUPPORTED_FIELDS,
+} from "./transaction-report.ts";
 
 const PORT = Number(process.env.JOURNAL_PORT) || 5_009;
 const RETENTION = resolveRetention(process.env);
@@ -549,6 +556,36 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "GET" && path === "/regulatory/verify") {
     const brokenSeq = await firstBrokenRegulatorySeq(auditPool);
     return json({ ok: brokenSeq === null, brokenSeq });
+  }
+
+  if (req.method === "GET" && path === "/reports/transactions") {
+    const range = parseReportDate(url.searchParams.get("date"));
+    if (!range) return json({ error: "date must be YYYY-MM-DD" }, 400);
+    const format = url.searchParams.get("format") ?? "json";
+    if (format !== "json" && format !== "csv")
+      return json({ error: "format must be json or csv" }, 400);
+    const records = await regulatoryEventsBetween(auditPool, range.fromMs, range.toMs);
+    const fills = records.filter((r) => r.eventType === "orders.filled");
+    const orderIds = [...new Set(fills.map((r) => r.orderId).filter((id): id is string => !!id))];
+    const reports = buildTransactionReports(
+      fills,
+      await regulatorySubmissions(auditPool, orderIds)
+    );
+    if (format === "csv") {
+      return new Response(toCsv(reports), {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="transactions-${url.searchParams.get("date")}.csv"`,
+          ...CORS_HEADERS,
+        },
+      });
+    }
+    return json({
+      date: url.searchParams.get("date"),
+      count: reports.length,
+      unsupportedFields: UNSUPPORTED_FIELDS,
+      reports,
+    });
   }
 
   if (req.method === "GET" && path === "/regulatory/head") {

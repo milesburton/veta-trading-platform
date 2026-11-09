@@ -1,5 +1,5 @@
 {
-  "totalComponents": 223,
+  "totalComponents": 224,
   "totalEdges": 221,
   "nodes": [
     {
@@ -457,6 +457,12 @@
       "path": "components/QuickTradeBar.tsx",
       "importCount": 0,
       "importedByCount": 1
+    },
+    {
+      "name": "RegulatoryReportsPanel",
+      "path": "components/RegulatoryReportsPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
     },
     {
       "name": "ResearchRadarPanel",

@@ -69,3 +69,28 @@ RTS 25 requires the clocks used to timestamp reportable events to stay within a 
 The millisecond `ts` field is unchanged for compatibility. The runbook is [Clock drift](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md).
 
 Limits of the simulation: SNTP over the internet is accurate to about a millisecond, so the monitor shows gross drift, not proof of 100 microsecond traceability. `tsMicros` has microsecond resolution but the source is the host clock, and each service stamps independently, so ordering across services is only as good as the measured offset. Gateway receipt time is not yet stamped separately.
+
+## Transaction reporting
+
+`backend/src/journal/transaction-report.ts` maps each `orders.filled` record in `regulatory.order_events`, joined to its `orders.submitted` record, onto a documented subset of the RTS 22 fields. The output is validated with Zod and serialised as JSON or CSV. Nothing is submitted to an approved reporting mechanism.
+
+| Endpoint | Role | Behaviour |
+| --- | --- | --- |
+| `GET /api/gateway/reports/transactions?date=YYYY-MM-DD&format=json\|csv` | `admin`, `compliance` | Reports for one UTC trading day |
+
+Every successful export is written to the audit log as `transaction_report_export`. The Regulatory Reports panel is available to the same two roles and offers a preview and downloads.
+
+Field mapping:
+
+| Report field | Source |
+| --- | --- |
+| `transactionReference` | Fill `execId` |
+| `executingEntityLei`, `submittingEntityLei` | `FIRM_LEI` stamped on the order, null when unset |
+| `buyerCode`, `sellerCode` | Client code on the client side, venue MIC on the other side |
+| `tradingDateTime` | Fill `tsMicros`, with microsecond precision, falling back to `ts` |
+| `venueMic` | Fill venue |
+| `instrumentId` | Symbol, since assets carry no ISIN |
+| `investmentDecisionCode`, `executionDecisionCode` | Decision maker code and algo id stamped by the OMS |
+| `algoIndicator`, `algoId` | Registry id of the strategy that produced the fill |
+
+Not reported, and listed in every JSON response: ISIN and CFI classification, natural person identifiers, short selling indicator, commodity derivative indicator, waiver and deferral flags, and cancellation or amendment report types. Trading capacity is fixed at `AOTC`. ESMA XML (ISO 20022) is out of scope.

@@ -120,3 +120,24 @@ export async function regulatoryEventsBetween(
     client.release();
   }
 }
+
+export async function regulatorySubmissions(
+  pool: Pool,
+  orderIds: readonly string[]
+): Promise<Map<string, Record<string, unknown>>> {
+  if (orderIds.length === 0) return new Map();
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.queryObject<{
+      order_id: string;
+      payload: Record<string, unknown>;
+    }>(
+      `SELECT order_id, payload FROM regulatory.order_events
+        WHERE event_type = 'orders.submitted' AND order_id = ANY($1)`,
+      [orderIds]
+    );
+    return new Map(rows.map((r) => [r.order_id, r.payload]));
+  } finally {
+    client.release();
+  }
+}
