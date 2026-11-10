@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.103.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.102.1...veta-trading-platform-v1.103.0) (2026-11-10)
+
+
+### Features
+
+* **mifid:** regulatory identifiers, algo registry and complete fill records ([#1096](https://github.com/milesburton/veta-trading-platform/issues/1096)) ([3303db0](https://github.com/milesburton/veta-trading-platform/commit/3303db08846340a2c5532209d9e1c085ce9d70df))
+
+
+### Bug Fixes
+
+* **ci:** keep docker exec attached through the testcontainers proxy ([#1111](https://github.com/milesburton/veta-trading-platform/issues/1111)) ([ed9cec9](https://github.com/milesburton/veta-trading-platform/commit/ed9cec97d9d6eb6b45fad442f44a1e0cfbf59354))
+
 ## [1.102.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.102.0...veta-trading-platform-v1.102.1) (2026-11-09)
 
 
