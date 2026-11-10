@@ -194,7 +194,7 @@ Three things to notice:
 
 `scripts/run-testcontainers.sh` handles three Docker plumbing problems that affect dev containers, GitHub Codespaces, and GitHub Actions runners alike:
 
-1. **Unix-socket to TCP shim.** The wrapper runs an `alpine/socat` sidecar that proxies `tcp://<bridge>:2375` to `/var/run/docker.sock`. `DOCKER_HOST` is pointed at the sidecar's bridge IP.
+1. **Unix-socket to TCP shim.** The wrapper runs an `alpine/socat` sidecar that proxies `tcp://<bridge>:2375` to `/var/run/docker.sock`. `DOCKER_HOST` is pointed at the sidecar's bridge IP. The sidecar runs with `-t 3600` because socat's default is to tear down a connection half a second after either side half-closes it. The Docker CLI half-closes the hijacked stream of a non-interactive `docker exec` as soon as it has nothing to send, so without `-t` the CLI returns exit code 0 after about 0.5s while the command carries on inside the container. Tests that exec a long command through the proxy (the Postgres restore drill, for one) then observe a half-finished result. This passed on fast machines only because the command happened to finish inside that window.
 2. **`TESTCONTAINERS_HOST_OVERRIDE`.** `container.getHost()` returns `localhost`, but the published port lives on the Docker host's loopback rather than the test process's. The override is set to the bridge gateway IP, which is reachable from both dev containers and CI runners.
 3. **Clean `DOCKER_CONFIG`.** When `~/.docker/config.json` declares a `credsStore` helper that exits 1 for unauthenticated public-registry pulls (Codespaces installs one), Testcontainers treats the failure as fatal. The wrapper points `DOCKER_CONFIG` at an empty config dir to bypass it.
 

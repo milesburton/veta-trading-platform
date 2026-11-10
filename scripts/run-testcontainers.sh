@@ -53,7 +53,7 @@ ensure_socat_sidecar() {
       --name "${SOCAT_NAME}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       "${SOCAT_IMAGE}" \
-      TCP-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock >/dev/null
+      -t 3600 TCP-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock >/dev/null
   fi
 }
 
