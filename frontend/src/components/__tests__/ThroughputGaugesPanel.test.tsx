@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { ThroughputGaugesPanel } from "@veta/frontend/components/ThroughputGaugesPanel";
 import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { observabilitySlice } from "@veta/frontend/store/observabilitySlice";
-import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { orderPatched, ordersSlice } from "@veta/frontend/store/ordersSlice";
 import type { ObsEvent, OrderRecord, Strategy } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vite-plus/test";
@@ -120,6 +120,55 @@ describe("ThroughputGaugesPanel", () => {
         .getState()
         .alerts.alerts.filter((a) => a.message.includes("Order flood detected"));
       expect(warnings.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("emits a recovery alert once the fill rate climbs back", async () => {
+    const now = Date.now();
+    const store = renderPanel({
+      orders: [makeOrder("o1", now - 1_000, "TWAP", 1, 6)],
+      events: [],
+    });
+    await waitFor(() => {
+      expect(
+        store.getState().alerts.alerts.some((a) => a.message.includes("Fill rate degraded"))
+      ).toBe(true);
+    });
+
+    act(() => {
+      store.dispatch(
+        orderPatched({
+          id: "o1",
+          patch: { children: makeOrder("o1", now - 1_000, "TWAP", 6, 6).children },
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        store.getState().alerts.alerts.some((a) => a.message.includes("Fill rate recovered"))
+      ).toBe(true);
+    });
+  });
+
+  it("emits a normalised alert once the order rate drops", async () => {
+    const now = Date.now();
+    const orders = Array.from({ length: 205 }, (_, i) => makeOrder(`o-${i}`, now - 1_000));
+    const store = renderPanel({ orders, events: [] });
+    await waitFor(() => {
+      expect(
+        store.getState().alerts.alerts.some((a) => a.message.includes("Order flood detected"))
+      ).toBe(true);
+    });
+
+    act(() => {
+      for (const o of orders) store.dispatch(orderPatched({ id: o.id, patch: { submittedAt: 0 } }));
+    });
+
+    await waitFor(() => {
+      expect(
+        store.getState().alerts.alerts.some((a) => a.message.includes("Order rate normalised"))
+      ).toBe(true);
     });
   });
 });

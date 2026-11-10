@@ -34,13 +34,15 @@ vi.mock("../OrderProgressPanel.tsx", () => ({
   OrderProgressPanel: () => <div />,
 }));
 vi.mock("../MarketHeatmap.tsx", () => ({ MarketHeatmap: () => <div /> }));
-vi.mock("../CandlestickChart.tsx", () => ({ CandlestickChart: () => <div /> }));
+vi.mock("../CandlestickChart.tsx", () => ({
+  CandlestickChart: ({ symbol }: { symbol: string }) => <div data-testid="candles">{symbol}</div>,
+}));
 vi.mock("../MarketDepth.tsx", () => ({
   MarketDepth: () => <div />,
   MarketDepthPanel: () => <div />,
 }));
 
-function renderHost(panelType: string) {
+function renderHost(panelType: string, candles: { symbol: string; count: number } | null = null) {
   const store = configureStore({
     reducer: {
       theme: themeSlice.reducer,
@@ -64,8 +66,21 @@ function renderHost(panelType: string) {
         prices: {},
         sessionOpen: {},
         priceHistory: {},
-        candleHistory: {},
-        candlesReady: {},
+        candleHistory: candles
+          ? {
+              [candles.symbol]: {
+                "1m": Array.from({ length: candles.count }, (_, i) => ({
+                  time: i,
+                  open: 1,
+                  high: 1,
+                  low: 1,
+                  close: 1,
+                })),
+                "5m": [],
+              },
+            }
+          : {},
+        candlesReady: candles ? { [candles.symbol]: true } : {},
         orderBook: {},
         connected: true,
         connectionFailures: 0,
@@ -79,6 +94,7 @@ function renderHost(panelType: string) {
       <PopOutHost instanceId="panel-1" panelType={panelType} layoutKey="layout-test" />
     </Provider>
   );
+  return store;
 }
 
 describe("PopOutHost", () => {
@@ -185,5 +201,46 @@ describe("PopOutHost", () => {
     );
     renderHost("market-depth");
     expect(document.title).toMatch(/VETA/);
+  });
+
+  it("renders the candlestick chart once enough candles are ready", () => {
+    localStorage.removeItem("layout-test");
+    localStorage.setItem(
+      "layout-test",
+      JSON.stringify({ _v: 3, items: [{ i: "panel-1", outgoing: 2, incoming: 1 }] })
+    );
+    renderHost("candle-chart", { symbol: "MSFT", count: 3 });
+    expect(screen.getByTestId("candles")).toHaveTextContent("MSFT");
+  });
+
+  it("keeps waiting when fewer than two candles exist", () => {
+    localStorage.setItem(
+      "layout-test",
+      JSON.stringify({ _v: 3, items: [{ i: "panel-1", outgoing: 2, incoming: 1 }] })
+    );
+    renderHost("candle-chart", { symbol: "MSFT", count: 1 });
+    expect(screen.getByText(/Waiting for candle data/i)).toBeInTheDocument();
+  });
+
+  it("debounces order-ticket window resizes into the store", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }));
+    try {
+      localStorage.removeItem("layout-test");
+      const store = renderHost("order-ticket");
+      Object.defineProperty(globalThis, "outerWidth", { value: 640, configurable: true });
+      Object.defineProperty(globalThis, "outerHeight", { value: 480, configurable: true });
+
+      globalThis.dispatchEvent(new Event("resize"));
+      globalThis.dispatchEvent(new Event("resize"));
+      vi.advanceTimersByTime(299);
+      expect(JSON.stringify(store.getState().ui)).not.toContain("640");
+      vi.advanceTimersByTime(1);
+
+      expect(JSON.stringify(store.getState().ui)).toContain("640");
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });
