@@ -9,6 +9,7 @@ import { appendAudit, auditHead, firstBrokenSeq, listAudit } from "../lib/audit.
 import { AUDIT_TOPICS, toAuditEvent } from "./audit-ingest.ts";
 import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
+import { type ArchivedExecution, fillEventId, missingFillPayloads } from "./fill-reconciliation.ts";
 import { computeLatencyMetrics } from "./latency-metrics.ts";
 import { decodeOrderId, summariseFills } from "./order-progress.ts";
 import { reconstructOrdersFromRows } from "./order-reconstruction.ts";
@@ -52,8 +53,9 @@ interface KafkaEventValue {
 
 function extractFields(topic: string, value: KafkaEventValue) {
   const baseId = value.childId ?? value.orderId ?? value.token ?? null;
+  const execSuffix = topic === "orders.filled" && value.execId ? `:${value.execId}` : "";
   return {
-    event_id: baseId ? `${topic}:${baseId}` : null,
+    event_id: baseId ? `${topic}:${baseId}${execSuffix}` : null,
     user_id: value.userId ?? null,
     algo: value.algo ?? null,
     instrument: value.asset ?? null,
@@ -174,7 +176,6 @@ function ingest(topic: string, value: KafkaEventValue) {
   const arrivedAt = new Date();
   const ts = new Date(value.ts ?? arrivedAt.getTime());
   const fields = extractFields(topic, value);
-  const raw = topic === "orders.child" || topic === "orders.filled" ? null : value;
   writeQueue.push([
     fields.event_id,
     topic,
@@ -192,7 +193,7 @@ function ingest(topic: string, value: KafkaEventValue) {
     fields.market_price,
     fields.market_impact_bps,
     fields.algo_params,
-    raw,
+    value,
     arrivedAt,
   ]);
 }
@@ -203,44 +204,20 @@ async function reconcileFillsFromArchive(): Promise<void> {
   try {
     const res = await fetch(`${FIX_ARCHIVE_URL}/executions`);
     if (!res.ok) return;
-    const executions = (await res.json()) as Array<{
-      execId: string;
-      clOrdId: string;
-      origClOrdId: string;
-      symbol: string;
-      side: string;
-      cumQty: number;
-      avgPx: number;
-      leavesQty: number;
-      commission: number;
-      ts: number;
-    }>;
+    const executions = (await res.json()) as ArchivedExecution[];
 
-    const incomingIds = executions.map((ex) => ex.clOrdId);
+    const incomingEventIds = executions.map((ex) => fillEventId(ex.clOrdId, ex.execId));
     const client = await journalPool.connect();
     let reconciled = 0;
     try {
       const { rows } = await client.queryArray(
-        `SELECT DISTINCT child_id FROM journal.events
-         WHERE event_type = 'orders.filled' AND child_id = ANY($1)`,
-        [incomingIds]
+        `SELECT event_id FROM journal.events
+         WHERE event_type = 'orders.filled' AND event_id = ANY($1)`,
+        [incomingEventIds]
       );
-      const alreadyFilled = new Set(rows.map((r) => r[0] as string));
-      for (const ex of executions) {
-        if (alreadyFilled.has(ex.clOrdId)) continue;
-        ingest("orders.filled", {
-          execId: ex.execId,
-          childId: ex.clOrdId,
-          parentOrderId: ex.origClOrdId,
-          asset: ex.symbol,
-          side: ex.side === "1" ? "BUY" : "SELL",
-          filledQty: ex.cumQty,
-          avgFillPrice: ex.avgPx,
-          remainingQty: ex.leavesQty,
-          commissionUSD: ex.commission,
-          ts: ex.ts,
-          _reconciled: true,
-        });
+      const existing = new Set(rows.map((r) => r[0] as string));
+      for (const payload of missingFillPayloads(executions, existing)) {
+        ingest("orders.filled", payload as KafkaEventValue);
         reconciled++;
       }
     } finally {

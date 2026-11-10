@@ -38,6 +38,7 @@ import {
   orderReferencePrice,
   tradingDayKey,
 } from "./daily-notional.ts";
+import { buildRegulatoryFields } from "./regulatory.ts";
 
 const PORT = Number(process.env.OMS_PORT) || 5_002;
 const VERSION = process.env.COMMIT_SHA || "dev";
@@ -62,6 +63,8 @@ interface TradingLimits {
   allowed_strategies: string[];
   allowed_desks: string[];
   dark_pool_access: boolean;
+  client_code?: string | null;
+  decision_maker_code?: string | null;
 }
 
 const DEFAULT_LIMITS: TradingLimits = {
@@ -112,6 +115,8 @@ async function getUserLimits(userId: string): Promise<TradingLimits | null> {
       allowed_strategies: string[];
       allowed_desks?: string[];
       dark_pool_access?: boolean;
+      client_code?: string | null;
+      decision_maker_code?: string | null;
     };
     const limits: TradingLimits = {
       max_order_qty: data.max_order_qty,
@@ -119,6 +124,8 @@ async function getUserLimits(userId: string): Promise<TradingLimits | null> {
       allowed_strategies: data.allowed_strategies,
       allowed_desks: data.allowed_desks ?? ["equity"],
       dark_pool_access: data.dark_pool_access ?? false,
+      client_code: data.client_code ?? null,
+      decision_maker_code: data.decision_maker_code ?? null,
     };
     limitsCache.set(userId, { limits, expiresAt: now + 30_000 });
     return limits;
@@ -487,6 +494,14 @@ consumer?.onMessage(async (_topic, raw) => {
     marketType,
     bondSpec: order.bondSpec,
     optionSpec: order.optionSpec,
+    ...buildRegulatoryFields({
+      userId: order.userId,
+      strategy,
+      limitPrice: order.limitPrice,
+      clientCode: limits.client_code,
+      decisionMakerCode: limits.decision_maker_code,
+      lei: process.env.FIRM_LEI,
+    }),
   };
 
   logger.info(

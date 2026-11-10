@@ -62,6 +62,17 @@ export const OrderNewSchema = z.object({
 export type OrderNew = z.infer<typeof OrderNewSchema>;
 // #endregion docs:order-new-schema
 
+export const RegulatoryFieldsSchema = z.object({
+  algoId: z.string().min(1).optional(),
+  algoVersion: z.string().min(1).optional(),
+  orderType: z.enum(["LIMIT", "MARKET"]).optional(),
+  lei: z.string().length(20).optional(),
+  clientCode: z.string().min(1).optional(),
+  decisionMakerCode: z.string().min(1).optional(),
+  executionDecisionCode: z.string().min(1).optional(),
+});
+export type RegulatoryFields = z.infer<typeof RegulatoryFieldsSchema>;
+
 export const OrderSubmittedSchema = z.object({
   orderId: OrderIdSchema,
   clientOrderId: ClientOrderIdSchema.optional(),
@@ -82,6 +93,7 @@ export const OrderSubmittedSchema = z.object({
   marketType: MarketTypeSchema.optional(),
   bondSpec: BondSpecSchema.optional(),
   optionSpec: OptionSpecSchema.optional(),
+  ...RegulatoryFieldsSchema.shape,
 });
 
 export const RoutedOrderSchema = OrderSubmittedSchema.extend({
@@ -145,6 +157,8 @@ export const FillEventSchema = z.object({
   settlementDate: z.string().optional(),
   desk: DeskSchema.optional(),
   marketType: MarketTypeSchema.optional(),
+  algoId: z.string().min(1).optional(),
+  algoVersion: z.string().min(1).optional(),
   ts: TimestampMsSchema.optional(),
 });
 export type FillEvent = z.infer<typeof FillEventSchema>;

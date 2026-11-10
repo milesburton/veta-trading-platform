@@ -10,6 +10,7 @@ import "#veta/bootstrap";
  * No longer accepts direct HTTP order submission from algos.
  * HTTP surface (internal only): GET /health
  */
+import { algoIdentifiers } from "#veta/algo-registry";
 import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
@@ -177,6 +178,7 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
       settlementDate: sd,
       desk: child.desk ?? deskFromOrder(child),
       marketType: child.marketType ?? "lit",
+      ...algoIdentifiers(child.algo),
       ts: Date.now(),
     };
 

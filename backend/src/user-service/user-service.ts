@@ -345,13 +345,15 @@ const DEFAULT_TRADING_LIMITS = {
   dark_pool_access: false,
   trading_style: "high_touch",
   primary_desk: "equity-cash",
+  client_code: null,
+  decision_maker_code: null,
 };
 
 async function loadLimits(userId: string) {
   const client = await usersPool.connect();
   try {
     const { rows } = await client.queryArray(
-      "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
+      "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk, client_code, decision_maker_code FROM users.trading_limits WHERE user_id = $1",
       [userId]
     );
     if (rows.length === 0) return DEFAULT_TRADING_LIMITS;
@@ -363,6 +365,8 @@ async function loadLimits(userId: string) {
       dark_pool_access: rows[0][4] as boolean,
       trading_style: rows[0][5] as string,
       primary_desk: rows[0][6] as string,
+      client_code: (rows[0][7] as string | null) ?? null,
+      decision_maker_code: (rows[0][8] as string | null) ?? null,
     };
   } finally {
     client.release();
@@ -520,7 +524,7 @@ async function handle(req: Request): Promise<Response> {
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
+          "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk, client_code, decision_maker_code FROM users.trading_limits WHERE user_id = $1",
           [userId]
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
@@ -532,6 +536,8 @@ async function handle(req: Request): Promise<Response> {
           dark_pool_access,
           trading_style,
           primary_desk,
+          client_code,
+          decision_maker_code,
         ] = rows[0];
         return json({
           userId,
@@ -542,6 +548,8 @@ async function handle(req: Request): Promise<Response> {
           dark_pool_access: dark_pool_access as boolean,
           trading_style: trading_style as string,
           primary_desk: primary_desk as string,
+          client_code: (client_code as string | null) ?? null,
+          decision_maker_code: (decision_maker_code as string | null) ?? null,
         });
       } finally {
         client.release();

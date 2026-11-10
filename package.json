@@ -54,6 +54,7 @@
   },
   "imports": {
     "#veta/primitives": "./shared/primitives.ts",
+    "#veta/algo-registry": "./shared/algoRegistry.ts",
     "#veta/trader-archetypes": "./shared/traderArchetypes.ts",
     "#veta/http": "./backend/src/lib/http.ts",
     "#veta/auth": "./backend/src/lib/auth.ts",

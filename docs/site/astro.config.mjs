@@ -90,6 +90,7 @@ export default defineConfig({
             { label: "Algo strategies", slug: "platform/algos" },
             { label: "Smart Order Router", slug: "platform/smart-order-router" },
             { label: "Dark Pool", slug: "platform/dark-pool" },
+            { label: "MiFID II", slug: "platform/mifid-ii" },
             { label: "RFQ", slug: "platform/post-trade-rfq" },
             { label: "Central Counterparty (CCP)", slug: "platform/post-trade-ccp" },
             { label: "Risk controls", slug: "platform/risk" },

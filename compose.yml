@@ -580,6 +580,7 @@ services:
         condition: service_healthy
     environment:
       OMS_PORT: "5002"
+      FIRM_LEI: ${FIRM_LEI:-}
       ALGO_HOST: limit-algo
       ALGO_TRADER_PORT: "5003"
       TWAP_ALGO_PORT: "5004"

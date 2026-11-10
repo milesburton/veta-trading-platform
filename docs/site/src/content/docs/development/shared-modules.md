@@ -13,6 +13,7 @@ All shared backend modules use Node subpath imports (`#veta/...`) defined in the
 | --- | --- | --- |
 | `zod` | `npm:zod` | Zod, for runtime validation at I/O boundaries |
 | `#veta/primitives` | `shared/primitives.ts` | `STRATEGIES`, `Strategy`, `OrderSide`, `Desk`, `AssetClass`, `OrderStatus`, `LiquidityFlag` |
+| `#veta/algo-registry` | `shared/algoRegistry.ts` | `ALGO_REGISTRY`, `algoRegistration`, `algoIdentifiers`, `isAlgorithmicStrategy` |
 | `#veta/trader-archetypes` | `shared/traderArchetypes.ts` | `TRADER_ARCHETYPES`, `getTraderArchetype()`, starter limits |
 | `#veta/http` | `lib/http.ts` | `CORS_HEADERS`, `json()`, `jsonError()`, `corsOptions()`, `parseBody()`, `parseQuery()`, `serveFetch()`, `upgradeWebSocket()` |
 | `#veta/auth` | `lib/auth.ts` | `getCookieToken()`, `hasValidServiceToken()` |

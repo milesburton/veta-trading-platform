@@ -256,27 +256,44 @@ test("[journal] reports data depth from candle history", async () => {
   assertEquals(depth.avgDays, 2);
 });
 
-test("[journal] reconciles fills missing from the FIX archive", async () => {
-  const exec = (clOrdId: string) => ({
-    execId: `e-${clOrdId}`,
+test("[journal] reconciles missing executions with per-execution quantities", async () => {
+  const exec = (clOrdId: string, execId: string, cumQty: number) => ({
+    execId,
     clOrdId,
     origClOrdId: "o1",
     symbol: "AAPL",
     side: "2",
-    cumQty: 5,
+    cumQty,
     avgPx: 10,
+    lastQty: 5,
+    lastPx: 10 + cumQty,
     leavesQty: 0,
     commission: 1,
     ts: 5,
   });
   fetchMock.mockResolvedValueOnce(
-    new Response(JSON.stringify([exec("c-new"), exec("c-old")]), { status: 200 })
+    new Response(
+      JSON.stringify([
+        exec("c1", "e1", 5),
+        exec("c1", "e2", 10),
+        exec("c2", "e1", 5),
+        exec("c2", "e2", 10),
+      ]),
+      { status: 200 }
+    )
   );
-  when(/SELECT DISTINCT child_id/, () => [["c-old"]]);
+  when(/SELECT event_id/, () => [["orders.filled:c1:e1"]]);
   await vi.advanceTimersByTimeAsync(5_000);
   await vi.advanceTimersByTimeAsync(100);
   const inserted = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.events"));
-  assertEquals(inserted.length, 1);
+  assertEquals(
+    inserted.map((q) => [q.params[0], q.params[11], q.params[12]]),
+    [
+      ["orders.filled:c1:e2", 20, 5],
+      ["orders.filled:c2:e1", 15, 5],
+      ["orders.filled:c2:e2", 20, 5],
+    ]
+  );
 });
 
 test("[journal] writes consumed events to the journal in batches", async () => {
@@ -288,6 +305,21 @@ test("[journal] writes consumed events to the journal in batches", async () => {
   const inserts = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.events"));
   assertEquals(inserts.length, 2);
   assert(h.queries.some((q) => q.sql === "COMMIT"));
+});
+
+test("[journal] keeps every partial fill of a child and retains the full payload", async () => {
+  const consume = h.consumers.get("journal-group");
+  assert(consume);
+  const fill = { childId: "c1", parentOrderId: "o1", filledQty: 5, algoId: "VETA-TWAP" };
+  consume("orders.filled", { ...fill, execId: "EX-1" });
+  consume("orders.filled", { ...fill, execId: "EX-2" });
+  consume("orders.child", { childId: "c1", orderId: "o1", algo: "TWAP" });
+  await vi.advanceTimersByTimeAsync(100);
+  const inserts = h.queries.filter((q) => q.sql.includes("INSERT INTO journal.events"));
+  const ids = inserts.map((q) => q.params[0]);
+  assertEquals(ids, ["orders.filled:c1:EX-1", "orders.filled:c1:EX-2", "orders.child:c1"]);
+  assertEquals((inserts[0].params[16] as Record<string, unknown>).algoId, "VETA-TWAP");
+  assertEquals((inserts[2].params[16] as Record<string, unknown>).algo, "TWAP");
 });
 
 test("[journal] rolls back a failed batch without crashing", async () => {
