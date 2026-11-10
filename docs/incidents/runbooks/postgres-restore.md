@@ -43,6 +43,22 @@ scripts/veta-compose.sh exec postgres psql -U veta -d veta_restore_check -c 'SEL
 Compare a few table counts with expectations, then drop the scratch
 database.
 
+## Restoring into a fresh cluster
+
+A database dump does not carry cluster-level roles. On the live cluster the
+`audit_writer` group already exists, but a new Postgres volume has none of
+them and `pg_restore` fails on the first grant. Create the group before
+restoring, then run the migration job afterwards so it recreates the
+`veta_audit` login:
+
+```bash
+scripts/veta-compose.sh exec postgres psql -U veta -d postgres -c 'CREATE ROLE audit_writer NOLOGIN'
+```
+
+Treat any non-zero exit from `pg_restore` as an incomplete restore. The
+backup page documents the full order under
+[Restoring a backup](../../site/src/content/docs/platform/supporting/postgres-backup.md#restoring-a-backup).
+
 ## Restore over the live database
 
 1. Stop every service that writes to Postgres so nothing writes during the

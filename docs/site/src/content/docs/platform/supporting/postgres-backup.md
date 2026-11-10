@@ -56,9 +56,38 @@ docker logs --tail 20 veta-postgres-backup
 
 A healthy container stays up and logs one line per run. A container that shows `Restarting (0)` with no logs is not running the script. Check that `/opt/stacks/veta/scripts/postgres-backup.sh` is a regular file. If it is an empty directory the script was never synced, see [Troubleshooting the auto-pull deploy](../../../development/deployment/#troubleshooting-the-auto-pull-deploy). The `PostgresBackupStale` alert fires after 26 hours without a verified backup, so this state raises an alert rather than passing silently.
 
+## Restoring a backup
+
+A database dump does not contain cluster-level roles. The migrations grant
+privileges to the `audit_writer` group, so `pg_restore` into a cluster that
+lacks that role fails on the first grant. Restore in this order:
+
+1. Create the group role in the target cluster:
+
+   ```sql
+   CREATE ROLE audit_writer NOLOGIN;
+   ```
+
+2. Restore the dump into an empty database:
+
+   ```bash
+   pg_restore -U "$PGUSER" -d "$PGDATABASE" --no-owner veta-<stamp>.dump
+   ```
+
+   A non-zero exit code means the restore is incomplete. Do not treat the
+   database as usable until it exits 0.
+
+3. Run `db-migrate`. It recreates the `veta_audit` login from
+   `AUDIT_DB_PASSWORD` and applies any migrations newer than the dump.
+
+The restore drill in `backend/src/tests/postgres-restore-drill.integration.tc.test.ts`
+follows these steps against a backup taken with the production script and
+checks that every table's row count matches the source.
+
 ## Not yet covered
 
 - Copying backups off the host automatically. Today this relies on where
   `POSTGRES_BACKUP_PATH` points.
-- A tested restore procedure. See the restore drill and disaster recovery
-  work on the [Professional Standards](../../professional-standards/) page.
+- Capturing cluster roles in the backup itself, so step 1 above is not a
+  manual step. Tracked in
+  [#1110](https://github.com/milesburton/veta-trading-platform/issues/1110).

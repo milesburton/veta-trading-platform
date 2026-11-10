@@ -41,6 +41,15 @@ async function tableCounts(pool: Pool): Promise<Record<string, number>> {
   }
 }
 
+async function createGroupRoles(pool: Pool): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.queryArray("CREATE ROLE audit_writer NOLOGIN");
+  } finally {
+    client.release();
+  }
+}
+
 async function insertRiskConfigs(pool: Pool, count: number): Promise<void> {
   const client = await pool.connect();
   try {
@@ -100,6 +109,7 @@ test({
       const hostDump = join(workdir, dumpName);
       await docker("cp", `${source.containerId}:${DUMP_DIR}/${dumpName}`, hostDump);
       await docker("cp", hostDump, `${target.containerId}:/tmp/${dumpName}`);
+      await createGroupRoles(targetPool);
       await docker(
         "exec",
         "-e",
