@@ -23,7 +23,10 @@ async function docker(...args: string[]): Promise<string> {
 async function tableCounts(pool: Pool): Promise<Record<string, number>> {
   const client = await pool.connect();
   try {
-    const { rows: tables } = await client.queryObject<{ schemaname: string; tablename: string }>(
+    const { rows: tables } = await client.queryObject<{
+      schemaname: string;
+      tablename: string;
+    }>(
       `SELECT schemaname, tablename FROM pg_tables
         WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
         ORDER BY schemaname, tablename`
@@ -36,15 +39,6 @@ async function tableCounts(pool: Pool): Promise<Record<string, number>> {
       entries.push([`${schemaname}.${tablename}`, Number(rows[0].n)]);
     }
     return Object.fromEntries(entries);
-  } finally {
-    client.release();
-  }
-}
-
-async function createGroupRoles(pool: Pool): Promise<void> {
-  const client = await pool.connect();
-  try {
-    await client.queryArray("CREATE ROLE audit_writer NOLOGIN");
   } finally {
     client.release();
   }
@@ -104,12 +98,35 @@ test({
         "-c",
         `ls ${DUMP_DIR} | grep '^veta-.*\\.dump$' | head -1`
       );
+      const rolesName = await docker(
+        "exec",
+        source.containerId,
+        "sh",
+        "-c",
+        `ls ${DUMP_DIR} | grep '^veta-.*\\.roles\\.sql$' | head -1`
+      );
       assert(dumpName.length > 0, "backup script produced no dump");
+      assert(rolesName.length > 0, "backup script produced no roles file");
 
       const hostDump = join(workdir, dumpName);
+      const hostRoles = join(workdir, rolesName);
       await docker("cp", `${source.containerId}:${DUMP_DIR}/${dumpName}`, hostDump);
+      await docker("cp", `${source.containerId}:${DUMP_DIR}/${rolesName}`, hostRoles);
       await docker("cp", hostDump, `${target.containerId}:/tmp/${dumpName}`);
-      await createGroupRoles(targetPool);
+      await docker("cp", hostRoles, `${target.containerId}:/tmp/${rolesName}`);
+      await docker(
+        "exec",
+        "-e",
+        `PGPASSWORD=${target.password}`,
+        target.containerId,
+        "psql",
+        "-U",
+        target.user,
+        "-d",
+        "postgres",
+        "-f",
+        `/tmp/${rolesName}`
+      );
       await docker(
         "exec",
         "-e",

@@ -62,8 +62,9 @@ prune() {
   ls -1t "$BACKUP_DIR"/veta-*.dump 2>/dev/null | tail -n +$((BACKUP_MIN_KEEP + 1)) | while read -r file; do
     modified=$(stat -c %Y "$file")
     if [ $((now - modified)) -gt "$cutoff" ]; then
-      rm -f "$file"
-      log "pruned $(basename "$file")"
+      roles_file="${file%.dump}.roles.sql"
+      rm -f "$file" "$roles_file"
+      log "pruned $(basename "$file") and $(basename "$roles_file")"
     fi
   done
 }
@@ -72,22 +73,29 @@ run_backup() {
   read_state
   LAST_ATTEMPT=$(date -u +%s)
   stamp=$(date -u +%Y%m%dT%H%M%SZ)
-  target="${BACKUP_DIR}/veta-${stamp}.dump"
-  partial="${target}.partial"
+  dump_target="${BACKUP_DIR}/veta-${stamp}.dump"
+  roles_target="${BACKUP_DIR}/veta-${stamp}.roles.sql"
+  dump_partial="${dump_target}.partial"
+  roles_partial="${roles_target}.partial"
 
-  if pg_dump -Fc -f "$partial" && pg_restore --list "$partial" >/dev/null 2>&1 && [ -s "$partial" ]; then
-    mv "$partial" "$target"
+  if pg_dump -Fc -f "$dump_partial" &&
+    pg_restore --list "$dump_partial" >/dev/null 2>&1 &&
+    [ -s "$dump_partial" ] &&
+    pg_dumpall --roles-only --no-role-passwords >"$roles_partial" &&
+    [ -s "$roles_partial" ]; then
+    mv "$dump_partial" "$dump_target"
+    mv "$roles_partial" "$roles_target"
     LAST_SUCCESS=$LAST_ATTEMPT
     LAST_STATUS=1
-    LAST_SIZE=$(stat -c %s "$target")
-    log "wrote $(basename "$target") (${LAST_SIZE} bytes)"
+    LAST_SIZE=$(( $(stat -c %s "$dump_target") + $(stat -c %s "$roles_target") ))
+    log "wrote $(basename "$dump_target") and $(basename "$roles_target") (${LAST_SIZE} bytes)"
     write_state
     prune
     write_metrics
     return 0
   fi
 
-  rm -f "$partial"
+  rm -f "$dump_partial" "$roles_partial"
   LAST_STATUS=0
   log "backup failed"
   write_state
