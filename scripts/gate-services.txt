@@ -35,3 +35,4 @@ product-service
 replay-service
 risk-engine
 db-migrate
+egress-proxy

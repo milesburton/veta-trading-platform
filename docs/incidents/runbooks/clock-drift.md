@@ -1,8 +1,9 @@
 # Runbook: clock drift
 
 Raised by the `ClockDriftHigh` and `ClockSyncUnavailable` alerts. The gateway
-queries the server in `NTP_SERVER` (default `pool.ntp.org`) every minute with
-SNTP and records `veta_clock_offset_microseconds` and `veta_clock_sync_healthy`.
+sends an SNTP query every minute to the UDP relay on `egress-proxy`, which
+forwards it to the server in `NTP_SERVER` (default `pool.ntp.org`), and
+records `veta_clock_offset_microseconds` and `veta_clock_sync_healthy`.
 
 MiFID II RTS 25 allows 1 ms of divergence from UTC for algorithmic trading
 (100 microseconds for high frequency techniques, one second for other
@@ -30,8 +31,10 @@ rather than drift. A sustained offset of several milliseconds is real.
 
 ## ClockSyncUnavailable
 
-1. Confirm outbound UDP port 123 is allowed from the gateway container.
-2. Try a different server by setting `NTP_SERVER` and redeploying the gateway.
+1. Check `egress-proxy` is healthy; the gateway's query goes through its UDP
+   relay. Then confirm outbound UDP port 123 is allowed from that container.
+2. Try a different server by setting `NTP_SERVER` and redeploying
+   `egress-proxy`.
 3. Until measurement resumes, treat timestamps as unverified. Record the window
    in the incident notes.
 

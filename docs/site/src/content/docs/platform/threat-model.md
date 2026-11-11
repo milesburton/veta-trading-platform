@@ -120,15 +120,16 @@ hurdles in order.
      the rest apart from the five below) has no route to the internet
      at all, verified directly against
      production dockerd. A compromise landing in any of them has
-     nowhere to exfiltrate to. The gap is not fully closed: `gateway`
-     (Discord webhook), `market-data` (external quote providers),
-     `discord-bot` (Discord API), `traefik` (public ingress), and the
-     one-shot `ollama-model-pull` bootstrap container also join a
-     second, internet-capable `egress-net` network. A compromise in the
-     long-running internet-facing services still has an outbound path.
-     A DNS-aware allowlisting proxy in front of `egress-net`,
-     restricting those services to only their known destinations, is
-     the natural next step and remains planned.
+     nowhere to exfiltrate to. `gateway` (Discord webhook), `market-data`
+     (external quote providers) and `discord-bot` (Discord API) join a
+     second `egress-net`, which is also internal: their only way out is
+     the [egress proxy](../supporting/egress-proxy/), which allows the
+     destinations in `docker/egress-proxy/allowlist.txt` on ports 80 and
+     443 and refuses everything else. A compromise in those services
+     can reach Discord and the quote providers, and nothing else.
+     `traefik` (public ingress, published ports) and the one-shot
+     `ollama-model-pull` bootstrap container keep a direct route on
+     `internet-net`.
 
 ### Chain 4: Bot exhausts Kafka topics to OOM the journal
 
@@ -197,13 +198,11 @@ is "Deferred" or "Partially".
   attestations, but deploys do not yet verify signatures before pull.
 - **No restore drill.** Backups themselves are deferred; the rehearsal
   is consequently deferred too.
-- **Unrestricted egress from internet-capable services.**
-  `gateway`, `market-data`, `discord-bot`, and `traefik` join
-  `egress-net` and can reach any destination on the internet, not just
-  their known providers. `ollama-model-pull` also joins `egress-net`
-  but only runs briefly at startup. Everything else on `trading-net`
-  alone has no route out at all. A DNS-aware allowlisting proxy for
-  `egress-net` is planned.
+- **Direct egress for `traefik` and `ollama-model-pull`.** Application
+  services reach the internet only through the allowlisting egress
+  proxy. `traefik` needs a direct route for its published ports, and
+  `ollama-model-pull` pulls a model from `registry.ollama.ai` once at
+  startup and exits. Both keep an unrestricted route on `internet-net`.
 
 ## Out of scope (intentional)
 

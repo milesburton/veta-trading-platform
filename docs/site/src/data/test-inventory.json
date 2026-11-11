@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 205,
-      "cases": 2127,
+      "files": 206,
+      "cases": 2130,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -14,6 +14,7 @@
         "retention.unit.test.ts": 4,
         "transaction-report.unit.test.ts": 8,
         "clock.unit.test.ts": 7,
+        "egress-proxy.unit.test.ts": 3,
         "market-event-store.unit.test.ts": 3,
         "anthropic.test.ts": 6,
         "regulatory-records.unit.test.ts": 6,
