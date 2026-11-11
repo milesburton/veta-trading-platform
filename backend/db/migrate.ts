@@ -1,3 +1,4 @@
+import { provisionAppLogin } from "./appRole.ts";
 import { provisionAuditLogin } from "./auditRole.ts";
 import { runMigrations } from "./runMigrations.ts";
 
@@ -16,6 +17,13 @@ try {
     console.log("Audit login role provisioned.");
   } else {
     console.warn("AUDIT_DB_PASSWORD is not set; the audit login role was not provisioned.");
+  }
+  const appPassword = process.env.APP_DB_PASSWORD;
+  if (appPassword) {
+    await provisionAppLogin(databaseUrl, appPassword);
+    console.log("Application login role provisioned.");
+  } else {
+    console.warn("APP_DB_PASSWORD is not set; the application login role was not provisioned.");
   }
 } catch (err) {
   console.error("Migration failed:", err);

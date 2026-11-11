@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 205,
-      "cases": 2124,
+      "cases": 2127,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -56,7 +56,7 @@
         "dark-pool-matching.unit.test.ts": 12,
         "dark-pool-server.unit.test.ts": 7,
         "data-depth-cache.unit.test.ts": 3,
-        "db-migrations.unit.test.ts": 13,
+        "db-migrations.unit.test.ts": 15,
         "demo-day-attribution.unit.test.ts": 3,
         "deploy-sync-bind-mounts.unit.test.ts": 1,
         "devcontainer.unit.test.ts": 7,
@@ -143,7 +143,7 @@
         "price-fan.unit.test.ts": 7,
         "privileged-audit.unit.test.ts": 9,
         "process-metrics.unit.test.ts": 4,
-        "prod-secrets-fail-closed.unit.test.ts": 5,
+        "prod-secrets-fail-closed.unit.test.ts": 6,
         "product-service.unit.test.ts": 9,
         "prompt-builder.unit.test.ts": 15,
         "proxy.unit.test.ts": 10,
@@ -230,11 +230,12 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 26,
-      "cases": 251,
+      "files": 27,
+      "cases": 255,
       "perFile": {
         "algo.integration.tc.test.ts": 15,
         "analytics-services.integration.tc.test.ts": 9,
+        "app-role.integration.tc.test.ts": 4,
         "audit-log.integration.tc.test.ts": 6,
         "fix.integration.tc.test.ts": 14,
         "integration.tc.test.ts": 21,

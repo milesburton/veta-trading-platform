@@ -45,6 +45,7 @@ vi.mock("#veta/db", () => ({
 
 const { runMigrations } = await import("../../db/runMigrations.ts");
 const { provisionAuditLogin } = await import("../../db/auditRole.ts");
+const { provisionAppLogin } = await import("../../db/appRole.ts");
 
 async function migrationsDir(files: Record<string, string>) {
   const dir = await mkdtemp(join(tmpdir(), "veta-migrations-"));
@@ -75,7 +76,10 @@ test("[migrations] applies pending files in order and skips recorded ones", asyn
     "0003_c.sql": "SELECT 3",
     "notes.txt": "ignored",
   });
-  const result = await runMigrations("postgres://db", { migrationsDir: dir, quiet: true });
+  const result = await runMigrations("postgres://db", {
+    migrationsDir: dir,
+    quiet: true,
+  });
   assertEquals(result, { applied: ["0002_b", "0003_c"], skipped: ["0001_a"] });
   assertEquals(h.urls, ["postgres://db"]);
   const recorded = h.queries.filter((q) =>
@@ -148,12 +152,24 @@ test("[audit-role] cleans up when provisioning fails", async () => {
   assertEquals([h.released, h.ended], [1, 1]);
 });
 
+test("[app-role] provisions the application login in the app_service group", async () => {
+  await provisionAppLogin("postgres://db", "pw");
+  const format = h.queries.find((q) => q.sql.includes("format("));
+  assertEquals(format?.params, ["CREATE", "veta_app", "pw"]);
+  assertEquals(h.queries.at(-1)?.sql, "GRANT app_service TO veta_app");
+  assertEquals([h.released, h.ended], [1, 1]);
+});
+
 async function runMigrateScript(env: Record<string, string | undefined>) {
   vi.resetModules();
   const run = vi.fn().mockResolvedValue({ applied: ["a"], skipped: [] });
   const provision = vi.fn().mockResolvedValue(undefined);
+  const provisionApp = vi.fn().mockResolvedValue(undefined);
   vi.doMock("../../db/runMigrations.ts", () => ({ runMigrations: run }));
-  vi.doMock("../../db/auditRole.ts", () => ({ provisionAuditLogin: provision }));
+  vi.doMock("../../db/auditRole.ts", () => ({
+    provisionAuditLogin: provision,
+  }));
+  vi.doMock("../../db/appRole.ts", () => ({ provisionAppLogin: provisionApp }));
   for (const [key, value] of Object.entries(env)) {
     if (value === undefined) vi.stubEnv(key, "");
     else vi.stubEnv(key, value);
@@ -164,7 +180,7 @@ async function runMigrateScript(env: Record<string, string | undefined>) {
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   await import("../../db/migrate.ts");
   vi.unstubAllEnvs();
-  return { run, provision, exit, warn, error };
+  return { run, provision, provisionApp, exit, warn, error };
 }
 
 test("[migrate] exits when DATABASE_URL is missing", async () => {
@@ -191,12 +207,31 @@ test("[migrate] warns when no audit password is configured", async () => {
   assertEquals(String(warn.mock.calls[0][0]).includes("AUDIT_DB_PASSWORD is not set"), true);
 });
 
+test("[migrate] provisions the application login only when a password is configured", async () => {
+  const configured = await runMigrateScript({
+    DATABASE_URL: "postgres://db",
+    AUDIT_DB_PASSWORD: "pw",
+    APP_DB_PASSWORD: "app-pw",
+  });
+  assertEquals(configured.provisionApp.mock.calls[0], ["postgres://db", "app-pw"]);
+  assertEquals(configured.warn.mock.calls.length, 0);
+
+  const missing = await runMigrateScript({
+    DATABASE_URL: "postgres://db",
+    AUDIT_DB_PASSWORD: "pw",
+    APP_DB_PASSWORD: "",
+  });
+  assertEquals(missing.provisionApp.mock.calls.length, 0);
+  assertEquals(String(missing.warn.mock.calls[0][0]).includes("APP_DB_PASSWORD is not set"), true);
+});
+
 test("[migrate] exits non-zero when a migration fails", async () => {
   vi.resetModules();
   vi.doMock("../../db/runMigrations.ts", () => ({
     runMigrations: vi.fn().mockRejectedValue(new Error("nope")),
   }));
   vi.doMock("../../db/auditRole.ts", () => ({ provisionAuditLogin: vi.fn() }));
+  vi.doMock("../../db/appRole.ts", () => ({ provisionAppLogin: vi.fn() }));
   vi.stubEnv("DATABASE_URL", "postgres://db");
   const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
   vi.spyOn(console, "error").mockImplementation(() => undefined);

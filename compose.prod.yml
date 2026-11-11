@@ -712,6 +712,7 @@ services:
     profiles: !reset []
     environment:
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must come from OpenBao}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-}
     restart: "no"
     labels:
       - "traefik.enable=false"

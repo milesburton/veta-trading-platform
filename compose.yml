@@ -285,6 +285,7 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:-veta_audit}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-veta_app}
     restart: "no"
     labels:
       - "traefik.enable=false"

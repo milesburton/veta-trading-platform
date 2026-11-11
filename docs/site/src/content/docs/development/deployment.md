@@ -99,6 +99,8 @@ To rotate the deploy credential, issue a new secret ID as `admin` (`bao write -f
 
 `POSTGRES_PASSWORD` and `AUDIT_DB_PASSWORD` are embedded in database URLs, so they must be URL-safe. Use hex (`openssl rand -hex 32`). Base64 output can contain `+`, `/` and `=`, which break the URL.
 
+`APP_DB_PASSWORD` is optional until the services are moved to the non-superuser `veta_app` login. When it is set, `db-migrate` creates or rotates that login on every run, and the deploy aborts if the value is the development default. Use hex for the same reason.
+
 Postgres stores its role password in the data directory and MinIO reads its root password from the environment at start, so changing the vault value alone does not rotate a running stack. Rotate in this order, in a planned window:
 
 1. Take a verified backup with `scripts/postgres-backup.sh` and confirm it restores.
