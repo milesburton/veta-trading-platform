@@ -1280,6 +1280,74 @@ export function makeSystemStatusModel(): IJsonModel {
   };
 }
 
+export function makeNocModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "row",
+          weight: 42,
+          children: [
+            {
+              type: "tabset",
+              weight: 62,
+              children: [
+                {
+                  type: "tab",
+                  id: "estate-overview",
+                  name: PANEL_TITLES["estate-overview"],
+                  component: "estate-overview",
+                  config: {
+                    panelType: "estate-overview",
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 38,
+              children: [
+                {
+                  type: "tab",
+                  id: "alerts",
+                  name: PANEL_TITLES.alerts,
+                  component: "alerts",
+                  config: {
+                    panelType: "alerts",
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 58,
+          children: [
+            {
+              type: "tabset",
+              weight: 100,
+              children: [
+                {
+                  type: "tab",
+                  id: "observability",
+                  name: PANEL_TITLES.observability,
+                  component: "observability",
+                  config: {
+                    panelType: "observability",
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 export function makeAdministrationModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -2744,6 +2812,14 @@ export const LAYOUT_TEMPLATES: {
     label: "System Status",
     description: "Service health, throughput gauges, estate overview, and native observability",
     model: makeSystemStatusModel(),
+  },
+  {
+    id: "noc",
+    locked: true,
+    label: "NOC Wallboard",
+    description:
+      "Unattended wall display with estate overview, live alerts, and observability latency/error views",
+    model: makeNocModel(),
   },
   {
     id: "pipeline-ops",

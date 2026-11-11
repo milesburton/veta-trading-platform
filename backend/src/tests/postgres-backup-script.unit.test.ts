@@ -22,6 +22,11 @@ const FAKE_PG_RESTORE = `#!/bin/sh
 exit 0
 `;
 
+const FAKE_PG_DUMPALL = `#!/bin/sh
+[ "$FAKE_PG_DUMPALL_FAIL" = "1" ] && exit 1
+echo "CREATE ROLE audit_writer NOLOGIN;"
+`;
+
 interface Sandbox {
   backups: string;
   bin: string;
@@ -40,6 +45,7 @@ async function sandbox(): Promise<Sandbox> {
   for (const [name, body] of [
     ["pg_dump", FAKE_PG_DUMP],
     ["pg_restore", FAKE_PG_RESTORE],
+    ["pg_dumpall", FAKE_PG_DUMPALL],
   ]) {
     await writeFile(join(bin, name), body);
     await chmod(join(bin, name), 0o755);
@@ -67,6 +73,10 @@ async function dumps(dir: string): Promise<string[]> {
   return (await readdir(dir)).filter((f) => f.endsWith(".dump")).sort();
 }
 
+async function roleDumps(dir: string): Promise<string[]> {
+  return (await readdir(dir)).filter((f) => f.endsWith(".roles.sql")).sort();
+}
+
 async function metric(dir: string, name: string): Promise<number> {
   const text = await readFile(join(dir, "metrics", "metrics"), "utf8");
   const line = text.split("\n").find((l) => l.startsWith(`${name} `));
@@ -76,17 +86,20 @@ async function metric(dir: string, name: string): Promise<number> {
 async function seedDump(dir: string, name: string, ageDays: number): Promise<void> {
   const file = join(dir, name);
   await writeFile(file, "old");
+  await writeFile(join(dir, name.replace(/\.dump$/, ".roles.sql")), "roles");
   const when = new Date(Date.now() - ageDays * DAY_MS);
   await utimes(file, when, when);
+  await utimes(join(dir, name.replace(/\.dump$/, ".roles.sql")), when, when);
 }
 
-test("[postgres-backup] a successful run writes a verified dump and success metrics", async () => {
+test("[postgres-backup] a successful run writes verified dump and roles files and success metrics", async () => {
   const box = await sandbox();
   try {
     const result = await box.run();
     assertEquals(result.code, 0);
     const files = await dumps(box.backups);
     assertEquals(files.length, 1);
+    assertEquals((await roleDumps(box.backups)).length, 1);
     assert((await readdir(box.backups)).every((f) => !f.endsWith(".partial")));
     assertEquals(await metric(box.backups, "veta_postgres_backup_last_status"), 1);
     assertEquals(await metric(box.backups, "veta_postgres_backup_files"), 1);
@@ -103,11 +116,25 @@ test("[postgres-backup] a failing pg_dump leaves no dump and reports failure", a
     const result = await box.run({ FAKE_PG_DUMP_FAIL: "1" });
     assertEquals(result.code, 1);
     assertEquals((await dumps(box.backups)).length, 0);
+    assertEquals((await roleDumps(box.backups)).length, 0);
     assertEquals(await metric(box.backups, "veta_postgres_backup_last_status"), 0);
     assertEquals(
       await metric(box.backups, "veta_postgres_backup_last_success_timestamp_seconds"),
       0
     );
+  } finally {
+    await box.cleanup();
+  }
+});
+
+test("[postgres-backup] a failing pg_dumpall leaves no dump or roles file", async () => {
+  const box = await sandbox();
+  try {
+    const result = await box.run({ FAKE_PG_DUMPALL_FAIL: "1" });
+    assertEquals(result.code, 1);
+    assertEquals((await dumps(box.backups)).length, 0);
+    assertEquals((await roleDumps(box.backups)).length, 0);
+    assertEquals(await metric(box.backups, "veta_postgres_backup_last_status"), 0);
   } finally {
     await box.cleanup();
   }
@@ -140,6 +167,7 @@ test("[postgres-backup] a failure after a success keeps the last success timesta
       before
     );
     assertEquals((await dumps(box.backups)).length, 1);
+    assertEquals((await roleDumps(box.backups)).length, 1);
   } finally {
     await box.cleanup();
   }
@@ -152,6 +180,7 @@ test("[postgres-backup] retention prunes dumps older than the window but keeps t
       await seedDump(box.backups, `veta-2020010${i}T000000Z.dump`, 30 + i);
     await box.run({ BACKUP_RETENTION_DAYS: "14", BACKUP_MIN_KEEP: "3" });
     assertEquals((await dumps(box.backups)).length, 3);
+    assertEquals((await roleDumps(box.backups)).length, 3);
   } finally {
     await box.cleanup();
   }
@@ -163,6 +192,7 @@ test("[postgres-backup] recent dumps are never pruned", async () => {
     for (let i = 0; i < 5; i++) await seedDump(box.backups, `veta-2026010${i}T000000Z.dump`, i + 1);
     await box.run({ BACKUP_RETENTION_DAYS: "14", BACKUP_MIN_KEEP: "3" });
     assertEquals((await dumps(box.backups)).length, 6);
+    assertEquals((await roleDumps(box.backups)).length, 6);
   } finally {
     await box.cleanup();
   }

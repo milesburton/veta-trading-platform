@@ -40,6 +40,12 @@ test("[prod-secrets] the guard rejects each known compose default", async () => 
   }
 });
 
+test("[prod-secrets] the optional application database password may be absent but not a default", async () => {
+  assertEquals((await runGuard({ ...GOOD, APP_DB_PASSWORD: "" })).code, 0);
+  assertEquals((await runGuard({ ...GOOD, APP_DB_PASSWORD: "s-83d1" })).code, 0);
+  assertEquals((await runGuard({ ...GOOD, APP_DB_PASSWORD: "veta_app" })).code, 1);
+});
+
 test("[prod-secrets] compose.prod.yml has no defaulted secret variables", () => {
   const defaulted = COMPOSE_PROD.split("\n").filter((line) =>
     /\$\{[A-Z0-9_]*(PASSWORD|SECRET|TOKEN|KEY)[A-Z0-9_]*:-[^}]/.test(line)

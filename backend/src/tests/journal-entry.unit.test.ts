@@ -325,9 +325,14 @@ test("[journal] rejects malformed transaction report requests", async () => {
 });
 
 test("[journal] health reports hot and regulatory retention", async () => {
-  const health = (await json(await call("/health"))) as Record<string, number>;
+  const health = (await json(await call("/health"))) as {
+    retentionDays: number;
+    regulatoryRetentionYears: number;
+    retentionDryRun: boolean;
+  };
   assertEquals(health.retentionDays, 2);
   assertEquals(health.regulatoryRetentionYears, 5);
+  assertEquals(health.retentionDryRun, false);
 });
 
 test("[journal] writes consumed events to the journal in batches", async () => {

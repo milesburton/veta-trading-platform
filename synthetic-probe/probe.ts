@@ -18,12 +18,12 @@
 //   3. GET  /api/gateway/ready  (with cookie) → 200, ready:true
 //   4. GET  /api/gateway/api/user-service/personas → 200, non-empty list
 //   5. WS   /ws/gateway → a marketUpdate frame arrives within the timeout
+//   6. WS   /ws/gateway → authenticate, submit order, observe terminal orderEvent
 //
 // Steps 4 and 5 were added after the 2026-05-28 outage, which surfaced
 // as "Failed to load personas" (a user-service/DB stall returning 502)
 // and "Feed disconnected" (no market frames) while the root GET and
-// /ready still passed. Future additions: order submit + cancel via the
-// guest session.
+// /ready still passed.
 
 const BASE_URL = process.env.PROBE_BASE_URL ?? "https://veta.mnetcs.com";
 const TIMEOUT_MS = Number(process.env.PROBE_TIMEOUT_MS) || 10_000;
@@ -336,6 +336,150 @@ async function step5MarketFeed(): Promise<StepResult> {
   }
 }
 
+async function step6OrderJourney(cookie: string | null): Promise<StepResult> {
+  const t0 = nowMs();
+  const name = "order_journey";
+  if (!cookie) {
+    return {
+      step: 6,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: "missing session cookie from guest login",
+    };
+  }
+  const tokenMatch = cookie.match(/^veta_user=(.+)$/);
+  const token = tokenMatch ? tokenMatch[1] : null;
+  if (!token) {
+    return {
+      step: 6,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: "guest cookie did not contain a token",
+    };
+  }
+
+  const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/ws/gateway`;
+  const clientOrderId = `probe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  let ws: WebSocket;
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch (err) {
+    return {
+      step: 6,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeoutMs = Math.max(TIMEOUT_MS, 20_000);
+      const timer = setTimeout(() => {
+        reject(new Error(`order lifecycle not observed within ${timeoutMs}ms`));
+      }, timeoutMs);
+      let submitted = false;
+      let acked = false;
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
+      };
+      ws.onmessage = (ev) => {
+        let parsed: { event?: string; topic?: string; data?: Record<string, unknown> };
+        try {
+          parsed = JSON.parse(ev.data as string) as {
+            event?: string;
+            topic?: string;
+            data?: Record<string, unknown>;
+          };
+        } catch {
+          return;
+        }
+
+        if (parsed.event === "authError") {
+          clearTimeout(timer);
+          reject(new Error("gateway rejected websocket authentication"));
+          return;
+        }
+
+        if (parsed.event === "authIdentity" && !submitted) {
+          submitted = true;
+          ws.send(
+            JSON.stringify({
+              type: "submitOrder",
+              payload: {
+                clientOrderId,
+                asset: "AAPL",
+                side: "BUY",
+                quantity: 1,
+                limitPrice: 200,
+                expiresAt: 60,
+                strategy: "LIMIT",
+                instrumentType: "equity",
+                algoParams: { strategy: "LIMIT" },
+              },
+            })
+          );
+          return;
+        }
+
+        if (parsed.event === "orderAck") {
+          const ackId = String(parsed.data?.clientOrderId ?? "");
+          if (ackId === clientOrderId) acked = true;
+          return;
+        }
+
+        if (parsed.event === "orderRejected") {
+          const rejectId = String(parsed.data?.clientOrderId ?? "");
+          if (rejectId === clientOrderId) {
+            clearTimeout(timer);
+            reject(new Error(`order rejected: ${String(parsed.data?.reason ?? "unknown")}`));
+          }
+          return;
+        }
+
+        if (parsed.event === "orderEvent") {
+          const eventClientOrderId = String(parsed.data?.clientOrderId ?? "");
+          if (eventClientOrderId !== clientOrderId) return;
+          const topic = String(parsed.topic ?? "");
+          if (!acked && topic !== "orders.rejected") return;
+          if (
+            topic === "orders.filled" ||
+            topic === "orders.rejected" ||
+            topic === "orders.expired" ||
+            topic === "orders.cancelled"
+          ) {
+            clearTimeout(timer);
+            resolve();
+          }
+        }
+      };
+      ws.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error("WebSocket error while probing order journey"));
+      };
+    });
+    return { step: 6, name, outcome: "ok", durationMs: nowMs() - t0 };
+  } catch (err) {
+    return {
+      step: 6,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  } finally {
+    try {
+      ws.close();
+    } catch {
+      // already closed
+    }
+  }
+}
+
 async function main(): Promise<void> {
   const runStart = nowMs();
   const results: StepResult[] = [];
@@ -380,6 +524,14 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const r6 = await step6OrderJourney(cookie);
+  results.push(r6);
+  emit({ event: "step", ...r6 });
+  if (r6.outcome === "fail") {
+    emit({ event: "probe_done", outcome: "fail", failedAtStep: 6, totalMs: nowMs() - runStart });
+    process.exit(1);
+  }
+
   emit({ event: "probe_done", outcome: "ok", totalMs: nowMs() - runStart });
 }
 
@@ -387,4 +539,11 @@ if (import.meta.main) {
   await main();
 }
 
-export { step1Root, step2GuestLogin, step3GatewayReady, step4Personas, step5MarketFeed };
+export {
+  step1Root,
+  step2GuestLogin,
+  step3GatewayReady,
+  step4Personas,
+  step5MarketFeed,
+  step6OrderJourney,
+};

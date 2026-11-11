@@ -1,0 +1,109 @@
+---
+title: "ADR 0016: Audit log storage and verification for multi-year retention"
+description: "Proposes how audit.events is stored, verified and archived over a seven year retention period, based on measured row size and verification cost."
+---
+
+**Status:** Proposed
+
+**Date:** 2026-11-11
+
+## Context
+
+`audit.events` is one unpartitioned, append-only table. The full-chain check,
+`audit.first_broken_seq()` behind `GET /audit/verify`, reads every row. A regulated deployment
+would keep the log for about seven years.
+[#1083](https://github.com/milesburton/veta-trading-platform/issues/1083) asks how storage,
+verification, archival and anchoring should work at that length. The retention policy itself is
+in [Data classification](../../data-classification/#retention-policy-by-class).
+
+## Measurements
+
+Taken on Postgres 16 with the repository migrations applied. Events went through the real insert
+trigger, so every row carries its hash chain fields. The data is synthetic: 70% gateway privileged
+actions, 10% kill and resume, 15% limit updates with before and after values, 5% registrations.
+The production table was sampled read-only on 2026-11-11: 11 rows, all `market_hours_update`
+from 2026-11-06, one 8 KB heap page and 64 KB with indexes, average `detail` of 45 bytes. The
+table is too small to give a per-row figure, so the synthetic numbers stand.
+
+| Measure | 200,000 rows | 2,000,000 rows |
+| --- | --- | --- |
+| Table heap per row | 349 bytes | 349 bytes |
+| Heap plus the three indexes per row | 469 bytes | 469 bytes |
+| Full-chain verification, warm cache | 0.75 s | 7.7 s |
+
+| Measure | Result |
+| --- | --- |
+| Row data, smallest and largest event shape | 262 bytes (resume) and 670 bytes (limit update) |
+| Verification cost | About 3.9 microseconds per row, linear in row count |
+| NDJSON export | 409 bytes per row, 56 bytes per row with `gzip -9` |
+| Index share of the online size | 120 bytes per row, about a quarter |
+
+Lookups by actor ordered by sequence use the existing indexes. A rare actor resolves through
+`events_actor_idx` and a frequent one through a backward scan of the primary key, both in under
+2 ms at 200,000 rows.
+
+## Projection over seven years
+
+| Events per day | Rows | Online size | Full verification | Compressed archive |
+| --- | --- | --- | --- | --- |
+| 100 | 0.26 million | 0.12 GB | 1 s | 14 MB |
+| 1,000 | 2.6 million | 1.2 GB | 10 s | 143 MB |
+| 10,000 | 25.6 million | 12 GB | 100 s | 1.4 GB |
+| 100,000 | 256 million | 120 GB | 17 min | 14 GB |
+
+The observed production rate on 2026-11-11 was 11 events in total since the audit log went live
+on 2026-11-06, far below the first row above, so none of the rows is labelled expected or peak.
+Audit events are privileged actions taken by people, which suggests the first two rows once the
+platform is in regular use. Scripted admin calls such as load generator control are the likely
+source of a peak. Re-measure with:
+
+```sql
+SELECT date_trunc('day', ts) AS day, count(*) FROM audit.events GROUP BY 1 ORDER BY 1;
+```
+
+## Proposed decision
+
+1. **Do not partition yet.** Up to 10,000 events a day the table stays near 12 GB with no change.
+   Partitioning by time also costs something specific here: a partitioned table's primary key
+   must include the partition key, so `seq` alone could no longer be the key, and the insert
+   trigger's lookup of the newest row would probe every partition.
+2. **If partitioning becomes necessary, partition by ranges of `seq`, not by time.** The primary
+   key, the gapless sequence and the single hash chain all survive unchanged, and the newest-row
+   lookup touches only the last partition. Revisit when the table passes 20 million rows or the
+   scheduled full verification takes longer than 60 seconds.
+3. **Verify incrementally, and keep a scheduled full check.** Add a function that recomputes the
+   chain from an anchored sequence and hash, and use it for `GET /audit/verify`. This proves only
+   the rows after the anchor. A row before the anchor can be altered without changing the anchored
+   hash, so the journal also runs the full check on a schedule and alerts on a break.
+4. **Archive closed segments to object-locked storage.** Export completed days as
+   `<firstSeq>-<lastSeq>.ndjson.gz` to a new bucket with compliance-mode retention for the full
+   period, reusing the regulatory record export. Each row already stores `prev_hash` and `hash`,
+   so a segment verifies on its own and joins to its neighbours without extra boundary records.
+   The archive is the immutable copy that older online rows are checked against.
+5. **Keep every row online.** The triggers reject deletes, and the projected sizes do not justify
+   a privileged pruning path. The archive is for integrity and recovery, not for queries.
+6. **Extend anchor retention to the full period.** The `audit-anchors` bucket keeps objects for
+   30 days today. At one anchor an hour at most, seven years is about 61,000 small objects.
+7. **Leave the indexes as they are.**
+
+## Alternatives considered
+
+| Option | Why not |
+| --- | --- |
+| Partition by month now | Changes the primary key and slows the insert trigger for a table that fits comfortably unpartitioned at the likely rates. |
+| Prune online rows once archived | Needs a path that bypasses the append-only triggers, which is the capability the design exists to deny. |
+| Store hashes as `bytea` instead of hex text | Saves about 64 bytes per row, a fifth of the heap, but changes the stored chain format and every verifier for a small gain. |
+| Checkpoint with a Merkle tree | Gives inclusion proofs without reading the chain, which nothing needs yet. |
+
+## Consequences
+
+- Compliance-mode retention cannot be shortened once set. Raising it on the anchor bucket and
+  setting it on the archive bucket is a one-way step, and it applies only to objects written
+  afterwards.
+- The seven year period is taken from the issue. It should be confirmed before the buckets are
+  configured.
+- The measurements use synthetic payloads and a warm cache. A cold table larger than memory will
+  verify more slowly than the projection.
+- Implementation is separate work: the incremental verification function and endpoint change,
+  the archive export and bucket, the scheduled full check with its alert and runbook, and the
+  production rate measurement.

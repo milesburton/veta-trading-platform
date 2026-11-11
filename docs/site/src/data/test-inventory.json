@@ -1,19 +1,26 @@
 {
   "backend": {
     "unit": {
-      "files": 197,
-      "cases": 2094,
+      "files": 205,
+      "cases": 2127,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
         "algo-controls.unit.test.ts": 3,
+        "auth.unit.test.ts": 3,
+        "ref-prices.unit.test.ts": 4,
         "fill-reconciliation.unit.test.ts": 4,
         "regulatory-export.unit.test.ts": 6,
-        "retention.unit.test.ts": 3,
+        "retention.unit.test.ts": 4,
         "transaction-report.unit.test.ts": 8,
         "clock.unit.test.ts": 7,
+        "market-event-store.unit.test.ts": 3,
         "anthropic.test.ts": 6,
+        "regulatory-records.unit.test.ts": 6,
+        "tcp.unit.test.ts": 2,
+        "wait-for.unit.test.ts": 3,
         "checks.test.ts": 27,
+        "news.unit.test.ts": 2,
         "abuse-tracker.unit.test.ts": 10,
         "access-log-throttle.test.ts": 5,
         "account-audit.unit.test.ts": 4,
@@ -49,7 +56,7 @@
         "dark-pool-matching.unit.test.ts": 12,
         "dark-pool-server.unit.test.ts": 7,
         "data-depth-cache.unit.test.ts": 3,
-        "db-migrations.unit.test.ts": 13,
+        "db-migrations.unit.test.ts": 15,
         "demo-day-attribution.unit.test.ts": 3,
         "deploy-sync-bind-mounts.unit.test.ts": 1,
         "devcontainer.unit.test.ts": 7,
@@ -60,6 +67,7 @@
         "docs-sidebar.unit.test.ts": 3,
         "duration-ladder.unit.test.ts": 9,
         "edge-csp.unit.test.ts": 2,
+        "ems-server.unit.test.ts": 3,
         "ems.unit.test.ts": 28,
         "feature-engine-service.unit.test.ts": 10,
         "feature-engine.test.ts": 26,
@@ -122,7 +130,7 @@
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
         "oms-regulatory.unit.test.ts": 3,
-        "oms-server.unit.test.ts": 33,
+        "oms-server.unit.test.ts": 35,
         "oms.test.ts": 16,
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,
@@ -131,11 +139,11 @@
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "platform-stats.unit.test.ts": 11,
         "playbooks.unit.test.ts": 14,
-        "postgres-backup-script.unit.test.ts": 7,
+        "postgres-backup-script.unit.test.ts": 8,
         "price-fan.unit.test.ts": 7,
         "privileged-audit.unit.test.ts": 9,
         "process-metrics.unit.test.ts": 4,
-        "prod-secrets-fail-closed.unit.test.ts": 5,
+        "prod-secrets-fail-closed.unit.test.ts": 6,
         "product-service.unit.test.ts": 9,
         "prompt-builder.unit.test.ts": 15,
         "proxy.unit.test.ts": 10,
@@ -222,11 +230,12 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 26,
-      "cases": 251,
+      "files": 27,
+      "cases": 255,
       "perFile": {
         "algo.integration.tc.test.ts": 15,
         "analytics-services.integration.tc.test.ts": 9,
+        "app-role.integration.tc.test.ts": 4,
         "audit-log.integration.tc.test.ts": 6,
         "fix.integration.tc.test.ts": 14,
         "integration.tc.test.ts": 21,
@@ -257,7 +266,7 @@
   "frontend": {
     "unit": {
       "files": 191,
-      "cases": 2316
+      "cases": 2319
     },
     "playwright": {
       "files": 19,

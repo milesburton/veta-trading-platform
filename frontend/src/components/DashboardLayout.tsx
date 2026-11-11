@@ -21,6 +21,7 @@ export {
   makeFiResearchModel,
   makeFiTradingModel,
   makeMarketFeedsModel,
+  makeNocModel,
   makeOptionsModel,
   makeOverviewModel,
   makePipelineOpsModel,

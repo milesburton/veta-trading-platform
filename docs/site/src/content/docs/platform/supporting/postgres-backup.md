@@ -12,22 +12,24 @@ database.
 
 1. Runs `pg_dump` in custom format into the backup volume. The file is
    written under a `.partial` name and only renamed once it is complete.
-2. Verifies the dump with `pg_restore --list`. A dump that cannot be listed
+2. Runs `pg_dumpall --roles-only --no-role-passwords` into a matching
+   `veta-<stamp>.roles.sql` file, also written via a `.partial` file.
+3. Verifies the dump with `pg_restore --list`. A dump that cannot be listed
    is discarded and counted as a failure.
-3. Prunes dumps older than the retention window, always keeping the newest
+4. Prunes dumps older than the retention window, always keeping the newest
    few so a long outage of the job cannot empty the directory.
-4. Writes a Prometheus metrics file served on port 8101.
+5. Writes a Prometheus metrics file served on port 8101.
 
 A fresh deployment runs one backup immediately. After that the job runs in
 the configured UTC hour. A failed attempt is retried every 15 minutes.
 
 ## Configuration
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `POSTGRES_BACKUP_PATH` | `postgres-backups` (named volume) | Volume name or host path mounted at `/backups`. |
-| `POSTGRES_BACKUP_HOUR_UTC` | `03` | Hour of day for the daily run. |
-| `POSTGRES_BACKUP_RETENTION_DAYS` | `14` | Dumps older than this are pruned, except the newest three. |
+| Variable                         | Default                           | Meaning                                                    |
+| -------------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| `POSTGRES_BACKUP_PATH`           | `postgres-backups` (named volume) | Volume name or host path mounted at `/backups`.            |
+| `POSTGRES_BACKUP_HOUR_UTC`       | `03`                              | Hour of day for the daily run.                             |
+| `POSTGRES_BACKUP_RETENTION_DAYS` | `14`                              | Dumps older than this are pruned, except the newest three. |
 
 Point `POSTGRES_BACKUP_PATH` at a directory on a different disk or a network
 mount so that the backups survive the loss of the database host. The
@@ -36,11 +38,11 @@ root inside the container.
 
 ## Alerts
 
-| Alert | Fires when |
-| --- | --- |
-| `PostgresBackupStale` | No verified backup for more than 26 hours, or never. Critical. |
-| `PostgresBackupFailing` | The latest attempt failed for 30 minutes. |
-| `PostgresBackupScrapeDown` | Prometheus cannot scrape the container for 10 minutes. |
+| Alert                      | Fires when                                                     |
+| -------------------------- | -------------------------------------------------------------- |
+| `PostgresBackupStale`      | No verified backup for more than 26 hours, or never. Critical. |
+| `PostgresBackupFailing`    | The latest attempt failed for 30 minutes.                      |
+| `PostgresBackupScrapeDown` | Prometheus cannot scrape the container for 10 minutes.         |
 
 The metrics are `veta_postgres_backup_last_success_timestamp_seconds`,
 `veta_postgres_backup_last_attempt_timestamp_seconds`,
@@ -58,14 +60,12 @@ A healthy container stays up and logs one line per run. A container that shows `
 
 ## Restoring a backup
 
-A database dump does not contain cluster-level roles. The migrations grant
-privileges to the `audit_writer` group, so `pg_restore` into a cluster that
-lacks that role fails on the first grant. Restore in this order:
+Restore in this order:
 
-1. Create the group role in the target cluster:
+1. Restore the roles file into the target cluster:
 
-   ```sql
-   CREATE ROLE audit_writer NOLOGIN;
+   ```bash
+   psql -U "$PGUSER" -d postgres < veta-<stamp>.roles.sql
    ```
 
 2. Restore the dump into an empty database:
@@ -77,7 +77,8 @@ lacks that role fails on the first grant. Restore in this order:
    A non-zero exit code means the restore is incomplete. Do not treat the
    database as usable until it exits 0.
 
-3. Run `db-migrate`. It recreates the `veta_audit` login from
+3. Run `db-migrate`. It reconciles role membership, recreates the
+   `veta_audit` login from
    `AUDIT_DB_PASSWORD` and applies any migrations newer than the dump.
 
 The restore drill in `backend/src/tests/postgres-restore-drill.integration.tc.test.ts`
@@ -88,6 +89,3 @@ checks that every table's row count matches the source.
 
 - Copying backups off the host automatically. Today this relies on where
   `POSTGRES_BACKUP_PATH` points.
-- Capturing cluster roles in the backup itself, so step 1 above is not a
-  manual step. Tracked in
-  [#1110](https://github.com/milesburton/veta-trading-platform/issues/1110).

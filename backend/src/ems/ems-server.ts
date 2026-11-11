@@ -35,13 +35,18 @@ import { ALL_VENUES, routeToBestVenue } from "./venue-router.ts";
 
 const MARKET_SIM_PORT = Number(process.env.MARKET_SIM_PORT) || 5_000;
 const MARKET_SIM_HOST = process.env.MARKET_SIM_HOST || "localhost";
+const OMS_URL =
+  process.env.OMS_URL ||
+  `http://${process.env.OMS_HOST || "localhost"}:${process.env.OMS_PORT || "5002"}`;
 const PORT = Number(process.env.EMS_PORT) || 5_001;
 const VERSION = process.env.COMMIT_SHA || "dev";
 
 const PARTICIPATION_CAP = Number(process.env.EMS_PARTICIPATION_CAP) || PARTICIPATION_CAP_DEFAULT;
 const IMPACT_PER_1000 = Number(process.env.EMS_IMPACT_PER_1000_BPS) || IMPACT_PER_1000_DEFAULT;
 
-const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT, { feed: "full" });
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT, {
+  feed: "full",
+});
 marketClient.start();
 
 const COUNTERPARTIES = [
@@ -102,6 +107,31 @@ async function handleCancelled(cancelled: OrderCancelled): Promise<void> {
   }
 }
 
+async function parentOrderIsActive(child: ChildOrder): Promise<boolean> {
+  try {
+    const params = new URLSearchParams();
+    params.set("orderId", child.parentOrderId);
+    if (child.clientOrderId) params.set("clientOrderId", child.clientOrderId);
+    if (child.userId) params.set("userId", child.userId);
+    const res = await fetch(`${OMS_URL}/orders/active?${params.toString()}`, {
+      signal: AbortSignal.timeout(2_000),
+    });
+    if (!res.ok) {
+      logger.warn(
+        `OMS active-order gate check failed with status ${res.status} for ${child.childId}`
+      );
+      return false;
+    }
+    const body = (await res.json()) as { active?: boolean };
+    return body.active === true;
+  } catch (err) {
+    logger.warn(`OMS active-order gate check failed for ${child.childId}`, {
+      err,
+    });
+    return false;
+  }
+}
+
 async function handleChildOrder(child: ChildOrder): Promise<void> {
   const cancellation = cancellations.lookup([child.parentOrderId, child.clientOrderId]);
   if (cancellation && cancellationApplies(cancellation, child)) {
@@ -112,6 +142,12 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     logger.warn(
       `Ignored cancellation of ${child.parentOrderId} issued by ${cancellation.issuedBy ?? "unknown"}: not the owner`
     );
+  }
+  if (!(await parentOrderIsActive(child))) {
+    logger.info(
+      `Suppressed child ${child.childId}: parent ${child.parentOrderId} is not active in OMS`
+    );
+    return;
   }
   const tick = marketClient.getLatest();
   const midPrice = tick.prices[child.asset];

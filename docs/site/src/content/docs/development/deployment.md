@@ -41,6 +41,7 @@ cd frontend && npm run electron:dev
 | `RISK_ENGINE_ENABLED` | `true` | Enable/disable pre-trade risk checks |
 | `VETA_DEMO_MODE` | `false` (`true` in `compose.prod.yml`) | Show demo personas on login page |
 | `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
+| `JOURNAL_RETENTION_DRY_RUN` | `false` | When true, the journal retention job reports how many rows would be pruned but does not delete them |
 | `FIRM_LEI` | (empty) | 20 character LEI stamped on orders as the executing entity. Optional |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
 
@@ -97,6 +98,8 @@ To rotate the deploy credential, issue a new secret ID as `admin` (`bao write -f
 `POSTGRES_PASSWORD`, `AUDIT_DB_PASSWORD`, `MINIO_ROOT_PASSWORD` and `INTERNAL_SERVICE_TOKEN` must be set in `secret/veta/platform` to values other than the development defaults in `compose.yml`. `scripts/lib/require-real-secrets.sh` runs after the secrets are loaded, and the deploy aborts before touching any container if one is missing or equal to a default. `compose.prod.yml` also refuses to render without `POSTGRES_PASSWORD`.
 
 `POSTGRES_PASSWORD` and `AUDIT_DB_PASSWORD` are embedded in database URLs, so they must be URL-safe. Use hex (`openssl rand -hex 32`). Base64 output can contain `+`, `/` and `=`, which break the URL.
+
+`APP_DB_PASSWORD` is optional until the services are moved to the non-superuser `veta_app` login. When it is set, `db-migrate` creates or rotates that login on every run, and the deploy aborts if the value is the development default. Use hex for the same reason.
 
 Postgres stores its role password in the data directory and MinIO reads its root password from the environment at start, so changing the vault value alone does not rotate a running stack. Rotate in this order, in a planned window:
 

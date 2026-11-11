@@ -156,6 +156,7 @@ jobs:
             echo "reason=k6 produced no summary output (see job log for the raw failure)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "summary_file=$SUMMARY_FILE" >> "$GITHUB_OUTPUT"
 
           FAILURE_RATE=$(jq -r '.failureRate // 0' "$SUMMARY_FILE")
           BREACHED=$(jq -r '.thresholdsBreached // [] | join(", ")' "$SUMMARY_FILE")
@@ -172,13 +173,163 @@ jobs:
             echo "failed=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Compare p95 against rolling baseline
+        id: regression
+        if: steps.run.outputs.ran == 'true'
+        env:
+          RUN_LABEL: ${{ steps.cfg.outputs.run_label }}
+          SUMMARY_FILE: ${{ steps.results.outputs.summary_file }}
+          REGRESSION_WINDOW: "7"
+          REGRESSION_MIN_POINTS: "3"
+          REGRESSION_WARN_PCT: "10"
+          REGRESSION_FAIL_PCT: "20"
+        run: |
+          python3 - <<'PY'
+          import glob
+          import json
+          import os
+          import statistics
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+
+          def set_output(name: str, value: str) -> None:
+              with open(output_path, "a", encoding="utf-8") as out:
+                  out.write(f"{name}={value}\n")
+
+          summary_file = os.environ.get("SUMMARY_FILE", "")
+          run_label = os.environ.get("RUN_LABEL", "")
+          window = int(os.environ.get("REGRESSION_WINDOW", "7"))
+          min_points = int(os.environ.get("REGRESSION_MIN_POINTS", "3"))
+          warn_pct = float(os.environ.get("REGRESSION_WARN_PCT", "10"))
+          fail_pct = float(os.environ.get("REGRESSION_FAIL_PCT", "20"))
+
+          if not summary_file or not os.path.exists(summary_file):
+              set_output("failed", "false")
+              set_output("warn", "false")
+              set_output("reason", "regression baseline skipped: no summary file")
+              set_output("baseline_count", "0")
+              set_output("baseline_p95", "0")
+              set_output("current_p95", "0")
+              set_output("regression_pct", "0")
+              print("Regression baseline skipped: no summary file")
+              raise SystemExit(0)
+
+          with open(summary_file, encoding="utf-8") as f:
+              current = json.load(f)
+          current_p95 = float(
+              current.get("stages", {}).get("httpReqDurationMs", {}).get("p95") or 0
+          )
+
+          pattern = f"docs/site/src/data/loadtest/*-{run_label}.json"
+          candidates = sorted(glob.glob(pattern))
+          previous: list[float] = []
+          current_abs = os.path.abspath(summary_file)
+          for path in candidates:
+              if os.path.abspath(path) == current_abs:
+                  continue
+              try:
+                  with open(path, encoding="utf-8") as f:
+                      data = json.load(f)
+                  p95 = float(data.get("stages", {}).get("httpReqDurationMs", {}).get("p95") or 0)
+              except Exception:
+                  continue
+              if p95 > 0:
+                  previous.append(p95)
+
+          sample = previous[-window:]
+          baseline_count = len(sample)
+          baseline_p95 = statistics.mean(sample) if baseline_count > 0 else 0.0
+          regression_pct = (
+              ((current_p95 - baseline_p95) / baseline_p95) * 100 if baseline_p95 > 0 else 0.0
+          )
+
+          failed = (
+              baseline_count >= min_points
+              and baseline_p95 > 0
+              and regression_pct >= fail_pct
+          )
+          warn = (
+              baseline_count >= min_points
+              and baseline_p95 > 0
+              and not failed
+              and regression_pct >= warn_pct
+          )
+
+          if failed:
+              reason = (
+                  f"p95 regression {regression_pct:.1f}% exceeds {fail_pct:.1f}% "
+                  f"(current {current_p95:.3f}ms vs baseline {baseline_p95:.3f}ms "
+                  f"from {baseline_count} prior run(s))"
+              )
+          elif warn:
+              reason = (
+                  f"p95 regression {regression_pct:.1f}% exceeds warning {warn_pct:.1f}% "
+                  f"(current {current_p95:.3f}ms vs baseline {baseline_p95:.3f}ms "
+                  f"from {baseline_count} prior run(s))"
+              )
+          elif baseline_count < min_points:
+              reason = (
+                  f"regression baseline skipped: need {min_points} prior run(s), "
+                  f"found {baseline_count}"
+              )
+          else:
+              reason = (
+                  f"p95 regression {regression_pct:.1f}% "
+                  f"(current {current_p95:.3f}ms vs baseline {baseline_p95:.3f}ms "
+                  f"from {baseline_count} prior run(s))"
+              )
+
+          set_output("failed", "true" if failed else "false")
+          set_output("warn", "true" if warn else "false")
+          set_output("reason", reason)
+          set_output("baseline_count", str(baseline_count))
+          set_output("baseline_p95", f"{baseline_p95:.3f}")
+          set_output("current_p95", f"{current_p95:.3f}")
+          set_output("regression_pct", f"{regression_pct:.3f}")
+          print(reason)
+          PY
+
+      - name: Resolve load test outcome
+        id: outcome
+        if: steps.run.outputs.ran == 'true'
+        env:
+          THRESHOLD_FAILED: ${{ steps.results.outputs.failed }}
+          THRESHOLD_REASON: ${{ steps.results.outputs.reason }}
+          REGRESSION_FAILED: ${{ steps.regression.outputs.failed }}
+          REGRESSION_WARN: ${{ steps.regression.outputs.warn }}
+          REGRESSION_REASON: ${{ steps.regression.outputs.reason }}
+        run: |
+          FAILED=false
+          REASON=""
+
+          if [ "${THRESHOLD_FAILED:-false}" = "true" ]; then
+            FAILED=true
+            REASON="$THRESHOLD_REASON"
+          fi
+
+          if [ "${REGRESSION_FAILED:-false}" = "true" ]; then
+            FAILED=true
+            if [ -n "$REASON" ]; then
+              REASON="$REASON; $REGRESSION_REASON"
+            else
+              REASON="$REGRESSION_REASON"
+            fi
+          fi
+
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON" >> "$GITHUB_OUTPUT"
+
+          if [ "${REGRESSION_WARN:-false}" = "true" ] && [ "${REGRESSION_FAILED:-false}" != "true" ]; then
+            echo "::warning::$REGRESSION_REASON"
+          fi
+
       - name: Alert Discord on load test failure
-        if: steps.results.outputs.failed == 'true'
+        if: steps.outcome.outputs.failed == 'true'
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           SCENARIO: ${{ steps.cfg.outputs.scenario }}
           BASE_URL: ${{ steps.cfg.outputs.base_url }}
-          REASON: ${{ steps.results.outputs.reason }}
+          REASON: ${{ steps.outcome.outputs.reason }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$DISCORD_WEBHOOK_URL" ]; then
@@ -226,7 +377,7 @@ jobs:
           fi
 
       - name: Fail the job if the load test failed
-        if: steps.results.outputs.failed == 'true'
+        if: steps.outcome.outputs.failed == 'true'
         run: |
-          echo "::error::${{ steps.results.outputs.reason }}"
+          echo "::error::${{ steps.outcome.outputs.reason }}"
           exit 1

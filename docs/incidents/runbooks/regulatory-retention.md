@@ -42,6 +42,7 @@ bucket. This runbook covers checking both and recovering from a gap.
 | Item | Value | Setting |
 | --- | --- | --- |
 | Hot journal | 90 days | `JOURNAL_RETENTION_DAYS` |
+| Hot journal prune mode | Deletes by default. Set to `true` to count the rows that would be pruned without deleting them | `JOURNAL_RETENTION_DRY_RUN` |
 | Regulatory table | Not pruned | None |
 | Export bucket | 1825 days, COMPLIANCE lock | `mc retention set` in `compose.yml` |
 | Postgres backups | 14 days | `POSTGRES_BACKUP_RETENTION_DAYS` |
