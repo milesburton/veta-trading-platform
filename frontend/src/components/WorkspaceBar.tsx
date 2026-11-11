@@ -15,6 +15,7 @@ import {
   makeFiResearchModel,
   makeFiTradingModel,
   makeMarketFeedsModel,
+  makeNocModel,
   makeOptionsModel,
   makeOverviewModel,
   makePipelineOpsModel,
@@ -133,6 +134,12 @@ const ADMIN_PRESET_WORKSPACES: {
     name: "System Status",
     locked: true,
     makeModel: makeSystemStatusModel,
+  },
+  {
+    id: "ws-noc",
+    name: "NOC",
+    locked: true,
+    makeModel: makeNocModel,
   },
   {
     id: "ws-observability",

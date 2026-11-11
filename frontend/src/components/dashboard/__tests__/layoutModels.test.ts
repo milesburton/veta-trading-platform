@@ -7,6 +7,7 @@ import {
   makeClearModel,
   makeDefaultModel,
   makeExecutionModel,
+  makeNocModel,
   makeObservabilityModel,
   makeOverviewModel,
   STORAGE_KEY,
@@ -180,6 +181,27 @@ describe("makeObservabilityModel", () => {
   });
 });
 
+describe("makeNocModel", () => {
+  it("includes estate-overview, alerts, and observability", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeNocModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("estate-overview")).toBe(true);
+    expect(ids.has("alerts")).toBe(true);
+    expect(ids.has("observability")).toBe(true);
+  });
+
+  it("does not include order-ticket or market-ladder (wallboard, no trading)", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeNocModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("order-ticket")).toBe(false);
+    expect(ids.has("market-ladder")).toBe(false);
+  });
+});
+
 describe("makeAlgoPipelineModel", () => {
   it("includes algo-monitor, throughput-gauges, order-blotter, child-orders, executions, and decision-log", () => {
     const ids = new Set<string>();
@@ -213,8 +235,8 @@ describe("makeAlgoPipelineModel", () => {
 });
 
 describe("LAYOUT_TEMPLATES", () => {
-  it("has 23 templates", () => {
-    expect(LAYOUT_TEMPLATES).toHaveLength(23);
+  it("has 24 templates", () => {
+    expect(LAYOUT_TEMPLATES).toHaveLength(24);
   });
 
   it("includes the admin Observability superset template", () => {
@@ -255,6 +277,18 @@ describe("LAYOUT_TEMPLATES", () => {
     });
     expect(ids.has("service-health")).toBe(true);
     expect(ids.has("throughput-gauges")).toBe(true);
+  });
+
+  it("includes a 'noc' template with estate-overview, alerts, and observability", () => {
+    const tpl = LAYOUT_TEMPLATES.find((t) => t.id === "noc");
+    if (!tpl) throw new Error("noc template not found");
+    const ids = new Set<string>();
+    Model.fromJson(tpl.model).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("estate-overview")).toBe(true);
+    expect(ids.has("alerts")).toBe(true);
+    expect(ids.has("observability")).toBe(true);
   });
 
   it("includes an 'algo-pipeline' template with algo-monitor, child-orders, and executions", () => {

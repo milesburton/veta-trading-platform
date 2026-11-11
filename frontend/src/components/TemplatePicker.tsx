@@ -8,6 +8,7 @@ const ADMIN_ONLY_TEMPLATES = new Set([
   "admin",
   "market-feeds",
   "system-status",
+  "noc",
   "pipeline-ops",
   "administration",
 ]);

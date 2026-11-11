@@ -166,12 +166,13 @@ describe("seedWorkspaces", () => {
     ]);
   });
 
-  test("returns six locked admin workspaces for role=admin regardless of trading style", () => {
+  test("returns seven locked admin workspaces for role=admin regardless of trading style", () => {
     const { workspaces } = seedWorkspaces("admin", "fi_voice");
-    expect(workspaces).toHaveLength(6);
+    expect(workspaces).toHaveLength(7);
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-market-feeds",
       "ws-system-status",
+      "ws-noc",
       "ws-observability",
       "ws-pipeline-ops",
       "ws-administration",
