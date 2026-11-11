@@ -469,6 +469,49 @@ test({
 });
 
 test({
+  name: "[messaging] consumer with requireHandlerSuccess rejects the message when a handler fails",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const fake = new FakeConsumer();
+    installHooks(() => ({
+      producer: () => {
+        throw new Error("unused");
+      },
+      consumer: () => fake as never,
+    }));
+
+    const consumer = await createConsumer("journal-group", ["orders.filled"], "journal-client", {
+      handlerTimeoutMs: 1,
+      requireHandlerSuccess: true,
+    });
+
+    let shouldFail = true;
+    const seen: unknown[] = [];
+    consumer.onMessage((_topic, value) => {
+      if (shouldFail) throw new Error("insert failed");
+      seen.push(value);
+    });
+
+    await waitFor(() => fake.runConfig !== null);
+
+    await assertRejects(
+      () => fake.emitMessage("orders.filled", JSON.stringify({ seq: 1 })),
+      Error,
+      "insert failed"
+    );
+    assertEquals(seen, []);
+
+    shouldFail = false;
+    await fake.emitMessage("orders.filled", JSON.stringify({ seq: 1 }));
+    assertEquals(seen, [{ seq: 1 }]);
+
+    await consumer.disconnect();
+    __setMessagingTestHooks(null);
+  },
+});
+
+test({
   name: "[messaging] consumer retries failed startup connection",
   async fn() {
     const bad = new FakeConsumer();

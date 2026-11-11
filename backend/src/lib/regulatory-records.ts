@@ -7,6 +7,7 @@ export const REGULATORY_TOPICS = [
   "orders.filled",
   "orders.expired",
   "orders.rejected",
+  "orders.cancelled",
 ] as const;
 
 export interface RegulatoryEventInput {

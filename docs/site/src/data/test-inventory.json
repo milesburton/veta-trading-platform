@@ -2,11 +2,11 @@
   "backend": {
     "unit": {
       "files": 192,
-      "cases": 2055,
+      "cases": 2058,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "fill-reconciliation.unit.test.ts": 4,
-        "regulatory-export.unit.test.ts": 4,
+        "regulatory-export.unit.test.ts": 6,
         "retention.unit.test.ts": 3,
         "anthropic.test.ts": 6,
         "checks.test.ts": 27,
@@ -111,7 +111,7 @@
         "market-sim-client.unit.test.ts": 19,
         "marketSim.test.ts": 21,
         "matching-engine.unit.test.ts": 14,
-        "messaging.test.ts": 19,
+        "messaging.test.ts": 20,
         "monte-carlo.unit.test.ts": 10,
         "news-aggregator.unit.test.ts": 10,
         "news-analysis.unit.test.ts": 19,

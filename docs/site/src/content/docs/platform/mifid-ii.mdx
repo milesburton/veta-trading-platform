@@ -30,7 +30,7 @@ Fill events are keyed by execution id, so repeated partial fills of one child or
 
 ## Order record and retention
 
-Every order lifecycle event (`orders.submitted`, `orders.routed`, `orders.child`, `orders.filled`, `orders.expired`, `orders.rejected`) is written twice by the journal service:
+Every order lifecycle event (`orders.submitted`, `orders.routed`, `orders.child`, `orders.filled`, `orders.expired`, `orders.rejected`, `orders.cancelled`) is written twice by the journal service. The regulatory write happens before the Kafka offset is acknowledged: the journal consumer for these topics does not advance past a message until the insert has succeeded, so a database outage pauses consumption rather than dropping records. Rejections carry no order id, so their record id is derived from the client order id.
 
 | Store | Purpose | Retention | Mutable |
 | --- | --- | --- | --- |
@@ -48,7 +48,7 @@ flowchart LR
   E --> B[regulatory-records bucket, object lock 1825 days]
 ```
 
-The journal exports each completed UTC day to `orders/YYYY/MM/DD.ndjson` in the `regulatory-records` bucket every six hours, skipping days already present. The bucket is created with object lock and a default COMPLIANCE retention of 1825 days (five years). The export needs `MINIO_ENDPOINT`, `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` on the journal service and is disabled when they are absent.
+The journal exports each completed UTC day to the `regulatory-records` bucket every six hours as immutable segments named `orders/YYYY/MM/DD/<firstSeq>-<lastSeq>.ndjson`. On each run it reads the highest exported sequence for the day from the existing segment names and writes a new segment for any records above it, so a record that arrives late (delayed delivery or archive reconciliation) within the three day lookback is appended as a further segment rather than lost. The bucket is created with object lock and a default COMPLIANCE retention of 1825 days (five years). The export needs `MINIO_ENDPOINT`, `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` on the journal service and is disabled when they are absent.
 
 Integrity checks are exposed by the journal at `/regulatory/verify` and `/regulatory/head`. The retention runbook is [Regulatory record retention](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/regulatory-retention.md).
 

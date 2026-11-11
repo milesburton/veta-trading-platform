@@ -38,6 +38,7 @@ const CONSUME_TOPICS = [
   "orders.filled",
   "orders.expired",
   "orders.rejected",
+  "orders.cancelled",
 ];
 
 interface KafkaEventValue {
@@ -45,6 +46,7 @@ interface KafkaEventValue {
   childId?: string;
   orderId?: string;
   token?: string;
+  clientOrderId?: string;
   userId?: string;
   algo?: string;
   asset?: string;
@@ -63,7 +65,7 @@ interface KafkaEventValue {
 }
 
 function extractFields(topic: string, value: KafkaEventValue) {
-  const baseId = value.childId ?? value.orderId ?? value.token ?? null;
+  const baseId = value.childId ?? value.orderId ?? value.token ?? value.clientOrderId ?? null;
   const execSuffix = topic === "orders.filled" && value.execId ? `:${value.execId}` : "";
   return {
     event_id: baseId ? `${topic}:${baseId}${execSuffix}` : null,
@@ -179,12 +181,12 @@ setInterval(() => pruneOldEvents().catch(() => {}), PRUNE_INTERVAL_MS);
 
 const REGULATORY_WRITE_ATTEMPTS = 3;
 
-function persistRegulatoryRecord(
+async function persistRegulatoryRecord(
   topic: string,
   value: KafkaEventValue,
   fields: ReturnType<typeof extractFields>,
   ts: Date
-): void {
+): Promise<void> {
   if (!isRegulatoryTopic(topic) || !fields.event_id) return;
   const event = {
     eventId: fields.event_id,
@@ -194,31 +196,29 @@ function persistRegulatoryRecord(
     childId: fields.child_id,
     payload: value as Record<string, unknown>,
   };
-  void (async () => {
-    for (let attempt = 1; attempt <= REGULATORY_WRITE_ATTEMPTS; attempt++) {
-      try {
-        await appendRegulatoryEvent(auditPool, event);
-        return;
-      } catch (err) {
-        if (attempt === REGULATORY_WRITE_ATTEMPTS) {
-          logger.error("Failed to persist regulatory record", {
-            topic,
-            eventId: event.eventId,
-            err,
-          });
-          return;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+  for (let attempt = 1; attempt <= REGULATORY_WRITE_ATTEMPTS; attempt++) {
+    try {
+      await appendRegulatoryEvent(auditPool, event);
+      return;
+    } catch (err) {
+      if (attempt === REGULATORY_WRITE_ATTEMPTS) {
+        logger.error("Failed to persist regulatory record", {
+          topic,
+          eventId: event.eventId,
+          err,
+        });
+        throw err;
       }
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
     }
-  })();
+  }
 }
 
-function ingest(topic: string, value: KafkaEventValue) {
+async function ingest(topic: string, value: KafkaEventValue): Promise<void> {
   const arrivedAt = new Date();
   const ts = new Date(value.ts ?? arrivedAt.getTime());
   const fields = extractFields(topic, value);
-  persistRegulatoryRecord(topic, value, fields, ts);
+  await persistRegulatoryRecord(topic, value, fields, ts);
   writeQueue.push([
     fields.event_id,
     topic,
@@ -260,7 +260,7 @@ async function reconcileFillsFromArchive(): Promise<void> {
       );
       const existing = new Set(rows.map((r) => r[0] as string));
       for (const payload of missingFillPayloads(executions, existing)) {
-        ingest("orders.filled", payload as KafkaEventValue);
+        await ingest("orders.filled", payload as KafkaEventValue);
         reconciled++;
       }
     } finally {
@@ -337,7 +337,10 @@ const marketGroupId =
   journalRowCount === 0 ? `journal-market-fresh-${Date.now().toString(36)}` : "journal-market";
 logger.info(`Consumer groups: ${journalGroupId}, ${marketGroupId} (${journalRowCount} rows)`);
 
-createConsumer(journalGroupId, CONSUME_TOPICS).then((consumer) => {
+createConsumer(journalGroupId, CONSUME_TOPICS, undefined, {
+  handlerTimeoutMs: 10_000,
+  requireHandlerSuccess: true,
+}).then((consumer) => {
   consumer.onMessage((topic, value) => ingest(topic, value as Record<string, unknown>));
   logger.info(`Subscribed to: ${CONSUME_TOPICS.join(", ")}`);
 });

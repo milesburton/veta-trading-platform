@@ -2,6 +2,8 @@ import type { RegulatoryRecord } from "../lib/regulatory-records.ts";
 
 export const REGULATORY_EXPORT_PREFIX = "orders/";
 const DAY_MS = 86_400_000;
+const SEQ_WIDTH = 12;
+const SUFFIX = ".ndjson";
 
 export interface RegulatoryExportStore {
   putObject: (key: string, body: string) => Promise<void>;
@@ -12,9 +14,23 @@ export function utcDayStart(ms: number): number {
   return Math.floor(ms / DAY_MS) * DAY_MS;
 }
 
-export function exportKey(dayStartMs: number): string {
+export function dayPrefix(dayStartMs: number): string {
   const [year, month, day] = new Date(dayStartMs).toISOString().slice(0, 10).split("-");
-  return `${REGULATORY_EXPORT_PREFIX}${year}/${month}/${day}.ndjson`;
+  return `${REGULATORY_EXPORT_PREFIX}${year}/${month}/${day}/`;
+}
+
+export function exportKey(dayStartMs: number, firstSeq: number, lastSeq: number): string {
+  const pad = (n: number) => String(n).padStart(SEQ_WIDTH, "0");
+  return `${dayPrefix(dayStartMs)}${pad(firstSeq)}-${pad(lastSeq)}${SUFFIX}`;
+}
+
+export function exportedWatermark(keys: readonly string[], dayStartMs: number): number {
+  const prefix = dayPrefix(dayStartMs);
+  return keys
+    .filter((key) => key.startsWith(prefix) && key.endsWith(SUFFIX))
+    .map((key) => Number(key.slice(prefix.length, -SUFFIX.length).split("-")[1]))
+    .filter((seq) => Number.isFinite(seq))
+    .reduce((max, seq) => Math.max(max, seq), 0);
 }
 
 export function serialiseRecords(records: readonly RegulatoryRecord[]): string {
@@ -32,15 +48,16 @@ export async function exportMissingDays(deps: RegulatoryExportDeps): Promise<str
   const now = (deps.now ?? Date.now)();
   const lookback = deps.lookbackDays ?? 3;
   const today = utcDayStart(now);
-  const existing = new Set(await deps.store.listKeys(REGULATORY_EXPORT_PREFIX));
+  const keys = await deps.store.listKeys(REGULATORY_EXPORT_PREFIX);
   const written: string[] = [];
   for (let i = lookback; i >= 1; i--) {
     const dayStart = today - i * DAY_MS;
-    const key = exportKey(dayStart);
-    if (existing.has(key)) continue;
+    const watermark = exportedWatermark(keys, dayStart);
     const records = await deps.fetchRecords(dayStart, dayStart + DAY_MS);
-    if (records.length === 0) continue;
-    await deps.store.putObject(key, serialiseRecords(records));
+    const pending = records.filter((r) => r.seq > watermark);
+    if (pending.length === 0) continue;
+    const key = exportKey(dayStart, pending[0].seq, pending[pending.length - 1].seq);
+    await deps.store.putObject(key, serialiseRecords(pending));
     written.push(key);
   }
   return written;

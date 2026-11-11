@@ -17,8 +17,11 @@ bucket. This runbook covers checking both and recovering from a gap.
 
 ## Check the export
 
-1. List objects under `orders/` in the `regulatory-records` bucket. There should
-   be one `YYYY/MM/DD.ndjson` object for each completed day that had orders.
+1. List objects under `orders/` in the `regulatory-records` bucket. Each
+   completed day that had orders has a `YYYY/MM/DD/` prefix holding one or
+   more `<firstSeq>-<lastSeq>.ndjson` segments. More than one segment means
+   records arrived after the first export and were appended, which is expected
+   after a reconciliation or a delayed delivery.
 2. The journal logs `Exported regulatory records` when it writes a day and
    `Regulatory export failed` on error. It retries every six hours and looks
    back three days.
