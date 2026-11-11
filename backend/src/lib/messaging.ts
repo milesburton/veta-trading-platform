@@ -289,9 +289,10 @@ export function createConsumer(
   groupId: string,
   topics: string[],
   clientId = `veta-${groupId}`,
-  options: { handlerTimeoutMs?: number } = {}
+  options: { handlerTimeoutMs?: number; requireHandlerSuccess?: boolean } = {}
 ): Promise<MsgConsumer> {
   const handlerTimeoutMs = options.handlerTimeoutMs ?? 5_000;
+  const requireHandlerSuccess = options.requireHandlerSuccess ?? false;
   const handlers: MessageHandler[] = [];
   let activeConsumer: Consumer | null = null;
   let stopped = false;
@@ -378,6 +379,7 @@ export function createConsumer(
                     topic,
                     err: err as Error,
                   });
+                  if (requireHandlerSuccess) throw err;
                 } finally {
                   if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
                 }

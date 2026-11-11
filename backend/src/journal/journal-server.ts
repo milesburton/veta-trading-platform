@@ -6,6 +6,14 @@ import { logger } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import type { GridQueryRequest, GridQueryResponse } from "#veta/types/grid-query";
 import { appendAudit, auditHead, firstBrokenSeq, listAudit } from "../lib/audit.ts";
+import {
+  appendRegulatoryEvent,
+  firstBrokenRegulatorySeq,
+  isRegulatoryTopic,
+  regulatoryEventsBetween,
+  regulatoryHead,
+} from "../lib/regulatory-records.ts";
+import { createS3Client } from "../lib/s3.ts";
 import { AUDIT_TOPICS, toAuditEvent } from "./audit-ingest.ts";
 import { candleFromRow, ingestTick, MAX_CANDLES } from "./candles.ts";
 import { createSingleFlightCache } from "./data-depth-cache.ts";
@@ -13,10 +21,13 @@ import { type ArchivedExecution, fillEventId, missingFillPayloads } from "./fill
 import { computeLatencyMetrics } from "./latency-metrics.ts";
 import { decodeOrderId, summariseFills } from "./order-progress.ts";
 import { reconstructOrdersFromRows } from "./order-reconstruction.ts";
+import { exportMissingDays } from "./regulatory-export.ts";
+import { hotRetentionMs, pruneJournalEvents, resolveRetention } from "./retention.ts";
 
 const PORT = Number(process.env.JOURNAL_PORT) || 5_009;
-const RETENTION_DAYS = Number(process.env.JOURNAL_RETENTION_DAYS) || 90;
-const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1_000;
+const RETENTION = resolveRetention(process.env);
+const RETENTION_DAYS = RETENTION.hotDays;
+const RETENTION_MS = hotRetentionMs(RETENTION_DAYS);
 const VERSION = process.env.COMMIT_SHA || "dev";
 const DATA_DEPTH_TTL_MS = 60_000;
 
@@ -27,6 +38,7 @@ const CONSUME_TOPICS = [
   "orders.filled",
   "orders.expired",
   "orders.rejected",
+  "orders.cancelled",
 ];
 
 interface KafkaEventValue {
@@ -34,6 +46,7 @@ interface KafkaEventValue {
   childId?: string;
   orderId?: string;
   token?: string;
+  clientOrderId?: string;
   userId?: string;
   algo?: string;
   asset?: string;
@@ -52,7 +65,7 @@ interface KafkaEventValue {
 }
 
 function extractFields(topic: string, value: KafkaEventValue) {
-  const baseId = value.childId ?? value.orderId ?? value.token ?? null;
+  const baseId = value.childId ?? value.orderId ?? value.token ?? value.clientOrderId ?? null;
   const execSuffix = topic === "orders.filled" && value.execId ? `:${value.execId}` : "";
   return {
     event_id: baseId ? `${topic}:${baseId}${execSuffix}` : null,
@@ -135,10 +148,7 @@ async function flushWriteQueue() {
       pruneScheduled = false;
       const c = await journalPool.connect();
       try {
-        await c.queryArray(
-          "DELETE FROM journal.events WHERE ts < now() - ($1 || ' milliseconds')::interval",
-          [RETENTION_MS]
-        );
+        await pruneJournalEvents(c, RETENTION_MS);
       } catch {
         /* ignore */
       } finally {
@@ -155,12 +165,9 @@ setInterval(() => {
 async function pruneOldEvents(): Promise<void> {
   const c = await journalPool.connect();
   try {
-    const result = await c.queryArray(
-      "DELETE FROM journal.events WHERE ts < now() - ($1 || ' milliseconds')::interval",
-      [RETENTION_MS]
-    );
+    const removed = await pruneJournalEvents(c, RETENTION_MS);
     await c.queryArray("VACUUM journal.events").catch(() => {});
-    logger.info(`Prune: removed ${result.rowCount ?? 0} events older than ${RETENTION_DAYS}d`);
+    logger.info(`Prune: removed ${removed} events older than ${RETENTION_DAYS}d`);
   } catch (err) {
     logger.warn("Prune failed", { err: err as Error });
   } finally {
@@ -172,10 +179,46 @@ const PRUNE_INTERVAL_MS = Number(process.env.JOURNAL_PRUNE_INTERVAL_MS) || 60 * 
 setTimeout(() => pruneOldEvents().catch(() => {}), 30_000);
 setInterval(() => pruneOldEvents().catch(() => {}), PRUNE_INTERVAL_MS);
 
-function ingest(topic: string, value: KafkaEventValue) {
+const REGULATORY_WRITE_ATTEMPTS = 3;
+
+async function persistRegulatoryRecord(
+  topic: string,
+  value: KafkaEventValue,
+  fields: ReturnType<typeof extractFields>,
+  ts: Date
+): Promise<void> {
+  if (!isRegulatoryTopic(topic) || !fields.event_id) return;
+  const event = {
+    eventId: fields.event_id,
+    eventType: topic,
+    ts: ts.getTime(),
+    orderId: fields.order_id,
+    childId: fields.child_id,
+    payload: value as Record<string, unknown>,
+  };
+  for (let attempt = 1; attempt <= REGULATORY_WRITE_ATTEMPTS; attempt++) {
+    try {
+      await appendRegulatoryEvent(auditPool, event);
+      return;
+    } catch (err) {
+      if (attempt === REGULATORY_WRITE_ATTEMPTS) {
+        logger.error("Failed to persist regulatory record", {
+          topic,
+          eventId: event.eventId,
+          err,
+        });
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+  }
+}
+
+async function ingest(topic: string, value: KafkaEventValue): Promise<void> {
   const arrivedAt = new Date();
   const ts = new Date(value.ts ?? arrivedAt.getTime());
   const fields = extractFields(topic, value);
+  await persistRegulatoryRecord(topic, value, fields, ts);
   writeQueue.push([
     fields.event_id,
     topic,
@@ -217,7 +260,7 @@ async function reconcileFillsFromArchive(): Promise<void> {
       );
       const existing = new Set(rows.map((r) => r[0] as string));
       for (const payload of missingFillPayloads(executions, existing)) {
-        ingest("orders.filled", payload as KafkaEventValue);
+        await ingest("orders.filled", payload as KafkaEventValue);
         reconciled++;
       }
     } finally {
@@ -233,6 +276,34 @@ async function reconcileFillsFromArchive(): Promise<void> {
 }
 
 setTimeout(() => reconcileFillsFromArchive(), 5_000);
+
+function startRegulatoryExport(): void {
+  const endpoint = process.env.MINIO_ENDPOINT;
+  const accessKey = process.env.MINIO_ROOT_USER;
+  const secretKey = process.env.MINIO_ROOT_PASSWORD;
+  if (!endpoint || !accessKey || !secretKey) return;
+  const store = createS3Client({
+    endpoint,
+    accessKey,
+    secretKey,
+    bucket: process.env.REGULATORY_BUCKET ?? "regulatory-records",
+  });
+  const run = async (): Promise<void> => {
+    try {
+      const written = await exportMissingDays({
+        store,
+        fetchRecords: (from, to) => regulatoryEventsBetween(auditPool, from, to),
+      });
+      if (written.length > 0) logger.info("Exported regulatory records", { keys: written });
+    } catch (err) {
+      logger.warn("Regulatory export failed", { err: err as Error });
+    }
+  };
+  setTimeout(() => void run(), 60_000);
+  setInterval(() => void run(), 6 * 60 * 60 * 1_000);
+}
+
+startRegulatoryExport();
 
 const obsProducer = await createProducer("journal-obs").catch(() => null);
 
@@ -266,7 +337,10 @@ const marketGroupId =
   journalRowCount === 0 ? `journal-market-fresh-${Date.now().toString(36)}` : "journal-market";
 logger.info(`Consumer groups: ${journalGroupId}, ${marketGroupId} (${journalRowCount} rows)`);
 
-createConsumer(journalGroupId, CONSUME_TOPICS).then((consumer) => {
+createConsumer(journalGroupId, CONSUME_TOPICS, undefined, {
+  handlerTimeoutMs: 10_000,
+  requireHandlerSuccess: true,
+}).then((consumer) => {
   consumer.onMessage((topic, value) => ingest(topic, value as Record<string, unknown>));
   logger.info(`Subscribed to: ${CONSUME_TOPICS.join(", ")}`);
 });
@@ -434,6 +508,7 @@ async function handle(req: Request): Promise<Response> {
       version: VERSION,
       status: "ok",
       retentionDays: RETENTION_DAYS,
+      regulatoryRetentionYears: RETENTION.regulatoryYears,
     });
   }
 
@@ -465,6 +540,15 @@ async function handle(req: Request): Promise<Response> {
     return json(
       await auditHead(auditPool, Number.isInteger(atSeq) && atSeq > 0 ? atSeq : undefined)
     );
+  }
+
+  if (req.method === "GET" && path === "/regulatory/verify") {
+    const brokenSeq = await firstBrokenRegulatorySeq(auditPool);
+    return json({ ok: brokenSeq === null, brokenSeq });
+  }
+
+  if (req.method === "GET" && path === "/regulatory/head") {
+    return json({ head: await regulatoryHead(auditPool) });
   }
 
   if (req.method === "GET" && path === "/data-depth") {
