@@ -4,7 +4,9 @@ import { decodePathSegment, serveFetch } from "#veta/http";
 import { logger, registerLogSink } from "#veta/logger";
 import { createConsumer, createProducer } from "#veta/messaging";
 import { clientIp, RateLimiter, rateLimitResponse } from "#veta/rate-limit";
+import { recordGauge } from "#veta/telemetry";
 import { SERVICE_REGISTRY } from "../../../shared/serviceRegistry.ts";
+import { startClockMonitor } from "../lib/clock.ts";
 import { createS3Client } from "../lib/s3.ts";
 import { serveDir } from "../lib/static-files.ts";
 import { notifyOperators, sendDailySummary } from "../notifications/discord-notifier.ts";
@@ -500,6 +502,14 @@ const auditChainWatch = createAuditChainWatch(alertRouter, async () => {
 });
 
 const auditAnchorWatch = createAuditAnchorWatchFromEnv();
+
+if (process.env.NTP_SERVER) {
+  startClockMonitor({
+    server: process.env.NTP_SERVER,
+    record: (name, value, attributes) => recordGauge(name, value, { attributes }),
+    onError: (err) => logger.warn("Clock sync query failed", { err }),
+  });
+}
 
 function createAuditAnchorWatchFromEnv(): AuditAnchorWatch | null {
   const endpoint = process.env.MINIO_ENDPOINT;

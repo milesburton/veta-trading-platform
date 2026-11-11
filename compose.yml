@@ -1786,6 +1786,7 @@ services:
       db-migrate:
         condition: service_completed_successfully
     environment:
+      NTP_SERVER: ${NTP_SERVER:-pool.ntp.org}
       GATEWAY_PORT: "5011"
       QUICK_TRADE_LLM_ENABLED: ${QUICK_TRADE_LLM_ENABLED:-false}
       DATABASE_URL: postgres://veta:veta@postgres:5432/veta

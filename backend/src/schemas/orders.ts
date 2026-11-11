@@ -70,6 +70,7 @@ export const RegulatoryFieldsSchema = z.object({
   clientCode: z.string().min(1).optional(),
   decisionMakerCode: z.string().min(1).optional(),
   executionDecisionCode: z.string().min(1).optional(),
+  tsMicros: z.number().int().positive().optional(),
 });
 export type RegulatoryFields = z.infer<typeof RegulatoryFieldsSchema>;
 
@@ -133,6 +134,7 @@ export const OrderChildSchema = z.object({
 export type OrderChild = z.infer<typeof OrderChildSchema>;
 
 export const FillEventSchema = z.object({
+  tsMicros: z.number().int().positive().optional(),
   execId: z.string().min(1).optional(),
   childId: ChildOrderIdSchema,
   parentOrderId: OrderIdSchema,

@@ -18,6 +18,7 @@ import { createProducer, createTypedConsumer } from "#veta/messaging";
 import type { OrderChild } from "#veta/schemas/orders";
 import { OrderChildSchema } from "#veta/schemas/orders";
 import { type Desk, settlementDate } from "#veta/settlement";
+import { nowMicros } from "../lib/clock.ts";
 import {
   computeFees,
   computeFill,
@@ -180,6 +181,7 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
       marketType: child.marketType ?? "lit",
       ...algoIdentifiers(child.algo),
       ts: Date.now(),
+      tsMicros: nowMicros(),
     };
 
     await producer?.send("orders.filled", fillPayload).catch(() => {});

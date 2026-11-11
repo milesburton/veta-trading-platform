@@ -15,6 +15,33 @@ groups:
             will not be created. Check the Platform Status ticketing state and rotate the
             github_ticketing_token Docker secret if it is unauthorised or forbidden.
 
+  - name: clock
+    rules:
+      - alert: ClockDriftHigh
+        expr: abs(veta_clock_offset_microseconds) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: System clock more than 1 ms from the NTP reference for 5m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md
+          description: |
+            The gateway host clock differs from the configured NTP reference by more than
+            1000 microseconds. MiFID II RTS 25 allows 1 ms for algorithmic trading. Order and
+            fill timestamps recorded while this alert is firing may be outside tolerance.
+
+      - alert: ClockSyncUnavailable
+        expr: veta_clock_sync_healthy == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: NTP reference unreachable for 15m
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/clock-drift.md
+          description: |
+            The gateway could not complete an SNTP query to the configured NTP server, so
+            clock drift is not being measured. Check NTP_SERVER and outbound UDP port 123.
+
   - name: host
     rules:
       - alert: DiskUsageHigh
