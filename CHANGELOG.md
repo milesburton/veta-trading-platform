@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.105.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.104.0...veta-trading-platform-v1.105.0) (2026-11-11)
+
+
+### Features
+
+* **mifid:** microsecond timestamps and clock drift monitoring (RTS 25) ([#1103](https://github.com/milesburton/veta-trading-platform/issues/1103)) ([3c919c9](https://github.com/milesburton/veta-trading-platform/commit/3c919c92b09ba58dbee93307f795530dc345c7a5))
+
 ## [1.104.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.103.1...veta-trading-platform-v1.104.0) (2026-11-11)
 
 
