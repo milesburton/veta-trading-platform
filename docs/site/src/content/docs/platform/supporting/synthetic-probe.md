@@ -38,16 +38,19 @@ so its `fetch()` call traverses the same Traefik, tunnel, and server path
 real users do. A probe on the server itself would always think the
 platform was fine because it would skip the tunnel hop.
 
-## What it checks (v1)
+## What it checks
 
-Three HTTP steps per cycle. Total wall-clock budget: ~10 s; current p50 is
-~700 ms.
+Six end-to-end steps per cycle. Total wall-clock budget is roughly one probe
+timeout window plus WebSocket handshake and order lifecycle latency.
 
 | # | Step | Expected |
 | --- | --- | --- |
 | 1 | `GET /` | HTTP 200, body contains `__version` or `VETA` markers |
 | 2 | `POST /api/gateway/api/user-service/oauth/guest` | HTTP 200, `Set-Cookie: veta_user=…` |
 | 3 | `GET /api/gateway/ready` (with cookie) | HTTP 200, `{"ready":true}` |
+| 4 | `GET /api/gateway/api/user-service/personas` (with cookie) | HTTP 200, non-empty personas list |
+| 5 | `WS /ws/gateway` | At least one `marketUpdate` frame arrives within timeout |
+| 6 | `WS /ws/gateway` | Auth succeeds, order submit returns `orderAck`, terminal `orderEvent` observed |
 
 Step 2 uses the public-guest-trading endpoint from [PR #234](https://github.com/milesburton/veta-trading-platform/pull/234)
 so the probe does not need long-lived credentials. If the platform's guest
@@ -63,16 +66,17 @@ public path).
 - Server gateway or user-service dead
 - `PUBLIC_GUEST_TRADING` flag flipped off
 - TLS cert expired or mis-issued
+- Market-feed WebSocket delivery failures
+- OMS/EMS order lifecycle regressions visible to authenticated sessions
 
 ## What it does not catch (yet)
 
-- WebSocket-only outages (no frame counting in v1)
-- OMS pipeline regressions (no order submit + cancel in v1)
-- Market data stalled (no candle/tick freshness check)
+- Slow degradation that still returns one frame and one terminal order event
+- Order management controls beyond submit and terminal lifecycle (for example kill/resume)
+- Market data quality drift (for example stale-but-present ticks or candles)
 
-These are queued for v2 and are intentionally absent in v1: the simpler the
-probe, the less likely it produces false positives that train people to
-ignore the alert.
+These remain intentionally out of scope until the current checks build a
+longer reliability track record.
 
 ## Output
 
@@ -165,9 +169,9 @@ sudo rm /var/lib/veta-probe/consecutive_failures
   an alloy / vector / promtail sidecar on the edge server.
 - **SLO dashboard**: once Loki shipping is in place, build a Grafana
   panel for rolling 24 h / 7 d / 30 d availability.
-- **v2 checks**: WS frame count, order submit + cancel, market-data
-  freshness. Each adds coverage at the cost of more flakiness surface;
-  add them one at a time after v1 has a track record.
+- **v2 checks**: richer WS health (frame cadence), cancel/resume controls,
+  and market-data freshness. Each adds coverage at the cost of more
+  flakiness surface; add them one at a time.
 
 ## Source
 

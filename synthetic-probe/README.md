@@ -2,7 +2,9 @@
 
 Node script that probes `https://veta.mnetcs.com/` every 60 s from the
 OVH edge box. Detects user-visible outages and alerts via webhook on
-3 consecutive failures.
+3 consecutive failures. The probe now exercises guest login, gateway
+readiness, personas, market feed frames, and an authenticated order
+lifecycle over WebSocket.
 
 **Full documentation**:
 [Synthetic probe](https://milesburton.github.io/veta-trading-platform/platform/supporting/synthetic-probe/).
