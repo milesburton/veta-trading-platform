@@ -313,6 +313,35 @@ function splitCsv(s: string): string[] {
     .filter((x) => x.length > 0);
 }
 
+interface QueryClientLike {
+  queryArray: (sql: string, params?: unknown[]) => Promise<{ rows?: unknown[][] }>;
+}
+
+async function insertAuditEvent(
+  client: QueryClientLike,
+  event: {
+    actorId: string;
+    actorRole: string;
+    action: string;
+    target?: string;
+    detail?: Record<string, unknown>;
+    ts?: number;
+  }
+): Promise<void> {
+  await client.queryArray(
+    `INSERT INTO audit.events (ts, actor_id, actor_role, action, target, detail)
+     VALUES (COALESCE(to_timestamp($1::double precision / 1000), now()), $2, $3, $4, $5, $6::jsonb)`,
+    [
+      event.ts ?? null,
+      event.actorId,
+      event.actorRole,
+      event.action,
+      event.target ?? null,
+      JSON.stringify(event.detail ?? {}),
+    ]
+  );
+}
+
 async function getUserFromToken(token: string | null) {
   if (!token) return null;
   const client = await usersPool.connect();
@@ -565,11 +594,15 @@ async function handle(req: Request): Promise<Response> {
 
       const client = await usersPool.connect();
       try {
+        await client.queryArray("BEGIN");
         const { rows } = await client.queryArray(
           "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
           [userId]
         );
-        if (rows.length === 0) return json({ error: "user not found" }, 404);
+        if (rows.length === 0) {
+          await client.queryArray("ROLLBACK").catch(() => {});
+          return json({ error: "user not found" }, 404);
+        }
         const [cur_qty, cur_notional, cur_strategies, cur_desks, cur_dark_pool] = rows[0];
         const before: LimitsSnapshot = {
           max_order_qty: cur_qty as number,
@@ -596,13 +629,16 @@ async function handle(req: Request): Promise<Response> {
             userId,
           ]
         );
-        producer
-          ?.send(
-            "audit.events",
-            buildLimitsUpdateAuditEvent(caller, userId, before, after, Date.now())
-          )
-          .catch(() => {});
+        await insertAuditEvent(
+          client,
+          buildLimitsUpdateAuditEvent(caller, userId, before, after, Date.now())
+        );
+        await client.queryArray("COMMIT");
         return json({ success: true });
+      } catch (err) {
+        await client.queryArray("ROLLBACK").catch(() => {});
+        logger.error("limits update failed", { userId, callerId: caller.id, err });
+        return json({ error: "internal error" }, 500);
       } finally {
         client.release();
       }
@@ -1011,11 +1047,15 @@ async function handle(req: Request): Promise<Response> {
 
     const client = await usersPool.connect();
     try {
+      await client.queryArray("BEGIN");
       const { rows: existing } = await client.queryArray(
         "SELECT id FROM users.users WHERE id = $1",
         [userId]
       );
-      if (existing.length > 0) return jsonError("username already exists", 409);
+      if (existing.length > 0) {
+        await client.queryArray("ROLLBACK").catch(() => {});
+        return jsonError("username already exists", 409);
+      }
 
       await client.queryArray(
         "INSERT INTO users.users (id, name, role, avatar_emoji, password_hash, description) VALUES ($1, $2, 'trader', '🧑‍💻', $3, $4)",
@@ -1036,6 +1076,8 @@ async function handle(req: Request): Promise<Response> {
           archetype.primaryDesk,
         ]
       );
+      await insertAuditEvent(client, buildRegisterAuditEvent(userId, archetype.id, Date.now()));
+      await client.queryArray("COMMIT");
       producer
         ?.send("user.session", {
           event: "register",
@@ -1044,10 +1086,11 @@ async function handle(req: Request): Promise<Response> {
           ts: Date.now(),
         })
         .catch(() => {});
-      producer
-        ?.send("audit.events", buildRegisterAuditEvent(userId, archetype.id, Date.now()))
-        .catch(() => {});
       return json({ userId, name: body.name.trim(), role: "trader", archetype: archetype.id }, 201);
+    } catch (err) {
+      await client.queryArray("ROLLBACK").catch(() => {});
+      logger.error("registration failed", { userId, err });
+      return jsonError("internal error", 500);
     } finally {
       client.release();
     }

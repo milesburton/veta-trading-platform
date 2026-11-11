@@ -232,7 +232,8 @@ test("[user-service] limits updates are admin only, merge fields and are audited
   assertEquals(res.status, 200);
   const update = h.queries.find((q) => q.sql.startsWith("UPDATE users.trading_limits"));
   assertEquals(update?.params, [20, 100, "LIMIT,VWAP", "equity", false, "t1"]);
-  assertEquals(h.send.mock.calls[0][0], "audit.events");
+  assert(h.queries.some((q) => q.sql.includes("INSERT INTO audit.events")));
+  assertEquals(h.send.mock.calls.length, 0);
 });
 
 test("[user-service] preferences are readable, and writable by the owner or an admin", async () => {
@@ -490,7 +491,8 @@ test("[user-service] registers a new trader with starter limits and audits it", 
   assertEquals(created.status, 201);
   assertEquals((await json(created)).userId, "new_user");
   const topics = h.send.mock.calls.map((c) => c[0]);
-  assertEquals(topics, ["user.session", "audit.events"]);
+  assertEquals(topics, ["user.session"]);
+  assert(h.queries.some((q) => q.sql.includes("INSERT INTO audit.events")));
 });
 
 test("[user-service] registration can be switched off", async () => {
