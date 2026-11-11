@@ -192,8 +192,9 @@ is "Deferred" or "Partially".
 - **Rate limiting is per source IP and per user.** The edge Traefik
   and the gateway both apply token buckets, which blunt a single noisy
   client but not a distributed denial-of-service.
-- **CI/CD trust boundary.** GHCR plus `BOT_PAT` is a single failure
-  domain; image signing (`cosign`) is planned.
+- **CI/CD trust boundary.** GHCR plus `BOT_PAT` remains a single failure
+  domain. Images are now keyless-signed with `cosign` and carry SBOM
+  attestations, but deploys do not yet verify signatures before pull.
 - **No restore drill.** Backups themselves are deferred; the rehearsal
   is consequently deferred too.
 - **Unrestricted egress from internet-capable services.**

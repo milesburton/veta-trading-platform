@@ -51,7 +51,7 @@ checklist of work in front of us.
 | Alerts on service offline, kill-switch events, order rejections | Implemented (in-app) | [`alertsMiddleware.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/alertsMiddleware.ts), though only visible to users with a tab open. |
 | Active alert delivery to operators (Slack/Discord/email/page) | Implemented | The gateway [alert router](../observability/alerts/) delivers service-offline, kill-switch and order-rejection-spike alerts to the webhook with de-duplication and recovery messages; probe failures use the same channel. Email and paging are not wired. |
 | NOC dashboard for unattended monitoring | Partially | `estate-overview` panel exists; dedicated NOC workspace tracked in [#969](https://github.com/milesburton/veta-trading-platform/issues/969). |
-| Synthetic probes that emulate user journeys | Partially | [Synthetic probe](../supporting/synthetic-probe/) runs every 60 s from the edge and after each deploy: page load, guest login, gateway readiness, personas and market feed. No order flow yet. Tracked in [#970](https://github.com/milesburton/veta-trading-platform/issues/970). |
+| Synthetic probes that emulate user journeys | Implemented | [Synthetic probe](../supporting/synthetic-probe/) runs every 60 s from the edge and after each deploy: page load, guest login, gateway readiness, personas, market feed and an authenticated order lifecycle check over WebSocket. |
 | Runbooks linked from each alert | Yes | Alerts from the gateway alert router and every Prometheus and Grafana alert rule link a runbook in [`docs/incidents/runbooks/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/incidents/runbooks), enforced by tests. Tracked in [#968](https://github.com/milesburton/veta-trading-platform/issues/968). |
 
 ### Live error-rate posture
@@ -134,8 +134,8 @@ sometimes time out under load. Each follow-up PR named in the
 | Dependency scanning                           | Implemented | Dependabot alerts and security updates are enabled. |
 | Secret scanning                               | Implemented | GitHub secret scanning with push protection and generic-secret patterns. Pre-commit blocks staged secret files. |
 | Static analysis                               | Implemented | CodeQL `javascript-typescript` through GitHub default setup, on pull requests, pushes to main and a weekly schedule. |
-| SBOM generation per build | Partially | `syft` generates an SPDX SBOM for every image published from `main`. It is attached to the image as a signed attestation and kept as a workflow artifact. See [supply chain](../security/#supply-chain). Not yet proven on a live publish run. Tracked in [#965](https://github.com/milesburton/veta-trading-platform/issues/965). |
-| Container image signatures | Partially | Images published from `main` are signed with `cosign` keyless signing through the public Sigstore services. Deploys do not yet verify the signature, and a key-based option is planned. Tracked in [#965](https://github.com/milesburton/veta-trading-platform/issues/965). |
+| SBOM generation per build | Implemented | `syft` generates an SPDX SBOM for every image published from `main`. It is attached to the image as a signed attestation and kept as a workflow artifact. The publish workflow now fails if SBOM generation or attestation fails. See [supply chain](../security/#supply-chain). |
+| Container image signatures | Partially | Images published from `main` are signed with `cosign` keyless signing through the public Sigstore services. Deploys do not yet verify the signature before pull, and a key-based option is planned in [#1085](https://github.com/milesburton/veta-trading-platform/issues/1085). |
 | Reproducible builds with pinned image digests | Partially | Compose uses `:latest` tags from GHCR; digest pinning tracked in [#966](https://github.com/milesburton/veta-trading-platform/issues/966). |
 
 ## Data classification and retention
@@ -158,7 +158,7 @@ sometimes time out under load. Each follow-up PR named in the
 | Sustained soak for memory leaks     | Implemented | [`k6/soak.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/soak.js): 25 VUs for 30min, configurable.                                                                |
 | Risk-engine pressure test           | Implemented | [`k6/risk-stress.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/risk-stress.js): weighted under/at/over-limit mix.                                                |
 | Live load-test telemetry to Grafana | Implemented | k6 writes to Prometheus via remote-write; rendered on the **k6 Prometheus** dashboard.                                                                                                    |
-| Performance regression tracking | Partially | JSON summaries written per run to [`docs/site/src/data/loadtest/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/site/src/data/loadtest); no CI gate. Tracked in [#971](https://github.com/milesburton/veta-trading-platform/issues/971). |
+| Performance regression tracking | Implemented | JSON summaries are written per run to [`docs/site/src/data/loadtest/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/site/src/data/loadtest), and CI compares p95 latency against a rolling baseline with warning/fail thresholds. |
 | Load tests scheduled in CI          | Implemented | `load-tests.yml` runs `mixed-strategy.js` daily at 06:15 UTC and on manual dispatch; scheduled runs skip when all markets are closed.                                                     |
 
 ## Recovery and operational drills

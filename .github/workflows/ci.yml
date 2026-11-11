@@ -1810,7 +1810,6 @@ jobs:
 
       - name: Resolve ${{ matrix.service }} image digest
         id: digest
-        continue-on-error: true
         run: |
           set -euo pipefail
           repo="ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}"
@@ -1819,13 +1818,11 @@ jobs:
 
       - name: Install cosign
         if: steps.digest.outcome == 'success'
-        continue-on-error: true
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532
 
       - name: Generate ${{ matrix.service }} SBOM
         id: sbom
         if: steps.digest.outcome == 'success'
-        continue-on-error: true
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
         with:
           image: ${{ steps.digest.outputs.ref }}
@@ -1835,7 +1832,6 @@ jobs:
 
       - name: Sign ${{ matrix.service }} image and attest its SBOM
         if: steps.digest.outcome == 'success'
-        continue-on-error: true
         run: |
           set -euo pipefail
           ref="${{ steps.digest.outputs.ref }}"
