@@ -60,7 +60,7 @@ RTS 25 requires the clocks used to timestamp reportable events to stay within a 
 
 | Piece | Behaviour |
 | --- | --- |
-| `backend/src/lib/clock.ts` | `nowMicros()` returns epoch microseconds from the wall clock at start plus the monotonic clock, and a minimal SNTP client measures offset from a reference |
+| `backend/src/lib/clock.ts` | `nowMicros()` returns epoch microseconds from a wall clock anchor plus the monotonic clock. When the host clock steps by more than 5 ms (a `chronyc makestep`, a VM resume) the anchor is re-taken on the next call, so a forward step applies at once and a backward step never makes a later timestamp smaller: the value holds until the corrected clock passes it. A minimal SNTP client measures offset from a reference, rejecting replies that are unsynchronised (leap indicator 3), not in server mode, or at stratum 0 or 16, and timing the exchange from after the socket has connected so DNS and socket setup are not counted as transit |
 | Gateway monitor | When `NTP_SERVER` is set the gateway queries it every minute and records `veta_clock_offset_microseconds` and `veta_clock_sync_healthy` |
 | `ClockDriftHigh` | Warns when the absolute offset stays above 1000 microseconds for 5 minutes, mirrored in Grafana |
 | `ClockSyncUnavailable` | Warns when the reference cannot be reached for 15 minutes |

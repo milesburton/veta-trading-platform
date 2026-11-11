@@ -14,10 +14,24 @@ const systemSource: ClockSource = {
   monotonicMs: () => performance.now(),
 };
 
+export const RE_ANCHOR_THRESHOLD_MS = 5;
+
 export function createMicrosClock(source: ClockSource = systemSource): () => number {
-  const anchorWallMs = source.nowMs();
-  const anchorMonotonicMs = source.monotonicMs();
-  return () => Math.round((anchorWallMs + (source.monotonicMs() - anchorMonotonicMs)) * 1000);
+  let anchorWallMs = source.nowMs();
+  let anchorMonotonicMs = source.monotonicMs();
+  let lastMicros = 0;
+  return () => {
+    const monotonicMs = source.monotonicMs();
+    const wallMs = source.nowMs();
+    const projectedMs = anchorWallMs + (monotonicMs - anchorMonotonicMs);
+    if (Math.abs(wallMs - projectedMs) > RE_ANCHOR_THRESHOLD_MS) {
+      anchorWallMs = wallMs;
+      anchorMonotonicMs = monotonicMs;
+    }
+    const micros = Math.round((anchorWallMs + (monotonicMs - anchorMonotonicMs)) * 1000);
+    lastMicros = Math.max(lastMicros, micros);
+    return lastMicros;
+  };
 }
 
 export const nowMicros = createMicrosClock();
@@ -55,8 +69,10 @@ export function parseSntpResponse(
   destinationMs: number
 ): SntpResult | null {
   if (packet.length < NTP_PACKET_BYTES) return null;
+  const leapIndicator = packet[0] >> 6;
+  const mode = packet[0] & 0x07;
   const stratum = packet[1];
-  if (stratum === 0) return null;
+  if (leapIndicator === 3 || mode !== 4 || stratum === 0 || stratum >= 16) return null;
   const receiveMs = readNtpTimestampMs(packet, 32);
   const transmitMs = readNtpTimestampMs(packet, 40);
   const offsetMs = (receiveMs - originateMs + (transmitMs - destinationMs)) / 2;
@@ -74,7 +90,7 @@ export function querySntp(
   const nowMs = options.nowMs ?? Date.now;
   return new Promise((resolve, reject) => {
     const socket = createSocket("udp4");
-    const originateMs = nowMs();
+    let originateMs = 0;
     const timer = setTimeout(() => {
       socket.close();
       reject(new Error(`SNTP query to ${server} timed out`));
@@ -91,7 +107,16 @@ export function querySntp(
       socket.close();
       reject(err);
     });
-    socket.send(buildSntpRequest(originateMs), options.port ?? 123, server);
+    socket.connect(options.port ?? 123, server, (err?: Error) => {
+      if (err) {
+        clearTimeout(timer);
+        socket.close();
+        reject(err);
+        return;
+      }
+      originateMs = nowMs();
+      socket.send(buildSntpRequest(originateMs));
+    });
   });
 }
 

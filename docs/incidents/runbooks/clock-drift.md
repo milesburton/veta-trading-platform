@@ -19,7 +19,12 @@ rather than drift. A sustained offset of several milliseconds is real.
    "System clock synchronized" line should read `yes`.
 3. Restart the synchroniser if it is stopped. If the offset is large, step the
    clock once with `chronyc makestep`. Do this outside trading hours where
-   possible, because a step moves recorded timestamps.
+   possible, because a step moves recorded timestamps. Services pick the step
+   up on their next timestamp without a restart. After a forward step
+   `tsMicros` jumps with the host clock. After a backward step `tsMicros`
+   holds its last value until the corrected clock passes it, so order is
+   preserved but timestamps in that window are compressed. Note the window in
+   the incident entry.
 4. For a virtual machine or WSL host, the guest clock can drift after suspend.
    Resynchronise the guest with its hypervisor as well.
 

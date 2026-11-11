@@ -2,13 +2,13 @@
   "backend": {
     "unit": {
       "files": 193,
-      "cases": 2064,
+      "cases": 2066,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "fill-reconciliation.unit.test.ts": 4,
         "regulatory-export.unit.test.ts": 6,
         "retention.unit.test.ts": 3,
-        "clock.unit.test.ts": 5,
+        "clock.unit.test.ts": 7,
         "anthropic.test.ts": 6,
         "checks.test.ts": 27,
         "abuse-tracker.unit.test.ts": 10,
