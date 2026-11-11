@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.108.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.107.0...veta-trading-platform-v1.108.0) (2026-11-11)
+
+
+### Features
+
+* **security:** allowlisting egress proxy for internet-capable services ([#1127](https://github.com/milesburton/veta-trading-platform/issues/1127)) ([b712c31](https://github.com/milesburton/veta-trading-platform/commit/b712c31b22cbdda2032d453908a23887ce068130)), closes [#975](https://github.com/milesburton/veta-trading-platform/issues/975)
+
 ## [1.107.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.106.0...veta-trading-platform-v1.107.0) (2026-11-11)
 
 
