@@ -3,9 +3,8 @@ title: Data classification
 description: Every stored data set in the platform, grouped by sensitivity class, as the input for retention and log redaction work.
 ---
 
-This page classifies the data the platform stores. It is the input for the retention policy
-([#964](https://github.com/milesburton/veta-trading-platform/issues/964)) and log redaction
-([#962](https://github.com/milesburton/veta-trading-platform/issues/962)).
+This page classifies the data the platform stores. It is the input for retention policy and
+log redaction ([#962](https://github.com/milesburton/veta-trading-platform/issues/962)).
 
 ## Classes
 
@@ -19,6 +18,16 @@ This page classifies the data the platform stores. It is the input for the reten
 
 The platform trades simulated instruments for demonstration accounts. Real personal data is
 limited to what an operator enters when creating a user, so the Personal class is small.
+
+## Retention policy by class
+
+| Class | Retention policy |
+| --- | --- |
+| Secret | Keep for the shortest practical period. Session tokens expire at `expires_at`; service credentials are rotated in OpenBao and are not exported in cleartext. |
+| Personal | Keep while the account or shared resource exists. Deletion is owner/admin-driven, not time-pruned. |
+| Confidential | Split by purpose: hot operational views (for example `journal.events`) are retained 90 days; regulatory order records are append-only and exported with five-year object-lock retention. |
+| Operational | Keep only for operational usefulness and storage cost. Defaults are short windows where configured, for example Prometheus 7 days and Tempo 24 hours. |
+| Reference | No compliance minimum. Retain while useful for simulation and analytics, bounded by topic/table retention settings. |
 
 ## Postgres tables
 
@@ -67,4 +76,4 @@ limited to what an operator enters when creating a user, so the Personal class i
   [#962](https://github.com/milesburton/veta-trading-platform/issues/962) enforces this for logs.
 - Backups inherit the highest class they contain. See [Postgres backup](../supporting/postgres-backup/).
 - A new table or column must be added to this page in the same change. Retention periods per class
-  are set in [#964](https://github.com/milesburton/veta-trading-platform/issues/964).
+  are set in the class policy table above.

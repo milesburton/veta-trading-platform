@@ -1243,6 +1243,7 @@ services:
     environment:
       JOURNAL_PORT: "5009"
       JOURNAL_RETENTION_DAYS: "90"
+      JOURNAL_RETENTION_DRY_RUN: "true"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       AUDIT_DATABASE_URL: postgres://veta_audit:${AUDIT_DB_PASSWORD:-veta_audit}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092

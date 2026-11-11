@@ -34,7 +34,7 @@ Every order lifecycle event (`orders.submitted`, `orders.routed`, `orders.child`
 
 | Store | Purpose | Retention | Mutable |
 | --- | --- | --- | --- |
-| `journal.events` | Hot store for the UI, replay and latency metrics | 90 days (`JOURNAL_RETENTION_DAYS`) | Yes, pruned |
+| `journal.events` | Hot store for the UI, replay and latency metrics | 90 days (`JOURNAL_RETENTION_DAYS`, with optional dry-run mode via `JOURNAL_RETENTION_DRY_RUN`) | Yes, pruned |
 | `regulatory.order_events` | Legal order record | Not pruned | No |
 
 `regulatory.order_events` follows the same pattern as `audit.events`. Rows form a SHA-256 hash chain, triggers reject `UPDATE`, `DELETE` and `TRUNCATE`, and the writer role can only insert and select. The journal writes through the existing `veta_audit` login, so no additional secret is introduced. Each row keeps the full event payload, including the regulatory identifiers stamped in the previous step.

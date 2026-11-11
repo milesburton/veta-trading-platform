@@ -35,6 +35,7 @@ const PORT = Number(process.env.JOURNAL_PORT) || 5_009;
 const RETENTION = resolveRetention(process.env);
 const RETENTION_DAYS = RETENTION.hotDays;
 const RETENTION_MS = hotRetentionMs(RETENTION_DAYS);
+const RETENTION_DRY_RUN = RETENTION.dryRun;
 const VERSION = process.env.COMMIT_SHA || "dev";
 const DATA_DEPTH_TTL_MS = 60_000;
 
@@ -158,7 +159,7 @@ async function flushWriteQueue() {
       pruneScheduled = false;
       const c = await journalPool.connect();
       try {
-        await pruneJournalEvents(c, RETENTION_MS);
+        await pruneJournalEvents(c, RETENTION_MS, { dryRun: RETENTION_DRY_RUN });
       } catch {
         /* ignore */
       } finally {
@@ -175,9 +176,13 @@ setInterval(() => {
 async function pruneOldEvents(): Promise<void> {
   const c = await journalPool.connect();
   try {
-    const removed = await pruneJournalEvents(c, RETENTION_MS);
-    await c.queryArray("VACUUM journal.events").catch(() => {});
-    logger.info(`Prune: removed ${removed} events older than ${RETENTION_DAYS}d`);
+    const removed = await pruneJournalEvents(c, RETENTION_MS, { dryRun: RETENTION_DRY_RUN });
+    if (!RETENTION_DRY_RUN) {
+      await c.queryArray("VACUUM journal.events").catch(() => {});
+      logger.info(`Prune: removed ${removed} events older than ${RETENTION_DAYS}d`);
+    } else {
+      logger.info(`Prune dry-run: would remove ${removed} events older than ${RETENTION_DAYS}d`);
+    }
   } catch (err) {
     logger.warn("Prune failed", { err: err as Error });
   } finally {
@@ -520,6 +525,7 @@ async function handle(req: Request): Promise<Response> {
       status: "ok",
       retentionDays: RETENTION_DAYS,
       regulatoryRetentionYears: RETENTION.regulatoryYears,
+      retentionDryRun: RETENTION_DRY_RUN,
     });
   }
 

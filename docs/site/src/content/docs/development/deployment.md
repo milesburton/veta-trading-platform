@@ -41,6 +41,7 @@ cd frontend && npm run electron:dev
 | `RISK_ENGINE_ENABLED` | `true` | Enable/disable pre-trade risk checks |
 | `VETA_DEMO_MODE` | `false` (`true` in `compose.prod.yml`) | Show demo personas on login page |
 | `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
+| `JOURNAL_RETENTION_DRY_RUN` | `true` | When true, the journal retention job reports how many rows would be pruned but does not delete them |
 | `FIRM_LEI` | (empty) | 20 character LEI stamped on orders as the executing entity. Optional |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
 
