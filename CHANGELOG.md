@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.107.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.106.0...veta-trading-platform-v1.107.0) (2026-11-11)
+
+
+### Features
+
+* **mifid:** algo trading controls evidence and kill suppression (RTS 6) ([#1105](https://github.com/milesburton/veta-trading-platform/issues/1105)) ([aa09367](https://github.com/milesburton/veta-trading-platform/commit/aa09367769f129dfb844027077c915a9d9c05fab))
+
+
+### Bug Fixes
+
+* issue sweep, backups, EMS gate, probe, CI gates, NOC, retention, audit roles ([#1120](https://github.com/milesburton/veta-trading-platform/issues/1120)) ([663e628](https://github.com/milesburton/veta-trading-platform/commit/663e6284ce8155ebe767b6c2cee3b3b94d067b8c))
+
 ## [1.106.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.105.0...veta-trading-platform-v1.106.0) (2026-11-11)
 
 
