@@ -43,6 +43,7 @@ cd frontend && npm run electron:dev
 | `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
 | `JOURNAL_RETENTION_DRY_RUN` | `false` | When true, the journal retention job reports how many rows would be pruned but does not delete them |
 | `FIRM_LEI` | (empty) | 20 character LEI stamped on orders as the executing entity. Optional |
+| `NTP_SERVER` | `pool.ntp.org` | Upstream the [egress proxy](../../platform/supporting/egress-proxy/) relays the gateway's SNTP clock check to |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
 
 ## Internal network details

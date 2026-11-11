@@ -148,6 +148,7 @@ export default defineConfig({
               items: [
                 { label: "Overview", slug: "platform/supporting-services" },
                 { label: "Traefik", slug: "platform/supporting/traefik" },
+                { label: "Egress proxy", slug: "platform/supporting/egress-proxy" },
                 { label: "Synthetic probe", slug: "platform/supporting/synthetic-probe" },
                 { label: "veta-auto-pull", slug: "platform/supporting/veta-auto-pull" },
                 { label: "veta-tunnel", slug: "platform/supporting/veta-tunnel" },

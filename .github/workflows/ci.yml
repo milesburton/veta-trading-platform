@@ -1421,6 +1421,8 @@ jobs:
             file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
+          - service: egress-proxy
+            file: docker/egress-proxy/Dockerfile
           - service: postgres-health
             file: docker/postgres-health/Dockerfile
           - service: synthetic-trader
@@ -1743,6 +1745,8 @@ jobs:
             file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
+          - service: egress-proxy
+            file: docker/egress-proxy/Dockerfile
           - service: postgres-health
             file: docker/postgres-health/Dockerfile
           - service: synthetic-trader

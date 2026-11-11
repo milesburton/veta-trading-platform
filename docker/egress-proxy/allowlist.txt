@@ -1,0 +1,6 @@
+.discord.com
+.discord.gg
+.polygon.io
+.tiingo.com
+.alphavantage.co
+.finnhub.io

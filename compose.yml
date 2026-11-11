@@ -9,11 +9,18 @@ networks:
   trading-net:
     driver: bridge
     internal: true
-  # The handful of services with a genuine reason to reach the internet
-  # (market-data's external quote providers, the gateway/discord-bot's Discord
-  # webhook, ollama-model-pull's one-shot model download, and traefik as the
-  # public ingress) additionally join this normal, internet-capable network.
+  # Services with a genuine reason to reach the internet (market-data's quote
+  # providers, the gateway and discord-bot's Discord traffic) join egress-net.
+  # It is also internal: the only way out is through egress-proxy, which
+  # allows the destinations in docker/egress-proxy/allowlist.txt and nothing
+  # else. See docs: platform/supporting/egress-proxy.
   egress-net:
+    driver: bridge
+    internal: true
+  # Direct internet. Only egress-proxy, traefik (public ingress with published
+  # ports, which an internal network cannot carry) and the one-shot
+  # ollama-model-pull bootstrap join it.
+  internet-net:
     driver: bridge
 
 volumes:
@@ -291,16 +298,43 @@ services:
       - "traefik.enable=false"
     logging: *logging
 
+  egress-proxy:
+    cgroup_parent: ${VETA_CGROUP_PARENT:-}
+    build:
+      context: .
+      dockerfile: docker/egress-proxy/Dockerfile
+    restart: unless-stopped
+    networks:
+      - egress-net
+      - internet-net
+    mem_limit: 64m
+    cpus: 0.25
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NTP_UPSTREAM: ${NTP_SERVER:-pool.ntp.org}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -x http://127.0.0.1:3128 -o /dev/null -w '%{http_code}' http://egress-proxy.invalid/ | grep -q 403"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    logging: *logging
+
   traefik:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: traefik:v3.3
     restart: unless-stopped
-    # Needs egress-net in addition to trading-net: the public ingress, so it
-    # is intentionally internet-reachable by design (not a supply-chain
-    # exfiltration risk in the same sense as the internal services).
+    # The public ingress: internet-reachable by design, and its published
+    # ports need a non-internal network.
     networks:
       - trading-net
-      - egress-net
+      - internet-net
     mem_limit: 128m
     ports:
       - "80:80"
@@ -361,11 +395,11 @@ services:
     image: ollama/ollama:latest
     profiles: [trading, on-demand]
     # Needs both: trading-net to reach the ollama container it configures via
-    # OLLAMA_HOST, egress-net to pull the model from registry.ollama.ai. Runs
+    # OLLAMA_HOST, internet-net to pull the model from registry.ollama.ai. Runs
     # once at startup and exits (restart: "no"), so the egress window is brief.
     networks:
       - trading-net
-      - egress-net
+      - internet-net
     cap_drop:
       - ALL
     security_opt:
@@ -1401,7 +1435,7 @@ services:
     <<: *node-medium
     profiles: [trading, on-demand]
     # Needs egress-net in addition to the anchor's trading-net: fetches from
-    # Alpha Vantage, Polygon, and Tiingo public APIs.
+    # Alpha Vantage, Polygon, and Tiingo public APIs through egress-proxy.
     networks:
       - trading-net
       - egress-net
@@ -1413,7 +1447,10 @@ services:
     depends_on:
       journal:
         condition: service_healthy
+      egress-proxy:
+        condition: service_healthy
     environment:
+      EGRESS_PROXY_URL: http://egress-proxy:3128
       MARKET_DATA_PORT: "5015"
       JOURNAL_HOST: journal
       JOURNAL_PORT: "5009"
@@ -1642,6 +1679,8 @@ services:
     profiles: [trading, on-demand]
     # Needs egress-net in addition to the anchor's trading-net: connects
     # directly to the Discord gateway (bot API), not just an outbound webhook.
+    # The WebSocket client uses node:https, which honours HTTPS_PROXY only
+    # with NODE_USE_ENV_PROXY; fetch goes through EGRESS_PROXY_URL.
     networks:
       - trading-net
       - egress-net
@@ -1649,7 +1688,14 @@ services:
       "node",
       "/app/backend/src/discord-bot/discord-bot.ts",
     ]
+    depends_on:
+      egress-proxy:
+        condition: service_healthy
     environment:
+      EGRESS_PROXY_URL: http://egress-proxy:3128
+      HTTPS_PROXY: http://egress-proxy:3128
+      NO_PROXY: localhost,127.0.0.1
+      NODE_USE_ENV_PROXY: "1"
       DISCORD_BOT_PORT: "5034"
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_WELCOME_CHANNEL_ID: ${DISCORD_WELCOME_CHANNEL_ID:-}
@@ -1766,7 +1812,8 @@ services:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *node-medium
     # Needs egress-net in addition to the anchor's trading-net: the Discord
-    # webhook notifier (discord-notifier.ts) runs inside this service.
+    # webhook notifier (discord-notifier.ts) runs inside this service and the
+    # SNTP clock check goes to the UDP relay on egress-proxy.
     networks:
       - trading-net
       - egress-net
@@ -1776,6 +1823,8 @@ services:
       "/app/backend/src/gateway/gateway.ts",
     ]
     depends_on:
+      egress-proxy:
+        condition: service_healthy
       redpanda:
         condition: service_healthy
       journal:
@@ -1787,7 +1836,8 @@ services:
       db-migrate:
         condition: service_completed_successfully
     environment:
-      NTP_SERVER: ${NTP_SERVER:-pool.ntp.org}
+      EGRESS_PROXY_URL: http://egress-proxy:3128
+      NTP_SERVER: egress-proxy
       GATEWAY_PORT: "5011"
       QUICK_TRADE_LLM_ENABLED: ${QUICK_TRADE_LLM_ENABLED:-false}
       DATABASE_URL: postgres://veta:veta@postgres:5432/veta

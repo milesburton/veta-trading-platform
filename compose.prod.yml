@@ -705,6 +705,11 @@ services:
     labels:
       - "traefik.enable=false"
 
+  egress-proxy:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/egress-proxy:latest
+    build: !reset null
+
   db-migrate:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/db-migrate:latest
