@@ -53,8 +53,9 @@ export function RegulatoryReportsPanel() {
 
   async function download(format: "csv" | "json") {
     error.value = null;
+    const day = date.value;
     try {
-      const res = await fetch(`${REPORT_URL}?date=${date.value}&format=${format}`, {
+      const res = await fetch(`${REPORT_URL}?date=${day}&format=${format}`, {
         credentials: "include",
       });
       if (!res.ok) {
@@ -64,7 +65,7 @@ export function RegulatoryReportsPanel() {
       const url = URL.createObjectURL(await res.blob());
       const link = document.createElement("a");
       link.href = url;
-      link.download = `transactions-${date.value}.${format}`;
+      link.download = `transactions-${day}.${format}`;
       link.click();
       URL.revokeObjectURL(url);
     } catch {

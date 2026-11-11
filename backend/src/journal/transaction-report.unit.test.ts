@@ -5,6 +5,7 @@ import {
   buildTransactionReports,
   formatTradingDateTime,
   parseReportDate,
+  priceCurrencyFor,
   toCsv,
 } from "./transaction-report.ts";
 
@@ -52,7 +53,7 @@ const submission = new Map([
 test("[transaction-report] maps a buy fill to the documented field subset", () => {
   const [report] = buildTransactionReports([record({ ...fill, algoId: "VETA-TWAP" })], submission);
   assertEquals(report, {
-    transactionReference: "EX-1",
+    transactionReference: "orders.filled:c1:EX-1",
     executingEntityLei: "529900T8BM49AURSDO55",
     submittingEntityLei: "529900T8BM49AURSDO55",
     buyerCode: "CLIENT-7",
@@ -85,6 +86,35 @@ test("[transaction-report] puts the client on the sell side and leaves missing i
   assertEquals(report.tradingDateTime, "2026-11-09T14:30:05.123000Z");
 });
 
+test("[transaction-report] keeps references distinct when fills share an execId across EMS restarts", () => {
+  const reports = buildTransactionReports(
+    [
+      { ...record({ ...fill }), eventId: "orders.filled:c1:EX00000001", childId: "c1" },
+      {
+        ...record({ ...fill, childId: "c2" }),
+        eventId: "orders.filled:c2:EX00000001",
+        childId: "c2",
+      },
+    ],
+    submission
+  );
+  assertEquals(
+    reports.map((r) => r.transactionReference),
+    ["orders.filled:c1:EX00000001", "orders.filled:c2:EX00000001"]
+  );
+});
+
+test("[transaction-report] reports the quote currency of FX pairs and USD otherwise", () => {
+  assertEquals(priceCurrencyFor("USD/JPY"), "JPY");
+  assertEquals(priceCurrencyFor("EUR/USD"), "USD");
+  assertEquals(priceCurrencyFor("AAPL"), "USD");
+  const [report] = buildTransactionReports(
+    [record({ ...fill, asset: "USD/JPY", avgFillPrice: 145.5 })],
+    submission
+  );
+  assertEquals(report.priceCurrency, "JPY");
+});
+
 test("[transaction-report] skips non-fill and malformed records", () => {
   const reports = buildTransactionReports(
     [record({ ...fill }, "orders.child"), record({ asset: "AAPL" }), record({ ...fill })],
@@ -112,5 +142,7 @@ test("[transaction-report] validates the report date", () => {
     toMs: Date.UTC(2026, 10, 10),
   });
   assertEquals(parseReportDate("09/11/2026"), null);
+  assertEquals(parseReportDate("2026-02-31"), null);
+  assertEquals(parseReportDate("2026-13-01"), null);
   assertEquals(parseReportDate(null), null);
 });

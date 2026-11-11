@@ -93,6 +93,31 @@ describe("RegulatoryReportsPanel", () => {
     click.mockRestore();
   });
 
+  it("names the download after the date that was requested, not a date chosen while it was pending", async () => {
+    vi.stubGlobal("URL", { ...URL, createObjectURL: () => "blob:x", revokeObjectURL: () => {} });
+    const names: string[] = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement
+    ) {
+      names.push(this.download);
+    });
+    let release: (res: Response) => void = () => {};
+    fetchMock.mockReturnValueOnce(new Promise<Response>((resolve) => (release = resolve)));
+    render(<RegulatoryReportsPanel />);
+    fireEvent.change(screen.getByLabelText("Trading date (UTC)"), {
+      target: { value: "2026-11-09" },
+    });
+    fireEvent.click(screen.getByText("Download CSV"));
+    fireEvent.change(screen.getByLabelText("Trading date (UTC)"), {
+      target: { value: "2026-11-10" },
+    });
+    release(new Response("a,b\n", { status: 200 }));
+    await waitFor(() => expect(click).toHaveBeenCalled());
+    expect(String(fetchMock.mock.calls[0][0])).toContain("date=2026-11-09");
+    expect(names).toEqual(["transactions-2026-11-09.csv"]);
+    click.mockRestore();
+  });
+
   it("surfaces a failed download", async () => {
     fetchMock.mockReturnValueOnce(jsonResponse({}, 500));
     render(<RegulatoryReportsPanel />);

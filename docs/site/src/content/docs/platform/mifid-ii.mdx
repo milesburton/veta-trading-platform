@@ -78,13 +78,14 @@ Limits of the simulation: SNTP over the internet is accurate to about a millisec
 | --- | --- | --- |
 | `GET /api/gateway/reports/transactions?date=YYYY-MM-DD&format=json\|csv` | `admin`, `compliance` | Reports for one UTC trading day |
 
-Every successful export is written to the audit log as `transaction_report_export`. The Regulatory Reports panel is available to the same two roles and offers a preview and downloads.
+Every successful export is written to the audit log as `transaction_report_export`. The generic `/api/journal` service alias refuses `/reports` paths for every role, so exports only pass through this audited route. A malformed date, including a calendar date that does not exist, is rejected with 400 rather than normalised to a neighbouring day. The Regulatory Reports panel is available to the same two roles and offers a preview and downloads.
 
 Field mapping:
 
 | Report field | Source |
 | --- | --- |
-| `transactionReference` | Fill `execId` |
+| `transactionReference` | Regulatory record id, `orders.filled:<childId>:<execId>`. The EMS restarts its `execId` counter, so the child id keeps references distinct across restarts |
+| `priceCurrency` | Quote currency of the symbol: the second leg of an FX pair, otherwise USD |
 | `executingEntityLei`, `submittingEntityLei` | `FIRM_LEI` stamped on the order, null when unset |
 | `buyerCode`, `sellerCode` | Client code on the client side, venue MIC on the other side |
 | `tradingDateTime` | Fill `tsMicros`, with microsecond precision, falling back to `ts` |

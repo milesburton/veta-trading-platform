@@ -11,7 +11,7 @@ export const TransactionReportSchema = z.object({
   tradingCapacity: z.literal("AOTC"),
   quantity: z.number().positive(),
   price: z.number().positive(),
-  priceCurrency: z.literal("USD"),
+  priceCurrency: z.string().length(3),
   venueMic: z.string().nullable(),
   instrumentId: z.string().min(1),
   instrumentIdType: z.literal("SYMBOL"),
@@ -68,6 +68,11 @@ export function formatTradingDateTime(tsMicros: number | undefined, tsMs: number
   return `${new Date(ms).toISOString().slice(0, 19)}.${micros}Z`;
 }
 
+export function priceCurrencyFor(symbol: string): string {
+  const [, quote] = symbol.split("/");
+  return quote && quote.length === 3 ? quote : "USD";
+}
+
 export function buildTransactionReports(
   fills: readonly RegulatoryRecord[],
   submissions: SubmissionIndex
@@ -87,7 +92,7 @@ export function buildTransactionReports(
     const algoId = fill.data.algoId ?? order.algoId ?? null;
     const buy = fill.data.side === "BUY";
     const parsed = TransactionReportSchema.safeParse({
-      transactionReference: fill.data.execId ?? record.eventId,
+      transactionReference: record.eventId,
       executingEntityLei: lei,
       submittingEntityLei: lei,
       buyerCode: buy ? client : (fill.data.venue ?? "MARKET"),
@@ -96,7 +101,7 @@ export function buildTransactionReports(
       tradingCapacity: "AOTC",
       quantity: fill.data.filledQty,
       price: fill.data.avgFillPrice,
-      priceCurrency: "USD",
+      priceCurrency: priceCurrencyFor(fill.data.asset),
       venueMic: fill.data.venue ?? null,
       instrumentId: fill.data.asset,
       instrumentIdType: "SYMBOL",
@@ -126,6 +131,8 @@ export function toCsv(reports: readonly TransactionReport[]): string {
 export function parseReportDate(value: string | null): { fromMs: number; toMs: number } | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const fromMs = Date.parse(`${value}T00:00:00.000Z`);
-  if (!Number.isFinite(fromMs)) return null;
+  if (!Number.isFinite(fromMs) || new Date(fromMs).toISOString().slice(0, 10) !== value) {
+    return null;
+  }
   return { fromMs, toMs: fromMs + 86_400_000 };
 }

@@ -416,6 +416,13 @@ test("[gateway] forbids roles outside the service allow-list", async () => {
   assertEquals(audit.status, 403);
 });
 
+test("[gateway] refuses transaction report exports through the journal service alias for every role", async () => {
+  h.validateToken.mockResolvedValue(TRADER);
+  assertEquals((await call("/api/journal/reports/transactions?date=2026-11-09")).status, 403);
+  h.validateToken.mockResolvedValue(ADMIN);
+  assertEquals((await call("/api/journal/reports/transactions?date=2026-11-09")).status, 403);
+});
+
 test("[gateway] lets a user read their own risk positions but nobody else's", async () => {
   h.validateToken.mockResolvedValue(TRADER);
   assertEquals((await call("/api/risk-engine/positions/t-1")).status, 200);

@@ -1161,9 +1161,11 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
         const allowedRoles =
           svcName === "market-sim" && svcPath.startsWith("/admin/")
             ? new Set(["admin"])
-            : svcName === "journal" && svcPath.startsWith("/audit")
-              ? new Set(["admin", "compliance"])
-              : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
+            : svcName === "journal" && svcPath.startsWith("/reports")
+              ? new Set<string>()
+              : svcName === "journal" && svcPath.startsWith("/audit")
+                ? new Set(["admin", "compliance"])
+                : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
         const isOwnPositions =
           ownPositionsMatch !== null && decodePathSegment(ownPositionsMatch[1]) === auth.user.id;
         const isRecordingParticipantRoute =
