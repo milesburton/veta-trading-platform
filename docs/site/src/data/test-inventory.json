@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 204,
-      "cases": 2118,
+      "files": 205,
+      "cases": 2123,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -67,6 +67,7 @@
         "docs-sidebar.unit.test.ts": 3,
         "duration-ladder.unit.test.ts": 9,
         "edge-csp.unit.test.ts": 2,
+        "ems-server.unit.test.ts": 3,
         "ems.unit.test.ts": 28,
         "feature-engine-service.unit.test.ts": 10,
         "feature-engine.test.ts": 26,
@@ -129,7 +130,7 @@
         "news-analysis.unit.test.ts": 19,
         "oms-daily-notional.unit.test.ts": 8,
         "oms-regulatory.unit.test.ts": 3,
-        "oms-server.unit.test.ts": 33,
+        "oms-server.unit.test.ts": 35,
         "oms.test.ts": 16,
         "order-book.unit.test.ts": 10,
         "orders-schema.unit.test.ts": 21,

@@ -207,7 +207,9 @@ function nextOrderId(): string {
 }
 
 const producer = await createProducer("oms").catch((err) => {
-  logger.warn("Redpanda unavailable, orders will not be published to bus", { err });
+  logger.warn("Redpanda unavailable, orders will not be published to bus", {
+    err,
+  });
   return null;
 });
 
@@ -238,6 +240,20 @@ const killConsumer = await createConsumer("oms-kill-orders", [
 });
 
 const activeOrders = new Map<string, ActiveOrder>();
+
+function isActiveOrder(
+  orderId: string | null,
+  clientOrderId: string | null,
+  userId: string | null
+): boolean {
+  for (const order of activeOrders.values()) {
+    if (orderId !== null && order.orderId !== orderId) continue;
+    if (clientOrderId !== null && order.clientOrderId !== clientOrderId) continue;
+    if (userId !== null && order.userId !== userId) continue;
+    return true;
+  }
+  return false;
+}
 
 consumer?.onMessage(async (_topic, raw) => {
   const parsed = OrderNewSchema.safeParse(raw);
@@ -739,7 +755,9 @@ async function expireOrphanedOrders() {
 }
 
 (async () => {
-  const ready = await waitForUrl(`${JOURNAL_URL}/health`, { timeoutMs: 60_000 });
+  const ready = await waitForUrl(`${JOURNAL_URL}/health`, {
+    timeoutMs: 60_000,
+  });
   if (!ready) logger.warn("journal not reachable after 60s, expire-orphan loop will start anyway");
   expireOrphanedOrders().catch(() => {});
   setInterval(() => {
@@ -750,6 +768,15 @@ async function expireOrphanedOrders() {
 serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return corsOptions();
+  if (url.pathname === "/orders/active" && req.method === "GET") {
+    const orderId = url.searchParams.get("orderId");
+    const clientOrderId = url.searchParams.get("clientOrderId");
+    const userId = url.searchParams.get("userId");
+    if (orderId === null && clientOrderId === null) {
+      return json({ error: "orderId or clientOrderId is required" }, 400);
+    }
+    return json({ active: isActiveOrder(orderId, clientOrderId, userId) });
+  }
   if (url.pathname === "/health" && req.method === "GET") {
     return json({
       service: "oms",

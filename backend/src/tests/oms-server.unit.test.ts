@@ -11,7 +11,12 @@ const h = vi.hoisted(() => ({
   listeners: {} as Record<string, Listener>,
   sent: [] as Array<{ topic: string; payload: Record<string, unknown> }>,
   limits: {} as Record<string, { status: number; body?: unknown }>,
-  risk: { allowed: true, reasons: [] as string[], warnings: [] as string[], fail: false },
+  risk: {
+    allowed: true,
+    reasons: [] as string[],
+    warnings: [] as string[],
+    fail: false,
+  },
   prices: { AAPL: 190 } as Record<string, number> | null,
   assets: [{ symbol: "AAPL", lotSize: 100 }] as unknown,
   journalOrders: [] as unknown[],
@@ -106,6 +111,11 @@ function last(topic: string) {
   return h.sent.filter((s) => s.topic === topic).pop()?.payload;
 }
 
+async function call(path: string, init: RequestInit = {}) {
+  assert(h.handler);
+  return await h.handler(new Request(`http://oms${path}`, init));
+}
+
 function rejection() {
   return String(last("orders.rejected")?.reason);
 }
@@ -130,16 +140,50 @@ afterEach(() => {
 });
 
 test("[oms] serves health and rejects other routes", async () => {
-  assert(h.handler);
-  const health = await h.handler(new Request("http://oms/health"));
+  const health = await call("/health");
   assertEquals(await health.json(), {
     service: "oms",
     version: "dev",
     status: "ok",
     riskEngineEnabled: true,
   });
-  assertEquals((await h.handler(new Request("http://oms/x", { method: "OPTIONS" }))).status, 204);
-  assertEquals((await h.handler(new Request("http://oms/x"))).status, 404);
+  assertEquals((await call("/x", { method: "OPTIONS" })).status, 204);
+  assertEquals((await call("/x")).status, 404);
+});
+
+test("[oms] /orders/active reports whether an order is still active", async () => {
+  await submit(order({ clientOrderId: "active-1" }));
+  const orderId = String(last("orders.submitted")?.orderId);
+
+  assertEquals(
+    await (
+      await call(`/orders/active?orderId=${encodeURIComponent(orderId)}&userId=trader-1`)
+    ).json(),
+    { active: true }
+  );
+  assertEquals(await (await call("/orders/active?clientOrderId=active-1&userId=trader-1")).json(), {
+    active: true,
+  });
+  assertEquals(
+    await (await call("/orders/active?clientOrderId=active-1&userId=someone-else")).json(),
+    { active: false }
+  );
+
+  await kill({});
+  assertEquals(
+    await (
+      await call(`/orders/active?orderId=${encodeURIComponent(orderId)}&userId=trader-1`)
+    ).json(),
+    { active: false }
+  );
+});
+
+test("[oms] /orders/active requires orderId or clientOrderId", async () => {
+  const res = await call("/orders/active");
+  assertEquals(res.status, 400);
+  assertEquals(await res.json(), {
+    error: "orderId or clientOrderId is required",
+  });
 });
 
 test("[oms] routes an accepted equity order to the lit venue", async () => {
@@ -159,7 +203,11 @@ test("[oms] stamps regulatory identifiers on submitted and routed orders", async
   h.limits = {
     "trader-1": {
       status: 200,
-      body: { ...FULL_LIMITS, client_code: "CLIENT-9", decision_maker_code: "DM-7" },
+      body: {
+        ...FULL_LIMITS,
+        client_code: "CLIENT-9",
+        decision_maker_code: "DM-7",
+      },
     },
   };
   await load({ FIRM_LEI: "529900T8BM49AURSDO55" });
@@ -225,17 +273,30 @@ test("[oms] caches trading limits between orders", async () => {
 });
 
 test("[oms] enforces desk access", async () => {
-  h.limits["trader-1"] = { status: 200, body: { ...FULL_LIMITS, allowed_desks: ["equity"] } };
+  h.limits["trader-1"] = {
+    status: 200,
+    body: { ...FULL_LIMITS, allowed_desks: ["equity"] },
+  };
   await submit(order({ instrumentType: "fx", asset: "EURUSD" }));
   assertEquals(rejection().includes("does not have access to the fx desk"), true);
 });
 
 test("[oms] applies pre-trade risk checks", async () => {
-  h.risk = { allowed: false, reasons: ["too big", "too risky"], warnings: [], fail: false };
+  h.risk = {
+    allowed: false,
+    reasons: ["too big", "too risky"],
+    warnings: [],
+    fail: false,
+  };
   await submit(order());
   assertEquals(rejection(), "Risk check failed: too big; too risky");
 
-  h.risk = { allowed: true, reasons: [], warnings: ["near limit"], fail: false };
+  h.risk = {
+    allowed: true,
+    reasons: [],
+    warnings: ["near limit"],
+    fail: false,
+  };
   await submit(order({ clientOrderId: "w" }));
   assertEquals(last("orders.routed")?.clientOrderId, "w");
 
@@ -389,7 +450,10 @@ test("[oms] routes large equity blocks to the dark pool for permitted users", as
   assertEquals(routed?.marketType, "dark");
   assertEquals(routed?.destinationVenue, "DARK1");
 
-  h.limits["trader-1"] = { status: 200, body: { ...FULL_LIMITS, dark_pool_access: false } };
+  h.limits["trader-1"] = {
+    status: 200,
+    body: { ...FULL_LIMITS, dark_pool_access: false },
+  };
   await vi.advanceTimersByTimeAsync(31_000);
   await submit(order({ clientOrderId: "lit", quantity: 20_000 }));
   assertEquals(last("orders.routed")?.marketType, "lit");
@@ -406,7 +470,10 @@ test("[oms] market orders use the market price for the daily notional check", as
 });
 
 test("[oms] rejects orders that would exceed the daily notional", async () => {
-  h.limits["trader-1"] = { status: 200, body: { ...FULL_LIMITS, max_daily_notional: 25_000 } };
+  h.limits["trader-1"] = {
+    status: 200,
+    body: { ...FULL_LIMITS, max_daily_notional: 25_000 },
+  };
   await submit(order({ clientOrderId: "first", quantity: 100 }));
   assertEquals(last("orders.routed")?.clientOrderId, "first");
   await submit(order({ clientOrderId: "second", quantity: 100 }));
@@ -424,7 +491,14 @@ test("[oms] tolerates unavailable asset metadata when checking lot sizes", async
 async function placeOrders() {
   h.limits["trader-2"] = { status: 200, body: FULL_LIMITS };
   await submit(order({ clientOrderId: "t1-a", asset: "AAPL", strategy: "LIMIT" }));
-  await submit(order({ clientOrderId: "t1-b", asset: "MSFT", strategy: "TWAP", limitPrice: 400 }));
+  await submit(
+    order({
+      clientOrderId: "t1-b",
+      asset: "MSFT",
+      strategy: "TWAP",
+      limitPrice: 400,
+    })
+  );
   await submit(order({ clientOrderId: "t2-a", userId: "trader-2", asset: "AAPL" }));
   h.sent.length = 0;
 }
@@ -462,7 +536,12 @@ test("[oms] an admin kill-all cancels everything", async () => {
 
 test("[oms] kill scopes select by user, algo, market and symbol", async () => {
   await placeOrders();
-  await kill({ scope: "user", issuedBy: "boss", issuedByRole: "admin", targetUserId: "trader-2" });
+  await kill({
+    scope: "user",
+    issuedBy: "boss",
+    issuedByRole: "admin",
+    targetUserId: "trader-2",
+  });
   assertEquals(cancelled(), ["t2-a"]);
 
   h.sent.length = 0;
@@ -499,13 +578,21 @@ test("[oms] kill commands are validated and authorised", async () => {
 });
 
 test("[oms] resume commands publish immediately or after the scheduled delay", async () => {
-  const base = { ts: Date.now(), issuedBy: "boss", issuedByRole: "admin", scope: "all" };
+  const base = {
+    ts: Date.now(),
+    issuedBy: "boss",
+    issuedByRole: "admin",
+    scope: "all",
+  };
   await h.listeners["oms-kill-orders"]("orders.resume", base);
   assertEquals(last("orders.resumed")?.issuedBy, "boss");
   assertEquals(last("orders.resume.audit")?.scope, "all");
 
   h.sent.length = 0;
-  await h.listeners["oms-kill-orders"]("orders.resume", { ...base, resumeAt: Date.now() + 5_000 });
+  await h.listeners["oms-kill-orders"]("orders.resume", {
+    ...base,
+    resumeAt: Date.now() + 5_000,
+  });
   assertEquals(h.sent.length, 0);
   await vi.advanceTimersByTimeAsync(5_000);
   assertEquals(topicsOf(), ["orders.resumed", "orders.resume.audit"]);
@@ -522,7 +609,13 @@ function topicsOf() {
 test("[oms] expires orphaned working orders found in the journal", async () => {
   const past = Date.now() - 1_000;
   h.journalOrders = [
-    { id: "o-1", clientOrderId: "c-1", status: "working", expiresAt: past, userId: "u" },
+    {
+      id: "o-1",
+      clientOrderId: "c-1",
+      status: "working",
+      expiresAt: past,
+      userId: "u",
+    },
     { id: "o-2", status: "pending", expiresAt: past },
     { id: "o-3", status: "working", expiresAt: Date.now() + 60_000 },
     { id: "o-4", status: "filled", expiresAt: past },
