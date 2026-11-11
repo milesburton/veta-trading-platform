@@ -67,6 +67,14 @@ class FixMessageReader {
     }
   }
 
+  async nextFor(clOrdId: string, timeoutMs = 8_000): Promise<Map<number, string>> {
+    const deadline = Date.now() + timeoutMs;
+    while (true) {
+      const msg = await this.next(Math.max(1, deadline - Date.now()));
+      if (msg.get(Tag.ClOrdID) === clOrdId) return msg;
+    }
+  }
+
   get connection(): Socket {
     return this.#conn;
   }
@@ -410,19 +418,20 @@ test({
           const ack = await reader.next();
           assertEquals(ack.get(Tag.OrdStatus), OrdStatus.New);
 
+          const cancelClOrdId = `cxl-${Date.now()}`;
           const cancel = encode([
             [Tag.MsgType, MsgType.OrderCancelRequest],
             [Tag.SenderCompID, "GATEWAY"],
             [Tag.TargetCompID, "EXCHANGE"],
             [Tag.MsgSeqNum, 3],
-            [Tag.ClOrdID, `cxl-${Date.now()}`],
+            [Tag.ClOrdID, cancelClOrdId],
             [Tag.OrigClOrdID, clOrdId],
             [Tag.Symbol, "AAPL"],
             [Tag.Side, Side.Buy],
           ]);
           conn.write(cancel);
 
-          const reply = await reader.next();
+          const reply = await reader.nextFor(cancelClOrdId);
           assertEquals(reply.get(Tag.MsgType), MsgType.ExecutionReport);
           assertEquals(reply.get(Tag.OrdStatus), OrdStatus.Canceled);
           assertEquals(reply.get(Tag.OrigClOrdID), clOrdId);
@@ -493,32 +502,34 @@ test({
 
           // A subsequent cancel must reference the replacement ClOrdID,
           // the original is no longer a valid handle.
+          const cancelOrigClOrdId = `cxl-orig-${Date.now()}`;
           const cancelOrig = encode([
             [Tag.MsgType, MsgType.OrderCancelRequest],
             [Tag.SenderCompID, "GATEWAY"],
             [Tag.TargetCompID, "EXCHANGE"],
             [Tag.MsgSeqNum, 4],
-            [Tag.ClOrdID, `cxl-orig-${Date.now()}`],
+            [Tag.ClOrdID, cancelOrigClOrdId],
             [Tag.OrigClOrdID, clOrdId],
             [Tag.Symbol, "AAPL"],
             [Tag.Side, Side.Buy],
           ]);
           conn.write(cancelOrig);
-          const origCancelReply = await reader.next();
+          const origCancelReply = await reader.nextFor(cancelOrigClOrdId);
           assertEquals(origCancelReply.get(Tag.MsgType), MsgType.OrderCancelReject);
 
+          const cancelReplacedClOrdId = `cxl-replaced-${Date.now()}`;
           const cancelReplaced = encode([
             [Tag.MsgType, MsgType.OrderCancelRequest],
             [Tag.SenderCompID, "GATEWAY"],
             [Tag.TargetCompID, "EXCHANGE"],
             [Tag.MsgSeqNum, 5],
-            [Tag.ClOrdID, `cxl-replaced-${Date.now()}`],
+            [Tag.ClOrdID, cancelReplacedClOrdId],
             [Tag.OrigClOrdID, replaceClOrdId],
             [Tag.Symbol, "AAPL"],
             [Tag.Side, Side.Buy],
           ]);
           conn.write(cancelReplaced);
-          const replacedCancelReply = await reader.next();
+          const replacedCancelReply = await reader.nextFor(cancelReplacedClOrdId);
           assertEquals(replacedCancelReply.get(Tag.MsgType), MsgType.ExecutionReport);
           assertEquals(replacedCancelReply.get(Tag.OrdStatus), OrdStatus.Canceled);
         } finally {
