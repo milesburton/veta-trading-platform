@@ -50,6 +50,7 @@ import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleBugReportRoute } from "./routes/bug-report.ts";
+import { handleComplianceRoute } from "./routes/compliance.ts";
 import { handleLoadgenAnnounceRoute } from "./routes/loadgen-announce.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
@@ -1100,6 +1101,9 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const scenariosResponse = await handleScenariosRoute(req, path, ctx);
     if (scenariosResponse) return scenariosResponse;
+
+    const complianceResponse = await handleComplianceRoute(req, path, ctx);
+    if (complianceResponse) return complianceResponse;
 
     return null;
   });

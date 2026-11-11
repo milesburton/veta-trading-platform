@@ -68,9 +68,10 @@ export async function firstBrokenSeq(pool: Pool): Promise<number | null> {
 
 export async function listAudit(
   pool: Pool,
-  options: { limit?: number; beforeSeq?: number; actorId?: string } = {}
+  options: { limit?: number; beforeSeq?: number; actorId?: string; actions?: string[] } = {}
 ): Promise<AuditRecord[]> {
   const limit = Math.min(Math.max(options.limit ?? 100, 1), 500);
+  const actions = options.actions && options.actions.length > 0 ? options.actions : null;
   const client = await pool.connect();
   try {
     const { rows } = await client.queryObject<AuditRow>(
@@ -78,9 +79,10 @@ export async function listAudit(
          FROM audit.events
         WHERE ($1::bigint IS NULL OR seq < $1)
           AND ($2::text IS NULL OR actor_id = $2)
+          AND ($4::text[] IS NULL OR action = ANY($4))
         ORDER BY seq DESC
         LIMIT $3`,
-      [options.beforeSeq ?? null, options.actorId ?? null, limit]
+      [options.beforeSeq ?? null, options.actorId ?? null, limit, actions]
     );
     return rows.map((r) => ({
       seq: Number(r.seq),

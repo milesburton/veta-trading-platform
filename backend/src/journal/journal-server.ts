@@ -537,6 +537,11 @@ async function handle(req: Request): Promise<Response> {
       limit: Number(url.searchParams.get("limit") ?? 100),
       beforeSeq: Number.isFinite(beforeSeq) && beforeSeq > 0 ? beforeSeq : undefined,
       actorId: url.searchParams.get("actorId") ?? undefined,
+      actions: url.searchParams
+        .get("action")
+        ?.split(",")
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0),
     });
     return json(events);
   }

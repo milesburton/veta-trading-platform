@@ -1,3 +1,4 @@
+import { algoIdentifiers } from "#veta/algo-registry";
 import { logger } from "#veta/logger";
 import type { MsgProducer } from "#veta/messaging";
 import { diffOutcome } from "./diff.ts";
@@ -70,7 +71,10 @@ export async function runScenario(
   scenario: Scenario,
   deps: OrchestratorDeps
 ): Promise<ScenarioRun> {
-  const run = await createRun(scenario.id, scenario.userId);
+  const run = await createRun(scenario.id, scenario.userId, {
+    ...algoIdentifiers(scenario.spec.strategy),
+    commitSha: process.env.COMMIT_SHA,
+  });
   const triggeredAt = Date.now();
   const clientOrderId = `scenario-${run.id}`;
 

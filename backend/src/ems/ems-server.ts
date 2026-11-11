@@ -15,10 +15,11 @@ import { CORS_HEADERS, corsOptions, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createMarketSimClient } from "#veta/market-client";
 import { createProducer, createTypedConsumer } from "#veta/messaging";
-import type { OrderChild } from "#veta/schemas/orders";
-import { OrderChildSchema } from "#veta/schemas/orders";
+import type { OrderCancelled, OrderChild } from "#veta/schemas/orders";
+import { OrderCancelledSchema, OrderChildSchema } from "#veta/schemas/orders";
 import { type Desk, settlementDate } from "#veta/settlement";
 import { nowMicros } from "../lib/clock.ts";
+import { cancellationApplies, createCancellationTracker } from "./cancellation-tracker.ts";
 import {
   computeFees,
   computeFill,
@@ -86,7 +87,32 @@ type ChildOrder = OrderChild;
 
 let fillSeq = 1;
 
+const cancellations = createCancellationTracker();
+
+async function handleCancelled(cancelled: OrderCancelled): Promise<void> {
+  cancellations.record([cancelled.orderId, cancelled.clientOrderId], {
+    ownerId: cancelled.userId,
+    issuedBy: cancelled.issuedBy,
+    issuedByRole: cancelled.issuedByRole,
+  });
+  if (cancellations.overCapacity()) {
+    logger.warn("Cancellation tracker over capacity, live cancellations are retained", {
+      size: cancellations.size(),
+    });
+  }
+}
+
 async function handleChildOrder(child: ChildOrder): Promise<void> {
+  const cancellation = cancellations.lookup([child.parentOrderId, child.clientOrderId]);
+  if (cancellation && cancellationApplies(cancellation, child)) {
+    logger.info(`Suppressed child ${child.childId}: parent ${child.parentOrderId} was cancelled`);
+    return;
+  }
+  if (cancellation) {
+    logger.warn(
+      `Ignored cancellation of ${child.parentOrderId} issued by ${cancellation.issuedBy ?? "unknown"}: not the owner`
+    );
+  }
   const tick = marketClient.getLatest();
   const midPrice = tick.prices[child.asset];
 
@@ -217,6 +243,11 @@ const consumer = await createTypedConsumer("ems-child-orders", [
     topic: "orders.child",
     schema: OrderChildSchema,
     handler: handleChildOrder,
+  },
+  {
+    topic: "orders.cancelled",
+    schema: OrderCancelledSchema,
+    handler: handleCancelled,
   },
 ]).catch((err) => {
   logger.warn("Cannot subscribe to orders.child", { err });

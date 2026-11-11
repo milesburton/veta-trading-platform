@@ -132,7 +132,12 @@ afterEach(() => {
 test("[oms] serves health and rejects other routes", async () => {
   assert(h.handler);
   const health = await h.handler(new Request("http://oms/health"));
-  assertEquals(await health.json(), { service: "oms", version: "dev", status: "ok" });
+  assertEquals(await health.json(), {
+    service: "oms",
+    version: "dev",
+    status: "ok",
+    riskEngineEnabled: true,
+  });
   assertEquals((await h.handler(new Request("http://oms/x", { method: "OPTIONS" }))).status, 204);
   assertEquals((await h.handler(new Request("http://oms/x"))).status, 404);
 });
@@ -284,6 +289,8 @@ test("[oms] blocks an order when the risk engine returns a malformed allowance",
 
 test("[oms] skips risk checks when the risk engine is disabled", async () => {
   await load({ RISK_ENGINE_ENABLED: "false" });
+  const audit = h.sent.find((m) => m.topic === "audit.events");
+  assertEquals(audit?.payload.action, "risk_engine_disabled");
   h.risk.fail = true;
   await submit(order());
   assertEquals(last("orders.routed")?.clientOrderId, "c-1");

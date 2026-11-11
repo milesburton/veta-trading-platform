@@ -211,6 +211,19 @@ const producer = await createProducer("oms").catch((err) => {
   return null;
 });
 
+if (!RISK_ENGINE_ENABLED) {
+  logger.warn("RISK_ENGINE_ENABLED is false: pre-trade risk checks are skipped for every order");
+  await producer
+    ?.send("audit.events", {
+      actorId: "oms",
+      actorRole: "system",
+      action: "risk_engine_disabled",
+      target: "pre-trade-risk",
+      detail: { reason: "RISK_ENGINE_ENABLED=false at OMS start" },
+    })
+    .catch(() => {});
+}
+
 const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch((err) => {
   logger.warn("Cannot subscribe to orders.new", { err });
   return null;
@@ -313,7 +326,7 @@ consumer?.onMessage(async (_topic, raw) => {
   }
 
   if (!RISK_ENGINE_ENABLED) {
-    logger.info(`Risk-engine disabled, skipping pre-trade checks for ${order.clientOrderId}`);
+    logger.warn(`Risk-engine disabled, skipping pre-trade checks for ${order.clientOrderId}`);
   } else {
     const riskPrice = orderReferencePrice(
       order.limitPrice,
@@ -738,7 +751,12 @@ serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return corsOptions();
   if (url.pathname === "/health" && req.method === "GET") {
-    return json({ service: "oms", version: VERSION, status: "ok" });
+    return json({
+      service: "oms",
+      version: VERSION,
+      status: "ok",
+      riskEngineEnabled: RISK_ENGINE_ENABLED,
+    });
   }
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });
