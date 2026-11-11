@@ -25,6 +25,7 @@ set -euo pipefail
 
 SOCAT_NAME="veta-docker-socat"
 SOCAT_IMAGE="alpine/socat"
+SOCAT_LINGER_SECONDS=3600
 DOCKER_CONFIG_DIR="/tmp/veta-docker-config"
 STALE_TESTCONTAINER_SECONDS="${STALE_TESTCONTAINER_SECONDS:-7200}"
 TC_LABEL="label=org.testcontainers=true"
@@ -45,6 +46,8 @@ ensure_socat_sidecar() {
   if docker inspect "${SOCAT_NAME}" >/dev/null 2>&1; then
     if ! docker inspect -f '{{.State.Running}}' "${SOCAT_NAME}" | grep -q true; then
       docker rm -f "${SOCAT_NAME}" >/dev/null
+    elif ! docker inspect -f '{{join .Args " "}}' "${SOCAT_NAME}" | grep -q -- "-t ${SOCAT_LINGER_SECONDS} "; then
+      docker rm -f "${SOCAT_NAME}" >/dev/null
     fi
   fi
   if ! docker inspect "${SOCAT_NAME}" >/dev/null 2>&1; then
@@ -53,7 +56,7 @@ ensure_socat_sidecar() {
       --name "${SOCAT_NAME}" \
       -v /var/run/docker.sock:/var/run/docker.sock \
       "${SOCAT_IMAGE}" \
-      -t 3600 TCP-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock >/dev/null
+      -t "${SOCAT_LINGER_SECONDS}" TCP-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock >/dev/null
   fi
 }
 

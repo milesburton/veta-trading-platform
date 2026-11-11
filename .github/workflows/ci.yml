@@ -604,7 +604,7 @@ jobs:
     runs-on: [self-hosted, homelab]
     needs: [lint-and-test, changes]
     if: "github.ref == 'refs/heads/main' || (needs.changes.outputs.docker == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))"
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: write
 
