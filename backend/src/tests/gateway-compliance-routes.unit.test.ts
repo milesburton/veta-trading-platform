@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { test } from "#veta/test";
-import { assertEquals } from "#veta/test-assert";
+import { assert, assertEquals } from "#veta/test-assert";
 import type { GatewayContext } from "../gateway/context.ts";
 
-const h = vi.hoisted(() => ({ auditStatus: 200 }));
+const h = vi.hoisted(() => ({
+  auditStatus: 200,
+  omsHealth: null as Response | null,
+  requested: [] as string[],
+}));
 
 vi.mock("../lib/db.ts", () => {
   const pool = (rows: unknown[]) => ({
@@ -31,7 +35,7 @@ const { handleComplianceRoute } = await import("../gateway/routes/compliance.ts"
 
 function context(role: string | null): GatewayContext {
   return {
-    urls: { journal: "http://journal" },
+    urls: { journal: "http://journal", omsUrl: "http://oms" },
     requireAuth: () =>
       Promise.resolve(
         role === null
@@ -46,14 +50,21 @@ const call = (role: string | null, method = "GET", path = "/compliance/algo-cont
 
 beforeEach(() => {
   h.auditStatus = 200;
-  vi.stubGlobal("fetch", () =>
-    Promise.resolve(
+  h.omsHealth = new Response(JSON.stringify({ status: "ok", riskEngineEnabled: false }));
+  h.requested = [];
+  vi.stubGlobal("fetch", (input: string | URL | Request) => {
+    const url = String(input);
+    h.requested.push(url);
+    if (url.startsWith("http://oms")) {
+      return h.omsHealth ? Promise.resolve(h.omsHealth) : Promise.reject(new Error("down"));
+    }
+    return Promise.resolve(
       new Response(
         JSON.stringify([{ action: "orders_kill", actorId: "a", target: "global", ts: 7 }]),
         { status: h.auditStatus }
       )
-    )
-  );
+    );
+  });
 });
 
 afterEach(() => {
@@ -81,6 +92,21 @@ test("[compliance] assembles the algo controls report for compliance", async () 
       .status,
     "passed"
   );
+});
+
+test("[compliance] reports the OMS's effective risk setting and asks the audit log for kill actions only", async () => {
+  const body = await (await call("admin"))?.json();
+  assertEquals(body.riskEngineEnabled, false);
+  const auditUrl = h.requested.find((u) => u.startsWith("http://journal/audit")) ?? "";
+  assertEquals(new URL(auditUrl).searchParams.get("action"), "orders_kill,orders_resume");
+});
+
+test("[compliance] reports the risk engine state as unknown when the OMS cannot be reached", async () => {
+  h.omsHealth = null;
+  const res = await call("admin");
+  assert(res);
+  assertEquals(res.status, 200);
+  assertEquals((await res.json()).riskEngineEnabled, null);
 });
 
 test("[compliance] returns 502 when an upstream source fails", async () => {

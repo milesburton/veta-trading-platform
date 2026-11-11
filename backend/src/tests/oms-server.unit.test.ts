@@ -132,7 +132,12 @@ afterEach(() => {
 test("[oms] serves health and rejects other routes", async () => {
   assert(h.handler);
   const health = await h.handler(new Request("http://oms/health"));
-  assertEquals(await health.json(), { service: "oms", version: "dev", status: "ok" });
+  assertEquals(await health.json(), {
+    service: "oms",
+    version: "dev",
+    status: "ok",
+    riskEngineEnabled: true,
+  });
   assertEquals((await h.handler(new Request("http://oms/x", { method: "OPTIONS" }))).status, 204);
   assertEquals((await h.handler(new Request("http://oms/x"))).status, 404);
 });

@@ -2,10 +2,10 @@
   "backend": {
     "unit": {
       "files": 197,
-      "cases": 2087,
+      "cases": 2094,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
-        "cancellation-tracker.unit.test.ts": 2,
+        "cancellation-tracker.unit.test.ts": 7,
         "algo-controls.unit.test.ts": 3,
         "fill-reconciliation.unit.test.ts": 4,
         "regulatory-export.unit.test.ts": 6,
@@ -74,7 +74,7 @@
         "fixParser.test.ts": 19,
         "frontend-image-files.unit.test.ts": 1,
         "gateway-analytics-llm-routes.unit.test.ts": 12,
-        "gateway-compliance-routes.unit.test.ts": 4,
+        "gateway-compliance-routes.unit.test.ts": 6,
         "gateway-entry.unit.test.ts": 30,
         "gateway-logs-route.unit.test.ts": 7,
         "gateway-proxied-routes.unit.test.ts": 19,

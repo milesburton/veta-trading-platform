@@ -17,8 +17,22 @@ const json = (status: number, body: unknown): Response =>
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 
+const KILL_SWITCH_ACTIONS = ["orders_kill", "orders_resume"] as const;
+
+async function fetchRiskEngineEnabled(ctx: GatewayContext): Promise<boolean | null> {
+  try {
+    const res = await fetch(`${ctx.urls.omsUrl}/health`, { signal: AbortSignal.timeout(3_000) });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { riskEngineEnabled?: unknown };
+    return typeof body.riskEngineEnabled === "boolean" ? body.riskEngineEnabled : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchKillSwitchEvents(ctx: GatewayContext): Promise<KillSwitchEvent[]> {
-  const res = await fetch(`${ctx.urls.journal}/audit?limit=500`, {
+  const query = new URLSearchParams({ action: KILL_SWITCH_ACTIONS.join(","), limit: "500" });
+  const res = await fetch(`${ctx.urls.journal}/audit?${query}`, {
     signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) throw new Error(`audit returned ${res.status}`);
@@ -45,15 +59,16 @@ export async function handleComplianceRoute(
   }
 
   try {
-    const [scenarioEvidence, riskConfig, killSwitchEvents] = await Promise.all([
+    const [scenarioEvidence, riskConfig, killSwitchEvents, riskEngineEnabled] = await Promise.all([
       loadScenarioEvidence(scenariosPool),
       loadRiskConfigVersion(riskPool),
       fetchKillSwitchEvents(ctx),
+      fetchRiskEngineEnabled(ctx),
     ]);
     return json(
       200,
       buildAlgoControls({
-        riskEngineEnabled: (process.env.RISK_ENGINE_ENABLED ?? "true").toLowerCase() !== "false",
+        riskEngineEnabled,
         riskConfig,
         scenarioEvidence,
         killSwitchEvents,

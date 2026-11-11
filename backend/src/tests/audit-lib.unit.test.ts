@@ -63,12 +63,16 @@ test("[audit] lists records newest first and clamps the page size", async () => 
     detail: {},
     hash: "h",
   });
-  assertEquals(queryObject.mock.calls[0][1], [10, "u1", 500]);
+  assertEquals(queryObject.mock.calls[0][1], [10, "u1", 500, null]);
 
   await listAudit(pool);
-  assertEquals(queryObject.mock.calls[1][1], [null, null, 100]);
+  assertEquals(queryObject.mock.calls[1][1], [null, null, 100, null]);
   await listAudit(pool, { limit: 0 });
-  assertEquals(queryObject.mock.calls[2][1], [null, null, 1]);
+  assertEquals(queryObject.mock.calls[2][1], [null, null, 1, null]);
+  await listAudit(pool, { actions: ["orders_kill", "orders_resume"] });
+  assertEquals(queryObject.mock.calls[3][1], [null, null, 100, ["orders_kill", "orders_resume"]]);
+  await listAudit(pool, { actions: [] });
+  assertEquals(queryObject.mock.calls[4][1], [null, null, 100, null]);
 });
 
 test("[audit] reads the head and the anchor at a requested sequence", async () => {

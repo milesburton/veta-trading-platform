@@ -23,14 +23,14 @@ export interface KillSwitchEvent {
 }
 
 export interface AlgoControlsInputs {
-  riskEngineEnabled: boolean;
+  riskEngineEnabled: boolean | null;
   riskConfig: RiskConfigVersion | null;
   scenarioEvidence: readonly ScenarioEvidence[];
   killSwitchEvents: readonly KillSwitchEvent[];
 }
 
 export interface AlgoControlsReport {
-  riskEngineEnabled: boolean;
+  riskEngineEnabled: boolean | null;
   riskConfig: RiskConfigVersion | null;
   algorithms: Array<{
     algoId: string;

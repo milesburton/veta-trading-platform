@@ -19,7 +19,7 @@ import type { OrderCancelled, OrderChild } from "#veta/schemas/orders";
 import { OrderCancelledSchema, OrderChildSchema } from "#veta/schemas/orders";
 import { type Desk, settlementDate } from "#veta/settlement";
 import { nowMicros } from "../lib/clock.ts";
-import { createCancellationTracker } from "./cancellation-tracker.ts";
+import { cancellationApplies, createCancellationTracker } from "./cancellation-tracker.ts";
 import {
   computeFees,
   computeFill,
@@ -90,13 +90,28 @@ let fillSeq = 1;
 const cancellations = createCancellationTracker();
 
 async function handleCancelled(cancelled: OrderCancelled): Promise<void> {
-  cancellations.record([cancelled.orderId, cancelled.clientOrderId]);
+  cancellations.record([cancelled.orderId, cancelled.clientOrderId], {
+    ownerId: cancelled.userId,
+    issuedBy: cancelled.issuedBy,
+    issuedByRole: cancelled.issuedByRole,
+  });
+  if (cancellations.overCapacity()) {
+    logger.warn("Cancellation tracker over capacity, live cancellations are retained", {
+      size: cancellations.size(),
+    });
+  }
 }
 
 async function handleChildOrder(child: ChildOrder): Promise<void> {
-  if (cancellations.isCancelled([child.parentOrderId, child.clientOrderId])) {
+  const cancellation = cancellations.lookup([child.parentOrderId, child.clientOrderId]);
+  if (cancellation && cancellationApplies(cancellation, child)) {
     logger.info(`Suppressed child ${child.childId}: parent ${child.parentOrderId} was cancelled`);
     return;
+  }
+  if (cancellation) {
+    logger.warn(
+      `Ignored cancellation of ${child.parentOrderId} issued by ${cancellation.issuedBy ?? "unknown"}: not the owner`
+    );
   }
   const tick = marketClient.getLatest();
   const midPrice = tick.prices[child.asset];

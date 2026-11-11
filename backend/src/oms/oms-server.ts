@@ -751,7 +751,12 @@ serveFetch({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return corsOptions();
   if (url.pathname === "/health" && req.method === "GET") {
-    return json({ service: "oms", version: VERSION, status: "ok" });
+    return json({
+      service: "oms",
+      version: VERSION,
+      status: "ok",
+      riskEngineEnabled: RISK_ENGINE_ENABLED,
+    });
   }
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });
