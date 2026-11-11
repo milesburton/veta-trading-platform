@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.103.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.103.0...veta-trading-platform-v1.103.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **ci:** replace stale socat sidecar and filter FIX cancel replies by ClOrdID ([#1114](https://github.com/milesburton/veta-trading-platform/issues/1114)) ([4dad483](https://github.com/milesburton/veta-trading-platform/commit/4dad4834d1d433560546b83173ff5731cb486d99))
+
 ## [1.103.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.102.1...veta-trading-platform-v1.103.0) (2026-11-10)
 
 
