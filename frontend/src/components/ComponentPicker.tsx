@@ -6,6 +6,7 @@ import { PANEL_IDS, PANEL_TITLES, SINGLETON_PANELS, useDashboard } from "./Dashb
 import { clearDraggedPanelId, setDraggedPanelId } from "./panelDragState.ts";
 
 const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
+  "regulatory-reports": "Download RTS 22 style transaction reports for a trading day",
   "fix-sessions": "Live FIX counterparty sessions and recent execution reports",
   "world-clocks": "Live clocks for major trading market timezones",
   "order-routing-sankey":

@@ -1,13 +1,14 @@
 {
   "backend": {
     "unit": {
-      "files": 193,
-      "cases": 2066,
+      "files": 194,
+      "cases": 2077,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "fill-reconciliation.unit.test.ts": 4,
         "regulatory-export.unit.test.ts": 6,
         "retention.unit.test.ts": 3,
+        "transaction-report.unit.test.ts": 8,
         "clock.unit.test.ts": 7,
         "anthropic.test.ts": 6,
         "checks.test.ts": 27,
@@ -71,9 +72,9 @@
         "fixParser.test.ts": 19,
         "frontend-image-files.unit.test.ts": 1,
         "gateway-analytics-llm-routes.unit.test.ts": 12,
-        "gateway-entry.unit.test.ts": 29,
+        "gateway-entry.unit.test.ts": 30,
         "gateway-logs-route.unit.test.ts": 7,
-        "gateway-proxied-routes.unit.test.ts": 18,
+        "gateway-proxied-routes.unit.test.ts": 19,
         "gateway-role-matrix.unit.test.ts": 2,
         "gateway-route-auth-inventory.unit.test.ts": 4,
         "gateway-scenarios-route.unit.test.ts": 11,
@@ -88,7 +89,7 @@
         "infra-health-paths.unit.test.ts": 6,
         "job-store.unit.test.ts": 2,
         "journal-candles.unit.test.ts": 2,
-        "journal-entry.unit.test.ts": 21,
+        "journal-entry.unit.test.ts": 22,
         "journal-order-reconstruction.unit.test.ts": 3,
         "journal.test.ts": 10,
         "latency-metrics.unit.test.ts": 4,
@@ -252,8 +253,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 190,
-      "cases": 2309
+      "files": 191,
+      "cases": 2316
     },
     "playwright": {
       "files": 19,

@@ -87,6 +87,10 @@
     "GET /products": "all",
     "GET /products/stats": "all",
     "GET /products/x": "all",
+    "GET /reports/transactions": [
+      "admin",
+      "compliance"
+    ],
     "GET /rfq": "all",
     "GET /rfq/sellside": "all",
     "GET /rfq/sellside/stats": "all",

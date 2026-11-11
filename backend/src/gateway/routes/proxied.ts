@@ -365,6 +365,13 @@ export async function handleProxiedRoutes(
     if (rejected) return rejected;
     return proxyGet(`${ctx.urls.journal}/audit/verify`, req);
   }
+  if (path === "/reports/transactions" && req.method === "GET") {
+    const auth = await ctx.requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const rejected = forbiddenUnlessRole(auth, AUDIT_READERS);
+    if (rejected) return rejected;
+    return proxyGet(`${ctx.urls.journal}/reports/transactions${url.search}`, req);
+  }
   const mdsToggleMatch = path.match(/^\/market-data\/sources\/([^/]+)\/toggle$/);
   if (mdsToggleMatch && req.method === "POST") {
     const auth = await ctx.requireAuth(req);

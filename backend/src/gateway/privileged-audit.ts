@@ -11,6 +11,11 @@ const WRITE = ["POST", "PUT", "DELETE"] as const;
 
 export const PRIVILEGED_RULES: readonly PrivilegedRule[] = [
   { methods: ["PUT"], pattern: /^\/admin\/market-hours$/, action: "market_hours_update" },
+  {
+    methods: ["GET"],
+    pattern: /^\/reports\/transactions$/,
+    action: "transaction_report_export",
+  },
   { methods: ["POST"], pattern: /^\/load-test$/, action: "load_test_run" },
   { methods: ["POST"], pattern: /^\/demo-day$/, action: "demo_day_run" },
   { methods: ["POST"], pattern: /^\/load-gen\/(start|stop)$/, action: "load_gen_control" },

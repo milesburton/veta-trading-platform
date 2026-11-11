@@ -275,3 +275,19 @@ test("[proxied] upstream status codes pass through", async () => {
   assertEquals((await call("trader", "GET", "/assets"))?.status, 404);
   assertEquals((await call("trader", "GET", "/preferences"))?.status, 404);
 });
+
+test("[proxied] transaction reports are limited to admin and compliance", async () => {
+  const query = "/reports/transactions?date=2026-11-09&format=csv";
+  assertEquals((await call(null, "GET", query))?.status, 401);
+  for (const role of ["trader", "viewer"]) {
+    assertEquals((await call(role, "GET", query))?.status, 403);
+  }
+  assertEquals(upstream.length, 0);
+  for (const role of ["admin", "compliance"]) {
+    assertEquals((await call(role, "GET", query))?.status, 200);
+  }
+  assertEquals(
+    upstream.map((u) => u.url),
+    [`http://journal${query}`, `http://journal${query}`]
+  );
+});

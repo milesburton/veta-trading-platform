@@ -23,6 +23,7 @@ function collector() {
 test("[privileged-audit] classifies privileged mutations and ignores reads", () => {
   assertEquals(classifyPrivileged("PUT", "/admin/market-hours"), "market_hours_update");
   assertEquals(classifyPrivileged("POST", "/load-gen/start"), "load_gen_control");
+  assertEquals(classifyPrivileged("GET", "/reports/transactions"), "transaction_report_export");
   assertEquals(classifyPrivileged("PUT", "/market-data/overrides"), "market_data_override_update");
   assertEquals(classifyPrivileged("POST", "/api/market-sim/admin/reset"), "market_sim_admin");
   assertEquals(classifyPrivileged("PUT", "/api/risk-engine/config"), "risk_engine_change");

@@ -183,7 +183,7 @@ the gaps are obvious choices rather than oversights.
 | Real-time market data redistribution              | Bloomberg / Refinitiv vendor licensing is six-figures-per-year. We use synthetic data plus delayed Alpha Vantage quotes.                           |
 | Multi-tenancy                                     | A platform serving multiple users is a different system. This is single-user (your own account, your own broker).                                  |
 | Real money                                        | Even with a real broker, we don't intend to wire this up to live execution. The simulation provides what we need to demonstrate the engineering.   |
-| Regulatory reporting (MiFID II, EMIR, Dodd-Frank) | Real platforms ship reports to trade repositories. We log enough to _generate_ such reports if needed but don't wire up the submission.            |
+| Regulatory reporting submission (MiFID II, EMIR, Dodd-Frank) | Real platforms ship reports to trade repositories. We generate an RTS 22 style transaction report, see [MiFID II](../mifid-ii/#transaction-reporting), but don't wire up the submission or cover EMIR or Dodd-Frank. |
 | Compliance surveillance hooks                     | Spoofing detection, layering detection, wash-trade detection. Out of scope; would need a separate surveillance service.                            |
 
 ## How this page stays honest

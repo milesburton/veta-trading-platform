@@ -319,6 +319,11 @@ test("[journal] stores microsecond timestamps alongside millisecond ones", async
   assertEquals(inserts[1].params[18], null);
 });
 
+test("[journal] rejects malformed transaction report requests", async () => {
+  assertEquals((await call("/reports/transactions")).status, 400);
+  assertEquals((await call("/reports/transactions?date=2026-11-09&format=xml")).status, 400);
+});
+
 test("[journal] health reports hot and regulatory retention", async () => {
   const health = (await json(await call("/health"))) as Record<string, number>;
   assertEquals(health.retentionDays, 2);
