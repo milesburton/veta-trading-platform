@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.106.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.105.0...veta-trading-platform-v1.106.0) (2026-11-11)
+
+
+### Features
+
+* **mifid:** RTS 22 style transaction reports and compliance panel ([#1104](https://github.com/milesburton/veta-trading-platform/issues/1104)) ([eb0c623](https://github.com/milesburton/veta-trading-platform/commit/eb0c623943c6a0200d87ebb0dc5916f13a693deb))
+
 ## [1.105.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.104.0...veta-trading-platform-v1.105.0) (2026-11-11)
 
 
