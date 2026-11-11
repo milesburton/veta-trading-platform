@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.104.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.103.1...veta-trading-platform-v1.104.0) (2026-11-11)
+
+
+### Features
+
+* **mifid:** immutable regulatory order record with five year retention export ([#1102](https://github.com/milesburton/veta-trading-platform/issues/1102)) ([fa56fb1](https://github.com/milesburton/veta-trading-platform/commit/fa56fb1b4215fc8bc80e45c451cb9c35f92f5198))
+
 ## [1.103.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.103.0...veta-trading-platform-v1.103.1) (2026-11-11)
 
 
