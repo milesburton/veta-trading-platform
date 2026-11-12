@@ -14,7 +14,7 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
-    network: trading-net
+    network: veta_trading-net
 
 metrics:
   prometheus:
