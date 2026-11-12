@@ -4,3 +4,4 @@
 .tiingo.com
 .alphavantage.co
 .finnhub.io
+api.github.com

@@ -10,11 +10,11 @@ networks:
     driver: bridge
     internal: true
   # Services with a genuine reason to reach the internet (market-data's quote
-  # providers, the gateway and discord-bot's Discord traffic) join egress-net.
+  # providers, the gateway and discord-bot's Discord traffic) join proxied-net.
   # It is also internal: the only way out is through egress-proxy, which
   # allows the destinations in docker/egress-proxy/allowlist.txt and nothing
   # else. See docs: platform/supporting/egress-proxy.
-  egress-net:
+  proxied-net:
     driver: bridge
     internal: true
   # Direct internet. Only egress-proxy, traefik (public ingress with published
@@ -305,7 +305,7 @@ services:
       dockerfile: docker/egress-proxy/Dockerfile
     restart: unless-stopped
     networks:
-      - egress-net
+      - proxied-net
       - internet-net
     mem_limit: 64m
     cpus: 0.25
@@ -1434,11 +1434,11 @@ services:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *node-medium
     profiles: [trading, on-demand]
-    # Needs egress-net in addition to the anchor's trading-net: fetches from
+    # Needs proxied-net in addition to the anchor's trading-net: fetches from
     # Alpha Vantage, Polygon, and Tiingo public APIs through egress-proxy.
     networks:
       - trading-net
-      - egress-net
+      - proxied-net
     command: [
       "node",
       "/app/backend/src/market-data/market-data-service.ts",
@@ -1677,13 +1677,13 @@ services:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *node-service
     profiles: [trading, on-demand]
-    # Needs egress-net in addition to the anchor's trading-net: connects
+    # Needs proxied-net in addition to the anchor's trading-net: connects
     # directly to the Discord gateway (bot API), not just an outbound webhook.
     # The WebSocket client uses node:https, which honours HTTPS_PROXY only
     # with NODE_USE_ENV_PROXY; fetch goes through EGRESS_PROXY_URL.
     networks:
       - trading-net
-      - egress-net
+      - proxied-net
     command: [
       "node",
       "/app/backend/src/discord-bot/discord-bot.ts",
@@ -1811,12 +1811,12 @@ services:
   gateway:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *node-medium
-    # Needs egress-net in addition to the anchor's trading-net: the Discord
+    # Needs proxied-net in addition to the anchor's trading-net: the Discord
     # webhook notifier (discord-notifier.ts) runs inside this service and the
     # SNTP clock check goes to the UDP relay on egress-proxy.
     networks:
       - trading-net
-      - egress-net
+      - proxied-net
     cpus: 1
     command: [
       "node",
