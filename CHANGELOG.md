@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.108.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.108.1...veta-trading-platform-v1.108.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **security:** fail the deploy when a declared internal network is not isolated ([#1135](https://github.com/milesburton/veta-trading-platform/issues/1135)) ([4d35e76](https://github.com/milesburton/veta-trading-platform/commit/4d35e764e9ecc6180e27656c115bb9c3ba51d965))
+* **security:** remove reliance on host and direct routes from internal networks ([#1131](https://github.com/milesburton/veta-trading-platform/issues/1131)) ([00f50a8](https://github.com/milesburton/veta-trading-platform/commit/00f50a81a8da13adea848ed9da156f9b5717a61f))
+
 ## [1.108.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.108.0...veta-trading-platform-v1.108.1) (2026-11-12)
 
 
