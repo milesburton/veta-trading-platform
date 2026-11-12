@@ -394,24 +394,26 @@ services:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     image: ollama/ollama:latest
     profiles: [trading, on-demand]
-    # Needs both: trading-net to reach the ollama container it configures via
-    # OLLAMA_HOST, internet-net to pull the model from registry.ollama.ai. Runs
-    # once at startup and exits (restart: "no"), so the egress window is brief.
     networks:
-      - trading-net
       - internet-net
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
-    depends_on:
-      ollama:
-        condition: service_healthy
     volumes:
       - llm-advisory-data:/root/.ollama
-    entrypoint: ["ollama", "pull", "qwen2.5:3b"]
-    environment:
-      OLLAMA_HOST: http://ollama:11434
+    entrypoint:
+      - sh
+      - -c
+      - |
+        ollama serve >/dev/null 2>&1 &
+        attempts=0
+        until ollama list >/dev/null 2>&1; do
+          attempts=$$((attempts + 1))
+          [ "$$attempts" -lt 60 ] || exit 1
+          sleep 1
+        done
+        ollama list | grep -q "^qwen2.5:3b" || ollama pull qwen2.5:3b
     restart: "no"
     labels:
       - "traefik.enable=false"

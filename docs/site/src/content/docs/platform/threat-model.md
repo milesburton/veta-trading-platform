@@ -201,8 +201,10 @@ is "Deferred" or "Partially".
 - **Direct egress for `traefik` and `ollama-model-pull`.** Application
   services reach the internet only through the allowlisting egress
   proxy. `traefik` needs a direct route for its published ports, and
-  `ollama-model-pull` pulls a model from `registry.ollama.ai` once at
-  startup and exits. Both keep an unrestricted route on `internet-net`.
+  `ollama-model-pull` downloads a model from `registry.ollama.ai` into
+  the shared model volume once at startup and exits; it is not attached
+  to `trading-net`, and the long-running `ollama` server has no route
+  out. Both keep an unrestricted route on `internet-net`.
 
 ## Out of scope (intentional)
 
