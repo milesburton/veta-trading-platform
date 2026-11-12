@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.108.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.108.0...veta-trading-platform-v1.108.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **security:** recreate the proxied network as internal and allow GitHub ticketing ([#1129](https://github.com/milesburton/veta-trading-platform/issues/1129)) ([56cf2a3](https://github.com/milesburton/veta-trading-platform/commit/56cf2a34817b81003e63dc77e0c6a856f61a99c7))
+
 ## [1.108.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.107.0...veta-trading-platform-v1.108.0) (2026-11-11)
 
 
