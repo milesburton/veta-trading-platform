@@ -13,13 +13,22 @@ allowlist is refused with `403`.
 | Network | Internet route | Members |
 | --- | --- | --- |
 | `trading-net` | None (`internal: true`) | Every service |
-| `egress-net` | None (`internal: true`); only `egress-proxy` can forward traffic out | `egress-proxy`, `gateway`, `market-data`, `discord-bot` |
+| `proxied-net` | None (`internal: true`); only `egress-proxy` can forward traffic out | `egress-proxy`, `gateway`, `market-data`, `discord-bot` |
 | `internet-net` | Direct | `egress-proxy`, `traefik`, `ollama-model-pull` |
 
 `traefik` keeps a direct route because it publishes ports 80 and 443, which
 Docker cannot do on an internal network. `ollama-model-pull` runs once at
 startup to download a model and exits; it is the remaining direct-egress
 exception and is noted in the threat model.
+
+Docker never changes the `internal` setting of a network that already exists,
+and Compose does not recreate one whose definition changed. A network that
+was first created without `internal: true` therefore stays routable however
+the Compose file reads. This is why the proxied network is named
+`proxied-net` and not the earlier `egress-net`, which predated the proxy on
+the production host. `scripts/homelab-deploy.sh` compares every network declared
+internal against what Docker reports after `up` and logs a warning on a
+mismatch, or fails the deploy when `ENFORCE_INTERNAL_NETWORKS=1`.
 
 ## Allowlist
 
@@ -32,6 +41,10 @@ runtime edit. A leading dot matches the domain and its subdomains.
 | `.discord.com`, `.discord.gg` | `gateway` webhook notifier, `discord-bot` REST and WebSocket |
 | `.polygon.io`, `.tiingo.com`, `.alphavantage.co` | `market-data` quote providers |
 | `.finnhub.io` | `market-data-adapters` provider, when that service is given egress |
+| `api.github.com` | `gateway` ticketing: issues raised from alerts and user bug reports, and the ticketing health probe |
+
+`api.github.com` is listed without a leading dot, so only that host matches
+and the rest of `github.com` stays refused.
 
 Only ports 80 and 443 are accepted, and `CONNECT` only to 443. Squid does not
 cache, strips `X-Forwarded-For` and sends no `Via` header, so the proxy does
@@ -74,7 +87,8 @@ tried to reach somewhere it has no business reaching.
 
 ## Adding a destination
 
-1. Add the domain to `docker/egress-proxy/allowlist.txt` with a leading dot.
+1. Add the domain to `docker/egress-proxy/allowlist.txt`, with a leading dot
+   to include subdomains or without one to match a single host.
 2. State in the pull request which service needs it and why.
 3. After deploy, confirm with the service's own health or logs, and check the
    proxy log shows `TCP_TUNNEL/200` for the new host.

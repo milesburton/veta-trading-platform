@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 206,
-      "cases": 2130,
+      "files": 207,
+      "cases": 2135,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -59,6 +59,7 @@
         "data-depth-cache.unit.test.ts": 3,
         "db-migrations.unit.test.ts": 15,
         "demo-day-attribution.unit.test.ts": 3,
+        "deploy-internal-networks.unit.test.ts": 5,
         "deploy-sync-bind-mounts.unit.test.ts": 1,
         "devcontainer.unit.test.ts": 7,
         "discord-bot-dispatch.unit.test.ts": 17,

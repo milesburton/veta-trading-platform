@@ -213,6 +213,32 @@ if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d --no-build \
         || { log "❌ retry also returned non-zero; aborting deployment"; exit 1; }
 fi
 
+INTERNAL_NETWORKS=$(docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" config --format json \
+    | python3 -c "
+import json, sys
+networks = json.load(sys.stdin).get('networks', {})
+print(' '.join(n['name'] for n in networks.values() if n.get('internal')))
+" || true)
+NOT_INTERNAL=""
+for net in $INTERNAL_NETWORKS; do
+    actual=$(docker network inspect --format '{{.Internal}}' "$net" 2>/dev/null || echo "missing")
+    if [[ "$actual" != "true" ]]; then
+        NOT_INTERNAL="$NOT_INTERNAL $net(internal=$actual)"
+    fi
+done
+if [[ -z "$INTERNAL_NETWORKS" ]]; then
+    log "⚠ could not read the internal networks declared in compose config; isolation not verified"
+elif [[ -n "$NOT_INTERNAL" ]]; then
+    log "⚠ networks declared internal that Docker does not isolate:$NOT_INTERNAL"
+    log "   Docker never reconfigures an existing network; each must be removed and recreated"
+    if [[ "${ENFORCE_INTERNAL_NETWORKS:-0}" == "1" ]]; then
+        log "❌ ENFORCE_INTERNAL_NETWORKS=1; failing the deploy"
+        exit 1
+    fi
+else
+    log "Internal networks verified: $INTERNAL_NETWORKS"
+fi
+
 # Detect bind-mount drift on single-file mounts and restart the affected
 # container so the new inode takes effect. `docker compose up -d` only
 # recreates a container when the *service definition* changes: not

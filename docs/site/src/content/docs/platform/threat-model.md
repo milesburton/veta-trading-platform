@@ -122,7 +122,7 @@ hurdles in order.
      production dockerd. A compromise landing in any of them has
      nowhere to exfiltrate to. `gateway` (Discord webhook), `market-data`
      (external quote providers) and `discord-bot` (Discord API) join a
-     second `egress-net`, which is also internal: their only way out is
+     second `proxied-net`, which is also internal: their only way out is
      the [egress proxy](../supporting/egress-proxy/), which allows the
      destinations in `docker/egress-proxy/allowlist.txt` on ports 80 and
      443 and refuses everything else. A compromise in those services
