@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.109.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.108.2...veta-trading-platform-v1.109.0) (2026-11-12)
+
+
+### Features
+
+* **auth:** add the Authentik identity provider as its own Compose project ([#1137](https://github.com/milesburton/veta-trading-platform/issues/1137)) ([018f79c](https://github.com/milesburton/veta-trading-platform/commit/018f79c7e759980f23734dd7482b8ae4986248ec)), closes [#974](https://github.com/milesburton/veta-trading-platform/issues/974)
+
 ## [1.108.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.108.1...veta-trading-platform-v1.108.2) (2026-11-12)
 
 
