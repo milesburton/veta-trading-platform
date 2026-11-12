@@ -231,8 +231,8 @@ if [[ -z "$INTERNAL_NETWORKS" ]]; then
 elif [[ -n "$NOT_INTERNAL" ]]; then
     log "⚠ networks declared internal that Docker does not isolate:$NOT_INTERNAL"
     log "   Docker never reconfigures an existing network; each must be removed and recreated"
-    if [[ "${ENFORCE_INTERNAL_NETWORKS:-0}" == "1" ]]; then
-        log "❌ ENFORCE_INTERNAL_NETWORKS=1; failing the deploy"
+    if [[ "${ENFORCE_INTERNAL_NETWORKS:-1}" == "1" ]]; then
+        log "❌ failing the deploy; set ENFORCE_INTERNAL_NETWORKS=0 to report only"
         exit 1
     fi
 else

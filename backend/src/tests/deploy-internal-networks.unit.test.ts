@@ -64,7 +64,7 @@ test("[deploy-networks] the retired non-internal egress-net name is not reused",
 test("[deploy-networks] the deploy script compares declared internal networks with Docker", () => {
   assert(DEPLOY.includes("docker network inspect --format '{{.Internal}}'"));
   assert(DEPLOY.includes("networks declared internal that Docker does not isolate"));
-  assert(DEPLOY.includes("ENFORCE_INTERNAL_NETWORKS"));
+  assert(DEPLOY.includes('"${ENFORCE_INTERNAL_NETWORKS:-1}" == "1"'));
 });
 
 test("[deploy-networks] the allowlist grants the GitHub API host only, not the whole domain", () => {
