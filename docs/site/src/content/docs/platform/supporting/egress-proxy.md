@@ -12,14 +12,17 @@ allowlist is refused with `403`.
 
 | Network | Internet route | Members |
 | --- | --- | --- |
-| `trading-net` | None (`internal: true`) | Every service |
+| `trading-net` | None (`internal: true`) | Every service except `ollama-model-pull` |
 | `proxied-net` | None (`internal: true`); only `egress-proxy` can forward traffic out | `egress-proxy`, `gateway`, `market-data`, `discord-bot`, `news-aggregator` |
 | `internet-net` | Direct | `egress-proxy`, `traefik`, `ollama-model-pull` |
 
 `traefik` keeps a direct route because it publishes ports 80 and 443, which
 Docker cannot do on an internal network. `ollama-model-pull` runs once at
-startup to download a model and exits; it is the remaining direct-egress
-exception and is noted in the threat model.
+startup and exits. It starts its own Ollama process, downloads the model into
+the volume it shares with the `ollama` server if the model is not already
+there, and never joins `trading-net`, so the long-running server needs no
+route out. It is the remaining direct-egress exception and is noted in the
+threat model.
 
 Docker never changes the `internal` setting of a network that already exists,
 and Compose does not recreate one whose definition changed. A network that

@@ -14,6 +14,8 @@ interface ComposeService {
   networks?: string[] | Record<string, unknown>;
   extra_hosts?: string[];
   environment?: Record<string, string>;
+  entrypoint?: string[];
+  depends_on?: Record<string, unknown> | string[];
 }
 
 interface ComposeFile {
@@ -111,6 +113,20 @@ test("[deploy-networks] Traefik is pinned to the network every routed service sh
         .network
   );
   assertEquals(pinned, [expected, expected]);
+});
+
+test("[deploy-networks] the model download shares no network with application services", () => {
+  const pull = COMPOSE.services["ollama-model-pull"];
+  assertEquals(networksOf(pull), [DIRECT_NETWORK]);
+  assertEquals(networksOf(COMPOSE.services.ollama), ["trading-net"]);
+  assertEquals(pull.environment?.OLLAMA_HOST, undefined);
+  assertEquals(pull.depends_on, undefined);
+});
+
+test("[deploy-networks] the model download skips the registry when the model is present", () => {
+  const script = (COMPOSE.services["ollama-model-pull"].entrypoint ?? []).join(" ");
+  assert(script.includes("ollama serve"));
+  assert(script.includes('ollama list | grep -q "^qwen2.5:3b" || ollama pull qwen2.5:3b'));
 });
 
 test("[deploy-networks] every service Traefik routes to is on trading-net", () => {
