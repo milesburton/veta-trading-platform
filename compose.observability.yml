@@ -1,117 +1,79 @@
 x-otel-common: &otel-common
   OTEL_ENABLED: "true"
-  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-http://host.docker.internal:4318}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-http://lgtm-alloy:4318}
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${VITE_DEPLOYMENT:-local}
   OTEL_METRICS_EXPORTER: otlp
   OTEL_METRIC_EXPORT_INTERVAL: "15000"
 
-x-otel-extra-hosts: &otel-extra-hosts
-  - "host.docker.internal:host-gateway"
-
 services:
   market-sim:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: market-sim }
   ems:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: ems }
   oms:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: oms }
   limit-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: limit-algo }
   twap-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: twap-algo }
   pov-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: pov-algo }
   vwap-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: vwap-algo }
   iceberg-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: iceberg-algo }
   sniper-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: sniper-algo }
   arrival-price-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: arrival-price-algo }
   momentum-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: momentum-algo }
   is-algo:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: is-algo }
   rfq-service:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: rfq-service }
   ccp-service:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: ccp-service }
   product-service:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: product-service }
   replay-service:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: replay-service }
   risk-engine:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: risk-engine }
   dark-pool:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: dark-pool }
   kafka-relay:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: kafka-relay }
   user-service:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: user-service }
   journal:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: journal }
   fix-exchange:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: fix-exchange }
   fix-gateway:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: fix-gateway }
   fix-archive:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: fix-archive }
   analytics:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: analytics }
   market-data:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: market-data }
   market-data-adapters:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: market-data-adapters }
   feature-engine:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: feature-engine }
   signal-engine:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: signal-engine }
   recommendation-engine:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: recommendation-engine }
   scenario-engine:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: scenario-engine }
   news-aggregator:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: news-aggregator }
   llm-advisory:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: llm-advisory }
   llm-worker:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: llm-worker }
   gateway:
-    extra_hosts: *otel-extra-hosts
     environment: { <<: *otel-common, OTEL_SERVICE_NAME: gateway }

@@ -21,6 +21,7 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - lgtm
+      - veta_trading-net
     restart: unless-stopped
     mem_limit: 512m
 

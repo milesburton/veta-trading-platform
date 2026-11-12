@@ -5,3 +5,4 @@
 .alphavantage.co
 .finnhub.io
 api.github.com
+api.rss2json.com
