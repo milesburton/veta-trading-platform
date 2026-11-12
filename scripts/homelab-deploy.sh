@@ -26,6 +26,7 @@ CONFIG_PATHS=(
     "scripts/homelab-motd/"
     "k6/"
     "deploy/openbao/"
+    "deploy/authentik/"
 )
 
 cd "$STACK_DIR"
@@ -367,6 +368,21 @@ if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
         log "❌ failed to activate observability configuration"
         exit 1
     fi
+fi
+
+if [[ -f "$STACK_DIR/deploy/authentik/compose.yml" ]]; then
+    authentik_status=0
+    (
+        openbao_export_if_present authentik || exit 2
+        [[ -n "${AUTHENTIK_SECRET_KEY:-}" ]] || exit 3
+        cd "$STACK_DIR/deploy/authentik"
+        docker compose up -d 2>&1 | sed 's/^/  /'
+    ) || authentik_status=$?
+    case "$authentik_status" in
+        0) log "Authentik (identity provider) is up to date" ;;
+        3) log "Authentik secrets are not in OpenBao (veta/authentik); leaving the identity provider down" ;;
+        *) log "⚠ Authentik did not start cleanly (status $authentik_status); named-account sign-in may be unavailable" ;;
+    esac
 fi
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."

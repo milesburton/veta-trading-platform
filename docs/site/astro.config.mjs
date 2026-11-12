@@ -154,6 +154,7 @@ export default defineConfig({
                 { label: "veta-tunnel", slug: "platform/supporting/veta-tunnel" },
                 { label: "veta-host-prune", slug: "platform/supporting/veta-host-prune" },
                 { label: "OpenBao", slug: "platform/supporting/openbao" },
+                { label: "Authentik", slug: "platform/supporting/authentik" },
                 { label: "Disk monitor", slug: "platform/supporting/disk-monitor" },
                 { label: "Postgres backup", slug: "platform/supporting/postgres-backup" },
                 { label: "db-migrate", slug: "platform/supporting/db-migrate" },

@@ -1,0 +1,112 @@
+name: veta-authentik
+
+x-authentik-environment: &authentik-environment
+  AUTHENTIK_SECRET_KEY: "${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY must come from OpenBao secret/veta/authentik}"
+  AUTHENTIK_POSTGRESQL__HOST: postgresql
+  AUTHENTIK_POSTGRESQL__NAME: authentik
+  AUTHENTIK_POSTGRESQL__USER: authentik
+  AUTHENTIK_POSTGRESQL__PASSWORD: "${AUTHENTIK_PG_PASSWORD:?AUTHENTIK_PG_PASSWORD must come from OpenBao secret/veta/authentik}"
+  AUTHENTIK_WEB__PATH: /sso/
+  AUTHENTIK_WEB__BASE_URL: "${VETA_PLATFORM_URL:-https://veta.mnetcs.com}"
+  AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+  AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+
+x-authentik-logging: &authentik-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  postgresql:
+    image: postgres:16-alpine
+    container_name: veta-authentik-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: authentik
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: "${AUTHENTIK_PG_PASSWORD:?AUTHENTIK_PG_PASSWORD must come from OpenBao secret/veta/authentik}"
+    volumes:
+      - authentik-database:/var/lib/postgresql/data
+    networks:
+      - authentik-net
+    mem_limit: 512m
+    cpus: 1
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d authentik -U authentik"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *authentik-logging
+
+  server:
+    image: ghcr.io/goauthentik/server:2026.8.5
+    container_name: veta-authentik-server
+    command: server
+    restart: unless-stopped
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment: *authentik-environment
+    volumes:
+      - authentik-data:/data
+    networks:
+      - authentik-net
+      - veta_trading-net
+    shm_size: 512mb
+    mem_limit: 1g
+    cpus: 1
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=veta_trading-net"
+      - "traefik.http.routers.authentik.rule=PathPrefix(`/sso`)"
+      - "traefik.http.routers.authentik.entrypoints=websecure"
+      - "traefik.http.routers.authentik.tls=true"
+      - "traefik.http.routers.authentik.middlewares=origin-ratelimit"
+      - "traefik.http.routers.authentik.priority=30"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
+    logging: *authentik-logging
+
+  worker:
+    image: ghcr.io/goauthentik/server:2026.8.5
+    container_name: veta-authentik-worker
+    command: worker
+    restart: unless-stopped
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      <<: *authentik-environment
+      AUTHENTIK_BOOTSTRAP_PASSWORD_HASH: "${AUTHENTIK_BOOTSTRAP_PASSWORD_HASH:?AUTHENTIK_BOOTSTRAP_PASSWORD_HASH must come from OpenBao secret/veta/authentik}"
+      AUTHENTIK_BOOTSTRAP_EMAIL: "${AUTHENTIK_BOOTSTRAP_EMAIL:-admin@veta.invalid}"
+      VETA_PUBLIC_ORIGIN: "${VETA_PLATFORM_URL:-https://veta.mnetcs.com}"
+      VETA_OIDC_CLIENT_SECRET: "${VETA_OIDC_CLIENT_SECRET:?VETA_OIDC_CLIENT_SECRET must come from OpenBao secret/veta/authentik}"
+    volumes:
+      - authentik-data:/data
+      - ./blueprints:/blueprints/veta:ro
+    networks:
+      - authentik-net
+    shm_size: 512mb
+    mem_limit: 1g
+    cpus: 1
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *authentik-logging
+
+volumes:
+  authentik-database:
+  authentik-data:
+
+networks:
+  authentik-net:
+    driver: bridge
+    internal: true
+  veta_trading-net:
+    external: true
