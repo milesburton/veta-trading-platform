@@ -102,3 +102,23 @@ test("[deploy-networks] every service given the proxy URL is on the proxied netw
     .map(([name]) => name);
   assertEquals(misplaced, []);
 });
+
+test("[deploy-networks] Traefik is pinned to the network every routed service shares", () => {
+  const expected = `${(COMPOSE as unknown as { name: string }).name}_trading-net`;
+  const pinned = ["traefik.yml", "traefik.gate.yml"].map(
+    (file) =>
+      (parse(read(file)) as { providers: { docker: { network?: string } } }).providers.docker
+        .network
+  );
+  assertEquals(pinned, [expected, expected]);
+});
+
+test("[deploy-networks] every service Traefik routes to is on trading-net", () => {
+  const unreachable = Object.entries(COMPOSE.services)
+    .filter(([, service]) =>
+      ((service as { labels?: string[] }).labels ?? []).includes("traefik.enable=true")
+    )
+    .filter(([, service]) => !networksOf(service).includes("trading-net"))
+    .map(([name]) => name);
+  assertEquals(unreachable, []);
+});
