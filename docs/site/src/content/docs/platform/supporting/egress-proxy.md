@@ -27,8 +27,9 @@ was first created without `internal: true` therefore stays routable however
 the Compose file reads. This is why the proxied network is named
 `proxied-net` and not the earlier `egress-net`, which predated the proxy on
 the production host. `scripts/homelab-deploy.sh` compares every network declared
-internal against what Docker reports after `up` and logs a warning on a
-mismatch, or fails the deploy when `ENFORCE_INTERNAL_NETWORKS=1`.
+internal against what Docker reports after `up` and fails the deploy on a
+mismatch. `ENFORCE_INTERNAL_NETWORKS=0` downgrades that to a warning, for
+the window in which an old network is being recreated.
 
 ## Allowlist
 
