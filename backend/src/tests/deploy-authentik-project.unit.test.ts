@@ -82,5 +82,5 @@ test("[authentik] the blueprint enforces a second factor and a strict redirect",
 test("[authentik] the deploy syncs the project and starts it only when its secrets exist", () => {
   assert(DEPLOY.includes('"deploy/authentik/"'));
   assert(DEPLOY.includes("openbao_export_if_present authentik"));
-  assert(DEPLOY.includes('[[ -n "${AUTHENTIK_SECRET_KEY:-}" ]] || exit 3'));
+  assert(DEPLOY.includes('if [[ -z "${AUTHENTIK_SECRET_KEY:-}" ]]; then'));
 });

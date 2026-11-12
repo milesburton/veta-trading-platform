@@ -128,6 +128,22 @@ export const userApi = createApi({
     getDemoPersonas: builder.query<{ personas: DemoPersona[] }, void>({
       query: () => "/personas",
     }),
+    getOidcConfig: builder.query<{ enabled: boolean }, void>({
+      query: () => "/oauth/oidc/config",
+    }),
+    startOidcSignIn: builder.mutation<{ authorization_url: string }, void>({
+      query: () => ({
+        url: "/oauth/oidc/start",
+        method: "POST",
+      }),
+    }),
+    completeOidcSignIn: builder.mutation<OAuthTokenResponse, { code: string; state: string }>({
+      query: (body) => ({
+        url: "/oauth/oidc/callback",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -155,4 +171,7 @@ export const {
   useGetUserLimitsQuery,
   useUpdateUserLimitsMutation,
   useGetDemoPersonasQuery,
+  useGetOidcConfigQuery,
+  useStartOidcSignInMutation,
+  useCompleteOidcSignInMutation,
 } = userApi;

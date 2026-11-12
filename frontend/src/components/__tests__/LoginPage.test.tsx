@@ -15,6 +15,10 @@ vi.mock("../StatusBar", () => ({
   AppHeader: () => <div data-testid="app-header-mock" />,
 }));
 
+vi.mock("../LoginPage/SingleSignOn", () => ({
+  SingleSignOn: () => null,
+}));
+
 vi.mock("../../hooks/useAllServiceHealth", () => ({
   useAllServiceHealth,
 }));

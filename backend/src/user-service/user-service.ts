@@ -8,6 +8,7 @@ import {
   AlertCreateSchema,
   AuthorizeRequestSchema,
   LimitsUpdateSchema,
+  OidcCallbackRequestSchema,
   PreferencesUpdateSchema,
   RegisterRequestSchema,
   SessionValidateSchema,
@@ -21,10 +22,24 @@ import {
 } from "#veta/trader-archetypes";
 import {
   buildLimitsUpdateAuditEvent,
+  buildOidcSignInAuditEvent,
   buildRegisterAuditEvent,
   type LimitsSnapshot,
 } from "./account-audit.ts";
 import { hashPassword, verifyPassword } from "./credentials.ts";
+import {
+  buildAuthorizationUrl,
+  createJwksClient,
+  createPendingStore,
+  exchangeCode,
+  IdTokenError,
+  pkceChallenge,
+  randomUrlToken,
+  readOidcConfig,
+  roleFromGroups,
+  userIdFromClaims,
+  verifyIdToken,
+} from "./oidc.ts";
 
 const AUTH_ROLES = [
   "trader",
@@ -207,6 +222,20 @@ function randomToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
 
+const OIDC = readOidcConfig(process.env);
+const oidcKeys = OIDC ? createJwksClient(OIDC) : null;
+const oidcPending = createPendingStore();
+const OIDC_STATE_COOKIE = "veta_oidc_state";
+
+function readCookie(req: Request, name: string): string | null {
+  const header = req.headers.get("cookie") ?? "";
+  const match = header
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`));
+  return match ? match.slice(name.length + 1) : null;
+}
+
 function normalizeUserId(input: string): string {
   return input
     .trim()
@@ -280,10 +309,11 @@ async function verifyOAuthCredentials(
 
   const client = await usersPool.connect();
   try {
-    const { rows } = await client.queryArray<[string | null]>(
-      "SELECT password_hash FROM users.users WHERE id = $1",
+    const { rows } = await client.queryArray<[string | null, string | null]>(
+      "SELECT password_hash, auth_source FROM users.users WHERE id = $1",
       [userId]
     );
+    if (rows[0]?.[1] === "oidc") return false;
     const stored = rows[0]?.[0];
     if (stored) {
       return await verifyPassword(candidate, stored);
@@ -974,6 +1004,126 @@ async function handle(req: Request): Promise<Response> {
         200,
         { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` }
       );
+    } finally {
+      client.release();
+    }
+  }
+
+  if (req.method === "GET" && path === "/oauth/oidc/config") {
+    return json({ enabled: OIDC !== null });
+  }
+
+  if (req.method === "POST" && path === "/oauth/oidc/start") {
+    if (!OIDC) return jsonError("single sign-on is not enabled", 404);
+    const state = randomUrlToken();
+    const nonce = randomUrlToken();
+    const codeVerifier = randomUrlToken(48);
+    if (!oidcPending.add(state, { nonce, codeVerifier }, Date.now())) {
+      return jsonError("too many sign-ins in progress", 503);
+    }
+    const authorizationUrl = buildAuthorizationUrl(OIDC, {
+      state,
+      nonce,
+      codeChallenge: await pkceChallenge(codeVerifier),
+    });
+    return json({ authorization_url: authorizationUrl }, 200, {
+      "Set-Cookie": `${OIDC_STATE_COOKIE}=${state}; ${COOKIE_BASE}; Max-Age=600`,
+    });
+  }
+
+  if (req.method === "POST" && path === "/oauth/oidc/callback") {
+    if (!OIDC || !oidcKeys) return jsonError("single sign-on is not enabled", 404);
+    const parsed = await parseBody(req, OidcCallbackRequestSchema);
+    if (!parsed.ok) return parsed.res;
+    const { code, state } = parsed.data;
+
+    const pending = oidcPending.take(state, Date.now());
+    if (!pending || readCookie(req, OIDC_STATE_COOKIE) !== state) {
+      return jsonError("invalid_state", 400);
+    }
+
+    let claims: Awaited<ReturnType<typeof verifyIdToken>>;
+    try {
+      const idToken = await exchangeCode(OIDC, code, pending.codeVerifier);
+      claims = await verifyIdToken(idToken, {
+        config: OIDC,
+        keys: await oidcKeys(),
+        expectedNonce: pending.nonce,
+        nowSeconds: Math.floor(Date.now() / 1000),
+      });
+    } catch (err) {
+      if (err instanceof IdTokenError) {
+        logger.warn("oidc sign-in rejected", { reason: err.message });
+        return jsonError("invalid_id_token", 401);
+      }
+      logger.error("oidc sign-in failed", { err });
+      return jsonError("identity provider unavailable", 502);
+    }
+
+    const userId = userIdFromClaims(claims);
+    if (!userId) return jsonError("unsupported user name", 400);
+    const role = roleFromGroups(claims.groups);
+    const displayName = (claims.name ?? userId).trim().slice(0, 120) || userId;
+
+    const client = await usersPool.connect();
+    try {
+      await client.queryArray("BEGIN");
+      const { rows } = await client.queryArray<[string, string]>(
+        "SELECT role, auth_source FROM users.users WHERE id = $1 FOR UPDATE",
+        [userId]
+      );
+      const existing = rows[0];
+      if (existing && existing[1] !== "oidc") {
+        await client.queryArray("ROLLBACK").catch(() => {});
+        logger.warn("oidc sign-in collides with a local account", { userId });
+        return jsonError("a local account already uses this name", 409);
+      }
+      if (!existing) {
+        await client.queryArray(
+          "INSERT INTO users.users (id, name, role, avatar_emoji, description, auth_source) VALUES ($1, $2, $3, '🔐', 'Single sign-on account', 'oidc')",
+          [userId, displayName, role]
+        );
+        await client.queryArray(
+          "INSERT INTO users.trading_limits (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+          [userId]
+        );
+      } else {
+        await client.queryArray("UPDATE users.users SET role = $2, name = $3 WHERE id = $1", [
+          userId,
+          role,
+          displayName,
+        ]);
+        if (existing[0] !== role) {
+          await client.queryArray("DELETE FROM users.sessions WHERE user_id = $1", [userId]);
+        }
+      }
+      const outcome = !existing
+        ? "provisioned"
+        : existing[0] === role
+          ? "signed_in"
+          : "role_changed";
+      await insertAuditEvent(client, buildOidcSignInAuditEvent(userId, role, outcome, Date.now()));
+      const session = await createSessionForUser(client, userId);
+      if (!session) {
+        await client.queryArray("ROLLBACK").catch(() => {});
+        return jsonError("user not found", 404);
+      }
+      await client.queryArray("COMMIT");
+      return json(
+        {
+          access_token: session.token,
+          token_type: "bearer",
+          expires_in: 28_800,
+          scope: "openid profile",
+          user: session.user,
+        },
+        200,
+        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` }
+      );
+    } catch (err) {
+      await client.queryArray("ROLLBACK").catch(() => {});
+      logger.error("oidc sign-in could not be recorded", { userId, err });
+      return jsonError("internal error", 500);
     } finally {
       client.release();
     }

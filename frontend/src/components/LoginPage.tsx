@@ -14,6 +14,7 @@ import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoPersonas } from "./DemoPersonas.tsx";
 import { RegistrationForm } from "./LoginPage/RegistrationForm.tsx";
+import { SingleSignOn } from "./LoginPage/SingleSignOn.tsx";
 import { AppHeader } from "./StatusBar.tsx";
 
 interface DegradedOverlayState {
@@ -324,6 +325,8 @@ export function LoginPage() {
                 GitHub
               </a>
             </div>
+
+            <SingleSignOn disabled={isLoading} />
 
             <div className="relative">
               <AuthForm

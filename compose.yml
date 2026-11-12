@@ -1249,6 +1249,13 @@ services:
       OAUTH2_SHARED_SECRET: ${OAUTH2_SHARED_SECRET:-veta-dev-passcode}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-veta-dev-service-token}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      OIDC_ISSUER: ${VETA_PLATFORM_URL:-https://veta.mnetcs.com}/sso/application/o/veta/
+      OIDC_INTERNAL_BASE_URL: ${OIDC_INTERNAL_BASE_URL:-http://veta-authentik-server:9000/sso}
+      OIDC_APPLICATION_SLUG: veta
+      OIDC_CLIENT_ID: veta-platform
+      OIDC_CLIENT_SECRET: ${VETA_OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URI: ${VETA_PLATFORM_URL:-https://veta.mnetcs.com}/
     healthcheck:
       test: ["CMD-SHELL", "curl -sf -m 3 http://localhost:5008/health || exit 1"]
       interval: 10s

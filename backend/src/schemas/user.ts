@@ -63,6 +63,12 @@ export const TokenRequestSchema = z.object({
 });
 export type TokenRequest = z.infer<typeof TokenRequestSchema>;
 
+export const OidcCallbackRequestSchema = z.object({
+  code: z.string().min(1).max(2_000),
+  state: z.string().min(16).max(200),
+});
+export type OidcCallbackRequest = z.infer<typeof OidcCallbackRequestSchema>;
+
 export const RegisterRequestSchema = z
   .object({
     username: z.string().optional(),

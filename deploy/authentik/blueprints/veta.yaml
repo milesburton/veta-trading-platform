@@ -66,7 +66,7 @@ entries:
       access_token_validity: minutes=5
       redirect_uris:
         - matching_mode: strict
-          url: !Format ["%s/api/user-service/oauth/oidc/callback", !Env VETA_PUBLIC_ORIGIN]
+          url: !Format ["%s/", !Env VETA_PUBLIC_ORIGIN]
       property_mappings:
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]

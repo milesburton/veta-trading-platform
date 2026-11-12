@@ -11,7 +11,7 @@ if ! openbao_configured; then
     exit 1
 fi
 openbao_export platform
-openbao_export_if_present loadgen
+openbao_export_if_present loadgen authentik
 
 export COMPOSE_FILE="${COMPOSE_FILE:-compose.yml:compose.prod.yml:compose.observability.yml}"
 

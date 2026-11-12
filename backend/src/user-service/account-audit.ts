@@ -11,6 +11,22 @@ export function buildRegisterAuditEvent(userId: string, archetype: string, ts: n
   };
 }
 
+export function buildOidcSignInAuditEvent(
+  userId: string,
+  role: string,
+  outcome: "provisioned" | "role_changed" | "signed_in",
+  ts: number
+): AuditEvent {
+  return {
+    actorId: userId,
+    actorRole: role,
+    action: "account_oidc_sign_in",
+    target: userId,
+    detail: { outcome },
+    ts,
+  };
+}
+
 export interface LimitsSnapshot {
   max_order_qty: number;
   max_daily_notional: number;

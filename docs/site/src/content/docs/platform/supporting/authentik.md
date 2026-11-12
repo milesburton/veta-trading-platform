@@ -8,8 +8,8 @@ description: Self-hosted Authentik that provides OIDC sign-in and enforced multi
 demands a second factor, and issues OIDC tokens that `user-service` exchanges for a platform
 session. Demo personas and machine accounts do not use it.
 
-The project is deployed but stays down until its secrets exist in OpenBao. The `user-service`
-side of the sign-in flow is tracked in
+The project is deployed but stays down until its secrets exist in OpenBao, and platform
+sign-in through it stays off until `OIDC_ENABLED=true`. Progress is tracked in
 [#974](https://github.com/milesburton/veta-trading-platform/issues/974).
 
 ## Layout
@@ -31,7 +31,7 @@ side of the sign-in flow is tracked in
 
 | Object | Setting |
 | --- | --- |
-| OAuth2 provider `veta` | Confidential client `veta-platform`, RS256 signing key, issuer per provider, subject is the user name, claims included in the ID token, one strict redirect URI on the platform host |
+| OAuth2 provider `veta` | Confidential client `veta-platform`, RS256 signing key, issuer per provider, subject is the user name, claims included in the ID token, one strict redirect URI: the application root on the platform host |
 | Application `veta` | Bound to the provider |
 | MFA validation stage | Accepts TOTP and WebAuthn only. An account with no device is made to enrol one before sign-in completes, and the second factor is asked for at every sign-in |
 | Groups | `veta-admin`, `veta-trader`, `veta-desk-head`, `veta-risk-manager`, `veta-compliance`, `veta-sales`, `veta-oncall`, `veta-viewer`. Membership becomes the platform role |
@@ -47,6 +47,36 @@ OIDC endpoints, relative to the platform host:
 | Keys | `/sso/application/o/veta/jwks/` |
 | End session | `/sso/application/o/veta/end-session/` |
 
+## Platform sign-in
+
+`user-service` is the relying party. It is configured from the Compose file and two values in
+`secret/veta/authentik`:
+
+| Variable | Value |
+| --- | --- |
+| `OIDC_ENABLED` | `true` to offer single sign-on. Default `false`. Stored in `secret/veta/authentik` |
+| `OIDC_ISSUER` | Platform URL followed by `/sso/application/o/veta/`. Must equal the `iss` claim |
+| `OIDC_INTERNAL_BASE_URL` | `http://veta-authentik-server:9000/sso`, used for the code exchange and the signing keys |
+| `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | `veta-platform` and `VETA_OIDC_CLIENT_SECRET` from OpenBao |
+| `OIDC_REDIRECT_URI` | The application root on the platform URL |
+| `OIDC_REQUIRE_MFA` | Default `true`: an ID token whose `amr` claim lacks `mfa` is refused |
+
+| Endpoint on `user-service` | Purpose |
+| --- | --- |
+| `GET /oauth/oidc/config` | Tells the sign-in page whether to show the single sign-on button |
+| `POST /oauth/oidc/start` | Creates state, nonce and a PKCE verifier, returns the authorisation URL and sets a ten minute state cookie |
+| `POST /oauth/oidc/callback` | Checks the state against the cookie, exchanges the code, verifies the ID token, maps the user and creates the session |
+
+Authentik builds the issuer from the request host. The internal calls therefore send
+`X-Forwarded-Host` and `X-Forwarded-Proto` for the public address, so the ID token carries the
+public issuer although it was fetched by container name.
+
+A user is created on first sign-in with `auth_source = 'oidc'` and no local passcode. The role
+comes from the highest `veta-` group the account is in, in the order admin, compliance,
+risk-manager, desk-head, oncall, trader, sales, viewer, and is refreshed at every sign-in. A
+change of role ends the user's other sessions. An account in no `veta-` group is a `viewer`.
+Enabling `OIDC_ENABLED` without the client secret stops `user-service` at start, by design.
+
 ## First-time setup
 
 The deploy starts Authentik only when `secret/veta/authentik` exists. Create it once:
@@ -57,6 +87,7 @@ The deploy starts Authentik only when `secret/veta/authentik` exists. Create it 
 | `AUTHENTIK_PG_PASSWORD` | `openssl rand -hex 24` |
 | `VETA_OIDC_CLIENT_SECRET` | `openssl rand -hex 32` |
 | `AUTHENTIK_BOOTSTRAP_PASSWORD_HASH` | Hash of the `akadmin` password, generated as below |
+| `OIDC_ENABLED` | `false` until Authentik is up and an account is enrolled, then `true` |
 
 Generate the hash without writing the password to disk or shell history:
 
@@ -66,7 +97,7 @@ docker run --rm -it --entrypoint python ghcr.io/goauthentik/server:2026.8.5 -c \
 from django.contrib.auth.hashers import make_password; print(make_password(getpass()))"
 ```
 
-Store the four values with `bao kv put secret/veta/authentik ...` as the `admin` user, then
+Store the values with `bao kv put secret/veta/authentik ...` as the `admin` user, then
 run a deploy. The bootstrap hash is read on the first start only. Sign in as `akadmin` at
 `/sso/`, enrol a second factor, create the named accounts and add each to a `veta-` group.
 
