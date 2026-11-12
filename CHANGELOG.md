@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.109.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.109.0...veta-trading-platform-v1.109.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **ci:** pin the gate Traefik to the real trading-net name ([#1139](https://github.com/milesburton/veta-trading-platform/issues/1139)) ([01057c1](https://github.com/milesburton/veta-trading-platform/commit/01057c1dc439e4ec71102e8938f678bcbaf3992c))
+
 ## [1.109.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.108.2...veta-trading-platform-v1.109.0) (2026-11-12)
 
 
