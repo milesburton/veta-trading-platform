@@ -35,6 +35,7 @@ jobs:
     name: GitHub status (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions: {}
     steps:
       - name: Check for unresolved GitHub incidents
         run: |
@@ -63,6 +64,9 @@ jobs:
   changes:
     name: Detect changed paths
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       docker: ${{ fromJSON(steps.filter.outputs.outputs).docker }}
       docs: ${{ fromJSON(steps.filter.outputs.outputs).docs }}
