@@ -70,10 +70,10 @@ test("[deploy-networks] the deploy script compares declared internal networks wi
 });
 
 test("[deploy-networks] the allowlist grants the GitHub API host only, not the whole domain", () => {
-  assert(ALLOWLIST.includes("api.github.com"));
+  const registrableDomain = (entry: string): string => entry.split(".").slice(-2).join(".");
   assertEquals(
-    ALLOWLIST.filter((entry) => entry.endsWith("github.com") && entry !== "api.github.com"),
-    []
+    ALLOWLIST.filter((entry) => registrableDomain(entry) === "github.com"),
+    ["api.github.com"]
   );
 });
 
