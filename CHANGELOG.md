@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.109.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.109.1...veta-trading-platform-v1.109.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **compose:** download the Ollama model in the one-shot container ([#1141](https://github.com/milesburton/veta-trading-platform/issues/1141)) ([40e4901](https://github.com/milesburton/veta-trading-platform/commit/40e49018b5c09b118ad4fb8c697e61b9cfa4c8e2)), closes [#1134](https://github.com/milesburton/veta-trading-platform/issues/1134)
+
 ## [1.109.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.109.0...veta-trading-platform-v1.109.1) (2026-11-12)
 
 
