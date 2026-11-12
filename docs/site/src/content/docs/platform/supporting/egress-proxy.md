@@ -13,7 +13,7 @@ allowlist is refused with `403`.
 | Network | Internet route | Members |
 | --- | --- | --- |
 | `trading-net` | None (`internal: true`) | Every service |
-| `proxied-net` | None (`internal: true`); only `egress-proxy` can forward traffic out | `egress-proxy`, `gateway`, `market-data`, `discord-bot` |
+| `proxied-net` | None (`internal: true`); only `egress-proxy` can forward traffic out | `egress-proxy`, `gateway`, `market-data`, `discord-bot`, `news-aggregator` |
 | `internet-net` | Direct | `egress-proxy`, `traefik`, `ollama-model-pull` |
 
 `traefik` keeps a direct route because it publishes ports 80 and 443, which
@@ -42,9 +42,18 @@ runtime edit. A leading dot matches the domain and its subdomains.
 | `.polygon.io`, `.tiingo.com`, `.alphavantage.co` | `market-data` quote providers |
 | `.finnhub.io` | `market-data-adapters` provider, when that service is given egress |
 | `api.github.com` | `gateway` ticketing: issues raised from alerts and user bug reports, and the ticketing health probe |
+| `api.rss2json.com` | `news-aggregator`: every RSS feed is fetched through this converter, so the feed hosts themselves are not contacted |
 
-`api.github.com` is listed without a leading dot, so only that host matches
-and the rest of `github.com` stays refused.
+`api.github.com` and `api.rss2json.com` are listed without a leading dot, so
+only those hosts match and the rest of each domain stays refused.
+
+## Telemetry
+
+An internal network has no route to the Docker host either, so services
+cannot send telemetry to a port published on the host. `lgtm-alloy` joins
+`trading-net` and services export OTLP to `http://lgtm-alloy:4318` by
+container name. The k6 runners write to `http://lgtm-prometheus:9090` the
+same way.
 
 Only ports 80 and 443 are accepted, and `CONNECT` only to 443. Squid does not
 cache, strips `X-Forwarded-For` and sends no `Via` header, so the proxy does

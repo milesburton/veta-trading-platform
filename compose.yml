@@ -1651,6 +1651,9 @@ services:
     cgroup_parent: ${VETA_CGROUP_PARENT:-}
     <<: *node-service
     profiles: [trading, on-demand]
+    networks:
+      - trading-net
+      - proxied-net
     command: [
       "node",
       "/app/backend/src/news/news-aggregator.ts",
@@ -1660,7 +1663,10 @@ services:
         condition: service_healthy
       market-sim:
         condition: service_healthy
+      egress-proxy:
+        condition: service_healthy
     environment:
+      EGRESS_PROXY_URL: http://egress-proxy:3128
       REDPANDA_BROKERS: redpanda:9092
       MARKET_SIM_URL: http://market-sim:5000
       NEWS_AGGREGATOR_PORT: "5013"
@@ -2362,8 +2368,6 @@ services:
     user: "${K6_UID:-1000}:${K6_GID:-1000}"
     networks:
       - trading-net
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - ./k6:/scripts:ro
       - ./docs/site/src/data/loadtest:/output
@@ -2375,7 +2379,7 @@ services:
       BASE_URL: ${BASE_URL:-http://gateway:5011}
       K6_TOKEN: ${K6_TOKEN:-}
       RUN_LABEL: ${RUN_LABEL:-baseline-limit}
-      K6_PROMETHEUS_RW_SERVER_URL: ${K6_PROMETHEUS_RW_SERVER_URL:-http://host.docker.internal:9090/api/v1/write}
+      K6_PROMETHEUS_RW_SERVER_URL: ${K6_PROMETHEUS_RW_SERVER_URL:-http://lgtm-prometheus:9090/api/v1/write}
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
     command:
       - run

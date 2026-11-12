@@ -12,6 +12,8 @@ interface ComposeNetwork {
 
 interface ComposeService {
   networks?: string[] | Record<string, unknown>;
+  extra_hosts?: string[];
+  environment?: Record<string, string>;
 }
 
 interface ComposeFile {
@@ -25,6 +27,14 @@ const ALLOWLIST = read("docker/egress-proxy/allowlist.txt")
   .split("\n")
   .map((line) => line.trim())
   .filter((line) => line.length > 0);
+
+const OVERLAYS = ["compose.observability.yml", "compose.loadgen.yml"].map(
+  (file) => parse(read(file), { merge: true, maxAliasCount: -1 }) as ComposeFile
+);
+const LGTM = parse(read("observability/docker-compose.lgtm.yml"), {
+  merge: true,
+  maxAliasCount: -1,
+}) as ComposeFile;
 
 const DIRECT_NETWORK = "internet-net";
 const DIRECT_EGRESS_SERVICES = ["egress-proxy", "ollama-model-pull", "traefik"];
@@ -63,4 +73,32 @@ test("[deploy-networks] the allowlist grants the GitHub API host only, not the w
     ALLOWLIST.filter((entry) => entry.endsWith("github.com") && entry !== "api.github.com"),
     []
   );
+});
+
+test("[deploy-networks] no service relies on a route to the Docker host", () => {
+  const reliant = [COMPOSE, ...OVERLAYS].flatMap((file) =>
+    Object.entries(file.services)
+      .filter(
+        ([, service]) =>
+          (service.extra_hosts ?? []).some((host) => host.includes("host-gateway")) ||
+          Object.values(service.environment ?? {}).some((value) =>
+            String(value).includes("host.docker.internal")
+          )
+      )
+      .map(([name]) => name)
+  );
+  assertEquals(reliant, []);
+});
+
+test("[deploy-networks] the collector and Prometheus are reachable on trading-net", () => {
+  assert(networksOf(LGTM.services.alloy).includes("veta_trading-net"));
+  assert(networksOf(LGTM.services.prometheus).includes("veta_trading-net"));
+});
+
+test("[deploy-networks] every service given the proxy URL is on the proxied network", () => {
+  const misplaced = Object.entries(COMPOSE.services)
+    .filter(([, service]) => service.environment?.EGRESS_PROXY_URL !== undefined)
+    .filter(([, service]) => !networksOf(service).includes("proxied-net"))
+    .map(([name]) => name);
+  assertEquals(misplaced, []);
 });

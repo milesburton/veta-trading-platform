@@ -54,8 +54,6 @@ services:
     user: "${K6_UID:-1000}:${K6_GID:-1000}"
     networks:
       - trading-net
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       loadgen-token:
         condition: service_started
@@ -70,7 +68,7 @@ services:
       SOAK_VUS: "${LOADGEN_SOAK_VUS:-50}"
       SOAK_DURATION: "${LOADGEN_SOAK_DURATION:-50m}"
       LOADGEN_MAX_RUNTIME_MIN: "${LOADGEN_MAX_RUNTIME_MIN:-720}"
-      K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
+      K6_PROMETHEUS_RW_SERVER_URL: http://lgtm-prometheus:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
       # Optional. When set, the loop posts start/stop notifications to
       # /loadgen-announce so the Discord alerts channel knows to disregard
@@ -99,8 +97,6 @@ services:
     user: "${K6_UID:-1000}:${K6_GID:-1000}"
     networks:
       - trading-net
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       loadgen-token:
         condition: service_started
@@ -114,7 +110,7 @@ services:
       SCENARIOS: "${LOADGEN_MATRIX_SCENARIOS:-baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js}"
       SLEEP_BETWEEN: "${LOADGEN_MATRIX_SLEEP:-30}"
       LOADGEN_MAX_RUNTIME_MIN: "${LOADGEN_MAX_RUNTIME_MIN:-720}"
-      K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
+      K6_PROMETHEUS_RW_SERVER_URL: http://lgtm-prometheus:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
       LOADGEN_ANNOUNCE_TOKEN: "${LOADGEN_ANNOUNCE_TOKEN:-}"
       LOADGEN_RUNNER_NAME: "matrix"

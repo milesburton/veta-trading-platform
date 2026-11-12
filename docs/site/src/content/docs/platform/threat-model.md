@@ -120,13 +120,13 @@ hurdles in order.
      the rest apart from the five below) has no route to the internet
      at all, verified directly against
      production dockerd. A compromise landing in any of them has
-     nowhere to exfiltrate to. `gateway` (Discord webhook), `market-data`
-     (external quote providers) and `discord-bot` (Discord API) join a
-     second `proxied-net`, which is also internal: their only way out is
+     nowhere to exfiltrate to. `gateway` (Discord webhook, GitHub ticketing),
+     `market-data` (external quote providers), `discord-bot` (Discord API)
+     and `news-aggregator` (RSS converter) join a second `proxied-net`, which is also internal: their only way out is
      the [egress proxy](../supporting/egress-proxy/), which allows the
      destinations in `docker/egress-proxy/allowlist.txt` on ports 80 and
      443 and refuses everything else. A compromise in those services
-     can reach Discord and the quote providers, and nothing else.
+     can reach the allowlisted hosts and nothing else.
      `traefik` (public ingress, published ports) and the one-shot
      `ollama-model-pull` bootstrap container keep a direct route on
      `internet-net`.
