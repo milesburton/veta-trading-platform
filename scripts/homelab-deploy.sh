@@ -130,6 +130,7 @@ load_secrets() {
         return 1
     fi
     openbao_export platform || return 1
+    openbao_export_if_present authentik || return 1
     . "$STACK_DIR/scripts/lib/require-real-secrets.sh"
     require_real_secrets || return 1
     if [[ "${LOADGEN_ENABLED:-false}" == "true" ]]; then
@@ -371,18 +372,13 @@ if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
 fi
 
 if [[ -f "$STACK_DIR/deploy/authentik/compose.yml" ]]; then
-    authentik_status=0
-    (
-        openbao_export_if_present authentik || exit 2
-        [[ -n "${AUTHENTIK_SECRET_KEY:-}" ]] || exit 3
-        cd "$STACK_DIR/deploy/authentik"
-        docker compose up -d 2>&1 | sed 's/^/  /'
-    ) || authentik_status=$?
-    case "$authentik_status" in
-        0) log "Authentik (identity provider) is up to date" ;;
-        3) log "Authentik secrets are not in OpenBao (veta/authentik); leaving the identity provider down" ;;
-        *) log "⚠ Authentik did not start cleanly (status $authentik_status); named-account sign-in may be unavailable" ;;
-    esac
+    if [[ -z "${AUTHENTIK_SECRET_KEY:-}" ]]; then
+        log "Authentik secrets are not in OpenBao (veta/authentik); leaving the identity provider down"
+    elif (cd "$STACK_DIR/deploy/authentik" && docker compose up -d 2>&1 | sed 's/^/  /'); then
+        log "Authentik (identity provider) is up to date"
+    else
+        log "⚠ Authentik did not start cleanly; named-account sign-in may be unavailable"
+    fi
 fi
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."

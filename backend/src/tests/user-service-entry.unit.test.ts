@@ -395,7 +395,7 @@ test("[user-service] accepts the shared secret for users without their own secre
 test("[user-service] verifies stored password hashes before falling back to secrets", async () => {
   const { hashPassword } = await import("../user-service/credentials.ts");
   const hash = await hashPassword("a-long-password");
-  when(/SELECT password_hash FROM users\.users/, () => [[hash]]);
+  when(/SELECT password_hash, auth_source FROM users\.users/, () => [[hash, "local"]]);
   assertEquals((await authorize({ username: "dave", password: "a-long-password" })).status, 200);
   assertEquals(
     (await authorize({ username: "dave", password: "shared-secret-value" })).status,

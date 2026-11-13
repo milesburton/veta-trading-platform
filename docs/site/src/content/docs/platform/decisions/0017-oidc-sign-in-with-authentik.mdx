@@ -50,27 +50,31 @@ sequenceDiagram
     participant B as Browser
     participant U as user-service
     participant A as Authentik
-    B->>U: GET /oauth/oidc/start
-    U-->>B: 302 to /sso/application/o/authorize/ (state, nonce, PKCE challenge)
-    B->>A: Authorise
+    B->>U: POST /oauth/oidc/start
+    U-->>B: Authorisation URL (state, nonce, PKCE challenge), state cookie
+    B->>A: Navigate to /sso/application/o/authorize/
     A-->>B: Password, then TOTP or WebAuthn
-    A-->>B: 302 to /oauth/oidc/callback (code, state)
-    B->>U: GET /oauth/oidc/callback
+    A-->>B: 302 to the application with code and state
+    B->>U: POST /oauth/oidc/callback (code, state)
     U->>A: Exchange code (client secret, PKCE verifier)
     A-->>U: ID token
-    U->>U: Verify signature, issuer, audience, nonce, expiry
+    U->>U: Verify signature, issuer, audience, nonce, expiry, second factor
     U->>U: Map subject and groups to a platform user and role
-    U-->>B: Set veta_user session cookie, 302 to the application
+    U-->>B: Set veta_user session cookie, user profile
 ```
+
+The browser reaches `user-service` through the gateway as JSON requests, as it does for local
+sign-in, so the flow returns the authorisation URL for the application to follow and the
+provider redirects back to the application, which posts the code.
 
 | Concern | Handling |
 | --- | --- |
 | Front and back channel | The browser uses the public `/sso/` path. `user-service` calls the token and key endpoints by container name over `trading-net`, and still requires the token's issuer to equal the public issuer. |
 | Client type | Confidential client with PKCE. The client secret lives in OpenBao. |
 | Token checks | Signature against the provider's published keys, issuer, audience, nonce, expiry. Only the authorisation code flow is accepted. |
-| User mapping | The Authentik subject maps to one row in `users.users`, created on first sign-in and marked as externally authenticated. Such a row has no local passcode and cannot use local sign-in. |
+| User mapping | The Authentik user name maps to one row in `users.users`, created on first sign-in and marked as externally authenticated. Such a row has no local passcode and cannot use local sign-in, and a name already held by a local account is refused. |
 | Roles | Taken from Authentik group membership (`veta-admin`, `veta-trader` and so on) and refreshed at each sign-in. An account in no platform group receives `viewer`. |
-| Second factor | Enforced by the Authentik authentication flow: an account without a registered device is made to enrol one before the flow completes. |
+| Second factor | Enforced by the Authentik authentication flow: an account without a registered device is made to enrol one before the flow completes. `user-service` also refuses an ID token whose `amr` claim does not record a second factor. |
 | Session | Unchanged: the eight hour `veta_user` cookie, validated by the gateway. Signing out also ends the Authentik session. |
 | Break glass | Setting `OIDC_ENABLED=false` in OpenBao and redeploying restores local administrator sign-in. It needs access to the server. |
 

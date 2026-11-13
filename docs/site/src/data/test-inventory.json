@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 208,
-      "cases": 2149,
+      "files": 210,
+      "cases": 2189,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -206,6 +206,8 @@
         "unit.test.ts": 16,
         "user-schema.unit.test.ts": 14,
         "user-service-entry.unit.test.ts": 25,
+        "user-service-oidc-routes.unit.test.ts": 15,
+        "user-service-oidc.unit.test.ts": 25,
         "venue-router.unit.test.ts": 8,
         "vol-surface.unit.test.ts": 2,
         "volatility-estimator.unit.test.ts": 9,
@@ -268,8 +270,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 191,
-      "cases": 2319
+      "files": 192,
+      "cases": 2329
     },
     "playwright": {
       "files": 19,

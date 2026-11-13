@@ -1,6 +1,6 @@
 {
-  "totalComponents": 224,
-  "totalEdges": 221,
+  "totalComponents": 225,
+  "totalEdges": 222,
   "nodes": [
     {
       "name": "App",
@@ -243,9 +243,15 @@
       "importedByCount": 1
     },
     {
+      "name": "SingleSignOn",
+      "path": "components/LoginPage/SingleSignOn.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
       "name": "LoginPage",
       "path": "components/LoginPage.tsx",
-      "importCount": 3,
+      "importCount": 4,
       "importedByCount": 1
     },
     {

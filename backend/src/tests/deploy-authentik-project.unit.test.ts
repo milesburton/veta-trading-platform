@@ -76,11 +76,13 @@ test("[authentik] the blueprint enforces a second factor and a strict redirect",
   assert(BLUEPRINT.includes("matching_mode: strict"));
   assertEquals(BLUEPRINT.includes("matching_mode: regex"), false);
   assert(BLUEPRINT.includes("client_type: confidential"));
+  assert(BLUEPRINT.includes("grant_types:\n        - authorization_code\n"));
+  assertEquals(BLUEPRINT.includes("client_credentials"), false);
   assert(BLUEPRINT.includes("client_secret: !Env VETA_OIDC_CLIENT_SECRET"));
 });
 
 test("[authentik] the deploy syncs the project and starts it only when its secrets exist", () => {
   assert(DEPLOY.includes('"deploy/authentik/"'));
   assert(DEPLOY.includes("openbao_export_if_present authentik"));
-  assert(DEPLOY.includes('[[ -n "${AUTHENTIK_SECRET_KEY:-}" ]] || exit 3'));
+  assert(DEPLOY.includes('if [[ -z "${AUTHENTIK_SECRET_KEY:-}" ]]; then'));
 });
