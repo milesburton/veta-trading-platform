@@ -29,6 +29,8 @@ A simple moving average (SMA) overlay is available from the toolbar above the ch
 - **SMA toggle**: shows or hides the average line, enabled by default
 - **Period input**: sets the number of candles the average is computed over (default 20, range 2–200)
 
+The line starts at the first candle on the chart. Until a full period of candles has loaded, each point is the average of the candles available up to that point, and the toolbar shows how many candles the average covers.
+
 The line updates incrementally as new candles arrive rather than recomputing the full series on every tick.
 
 ## Market Heatmap

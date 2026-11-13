@@ -162,17 +162,11 @@ describe("CandlestickChart – SMA overlay", () => {
     expect(input).toHaveValue(10);
   });
 
-  it("shows an insufficient-data note when fewer bars than the SMA period are loaded", () => {
+  it("notes how many bars the average covers while fewer than the period are loaded", () => {
     renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
-    // filledCandles has 2 bars; default period is 20
-    expect(screen.getByTestId("sma-insufficient-data")).toHaveTextContent("needs 18 more bars");
-  });
-
-  it("uses singular wording when exactly one more bar is needed", () => {
-    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
-    const input = screen.getByTestId("sma-period-input");
-    fireEvent.change(input, { target: { value: "3" } });
-    expect(screen.getByTestId("sma-insufficient-data")).toHaveTextContent("needs 1 more bar");
+    expect(screen.getByTestId("sma-insufficient-data")).toHaveTextContent(
+      "averaging 2 of 20 candles"
+    );
   });
 
   it("hides the insufficient-data note once there are enough bars", () => {
@@ -282,6 +276,18 @@ describe("CandlestickChart – chart wiring", () => {
     expect(seriesStub.setData).toHaveBeenCalled();
     const barData = seriesStub.setData.mock.calls[0][0];
     expect(barData[0]).toEqual({ time: 60, open: 150, high: 155, low: 148, close: 152 });
+  });
+
+  it("draws the SMA from the first bar, averaging the bars available so far", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    observers[0].fire(800, 500);
+    const bars = seriesStub.setData.mock.calls[0][0];
+    const sma = seriesStub.setData.mock.calls[2][0];
+    expect(sma.map((point: { time: number }) => point.time)).toEqual(
+      bars.map((bar: { time: number }) => bar.time)
+    );
+    expect(sma[0].value).toBe(bars[0].close);
+    expect(sma[1].value).toBe((bars[0].close + bars[1].close) / 2);
   });
 
   it("redraws only the SMA line when the SMA is toggled", () => {
