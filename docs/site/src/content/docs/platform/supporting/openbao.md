@@ -103,7 +103,25 @@ With the static seal, `bao operator generate-root` fails with `403 permission de
 
 If a step fails, `DELETE /v1/sys/generate-root/attempt` cancels the attempt so the next one starts clean. Send the secret values to the vault over stdin so they never appear in a process list, and check results with the `veta-deploy` token by testing for presence and for known defaults, not by printing values.
 
-If the recovery key is lost, the data cannot be reached for writes. The remaining option is to initialise a new vault and run `scripts/openbao-bootstrap.py`, after dumping `secret/veta/platform` and `secret/veta/loadgen` with the read-only deploy token.
+## Rebuilding the vault
+
+Use this when `admin` access and the recovery key are both lost. Existing data stays readable with the read-only deploy credential, so the secrets can be carried across to a new vault. The unseal key volume is reused unchanged.
+
+```bash
+read -rs P && printf %s "$P" | python3 /opt/stacks/veta/scripts/openbao-rebuild.py
+```
+
+The password becomes the new `admin` password and must be at least 16 characters. The script:
+
+1. Reads each path with the deploy credential. The credential cannot list paths, so the set is fixed: `platform`, `loadgen`, `authentik` and `authentik-bootstrap`. Override it with `REBUILD_PATHS`, a comma-separated list, when other paths exist. `platform` must be readable or nothing changes.
+2. Stops the vault, archives the data volume to `~/openbao-data-before-rebuild-<stamp>.tgz` and refuses to continue if the archive looks empty.
+3. Renames the old deploy credential to `openbao-approle.json.before-rebuild-<stamp>`, removes the volume and starts an empty vault.
+4. Initialises it, recreates the policies, auth methods, `admin` user and deploy credential, and restores every path with a check-and-set of zero so nothing is overwritten.
+5. Reads `platform` and `loadgen` back through the deploy loader and compares every value, then revokes the root token.
+
+Afterwards, move the new recovery key from `~/openbao-init-*.json` into the password manager and shred the file. Run a deploy and confirm it exported secrets from the vault. Shred the archive and the old credential once that deploy is healthy, because the archive holds every secret in the clear.
+
+Admin access has been lost twice, so keep two things outside the server: the recovery key in the password manager, and the `admin` password in a second entry.
 
 ## Troubleshooting
 
