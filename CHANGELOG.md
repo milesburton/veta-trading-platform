@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.111.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.110.1...veta-trading-platform-v1.111.0) (2026-11-13)
+
+
+### Features
+
+* **openbao:** script and document a vault rebuild ([#1161](https://github.com/milesburton/veta-trading-platform/issues/1161)) ([70a1c60](https://github.com/milesburton/veta-trading-platform/commit/70a1c6063d8ed7891d40d5042039b941e21e85e0))
+
 ## [1.110.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.110.0...veta-trading-platform-v1.110.1) (2026-11-13)
 
 
