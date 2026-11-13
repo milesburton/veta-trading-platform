@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.110.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.109.2...veta-trading-platform-v1.110.0) (2026-11-13)
+
+
+### Features
+
+* **auth:** single sign-on through Authentik in user-service and the sign-in page ([#1151](https://github.com/milesburton/veta-trading-platform/issues/1151)) ([1def276](https://github.com/milesburton/veta-trading-platform/commit/1def2760e5f1fe96d2ed6ff5184b53305d00d886))
+
 ## [1.109.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.109.1...veta-trading-platform-v1.109.2) (2026-11-12)
 
 
