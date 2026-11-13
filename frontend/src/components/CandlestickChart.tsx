@@ -74,19 +74,17 @@ function toVolData(c: OhlcCandle) {
 }
 
 function computeSma(candles: OhlcCandle[], period: number): LineData<UTCTimestamp>[] {
-  if (period < 1 || candles.length < period) return [];
+  if (period < 1) return [];
 
   const result: LineData<UTCTimestamp>[] = [];
   let sum = 0;
   for (let i = 0; i < candles.length; i++) {
     sum += candles[i].close;
     if (i >= period) sum -= candles[i - period].close;
-    if (i >= period - 1) {
-      result.push({
-        time: (candles[i].time / 1000) as UTCTimestamp,
-        value: sum / period,
-      });
-    }
+    result.push({
+      time: (candles[i].time / 1000) as UTCTimestamp,
+      value: sum / Math.min(i + 1, period),
+    });
   }
   return result;
 }
@@ -312,7 +310,7 @@ function useCandlestickData(
         if (isSmaChanged) {
           ss.setData(smaVisible ? computeSma(raw, smaPeriod) : []);
           loadedSmaKeyRef.current = newSmaKey;
-        } else if (smaVisible && raw.length >= smaPeriod) {
+        } else if (smaVisible) {
           const smaTail = computeSma(raw.slice(-smaPeriod - 1), smaPeriod);
           const latestSma = smaTail[smaTail.length - 1];
           if (latestSma) ss.update(latestSma);
@@ -467,8 +465,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
           />
           {smaVisible.value && raw.length > 0 && raw.length < smaPeriod.value && (
             <span data-testid="sma-insufficient-data" className="text-[10px] text-amber-400">
-              needs {smaPeriod.value - raw.length} more bar
-              {smaPeriod.value - raw.length === 1 ? "" : "s"}
+              averaging {raw.length} of {smaPeriod.value} candles
             </span>
           )}
         </div>
