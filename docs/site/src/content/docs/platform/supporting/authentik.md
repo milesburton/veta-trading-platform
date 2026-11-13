@@ -31,7 +31,7 @@ sign-in through it stays off until `OIDC_ENABLED=true`. Progress is tracked in
 
 | Object | Setting |
 | --- | --- |
-| OAuth2 provider `veta` | Confidential client `veta-platform`, RS256 signing key, issuer per provider, subject is the user name, claims included in the ID token, one strict redirect URI: the application root on the platform host |
+| OAuth2 provider `veta` | Confidential client `veta-platform`, authorisation code grant only, RS256 signing key, issuer per provider, subject is the user name, claims included in the ID token, one strict redirect URI: the application root on the platform host |
 | Application `veta` | Bound to the provider |
 | MFA validation stage | Accepts TOTP and WebAuthn only. An account with no device is made to enrol one before sign-in completes, and the second factor is asked for at every sign-in |
 | Groups | `veta-admin`, `veta-trader`, `veta-desk-head`, `veta-risk-manager`, `veta-compliance`, `veta-sales`, `veta-oncall`, `veta-viewer`. Membership becomes the platform role |
@@ -100,6 +100,11 @@ from django.contrib.auth.hashers import make_password; print(make_password(getpa
 Store the values with `bao kv put secret/veta/authentik ...` as the `admin` user, then
 run a deploy. The bootstrap hash is read on the first start only. Sign in as `akadmin` at
 `/sso/`, enrol a second factor, create the named accounts and add each to a `veta-` group.
+
+The sign-in during which an account registers its first authenticator does not count as a
+second-factor sign-in: Authentik issues that token with `amr` of `pwd` only, so the platform
+refuses it and the sign-in page asks the user to sign in again. Every later sign-in carries
+`mfa` and is accepted.
 
 ## Health
 

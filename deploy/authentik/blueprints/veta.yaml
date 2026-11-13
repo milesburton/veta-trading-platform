@@ -54,6 +54,8 @@ entries:
       name: veta
     attrs:
       client_type: confidential
+      grant_types:
+        - authorization_code
       client_id: veta-platform
       client_secret: !Env VETA_OIDC_CLIENT_SECRET
       authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]

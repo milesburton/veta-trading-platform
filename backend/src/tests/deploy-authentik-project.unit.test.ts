@@ -76,6 +76,8 @@ test("[authentik] the blueprint enforces a second factor and a strict redirect",
   assert(BLUEPRINT.includes("matching_mode: strict"));
   assertEquals(BLUEPRINT.includes("matching_mode: regex"), false);
   assert(BLUEPRINT.includes("client_type: confidential"));
+  assert(BLUEPRINT.includes("grant_types:\n        - authorization_code\n"));
+  assertEquals(BLUEPRINT.includes("client_credentials"), false);
   assert(BLUEPRINT.includes("client_secret: !Env VETA_OIDC_CLIENT_SECRET"));
 });
 

@@ -26,7 +26,9 @@ export function withoutOidcReturn(href: string): string {
 }
 
 function describeFailure(status: unknown): string {
-  if (status === 401) return "Single sign-on was refused. A second factor is required.";
+  if (status === 401) {
+    return "Single sign-on needs a second factor. If you have just registered an authenticator, sign in again to finish.";
+  }
   if (status === 409) return "Single sign-on failed: a local account already uses this name.";
   if (status === 400) return "Single sign-on expired or was interrupted. Try again.";
   return "Single sign-on is unavailable. Try again shortly.";
