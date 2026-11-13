@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.110.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.110.0...veta-trading-platform-v1.110.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **frontend:** draw the moving average from the first candle ([#1155](https://github.com/milesburton/veta-trading-platform/issues/1155)) ([54787a7](https://github.com/milesburton/veta-trading-platform/commit/54787a791c0d405d27c828a80d2af4d3d28838f8))
+
 ## [1.110.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.109.2...veta-trading-platform-v1.110.0) (2026-11-13)
 
 
