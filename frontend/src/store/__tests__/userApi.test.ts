@@ -83,14 +83,6 @@ describe("userApi", () => {
         code_verifier: "v",
       })
     );
-    await store.dispatch(
-      userApi.endpoints.registerOAuthUser.initiate({
-        username: "x",
-        name: "y",
-        password: "z",
-        archetype: "equity-high-touch",
-      })
-    );
     await store.dispatch(userApi.endpoints.logout.initiate());
     await store.dispatch(userApi.endpoints.getUsers.initiate());
     await store.dispatch(userApi.endpoints.getUserLimits.initiate("user/a b"));
@@ -106,7 +98,6 @@ describe("userApi", () => {
 
     expect(calls.some((c) => c.url.includes("/oauth/authorize") && c.method === "POST")).toBe(true);
     expect(calls.some((c) => c.url.includes("/oauth/token") && c.method === "POST")).toBe(true);
-    expect(calls.some((c) => c.url.includes("/oauth/register") && c.method === "POST")).toBe(true);
     expect(calls.some((c) => c.url.endsWith("/sessions") && c.method === "DELETE")).toBe(true);
     expect(calls.some((c) => c.url.endsWith("/users") && c.method === "GET")).toBe(true);
     expect(

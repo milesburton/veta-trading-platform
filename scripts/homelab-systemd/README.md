@@ -87,9 +87,11 @@ See [Secrets](https://milesburton.github.io/veta-trading-platform/development/de
 - **`DISCORD_BUG_WEBHOOK_URL`**, dedicated webhook for user-submitted
   bug reports. Falls back to `DISCORD_WEBHOOK_URL` when unset. See
   [User bug reports](https://milesburton.github.io/veta-trading-platform/platform/observability/bug-reports/)
-- **`OAUTH_ALLOW_PUBLIC_REGISTER`**, when `true`, the LoginPage
-  Create-account form is reachable and new users land as trader with
-  starter limits.
+- **`OAUTH_ALLOW_PUBLIC_REGISTER`**, default `false`. The sign-in page
+  has no registration form; the flag only enables `POST /oauth/register`
+  for integration tests.
+- **`LOCAL_ADMIN_SIGN_IN`**, default `false`. Admin signs in through single
+  sign-on only, and admin accounts are left out of the demo persona list.
 - **`VETA_CGROUP_PARENT`**: set to `veta.slice` so every compose service
   runs on the production CPU set. Unset means Docker's default cgroup
   parent. See [CPU isolation](#cpu-isolation-slices) above.

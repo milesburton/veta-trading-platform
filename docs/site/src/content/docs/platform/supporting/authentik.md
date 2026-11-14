@@ -77,6 +77,15 @@ risk-manager, desk-head, oncall, trader, sales, viewer, and is refreshed at ever
 change of role ends the user's other sessions. An account in no `veta-` group is a `viewer`.
 Enabling `OIDC_ENABLED` without the client secret stops `user-service` at start, by design.
 
+### Local sign-in policy
+
+| Variable | Effect |
+| --- | --- |
+| `LOCAL_ADMIN_SIGN_IN` | Default `false`. While false, a local passcode never signs in an `admin`, and admin accounts are left out of the demo persona list. Admin access is through single sign-on only. CI and test stacks set it to `true` |
+| `OAUTH_ALLOW_PUBLIC_REGISTER` | Default `false`. The sign-in page has no account creation form, and `POST /oauth/register` answers 403 unless this is `true`. It exists only so the integration tests can create users |
+
+The demo persona list never includes accounts created by single sign-on.
+
 ## First-time setup
 
 The deploy starts Authentik only when `secret/veta/authentik` exists. Create it once:

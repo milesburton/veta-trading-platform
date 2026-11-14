@@ -395,7 +395,9 @@ test("[user-service] accepts the shared secret for users without their own secre
 test("[user-service] verifies stored password hashes before falling back to secrets", async () => {
   const { hashPassword } = await import("../user-service/credentials.ts");
   const hash = await hashPassword("a-long-password");
-  when(/SELECT password_hash, auth_source FROM users\.users/, () => [[hash, "local"]]);
+  when(/SELECT password_hash, auth_source, role FROM users\.users/, () => [
+    [hash, "local", "trader"],
+  ]);
   assertEquals((await authorize({ username: "dave", password: "a-long-password" })).status, 200);
   assertEquals(
     (await authorize({ username: "dave", password: "shared-secret-value" })).status,
@@ -502,6 +504,45 @@ test("[user-service] registration can be switched off", async () => {
     403
   );
   vi.stubEnv("OAUTH_ALLOW_PUBLIC_REGISTER", "true");
+});
+
+test("[user-service] leaves admin and single sign-on accounts out of the personas by default", async () => {
+  when(/FROM users\.users u\s+LEFT JOIN/, () => []);
+  await call("/personas", { cookie: false });
+  const query = h.queries.find((q) => q.sql.includes("LEFT JOIN users.trading_limits"));
+  assert(query);
+  assert(query.sql.includes("u.auth_source = 'local'"));
+  const roles = query.params[0] as string[];
+  assert(!roles.includes("admin"));
+  assert(roles.includes("trader"));
+});
+
+test("[user-service] lists admin personas only while local admin sign-in is allowed", async () => {
+  vi.stubEnv("LOCAL_ADMIN_SIGN_IN", "true");
+  try {
+    when(/FROM users\.users u\s+LEFT JOIN/, () => []);
+    await call("/personas", { cookie: false });
+    const query = h.queries.find((q) => q.sql.includes("LEFT JOIN users.trading_limits"));
+    assert(query);
+    assert((query.params[0] as string[]).includes("admin"));
+  } finally {
+    vi.stubEnv("LOCAL_ADMIN_SIGN_IN", "false");
+  }
+});
+
+test("[user-service] refuses a local password for an admin unless local admin sign-in is allowed", async () => {
+  const { hashPassword } = await import("../user-service/credentials.ts");
+  const hash = await hashPassword("a-long-password");
+  when(/SELECT password_hash, auth_source, role FROM users\.users/, () => [
+    [hash, "local", "admin"],
+  ]);
+  assertEquals((await authorize({ username: "root", password: "a-long-password" })).status, 401);
+  vi.stubEnv("LOCAL_ADMIN_SIGN_IN", "true");
+  try {
+    assertEquals((await authorize({ username: "root", password: "a-long-password" })).status, 200);
+  } finally {
+    vi.stubEnv("LOCAL_ADMIN_SIGN_IN", "false");
+  }
 });
 
 test("[user-service] hides personas when demo mode is off", async () => {

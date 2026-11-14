@@ -1,6 +1,6 @@
 {
-  "totalComponents": 225,
-  "totalEdges": 222,
+  "totalComponents": 224,
+  "totalEdges": 221,
   "nodes": [
     {
       "name": "App",
@@ -237,12 +237,6 @@
       "importedByCount": 0
     },
     {
-      "name": "RegistrationForm",
-      "path": "components/LoginPage/RegistrationForm.tsx",
-      "importCount": 0,
-      "importedByCount": 1
-    },
-    {
       "name": "SingleSignOn",
       "path": "components/LoginPage/SingleSignOn.tsx",
       "importCount": 0,
@@ -251,7 +245,7 @@
     {
       "name": "LoginPage",
       "path": "components/LoginPage.tsx",
-      "importCount": 4,
+      "importCount": 3,
       "importedByCount": 1
     },
     {
