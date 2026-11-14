@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.111.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.111.0...veta-trading-platform-v1.111.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **gateway:** forward the single sign-on state cookie to POST targets ([#1164](https://github.com/milesburton/veta-trading-platform/issues/1164)) ([bf75c69](https://github.com/milesburton/veta-trading-platform/commit/bf75c69c0b12a3d6abc7a446e3987640192e9562))
+
 ## [1.111.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.110.1...veta-trading-platform-v1.111.0) (2026-11-13)
 
 
