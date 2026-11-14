@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.113.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.112.0...veta-trading-platform-v1.113.0) (2026-11-14)
+
+
+### Features
+
+* **login:** remove the username and passcode form, restore the footer ([#1170](https://github.com/milesburton/veta-trading-platform/issues/1170)) ([2872d81](https://github.com/milesburton/veta-trading-platform/commit/2872d81dbb8efc01b5d5b2bc98d81144a210a9a1))
+
 ## [1.112.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.111.1...veta-trading-platform-v1.112.0) (2026-11-14)
 
 
