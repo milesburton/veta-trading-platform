@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.114.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.113.0...veta-trading-platform-v1.114.0) (2026-11-14)
+
+
+### Features
+
+* **backup:** scheduled age-encrypted full platform backup ([#1172](https://github.com/milesburton/veta-trading-platform/issues/1172)) ([6e478e3](https://github.com/milesburton/veta-trading-platform/commit/6e478e388c9c0eca565377d91bdc839948e61c44))
+
 ## [1.113.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.112.0...veta-trading-platform-v1.113.0) (2026-11-14)
 
 
