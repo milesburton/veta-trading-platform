@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the VETA full platform backup daily (03:30 UTC)
+Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/scripts/full-backup.sh
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

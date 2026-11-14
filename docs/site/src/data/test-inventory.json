@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 211,
-      "cases": 2200,
+      "files": 212,
+      "cases": 2206,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -85,6 +85,7 @@
         "fix-venue-registry.unit.test.ts": 7,
         "fixParser.test.ts": 19,
         "frontend-image-files.unit.test.ts": 1,
+        "full-backup-script.unit.test.ts": 6,
         "gateway-analytics-llm-routes.unit.test.ts": 12,
         "gateway-compliance-routes.unit.test.ts": 6,
         "gateway-entry.unit.test.ts": 30,

@@ -157,6 +157,7 @@ export default defineConfig({
                 { label: "Authentik", slug: "platform/supporting/authentik" },
                 { label: "Disk monitor", slug: "platform/supporting/disk-monitor" },
                 { label: "Postgres backup", slug: "platform/supporting/postgres-backup" },
+                { label: "Full platform backup", slug: "platform/supporting/full-backup" },
                 { label: "db-migrate", slug: "platform/supporting/db-migrate" },
                 { label: "Redpanda console", slug: "platform/supporting/redpanda-console" },
                 { label: "NVIDIA Spark", slug: "platform/supporting/nvidia-spark" },
