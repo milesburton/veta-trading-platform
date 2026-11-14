@@ -3,6 +3,15 @@ import { CORS_HEADERS } from "#veta/http";
 const POST_TIMEOUT_MS = 15_000;
 export const LONG_POST_TIMEOUT_MS = 60_000;
 const GET_PUT_TIMEOUT_MS = 8_000;
+const FORWARDED_COOKIES: readonly string[] = ["veta_oidc_state"];
+
+export function forwardedCookieHeader(req: Request): string | null {
+  const forwarded = (req.headers.get("cookie") ?? "")
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => FORWARDED_COOKIES.includes(part.split("=")[0]));
+  return forwarded.length > 0 ? forwarded.join("; ") : null;
+}
 
 export async function proxyPost(
   internalUrl: string,
@@ -12,9 +21,10 @@ export async function proxyPost(
 ): Promise<Response> {
   try {
     const body = presetBody ?? (await req.text());
+    const cookie = forwardedCookieHeader(req);
     const res = await fetch(internalUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
       body,
       signal: AbortSignal.timeout(timeoutMs),
     });

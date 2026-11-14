@@ -129,4 +129,4 @@ start and does not support skipping versions.
 | Deploy logs that Authentik secrets are not in OpenBao | `secret/veta/authentik` is missing or has no `AUTHENTIK_SECRET_KEY` |
 | `/sso/` returns 404 from Traefik | `veta-authentik-server` is not attached to `trading-net`. After that network is recreated, run `docker compose up -d --force-recreate server` in `deploy/authentik` |
 | Provider or groups missing | `docker logs veta-authentik-worker` and look for the blueprint `VETA platform sign-in` |
-| Sign-in loops back to the login form | The proxy is not passing `X-Forwarded-Proto` and `Host`, or the public origin does not match `VETA_PLATFORM_URL` |
+| Sign-in loops back to the login form | The proxy is not passing `X-Forwarded-Proto` and `Host`, or the public origin does not match `VETA_PLATFORM_URL`. If Authentik signs the user in but the platform returns `invalid_state` (HTTP 400) on the callback, the gateway is not forwarding the `veta_oidc_state` cookie |

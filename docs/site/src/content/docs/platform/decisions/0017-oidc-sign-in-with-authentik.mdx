@@ -65,7 +65,8 @@ sequenceDiagram
 
 The browser reaches `user-service` through the gateway as JSON requests, as it does for local
 sign-in, so the flow returns the authorisation URL for the application to follow and the
-provider redirects back to the application, which posts the code.
+provider redirects back to the application, which posts the code. The gateway forwards only the
+`veta_oidc_state` cookie on POST requests, so the callback can match the state it issued.
 
 | Concern | Handling |
 | --- | --- |
