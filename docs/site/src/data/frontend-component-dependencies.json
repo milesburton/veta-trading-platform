@@ -1,6 +1,6 @@
 {
   "totalComponents": 224,
-  "totalEdges": 221,
+  "totalEdges": 222,
   "nodes": [
     {
       "name": "App",
@@ -84,7 +84,7 @@
       "name": "BuildInfo",
       "path": "components/BuildInfo.tsx",
       "importCount": 0,
-      "importedByCount": 2
+      "importedByCount": 3
     },
     {
       "name": "CandlestickChart",
@@ -245,7 +245,7 @@
     {
       "name": "LoginPage",
       "path": "components/LoginPage.tsx",
-      "importCount": 3,
+      "importCount": 4,
       "importedByCount": 1
     },
     {

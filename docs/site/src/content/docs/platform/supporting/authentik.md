@@ -86,6 +86,8 @@ Enabling `OIDC_ENABLED` without the client secret stops `user-service` at start,
 
 The demo persona list never includes accounts created by single sign-on.
 
+The sign-in page offers single sign-on, the demo personas and guest access. It has no username and passcode form, so a local account can only be used through a persona. A footer shows the version, build date and commit, and links to the user guide and the GitHub repository.
+
 ## First-time setup
 
 The deploy starts Authentik only when `secret/veta/authentik` exists. Create it once:

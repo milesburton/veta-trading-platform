@@ -19,9 +19,7 @@ test.describe.skip("deploy-gate smoke", () => {
     const page = await context.newPage();
     await page.goto("/");
     await expect(page.getByTestId("login-page")).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("oauth-username").fill("alice");
-    await page.getByTestId("oauth-password").fill("veta-dev-passcode");
-    await page.getByTestId("oauth-submit").click();
+    await page.getByTestId("persona-alice").click();
     await expect(page.getByTestId("app-header")).toBeVisible({ timeout: 30_000 });
 
     const deadline = Date.now() + 30_000;
@@ -45,9 +43,7 @@ test.describe.skip("deploy-gate smoke", () => {
     await page.goto("/");
     await expect(page.getByTestId("login-page")).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTestId("oauth-username").fill("alice");
-    await page.getByTestId("oauth-password").fill("veta-dev-passcode");
-    await page.getByTestId("oauth-submit").click();
+    await page.getByTestId("persona-alice").click();
 
     await expect(page.getByTestId("app-header")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("login-page")).not.toBeVisible();
@@ -60,9 +56,7 @@ test.describe.skip("deploy-gate smoke", () => {
     await expect(page.getByTestId("login-page")).toBeVisible({ timeout: 15_000 });
 
     const wsOpened = page.waitForEvent("websocket", { timeout: 30_000 });
-    await page.getByTestId("oauth-username").fill("alice");
-    await page.getByTestId("oauth-password").fill("veta-dev-passcode");
-    await page.getByTestId("oauth-submit").click();
+    await page.getByTestId("persona-alice").click();
 
     const ws = await wsOpened;
     expect(ws.url()).toMatch(/\/ws(\/gateway)?(\?|$)/);
@@ -79,7 +73,7 @@ test.describe.skip("deploy-gate smoke", () => {
     });
 
     expect(sawMarketUpdate, "expected at least one marketUpdate frame on the WS within 20s").toBe(
-      true
+      true,
     );
   });
 });

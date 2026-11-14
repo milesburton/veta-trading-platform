@@ -12,6 +12,7 @@ import {
 } from "@veta/frontend/store/userApi.ts";
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BuildInfo } from "./BuildInfo.tsx";
 import { DemoPersonas } from "./DemoPersonas.tsx";
 import { SingleSignOn } from "./LoginPage/SingleSignOn.tsx";
 import { AppHeader } from "./StatusBar.tsx";
@@ -160,8 +161,6 @@ export function formatApiError(err: unknown): string {
 export function LoginPage() {
   const dispatch = useAppDispatch();
   const sessionWasLost = useAppSelector((s) => s.auth.sessionExpired);
-  const username = useSignal("");
-  const password = useSignal("");
   const localError = useSignal<string | null>(null);
   const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
   const [exchangeOAuthCode, tokenState] = useExchangeOAuthCodeMutation();
@@ -170,9 +169,9 @@ export function LoginPage() {
   const isLoading = authorizeState.isLoading || tokenState.isLoading || guestState.isLoading;
   const apiError = authorizeState.error ?? tokenState.error ?? guestState.error;
 
-  async function performSignIn(overrideUsername?: string, overridePassword?: string) {
-    const u = (overrideUsername ?? username.value).trim().toLowerCase();
-    const p = overridePassword ?? password.value;
+  async function performSignIn(personaId: string, passcode?: string) {
+    const u = personaId.trim().toLowerCase();
+    const p = passcode ?? "";
     localError.value = null;
     authorizeState.reset();
     tokenState.reset();
@@ -233,11 +232,6 @@ export function LoginPage() {
     }
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    await performSignIn();
-  }
-
   async function handleGuestLogin() {
     localError.value = null;
     authorizeState.reset();
@@ -261,8 +255,6 @@ export function LoginPage() {
   }
 
   async function handlePersonaSelect(persona: DemoPersona) {
-    username.value = persona.id;
-    if (persona.passcode) password.value = persona.passcode;
     await performSignIn(persona.id, persona.passcode);
   }
 
@@ -295,63 +287,24 @@ export function LoginPage() {
                 Sign in
               </h1>
               <p className="text-muted text-xs">
-                Use your VETA user ID and passcode, or pick a demo persona to sign in instantly.{" "}
-                <a
-                  href="https://milesburton.github.io/veta-trading-platform/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-label underline underline-offset-2 hover:text-secondary transition-colors"
-                >
-                  User Guide
-                </a>
+                Sign in with single sign-on, or pick a demo persona to sign in instantly.
               </p>
-              <a
-                href="https://github.com/milesburton/veta-trading-platform"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="View VETA on GitHub"
-                className="mt-2 inline-flex items-center gap-1.5 text-muted text-xs hover:text-secondary transition-colors"
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="currentColor"
-                >
-                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
-                </svg>
-                GitHub
-              </a>
             </div>
 
-            <SingleSignOn disabled={isLoading} />
+            <div className="relative flex flex-col gap-5">
+              <SingleSignOn disabled={isLoading} />
 
-            <div className="relative">
-              <AuthForm
-                username={username.value}
-                password={password.value}
-                loading={isLoading}
-                onUsernameChange={(v) => {
-                  username.value = v;
-                }}
-                onPasswordChange={(v) => {
-                  password.value = v;
-                }}
-                onSubmit={handleSubmit}
-              />
+              <button
+                type="button"
+                data-testid="guest-login-button"
+                onClick={handleGuestLogin}
+                disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 rounded border border-divider bg-page px-4 py-2 text-xs text-muted transition-colors hover:text-default hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Continue as guest (rate-limited demo trading)
+              </button>
               <DegradedServicesOverlay />
             </div>
-
-            <button
-              type="button"
-              data-testid="guest-login-button"
-              onClick={handleGuestLogin}
-              disabled={isLoading}
-              className="w-full inline-flex items-center justify-center gap-2 rounded border border-divider bg-page px-4 py-2 text-xs text-muted transition-colors hover:text-default hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Continue as guest (rate-limited demo trading)
-            </button>
 
             {(localError.value || apiError) && (
               <div
@@ -368,75 +321,48 @@ export function LoginPage() {
           </div>
         </div>
       </main>
+      <LoginFooter />
     </div>
   );
 }
 
-interface AuthFormProps {
-  username: string;
-  password: string;
-  loading: boolean;
-  onUsernameChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-}
-
-function AuthForm({
-  username,
-  password,
-  loading,
-  onUsernameChange,
-  onPasswordChange,
-  onSubmit,
-}: AuthFormProps) {
+function LoginFooter() {
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-lg border border-panel bg-surface/70 p-5 space-y-4"
+    <footer
+      data-testid="login-footer"
+      className="flex items-center justify-between gap-4 px-4 h-8 bg-surface border-t border-panel text-[10px] text-label"
     >
-      <label className="space-y-1.5 block">
-        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
-          Username
-        </span>
-        <input
-          data-testid="oauth-username"
-          type="text"
-          value={username}
-          onChange={(event) => onUsernameChange(event.target.value)}
-          placeholder="alice"
-          autoComplete="username"
-          disabled={loading}
-          className="w-full rounded border border-divider bg-page px-3 py-2 text-sm text-primary outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
+      <span className="shrink-0">VETA</span>
+      <span className="flex items-center gap-3 min-w-0">
+        <BuildInfo
+          buildDate={import.meta.env.VITE_BUILD_DATE}
+          commitSha={import.meta.env.VITE_COMMIT_SHA}
+          version={import.meta.env.VITE_APP_VERSION}
+          className="text-[10px] text-label tabular-nums truncate"
         />
-      </label>
-
-      <label className="space-y-1.5 block">
-        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
-          Passcode
-        </span>
-        <input
-          data-testid="oauth-password"
-          type="password"
-          value={password}
-          onChange={(event) => onPasswordChange(event.target.value)}
-          placeholder="Enter passcode"
-          autoComplete="current-password"
-          disabled={loading}
-          className="w-full rounded border border-divider bg-page px-3 py-2 text-sm text-primary outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
-        />
-      </label>
-
-      <button
-        data-testid="oauth-submit"
-        type="submit"
-        disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-900/60"
-      >
-        {loading && (
-          <span className="h-3 w-3 rounded-full border border-white/60 border-t-transparent animate-spin" />
-        )}
-        {loading ? "Signing in…" : "Continue"}
-      </button>
-    </form>
+        <a
+          href="https://milesburton.github.io/veta-trading-platform/"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="login-footer-docs"
+          className="hover:text-secondary transition-colors"
+        >
+          User Guide
+        </a>
+        <a
+          href="https://github.com/milesburton/veta-trading-platform"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="login-footer-github"
+          title="View source on GitHub"
+          className="inline-flex items-center gap-1 hover:text-secondary transition-colors"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </span>
+    </footer>
   );
 }

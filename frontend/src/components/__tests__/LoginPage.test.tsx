@@ -85,6 +85,27 @@ function makeStore() {
   });
 }
 
+function personaWith(overrides: Partial<import("@veta/frontend/store/userApi").DemoPersona> = {}) {
+  return {
+    id: "alice",
+    name: "Alice Chen",
+    role: "trader",
+    avatar_emoji: "AC",
+    description: "Equity cash trader",
+    trading_style: "high_touch",
+    primary_desk: "equity-cash",
+    allowed_strategies: [],
+    max_order_qty: 1000,
+    dark_pool_access: false,
+    passcode: "veta-dev-passcode",
+    ...overrides,
+  } as import("@veta/frontend/store/userApi").DemoPersona;
+}
+
+function showPersona(overrides: Partial<import("@veta/frontend/store/userApi").DemoPersona> = {}) {
+  mockDemoPersonas.mockReturnValue([personaWith(overrides)]);
+}
+
 function renderLogin(store = makeStore()) {
   const result = render(
     <Provider store={store}>
@@ -121,14 +142,14 @@ describe("LoginPage", () => {
     mockDemoPersonas.mockReturnValue([]);
   });
 
-  test("embeds the shared app header and renders the credential form", () => {
+  test("embeds the shared app header and offers no username or passcode form", () => {
     renderLogin();
 
     expect(screen.getByTestId("app-header-mock")).toBeInTheDocument();
     expect(screen.getByTestId("login-heading")).toHaveTextContent("Sign in");
-    expect(screen.getByTestId("oauth-username")).toBeInTheDocument();
-    expect(screen.getByTestId("oauth-password")).toBeInTheDocument();
-    expect(screen.getByTestId("oauth-submit")).toBeInTheDocument();
+    expect(screen.queryByTestId("oauth-username")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("oauth-password")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("oauth-submit")).not.toBeInTheDocument();
   });
 
   test("offers no way to register an account", () => {
@@ -146,56 +167,51 @@ describe("LoginPage", () => {
       avatar_emoji: "AC",
     };
     mockExchangeOAuthCode.mockResolvedValue({ data: { user: authUser } });
-    const store = makeStore();
+    showPersona();
+    const { store } = renderLogin();
 
-    render(
-      <Provider store={store}>
-        <LoginPage />
-      </Provider>
-    );
-
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "alice" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    fireEvent.click(screen.getByTestId("oauth-submit"));
+    fireEvent.click(screen.getByTestId("persona-alice"));
 
     await waitFor(() => expect(store.getState().auth.user?.id).toBe("alice"));
   });
 
   test("calls OAuth authorize and token endpoints on sign in", async () => {
+    showPersona({ id: "bob", name: "Bob" });
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "bob" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    fireEvent.click(screen.getByTestId("oauth-submit"));
+    fireEvent.click(screen.getByTestId("persona-bob"));
     await waitFor(() => expect(mockAuthorizeOAuth).toHaveBeenCalled());
     await waitFor(() => expect(mockExchangeOAuthCode).toHaveBeenCalled());
   });
 
-  test("does not duplicate footer chrome, build info lives in the shared AppHeader", () => {
-    renderLogin();
-    // Build info, GitHub link, and author attribution are now part of AppHeader,
-    // mocked above. The login layout itself adds no footer.
-    expect(screen.queryByText(/Miles Burton/)).not.toBeInTheDocument();
-    expect(screen.queryByTestId("login-build-info")).not.toBeInTheDocument();
+  test("shows the footer with version, build date and GitHub links", () => {
+    vi.stubEnv("VITE_APP_VERSION", "1.2.3");
+    vi.stubEnv("VITE_BUILD_DATE", "2026-11-14T10:00:00Z");
+    vi.stubEnv("VITE_COMMIT_SHA", "abcdef1234567890");
+    try {
+      renderLogin();
+      const footer = screen.getByTestId("login-footer");
+      expect(footer).toBeInTheDocument();
+      expect(screen.getByTestId("build-info")).toHaveTextContent("1.2.3");
+      expect(screen.getByTestId("build-info")).toHaveTextContent("abcdef1");
+      expect(screen.getByTestId("build-info")).toHaveTextContent("2026-11-14");
+      expect(screen.getByTestId("login-footer-github")).toHaveAttribute(
+        "href",
+        "https://github.com/milesburton/veta-trading-platform"
+      );
+      expect(screen.getByTestId("login-footer-docs")).toHaveAttribute(
+        "href",
+        "https://milesburton.github.io/veta-trading-platform/"
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   test("shows specific error when OAuth returns 401", async () => {
     mockAuthorizeOAuth.mockResolvedValue({ error: { status: 401 } } as never);
+    showPersona({ id: "bad", name: "Bad", passcode: "wrong" });
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "bad" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "wrong" },
-    });
-    fireEvent.click(screen.getByTestId("oauth-submit"));
+    fireEvent.click(screen.getByTestId("persona-bad"));
     await waitFor(() =>
       expect(screen.getByTestId("login-error")).toHaveTextContent(/invalid username or passcode/i)
     );
@@ -203,87 +219,30 @@ describe("LoginPage", () => {
 
   test("surfaces a visible error when PKCE generation throws", async () => {
     sha256AsyncMock.mockRejectedValueOnce(new Error("crypto.subtle is undefined"));
+    showPersona();
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "alice" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    fireEvent.click(screen.getByTestId("oauth-submit"));
+    fireEvent.click(screen.getByTestId("persona-alice"));
     await waitFor(() =>
       expect(screen.getByTestId("login-error")).toHaveTextContent(/crypto.subtle is undefined/)
     );
     expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
 
-  test("rejects empty username with a local validation error before hitting the API", async () => {
+  test("rejects a persona with no passcode before hitting the API", async () => {
+    showPersona({ passcode: "" });
     renderLogin();
-    // useSignal initialises username to "alice", explicitly clear it so the
-    // !normalizedUsername guard fires.
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    // fireEvent.submit on the form is more reliable in jsdom than clicking
-    // a type=submit button (jsdom doesn't always synthesise the submit
-    // event from a button click).
-    const form = screen.getByTestId("oauth-username").closest("form");
-    if (!form) throw new Error("oauth-username has no enclosing form");
-    fireEvent.submit(form);
-    await waitFor(() =>
-      expect(screen.getByTestId("login-error")).toHaveTextContent(/Username is required/)
-    );
-    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
-  });
-
-  test("rejects empty password with a local validation error before hitting the API", async () => {
-    renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "alice" },
-    });
-    // useSignal initialises password to a default, explicitly clear it.
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "" },
-    });
-    const form = screen.getByTestId("oauth-username").closest("form");
-    if (!form) throw new Error("oauth-username has no enclosing form");
-    fireEvent.submit(form);
+    fireEvent.click(screen.getByTestId("persona-alice"));
     await waitFor(() =>
       expect(screen.getByTestId("login-error")).toHaveTextContent(/Passcode is required/)
     );
     expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
 
-  test("rejects whitespace-only username (covers the trim() guard)", async () => {
-    renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "   " },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    const form = screen.getByTestId("oauth-username").closest("form");
-    if (!form) throw new Error("oauth-username has no enclosing form");
-    fireEvent.submit(form);
-    await waitFor(() =>
-      expect(screen.getByTestId("login-error")).toHaveTextContent(/Username is required/)
-    );
-    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
-  });
-
   test("shows error when token exchange succeeds but returns no user profile", async () => {
     mockExchangeOAuthCode.mockResolvedValue({ data: {} } as never);
+    showPersona();
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "alice" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    fireEvent.click(screen.getByTestId("oauth-submit"));
+    fireEvent.click(screen.getByTestId("persona-alice"));
     await waitFor(() =>
       expect(screen.getByTestId("login-error")).toHaveTextContent(/no user profile was returned/i)
     );
@@ -291,14 +250,9 @@ describe("LoginPage", () => {
 
   test("shows error when token exchange returns an error", async () => {
     mockExchangeOAuthCode.mockResolvedValue({ error: { status: 403 } } as never);
+    showPersona();
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), {
-      target: { value: "alice" },
-    });
-    fireEvent.change(screen.getByTestId("oauth-password"), {
-      target: { value: "veta-dev-passcode" },
-    });
-    fireEvent.click(screen.getByTestId("oauth-submit"));
+    fireEvent.click(screen.getByTestId("persona-alice"));
     await waitFor(() =>
       expect(screen.getByTestId("login-error")).toHaveTextContent(/not permitted to sign in/i)
     );

@@ -1,31 +1,62 @@
 import { test as base, expect } from "@playwright/test";
 import { adminTest, traderTest } from "./helpers/fixtures.ts";
-import { DEFAULT_ADMIN, DEFAULT_LIMITS, DEFAULT_TRADER, DEFAULT_READY_BODY } from "./helpers/constants.ts";
+import {
+  DEFAULT_ADMIN,
+  DEFAULT_LIMITS,
+  DEFAULT_TRADER,
+  DEFAULT_READY_BODY,
+} from "./helpers/constants.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 
 function setupUnauthPage(page: import("@playwright/test").Page) {
   return (async () => {
     await page.route("/api/**", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: "null" })
+      route.fulfill({ status: 200, contentType: "application/json", body: "null" }),
     );
     await page.route("**/health", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ status: "ok", version: "mock" }),
-      })
+      }),
     );
     await page.route("/api/gateway/ready", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(DEFAULT_READY_BODY),
-      })
+      }),
     );
     await page.route("**/api/user-service/sessions/me", (route) =>
-      route.fulfill({ status: 401, body: "" })
+      route.fulfill({ status: 401, body: "" }),
     );
   })();
+}
+
+function mockAlicePersona(page: import("@playwright/test").Page, passcode: string) {
+  return page.route("**/api/user-service/personas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        personas: [
+          {
+            id: "alice",
+            name: "Alice Chen",
+            role: "trader",
+            avatar_emoji: "AL",
+            description: "Equity cash trader",
+            trading_style: null,
+            primary_desk: null,
+            allowed_strategies: [],
+            max_order_qty: 0,
+            dark_pool_access: false,
+            passcode,
+          },
+        ],
+      }),
+    }),
+  );
 }
 
 base.describe("Unauthenticated", () => {
@@ -40,10 +71,14 @@ base.describe("Unauthenticated", () => {
 
   base("shows login page on network error", async ({ page }) => {
     await page.route("/api/**", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: "null" })
+      route.fulfill({ status: 200, contentType: "application/json", body: "null" }),
     );
     await page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_READY_BODY) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(DEFAULT_READY_BODY),
+      }),
     );
     await page.route("**/api/user-service/sessions/me", (route) => route.abort("failed"));
     await page.goto("/");
@@ -65,17 +100,21 @@ base.describe("Unauthenticated", () => {
 
   base("valid credentials reach the dashboard", async ({ page }) => {
     await page.route("/api/**", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: "null" })
+      route.fulfill({ status: 200, contentType: "application/json", body: "null" }),
     );
     await page.route("**/health", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ status: "ok", version: "mock" }),
-      })
+      }),
     );
     await page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_READY_BODY) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(DEFAULT_READY_BODY),
+      }),
     );
     let sessionExists = false;
     await page.route("**/api/user-service/sessions/me", (route) => {
@@ -103,7 +142,7 @@ base.describe("Unauthenticated", () => {
           expires_in: 60,
           scope: "openid profile",
         }),
-      })
+      }),
     );
     await page.route("**/api/user-service/oauth/token", (route) => {
       sessionExists = true;
@@ -121,13 +160,12 @@ base.describe("Unauthenticated", () => {
       });
     });
 
+    await mockAlicePersona(page, "veta-dev-passcode");
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
       timeout: 10_000,
     });
-    await page.getByTestId("oauth-username").fill("alice");
-    await page.getByTestId("oauth-password").fill("veta-dev-passcode");
-    await page.getByTestId("oauth-submit").click();
+    await page.getByTestId("persona-alice").click();
     await expect(page.getByRole("heading", { name: /^sign in$/i })).not.toBeVisible({
       timeout: 10_000,
     });
@@ -140,15 +178,14 @@ base.describe("Unauthenticated", () => {
         status: 401,
         contentType: "application/json",
         body: JSON.stringify({ error: "invalid_credentials" }),
-      })
+      }),
     );
+    await mockAlicePersona(page, "wrong");
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
       timeout: 10_000,
     });
-    await page.getByTestId("oauth-username").fill("alice");
-    await page.getByTestId("oauth-password").fill("wrong");
-    await page.getByTestId("oauth-submit").click();
+    await page.getByTestId("persona-alice").click();
     await expect(page.getByTestId("login-error")).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId("login-error")).toContainText(/sign in failed/i);
   });
