@@ -1244,7 +1244,8 @@ services:
       # Keep aligned with the gateway's PUBLIC_GUEST_TRADING so the two
       # services agree on whether /oauth/guest exists.
       PUBLIC_GUEST_TRADING: ${PUBLIC_GUEST_TRADING:-false}
-      OAUTH_ALLOW_PUBLIC_REGISTER: ${OAUTH_ALLOW_PUBLIC_REGISTER:-true}
+      OAUTH_ALLOW_PUBLIC_REGISTER: ${OAUTH_ALLOW_PUBLIC_REGISTER:-false}
+      LOCAL_ADMIN_SIGN_IN: ${LOCAL_ADMIN_SIGN_IN:-false}
       VETA_ALLOW_DEFAULT_PASSCODE: ${VETA_ALLOW_DEFAULT_PASSCODE:-false}
       OAUTH2_SHARED_SECRET: ${OAUTH2_SHARED_SECRET:-veta-dev-passcode}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-veta-dev-service-token}

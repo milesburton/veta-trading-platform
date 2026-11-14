@@ -22,6 +22,7 @@ mapfile -t SERVICES < <(grep -v '^\s*$' "$SERVICES_FILE")
       echo "    environment:"
       echo "      VETA_ALLOW_DEFAULT_PASSCODE: \"true\""
       echo "      VETA_DEMO_MODE: \"true\""
+      echo "      LOCAL_ADMIN_SIGN_IN: \"true\""
     fi
   done
 } > "$OUT"

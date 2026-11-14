@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 211,
-      "cases": 2197,
+      "cases": 2200,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -206,7 +206,7 @@
         "trigger-rules.unit.test.ts": 17,
         "unit.test.ts": 16,
         "user-schema.unit.test.ts": 14,
-        "user-service-entry.unit.test.ts": 25,
+        "user-service-entry.unit.test.ts": 28,
         "user-service-oidc-routes.unit.test.ts": 15,
         "user-service-oidc.unit.test.ts": 25,
         "venue-router.unit.test.ts": 8,
@@ -271,11 +271,11 @@
   },
   "frontend": {
     "unit": {
-      "files": 192,
-      "cases": 2329
+      "files": 191,
+      "cases": 2310
     },
     "playwright": {
-      "files": 19,
+      "files": 18,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
@@ -290,7 +290,6 @@
         "panel-walkthrough.spec.ts",
         "panels.spec.ts",
         "price-format.spec.ts",
-        "registration.spec.ts",
         "screenshots.spec.ts",
         "session-replay.spec.ts",
         "ui.spec.ts",

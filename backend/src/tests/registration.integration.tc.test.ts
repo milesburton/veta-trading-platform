@@ -78,6 +78,7 @@ test({
         "user-service": {
           OAUTH_ALLOW_PUBLIC_REGISTER: "true",
           VETA_ALLOW_DEFAULT_PASSCODE: "true",
+          LOCAL_ADMIN_SIGN_IN: "true",
         },
       },
     });

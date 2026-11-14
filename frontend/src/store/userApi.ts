@@ -36,13 +36,6 @@ interface OAuthTokenResponse {
   user: AuthUser;
 }
 
-interface OAuthRegisterRequest {
-  username: string;
-  name: string;
-  password: string;
-  archetype: string;
-}
-
 export interface UserRow {
   id: string;
   name: string;
@@ -79,16 +72,6 @@ export const userApi = createApi({
     exchangeOAuthCode: builder.mutation<OAuthTokenResponse, OAuthTokenRequest>({
       query: (body) => ({
         url: "/oauth/token",
-        method: "POST",
-        body,
-      }),
-    }),
-    registerOAuthUser: builder.mutation<
-      { userId: string; name: string; role: string },
-      OAuthRegisterRequest
-    >({
-      query: (body) => ({
-        url: "/oauth/register",
         method: "POST",
         body,
       }),
@@ -164,7 +147,6 @@ export interface DemoPersona {
 export const {
   useAuthorizeOAuthMutation,
   useExchangeOAuthCodeMutation,
-  useRegisterOAuthUserMutation,
   useLogoutMutation,
   useLoginAsGuestMutation,
   useGetUsersQuery,

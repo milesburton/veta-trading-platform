@@ -300,7 +300,9 @@ test("[oidc-routes] the callback body is validated", async () => {
 });
 
 test("[oidc-routes] local sign-in is refused for an externally authenticated user", async () => {
-  when(/SELECT password_hash, auth_source FROM users\.users/, () => [[null, "oidc"]]);
+  when(/SELECT password_hash, auth_source, role FROM users\.users/, () => [
+    [null, "oidc", "trader"],
+  ]);
   const res = await call("POST", "/oauth/authorize", {
     client_id: "veta-web",
     username: "carol",
@@ -313,7 +315,9 @@ test("[oidc-routes] local sign-in is refused for an externally authenticated use
 });
 
 test("[oidc-routes] local sign-in with the shared passcode still works for a local user", async () => {
-  when(/SELECT password_hash, auth_source FROM users\.users/, () => [[null, "local"]]);
+  when(/SELECT password_hash, auth_source, role FROM users\.users/, () => [
+    [null, "local", "trader"],
+  ]);
   when(/SELECT id FROM users\.users WHERE id = \$1/, () => [["alice"]]);
   const res = await call("POST", "/oauth/authorize", {
     client_id: "veta-web",

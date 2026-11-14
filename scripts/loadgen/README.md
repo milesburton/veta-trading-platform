@@ -6,6 +6,11 @@ runner, a matrix runner, and a token-refresh sidecar.
 **Full documentation**:
 [Continuous load generator](https://milesburton.github.io/veta-trading-platform/platform/supporting/loadgen/).
 
+The token-refresh sidecar signs in as the local `admin` by default. With
+`LOCAL_ADMIN_SIGN_IN` at its default of `false` that sign-in is refused, so
+set `LOADGEN_OAUTH_USERNAME` to a dedicated account, or set
+`LOCAL_ADMIN_SIGN_IN=true` for the duration of a run.
+
 ## Quick start
 
 ```bash

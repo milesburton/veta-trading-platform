@@ -101,7 +101,8 @@ Each step is deployable on its own and leaves sign-in working.
    sign-in page. Disabled unless `OIDC_ENABLED=true`.
 3. Enable in production, enrol the administrator, confirm the second factor is demanded.
 4. Refuse local sign-in for `admin`, remove the administrator from the demo list, switch public
-   registration off, and update the Professional Standards rows.
+   registration off, and update the Professional Standards rows. Done: `LOCAL_ADMIN_SIGN_IN` and
+   `OAUTH_ALLOW_PUBLIC_REGISTER` both default to false and the registration form is removed.
 
 ## Alternatives considered
 

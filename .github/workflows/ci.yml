@@ -1609,6 +1609,7 @@ jobs:
           GATE_TAG: ${{ steps.sha.outputs.short }}
           VETA_ALLOW_DEFAULT_PASSCODE: "true"
           VETA_DEMO_MODE: "true"
+          LOCAL_ADMIN_SIGN_IN: "true"
           MARKET_SIM_ALLOW_OUT_OF_HOURS: "true"
         run: |
           set -euo pipefail

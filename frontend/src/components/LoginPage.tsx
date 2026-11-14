@@ -13,7 +13,6 @@ import {
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoPersonas } from "./DemoPersonas.tsx";
-import { RegistrationForm } from "./LoginPage/RegistrationForm.tsx";
 import { SingleSignOn } from "./LoginPage/SingleSignOn.tsx";
 import { AppHeader } from "./StatusBar.tsx";
 
@@ -362,8 +361,6 @@ export function LoginPage() {
                 {localError.value ?? formatApiError(apiError)}
               </div>
             )}
-
-            <RegistrationForm />
           </div>
 
           <div className="min-h-0">

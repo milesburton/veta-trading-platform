@@ -300,6 +300,9 @@ async function derivePkceChallenge(verifier: string): Promise<string> {
     .replace(/=+$/g, "");
 }
 
+const localAdminSignIn = (): boolean =>
+  (process.env.LOCAL_ADMIN_SIGN_IN ?? "false").toLowerCase() === "true";
+
 async function verifyOAuthCredentials(
   userId: string,
   providedPassword: string | undefined
@@ -309,11 +312,12 @@ async function verifyOAuthCredentials(
 
   const client = await usersPool.connect();
   try {
-    const { rows } = await client.queryArray<[string | null, string | null]>(
-      "SELECT password_hash, auth_source FROM users.users WHERE id = $1",
+    const { rows } = await client.queryArray<[string | null, string | null, string | null]>(
+      "SELECT password_hash, auth_source, role FROM users.users WHERE id = $1",
       [userId]
     );
     if (rows[0]?.[1] === "oidc") return false;
+    if (rows[0]?.[2] === "admin" && !localAdminSignIn()) return false;
     const stored = rows[0]?.[0];
     if (stored) {
       return await verifyPassword(candidate, stored);
@@ -470,6 +474,17 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "GET" && path === "/personas") {
     const demoMode = (process.env.VETA_DEMO_MODE ?? "false").toLowerCase() === "true";
     if (!demoMode) return json({ error: "demo mode disabled" }, 404);
+    const personaRoles = [
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "external-client",
+      "viewer",
+      ...(localAdminSignIn() ? ["admin"] : []),
+    ];
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
@@ -477,7 +492,8 @@ async function handle(req: Request): Promise<Response> {
                 l.trading_style, l.primary_desk, l.allowed_strategies, l.max_order_qty, l.dark_pool_access
          FROM users.users u
          LEFT JOIN users.trading_limits l ON l.user_id = u.id
-         WHERE u.role IN ('trader','desk-head','risk-manager','compliance','sales','oncall','admin','external-client','viewer')
+         WHERE u.role = ANY($1::text[])
+           AND u.auth_source = 'local'
            AND (u.id NOT LIKE 'synthetic-trader-%'
                 OR (u.id LIKE 'synthetic-trader-%-viewer' AND u.role = 'viewer'))
          ORDER BY
@@ -495,7 +511,8 @@ async function handle(req: Request): Promise<Response> {
            END,
            l.primary_desk NULLS LAST,
            l.trading_style NULLS LAST,
-           u.name`
+           u.name`,
+        [personaRoles]
       );
       return json({
         personas: rows.map((r) => {
