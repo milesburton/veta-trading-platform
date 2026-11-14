@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 211,
-      "cases": 2195,
+      "cases": 2197,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -150,7 +150,7 @@
         "prod-secrets-fail-closed.unit.test.ts": 6,
         "product-service.unit.test.ts": 9,
         "prompt-builder.unit.test.ts": 15,
-        "proxy.unit.test.ts": 10,
+        "proxy.unit.test.ts": 12,
         "rate-limit.test.ts": 9,
         "recommendation-engine.unit.test.ts": 8,
         "redpanda-init-topic-wait.unit.test.ts": 3,

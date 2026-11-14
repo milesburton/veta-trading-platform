@@ -1,6 +1,7 @@
 import { test } from "#veta/test";
 import { assertEquals } from "#veta/test-assert";
 import {
+  forwardedCookieHeader,
   isConnectionRefusedError,
   LONG_POST_TIMEOUT_MS,
   proxyGet,
@@ -24,6 +25,45 @@ test("[proxyPost] forwards the request body read from req when no presetBody is 
     const res = await proxyPost("http://oms:5002/orders", req);
     assertEquals(res.status, 200);
     assertEquals(seenBodies, [JSON.stringify({ orderId: "abc" })]);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("[proxyPost] forwards the single sign-on state cookie but no other cookie", async () => {
+  const seen: Array<Record<string, string>> = [];
+  globalThis.fetch = ((_url: string, init?: RequestInit) => {
+    seen.push(init?.headers as Record<string, string>);
+    return Promise.resolve(new Response("{}", { status: 200 }));
+  }) as typeof fetch;
+  try {
+    const req = new Request("http://localhost/api/user-service/oauth/oidc/callback", {
+      method: "POST",
+      headers: { cookie: "veta_user=session-token; veta_oidc_state=abc123; veta_gw=gw" },
+      body: "{}",
+    });
+    await proxyPost("http://user-service:5008/oauth/oidc/callback", req);
+    assertEquals(seen[0].Cookie, "veta_oidc_state=abc123");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("[proxyPost] sends no Cookie header when the browser sent none of the forwarded cookies", async () => {
+  const seen: Array<Record<string, string>> = [];
+  globalThis.fetch = ((_url: string, init?: RequestInit) => {
+    seen.push(init?.headers as Record<string, string>);
+    return Promise.resolve(new Response("{}", { status: 200 }));
+  }) as typeof fetch;
+  try {
+    const req = new Request("http://localhost/api/oms/orders", {
+      method: "POST",
+      headers: { cookie: "veta_user=session-token" },
+      body: "{}",
+    });
+    await proxyPost("http://oms:5002/orders", req);
+    assertEquals("Cookie" in seen[0], false);
+    assertEquals(forwardedCookieHeader(new Request("http://localhost/")), null);
   } finally {
     globalThis.fetch = realFetch;
   }
