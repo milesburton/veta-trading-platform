@@ -5,8 +5,8 @@ description: Scheduled, verified pg_dump backups with retention and Prometheus a
 
 The `postgres-backup` container takes a logical backup of the platform
 database once a day, checks that it can be read back, prunes old copies and
-exposes the result to Prometheus. It is the only scheduled backup of the
-database.
+exposes the result to Prometheus. The [full platform backup](../full-backup/) is a separate daily job that
+also covers the Authentik database, the vault and the stack config.
 
 ## What it does
 
