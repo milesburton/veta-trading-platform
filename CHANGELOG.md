@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.112.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.111.1...veta-trading-platform-v1.112.0) (2026-11-14)
+
+
+### Features
+
+* **auth:** single sign-on only for admin, remove self-registration ([#1167](https://github.com/milesburton/veta-trading-platform/issues/1167)) ([0899777](https://github.com/milesburton/veta-trading-platform/commit/0899777934e76710d830fa1ef90e508607b9b2da))
+
 ## [1.111.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.111.0...veta-trading-platform-v1.111.1) (2026-11-14)
 
 
