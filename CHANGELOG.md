@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.114.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.1...veta-trading-platform-v1.114.2) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deploy:** sync the backup, rebuild and prune scripts to the host ([#1201](https://github.com/milesburton/veta-trading-platform/issues/1201)) ([bc6d612](https://github.com/milesburton/veta-trading-platform/commit/bc6d6126da425e257dc6344ee6a5369bc306a578))
+* **market-data:** poll every assigned symbol and space provider calls out ([#1199](https://github.com/milesburton/veta-trading-platform/issues/1199)) ([4a2f524](https://github.com/milesburton/veta-trading-platform/commit/4a2f5240faa89b90651924aee62ba553350683cc))
+
 ## [1.114.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.0...veta-trading-platform-v1.114.1) (2026-11-20)
 
 
