@@ -1,6 +1,6 @@
 {
   "name": "veta-trading-platform",
-  "version": "1.114.3",
+  "version": "1.115.0",
   "private": true,
   "description": "VETA Trading Platform, real-time market simulation with algorithmic trading strategies.",
   "scripts": {

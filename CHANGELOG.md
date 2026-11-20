@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.115.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.3...veta-trading-platform-v1.115.0) (2026-11-20)
+
+
+### Features
+
+* **market-data:** honour the Alpha Vantage free-tier daily call limit ([#1204](https://github.com/milesburton/veta-trading-platform/issues/1204)) ([bb28836](https://github.com/milesburton/veta-trading-platform/commit/bb28836f9009844e55b8f92a55177647711f2256))
+
 ## [1.114.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.2...veta-trading-platform-v1.114.3) (2026-11-20)
 
 
