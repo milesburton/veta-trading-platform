@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.114.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.0...veta-trading-platform-v1.114.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **docs:** stop the Theme label overlapping its icon in the header ([#1195](https://github.com/milesburton/veta-trading-platform/issues/1195)) ([4fde143](https://github.com/milesburton/veta-trading-platform/commit/4fde143a95aeb2f434e583bbdcaf9379f9f5cdde))
+* **market-data:** make the state directory writable by the service user ([#1196](https://github.com/milesburton/veta-trading-platform/issues/1196)) ([76290b3](https://github.com/milesburton/veta-trading-platform/commit/76290b366f20f14d91fd7ce7e37c9e0713c23a27))
+
 ## [1.114.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.113.0...veta-trading-platform-v1.114.0) (2026-11-14)
 
 
