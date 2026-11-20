@@ -36,10 +36,8 @@ const POLYGON_KEY = process.env.POLYGON_KEY ?? "";
 const OVERRIDES_FILE = "market_data_overrides.json";
 const FEED_STATE_FILE = "market_data_feed_state.json";
 
-// How long between polls per symbol (free tier: 25 calls/day → ~3456s per call if 1 symbol,
-// but we target 5-min intervals per symbol in a round-robin queue)
-const POLL_INTERVAL_MS = 5 * 60 * 1_000; // 5 minutes
-const CACHE_TTL_MS = 310_000; // 310 seconds, slightly over 5 min
+const POLL_INTERVAL_MS = 5 * 60 * 1_000;
+const CACHE_TTL_MS = 310_000;
 
 export interface DataSource {
   id: string;
@@ -189,21 +187,25 @@ function symbolsForProvider(providerId: string): string[] {
     .map(([sym]) => sym);
 }
 
-const pollQueueIndices = new Map<string, number>();
+const POLL_SPACING_MS = 1_000;
+const INITIAL_QUOTE_SPACING_MS = 1_500;
+const INITIAL_HISTORY_SPACING_MS = 2_000;
 
-function startPollLoop(): void {
-  setInterval(async () => {
-    for (const provider of POLL_PROVIDERS) {
-      if (pausedSources.has(provider.id)) continue;
-      if (!provider.apiKeyConfigured) continue;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-      const symbols = symbolsForProvider(provider.id);
-      if (symbols.length === 0) continue;
+const runAfter = (delayMs: number, task: () => void) =>
+  delayMs === 0 ? task() : setTimeout(task, delayMs);
 
-      const idx = pollQueueIndices.get(provider.id) ?? 0;
-      const sym = symbols[idx % symbols.length];
-      pollQueueIndices.set(provider.id, idx + 1);
+const refreshing = new Set<string>();
 
+async function refreshProvider(provider: ProviderDef): Promise<void> {
+  if (refreshing.has(provider.id)) return;
+  refreshing.add(provider.id);
+  try {
+    const symbols = symbolsForProvider(provider.id);
+    for (const [index, sym] of symbols.entries()) {
+      if (index > 0) await sleep(POLL_SPACING_MS);
+      if (pausedSources.has(provider.id)) return;
       try {
         const quote = await provider.fetchQuote(sym, JOURNAL_URL);
         if (quote) {
@@ -216,6 +218,37 @@ function startPollLoop(): void {
         const cached = quoteCache.get(sym);
         if (cached) quoteCache.set(sym, { ...cached, stale: true });
       }
+    }
+  } finally {
+    refreshing.delete(provider.id);
+  }
+}
+
+function scheduleInitialFetches(provider: ProviderDef, symbols: string[]): void {
+  for (const [index, sym] of symbols.entries()) {
+    runAfter(index * INITIAL_QUOTE_SPACING_MS, () => {
+      provider
+        .fetchQuote(sym, JOURNAL_URL)
+        .then((q) => {
+          if (q) quoteCache.set(sym, q);
+        })
+        .catch(() => {});
+    });
+    if (provider.seedHistory) {
+      const seed = provider.seedHistory;
+      runAfter(index * INITIAL_HISTORY_SPACING_MS, () => {
+        seed(sym, JOURNAL_URL).catch(() => {});
+      });
+    }
+  }
+}
+
+function startPollLoop(): void {
+  setInterval(() => {
+    for (const provider of POLL_PROVIDERS) {
+      if (pausedSources.has(provider.id)) continue;
+      if (!provider.apiKeyConfigured) continue;
+      void refreshProvider(provider);
     }
   }, POLL_INTERVAL_MS);
 }
@@ -234,25 +267,8 @@ function startStalenessChecker(): void {
 await loadOverrides();
 await loadFeedState();
 
-// Seed intraday history + immediate quote for alpha-vantage symbols on startup
 if (ALPHA_VANTAGE_KEY) {
-  const toSeed = symbolsForProvider("alpha-vantage");
-  for (let i = 0; i < toSeed.length; i++) {
-    setTimeout(
-      () => alphaVantageProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(() => {}),
-      i * 2000
-    );
-    setTimeout(
-      () =>
-        alphaVantageProvider
-          .fetchQuote(toSeed[i], JOURNAL_URL)
-          .then((q) => {
-            if (q) quoteCache.set(toSeed[i], q);
-          })
-          .catch(() => {}),
-      i * 1_500
-    );
-  }
+  scheduleInitialFetches(alphaVantageProvider, symbolsForProvider("alpha-vantage"));
 }
 
 // Start Polygon stream if any symbols are configured
@@ -357,20 +373,10 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
     overrides = newOverrides;
     await saveOverrides();
 
-    // Immediately fetch quotes for newly configured symbols (non-polygon providers)
-    for (const [sym, src] of newOverrides.entries()) {
-      const provider = POLL_PROVIDERS.find((p) => p.id === src);
-      if (provider?.apiKeyConfigured && !quoteCache.has(sym)) {
-        provider
-          .fetchQuote(sym, JOURNAL_URL)
-          .then((q) => {
-            if (q) quoteCache.set(sym, q);
-          })
-          .catch(() => {});
-        if (provider.seedHistory) {
-          provider.seedHistory(sym, JOURNAL_URL).catch(() => {});
-        }
-      }
+    for (const provider of POLL_PROVIDERS) {
+      if (!provider.apiKeyConfigured) continue;
+      const fresh = symbolsForProvider(provider.id).filter((sym) => !quoteCache.has(sym));
+      scheduleInitialFetches(provider, fresh);
     }
 
     // Restart polygon stream if polygon symbols changed

@@ -221,18 +221,21 @@ test("[market-data] override updates drop synthetic entries, persist and fetch n
   assertEquals(state.tiingo.fetchQuote.mock.calls.length, 0);
 });
 
-test("[market-data] the poll loop refreshes one symbol per provider and flags failures as stale", async () => {
+test("[market-data] the poll loop refreshes every assigned symbol one second apart and flags failures as stale", async () => {
+  const { overrides } = await (await call("GET", "/overrides")).json();
+  const assigned = Object.keys(overrides).filter((sym) => overrides[sym] === "alpha-vantage");
   state.alpha.fetchQuote.mockClear();
   state.alpha.fetchQuote.mockResolvedValueOnce(null);
   await vi.advanceTimersByTimeAsync(300_000);
   assertEquals(state.alpha.fetchQuote.mock.calls.length, 1);
+  const first = state.alpha.fetchQuote.mock.calls[0][0];
   const cached = await (await call("GET", "/cache")).json();
-  const polled = state.alpha.fetchQuote.mock.calls[0][0];
-  assertEquals(cached[polled]?.stale, true);
+  assertEquals(cached[first]?.stale, true);
 
-  state.alpha.fetchQuote.mockRejectedValueOnce(new Error("rate limited"));
-  await vi.advanceTimersByTimeAsync(300_000);
-  assertEquals(state.alpha.fetchQuote.mock.calls.length, 2);
+  await vi.advanceTimersByTimeAsync(1_000 * assigned.length);
+  const polled = state.alpha.fetchQuote.mock.calls.map((c: unknown[]) => c[0]);
+  assertEquals(polled.length, assigned.length);
+  assertEquals(new Set(polled).size, assigned.length);
 });
 
 test("[market-data] the poll loop skips paused providers", async () => {
