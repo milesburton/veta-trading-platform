@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 213,
-      "cases": 2208,
+      "cases": 2209,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -62,7 +62,7 @@
         "deploy-authentik-project.unit.test.ts": 7,
         "deploy-internal-networks.unit.test.ts": 12,
         "deploy-openbao-rebuild.unit.test.ts": 6,
-        "deploy-sync-bind-mounts.unit.test.ts": 1,
+        "deploy-sync-bind-mounts.unit.test.ts": 2,
         "devcontainer.unit.test.ts": 7,
         "discord-bot-dispatch.unit.test.ts": 17,
         "discord-bot.unit.test.ts": 60,
