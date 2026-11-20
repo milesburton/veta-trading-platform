@@ -85,6 +85,7 @@ beforeAll(async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-16T12:00:00Z"));
   vi.stubEnv("ALPHA_VANTAGE_KEY", "key");
+  vi.stubEnv("ALPHA_VANTAGE_DAILY_LIMIT", "0");
   vi.stubEnv("POLYGON_KEY", "pkey");
   state.files["market_data_overrides.json"] = JSON.stringify({
     AAPL: "alpha-vantage-fx",

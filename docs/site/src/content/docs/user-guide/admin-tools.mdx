@@ -22,7 +22,7 @@ The **Mission Control** workspace provides a unified operations view:
   ![Throughput Gauges panel](/veta-trading-platform/screenshots/panels/throughput-gauges.png)
 
 - **News Feed**: live headlines with sentiment scoring
-- **Market Data Sources**: configure per-symbol data sources (synthetic or Alpha Vantage). Polled providers refresh every assigned symbol every five minutes, one request per second, so the assigned set should fit the provider's request allowance
+- **Market Data Sources**: configure per-symbol data sources (synthetic or Alpha Vantage). With the default free-tier limit of 25 Alpha Vantage calls a day, the service spreads calls evenly across the day and refreshes the oldest quote first, so each quote is hours old and intraday history is not loaded. Set `ALPHA_VANTAGE_DAILY_LIMIT=0` on a premium key to refresh every assigned symbol every five minutes
 
   ![Market Data Sources panel](/veta-trading-platform/screenshots/panels/market-data-sources.png)
 
