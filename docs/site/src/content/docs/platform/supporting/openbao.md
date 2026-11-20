@@ -18,7 +18,7 @@ description: Self-hosted OpenBao vault on the production server that holds every
 | KV paths | `secret/veta/platform`, `secret/veta/loadgen` |
 | Auth | `veta-deploy` AppRole (read only, 5 minute tokens) for the deploy; `admin` userpass user (edit `secret/veta/*`, 1 hour tokens) for people |
 
-The deploy user's `~/.config/veta/openbao-approle.json` holds the AppRole credentials. The root token is revoked after setup. Generate a new one with `bao operator generate-root` and the recovery key when a policy or auth method has to change.
+The deploy user's `~/.config/veta/openbao-approle.json` holds the AppRole credentials. The root token is revoked after setup. Issue a new one with the recovery key, as described under [Recovering admin access](#recovering-admin-access), when a policy or auth method has to change.
 
 ## Health
 
@@ -92,20 +92,26 @@ Check the audit log first. It shows whether anyone reached the vault and why a l
 docker exec veta-openbao tail -n 20 /openbao/logs/audit.log
 ```
 
-With the static seal, `bao operator generate-root` fails with `403 permission denied` because the CLI calls `sys/generate-root-token/attempt`, which needs a token. The unauthenticated `sys/generate-root` endpoint still works, so drive it over the API from the server:
+Since OpenBao 2.5.3 the unauthenticated `sys/generate-root` endpoints are disabled by default (CVE-2026-5807), because an unauthenticated caller could cancel or start a root token operation. They answer `405`. The replacement, `sys/generate-root-token`, needs a token, so `bao operator generate-root` answers `403` when no token exists. The recovery key still works through the legacy endpoints once the listener setting `disable_unauthed_generate_root_endpoints = false` is applied, which needs a restart of the vault. The repository ships that as a second configuration, `deploy/openbao/recovery/openbao.hcl`, selected by `deploy/openbao/compose.recovery.yml`, so nothing is edited on the server.
 
-1. Write the recovery key to a file only you can read. Set the mode explicitly, because a file created without `umask 077` is world-readable: `umask 077; read -rs K && printf %s "$K" > ~/.recovery-key; chmod 600 ~/.recovery-key`.
-2. Generate a 26-character alphanumeric one-time pad, then `PUT http://127.0.0.1:8200/v1/sys/generate-root/attempt` with `{"otp": "<pad>"}`. The response carries a `nonce`.
-3. `PUT /v1/sys/generate-root/update` with `{"key": "<recovery key>", "nonce": "<nonce>"}`. With one recovery share the response is `complete` and holds `encoded_token`.
-4. Base64-decode `encoded_token` (add `=` padding) and XOR it byte for byte with the pad. The result is the root token. Write it to a mode 600 file and never print it.
-5. Use the token to repair what is broken, for example `bao write auth/userpass/users/admin/password password=-`, or `bao kv patch -mount=secret veta/platform ...` for a secret.
-6. Revoke the token with `bao token revoke -self`, then shred the token file and the recovery key file.
+Run the recovery script as the deploy user. Line 1 on stdin is the recovery key, line 2 is the new `admin` password (16 characters or more):
 
-If a step fails, `DELETE /v1/sys/generate-root/attempt` cancels the attempt so the next one starts clean. Send the secret values to the vault over stdin so they never appear in a process list, and check results with the `veta-deploy` token by testing for presence and for known defaults, not by printing values.
+```bash
+read -rs K && read -rs P && printf '%s\n%s\n' "$K" "$P" | python3 /opt/stacks/veta/scripts/openbao-recover-admin.py
+```
+
+The script:
+
+1. Restarts the vault with the recovery configuration. The vault is unavailable for a few seconds, and running services keep the credentials they already hold.
+2. Starts a generate-root operation with a one-time pad, submits the recovery key and decodes the root token.
+3. Sets the `admin` password, creating the user with the `veta-admin` policy if it is missing, and checks that the login works.
+4. Revokes the root token, restarts the vault with the normal configuration and fails unless the unauthenticated endpoint is closed again.
+
+The restore step runs even when an earlier step fails. A wrong recovery key fails with `recovery key does not match submitted values`, and the script cancels the attempt. Do not retry in a loop. The operation is audited, so the audit log shows who started it.
 
 ## Rebuilding the vault
 
-Use this when `admin` access and the recovery key are both lost. Existing data stays readable with the read-only deploy credential, so the secrets can be carried across to a new vault. The unseal key volume is reused unchanged.
+Use this when `admin` access and the recovery key are both lost. If the recovery key still exists, use [Recovering admin access](#recovering-admin-access) instead. Existing data stays readable with the read-only deploy credential, so the secrets can be carried across to a new vault. The unseal key volume is reused unchanged.
 
 ```bash
 read -rs P && printf %s "$P" | python3 /opt/stacks/veta/scripts/openbao-rebuild.py
@@ -121,7 +127,7 @@ The password becomes the new `admin` password and must be at least 16 characters
 
 Afterwards, move the new recovery key from `~/openbao-init-*.json` into the password manager and shred the file. Run a deploy and confirm it exported secrets from the vault. Shred the archive and the old credential once that deploy is healthy, because the archive holds every secret in the clear.
 
-Admin access has been lost twice, so keep two things outside the server: the recovery key in the password manager, and the `admin` password in a second entry.
+Admin access has been lost three times, each time because the password or recovery key lived only on a machine that was rebuilt. Keep two things outside the server and outside any development container: the recovery key and the `admin` password, as separate password manager entries. With the recovery key the vault can be recovered without a rebuild. Without it, rebuilding is the only route.
 
 ## Troubleshooting
 
@@ -132,7 +138,7 @@ Admin access has been lost twice, so keep two things outside the server: the rec
 | Deploy log: `could not read .../veta/platform` | Path deleted, or the `veta-deploy` policy changed | `bao kv get secret/veta/platform` as `admin`; restore with `bao kv rollback` |
 | Every request returns `500` and the log says `no audit backend succeeded` | The audit volume is full or unwritable. OpenBao refuses requests it cannot audit | Free space on the server, then restart the container |
 | `admin` login returns `invalid credentials`, or a saved root token returns `permission denied` | The password changed or the root token was revoked after setup, which is the intended state | [Recovering admin access](#recovering-admin-access) |
-| `bao operator generate-root` returns `403` | The CLI uses an authenticated path under the static seal | Use the `sys/generate-root` API as described above |
+| `bao operator generate-root` returns `403`, or `sys/generate-root/attempt` returns `405` | The CLI needs a token, and the unauthenticated endpoints are disabled by default since 2.5.3 | Run `scripts/openbao-recover-admin.py` |
 | `recovery key does not match submitted values` | The key belongs to another vault, or was copied incorrectly | Find the key labelled for this vault. Do not retry in a loop |
 | The deploy aborts with `is a known compose default` or `is not set` | `POSTGRES_PASSWORD`, `AUDIT_DB_PASSWORD`, `MINIO_ROOT_PASSWORD` or `INTERNAL_SERVICE_TOKEN` is missing or still a development default in `secret/veta/platform` | Set a real value as `admin`, rotating the live credential first. `POSTGRES_PASSWORD` and `AUDIT_DB_PASSWORD` must be hex. See the deployment page |
 | A service starts with a default password after a manual command | It was recreated with a bare `docker compose` | Recreate it with `scripts/veta-compose.sh up -d <service>` |
@@ -142,4 +148,6 @@ Admin access has been lost twice, so keep two things outside the server: the rec
 - `deploy/openbao/compose.yml`, `deploy/openbao/config/openbao.hcl`
 - `scripts/lib/openbao-env.sh` (deploy loader)
 - `scripts/openbao-bootstrap.py` (first-time setup)
+- `scripts/openbao-recover-admin.py`, `deploy/openbao/compose.recovery.yml`, `deploy/openbao/recovery/openbao.hcl` (recovery with the recovery key)
+- `scripts/openbao-rebuild.py` (rebuild when the recovery key is lost)
 - `scripts/veta-compose.sh` (compose wrapper)

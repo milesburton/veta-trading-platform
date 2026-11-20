@@ -1,0 +1,4 @@
+services:
+  openbao:
+    volumes:
+      - ./recovery:/openbao/config:ro
