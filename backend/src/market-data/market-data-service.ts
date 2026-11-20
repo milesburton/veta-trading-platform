@@ -21,6 +21,7 @@ import { readFile, writeFile } from "node:fs/promises";
  */
 import { corsOptions, decodePathSegment, json, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
+import { type BudgetState, createCallBudget, parseDailyLimit } from "./call-budget.ts";
 import { alphaVantageProvider } from "./providers/alpha-vantage-equity.ts";
 import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
 import { tiingoProvider } from "./providers/tiingo.ts";
@@ -35,6 +36,9 @@ const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY ?? "";
 const POLYGON_KEY = process.env.POLYGON_KEY ?? "";
 const OVERRIDES_FILE = "market_data_overrides.json";
 const FEED_STATE_FILE = "market_data_feed_state.json";
+const BUDGET_FILE = "market_data_budget.json";
+const BUDGETED_PROVIDER = "alpha-vantage";
+const ALPHA_VANTAGE_DAILY_LIMIT = parseDailyLimit(process.env.ALPHA_VANTAGE_DAILY_LIMIT, 25);
 
 const POLL_INTERVAL_MS = 5 * 60 * 1_000;
 const CACHE_TTL_MS = 310_000;
@@ -58,6 +62,28 @@ const PROVIDERS: ProviderDef[] = [alphaVantageProvider, tiingoProvider, polygonP
 const POLL_PROVIDERS: ProviderDef[] = PROVIDERS.filter((p) => p.id !== "polygon");
 
 let pausedSources: Set<string> = new Set();
+
+async function loadBudgetState(): Promise<BudgetState | undefined> {
+  try {
+    return JSON.parse(await readFile(BUDGET_FILE, "utf8")) as BudgetState;
+  } catch {
+    return undefined;
+  }
+}
+
+const budget = createCallBudget({
+  limit: ALPHA_VANTAGE_DAILY_LIMIT,
+  clock: Date.now,
+  initial: await loadBudgetState(),
+  onChange: (state) => {
+    writeFile(BUDGET_FILE, JSON.stringify(state)).catch((err: Error) =>
+      logger.warn(`Failed to persist call budget: ${err.message}`)
+    );
+  },
+});
+
+const isBudgeted = (providerId: string): boolean =>
+  providerId === BUDGETED_PROVIDER && budget.limit > 0;
 
 function getSources(): DataSource[] {
   const synthetic: DataSource = {
@@ -83,7 +109,11 @@ function getSources(): DataSource[] {
       apiKeyConfigured: p.apiKeyConfigured,
       active: !pausedSources.has(p.id),
       mode: isStreaming ? "streaming" : "polling",
-      pollIntervalMs: isStreaming ? undefined : POLL_INTERVAL_MS,
+      pollIntervalMs: isStreaming
+        ? undefined
+        : isBudgeted(p.id)
+          ? Math.max(POLL_INTERVAL_MS, budget.minGapMs)
+          : POLL_INTERVAL_MS,
     };
   });
 
@@ -197,27 +227,45 @@ const runAfter = (delayMs: number, task: () => void) =>
   delayMs === 0 ? task() : setTimeout(task, delayMs);
 
 const refreshing = new Set<string>();
+let lastBudgetedCallAt = 0;
+
+async function refreshSymbol(provider: ProviderDef, sym: string): Promise<void> {
+  try {
+    const quote = await provider.fetchQuote(sym, JOURNAL_URL);
+    if (quote) {
+      quoteCache.set(sym, quote);
+    } else {
+      const cached = quoteCache.get(sym);
+      if (cached) quoteCache.set(sym, { ...cached, stale: true });
+    }
+  } catch {
+    const cached = quoteCache.get(sym);
+    if (cached) quoteCache.set(sym, { ...cached, stale: true });
+  }
+}
+
+async function refreshOldestWithinBudget(provider: ProviderDef): Promise<void> {
+  if (Date.now() - lastBudgetedCallAt < budget.minGapMs) return;
+  const oldest = [...symbolsForProvider(provider.id)].sort(
+    (a, b) => (quoteCache.get(a)?.fetchedAt ?? 0) - (quoteCache.get(b)?.fetchedAt ?? 0)
+  )[0];
+  if (oldest === undefined || !budget.tryConsume()) return;
+  lastBudgetedCallAt = Date.now();
+  await refreshSymbol(provider, oldest);
+}
 
 async function refreshProvider(provider: ProviderDef): Promise<void> {
   if (refreshing.has(provider.id)) return;
   refreshing.add(provider.id);
   try {
-    const symbols = symbolsForProvider(provider.id);
-    for (const [index, sym] of symbols.entries()) {
+    if (isBudgeted(provider.id)) {
+      await refreshOldestWithinBudget(provider);
+      return;
+    }
+    for (const [index, sym] of symbolsForProvider(provider.id).entries()) {
       if (index > 0) await sleep(POLL_SPACING_MS);
       if (pausedSources.has(provider.id)) return;
-      try {
-        const quote = await provider.fetchQuote(sym, JOURNAL_URL);
-        if (quote) {
-          quoteCache.set(sym, quote);
-        } else {
-          const cached = quoteCache.get(sym);
-          if (cached) quoteCache.set(sym, { ...cached, stale: true });
-        }
-      } catch {
-        const cached = quoteCache.get(sym);
-        if (cached) quoteCache.set(sym, { ...cached, stale: true });
-      }
+      await refreshSymbol(provider, sym);
     }
   } finally {
     refreshing.delete(provider.id);
@@ -225,8 +273,13 @@ async function refreshProvider(provider: ProviderDef): Promise<void> {
 }
 
 function scheduleInitialFetches(provider: ProviderDef, symbols: string[]): void {
+  const budgeted = isBudgeted(provider.id);
   for (const [index, sym] of symbols.entries()) {
     runAfter(index * INITIAL_QUOTE_SPACING_MS, () => {
+      if (budgeted) {
+        if (!budget.tryConsume()) return;
+        lastBudgetedCallAt = Date.now();
+      }
       provider
         .fetchQuote(sym, JOURNAL_URL)
         .then((q) => {
@@ -234,7 +287,7 @@ function scheduleInitialFetches(provider: ProviderDef, symbols: string[]): void 
         })
         .catch(() => {});
     });
-    if (provider.seedHistory) {
+    if (provider.seedHistory && !budgeted) {
       const seed = provider.seedHistory;
       runAfter(index * INITIAL_HISTORY_SPACING_MS, () => {
         seed(sym, JOURNAL_URL).catch(() => {});
@@ -253,11 +306,18 @@ function startPollLoop(): void {
   }, POLL_INTERVAL_MS);
 }
 
+function cacheTtlMs(sym: string): number {
+  const source = overrides.get(sym);
+  if (source === undefined || !isBudgeted(source)) return CACHE_TTL_MS;
+  const cycleMs = symbolsForProvider(source).length * budget.minGapMs;
+  return Math.max(CACHE_TTL_MS, Math.ceil(cycleMs * 1.25));
+}
+
 function startStalenessChecker(): void {
   setInterval(() => {
     const now = Date.now();
     for (const [sym, q] of quoteCache.entries()) {
-      if (!q.stale && now - q.fetchedAt > CACHE_TTL_MS) {
+      if (!q.stale && now - q.fetchedAt > cacheTtlMs(sym)) {
         quoteCache.set(sym, { ...q, stale: true });
       }
     }
@@ -293,6 +353,7 @@ serveFetch({ port: PORT }, async (req: Request): Promise<Response> => {
       overrides: overrides.size,
       cachedQuotes: quoteCache.size,
       alphaVantageConfigured: ALPHA_VANTAGE_KEY.length > 0,
+      alphaVantageCallsRemaining: Number.isFinite(budget.remaining()) ? budget.remaining() : null,
       pausedSources: Array.from(pausedSources),
     });
   }

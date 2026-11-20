@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 213,
-      "cases": 2210,
+      "files": 215,
+      "cases": 2221,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -45,6 +45,7 @@
         "black-scholes.unit.test.ts": 6,
         "bond-pricing.unit.test.ts": 11,
         "bug-report-route.unit.test.ts": 14,
+        "call-budget.unit.test.ts": 7,
         "ccp-service.unit.test.ts": 11,
         "cli-trader.unit.test.ts": 8,
         "compose-mem-limits.unit.test.ts": 1,
@@ -123,6 +124,7 @@
         "logger.unit.test.ts": 17,
         "margin-math.unit.test.ts": 21,
         "market-data-adapter-events.unit.test.ts": 8,
+        "market-data-budget.unit.test.ts": 4,
         "market-data-providers.unit.test.ts": 19,
         "market-data-service.unit.test.ts": 16,
         "market-data-state-dir.unit.test.ts": 2,
