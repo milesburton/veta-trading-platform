@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.114.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.2...veta-trading-platform-v1.114.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* **backup:** archive the stack config as root ([#1202](https://github.com/milesburton/veta-trading-platform/issues/1202)) ([438cddc](https://github.com/milesburton/veta-trading-platform/commit/438cddc27f1af8433d0068ae3fc2071926a53caa))
+
 ## [1.114.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.1...veta-trading-platform-v1.114.2) (2026-11-20)
 
 
