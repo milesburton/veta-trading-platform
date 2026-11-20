@@ -121,7 +121,8 @@ for item in $CONFIG_ITEMS; do
   fi
 done
 [ "${#config_present[@]}" -gt 0 ] || fail "none of the stack config items exist under $STACK_DIR"
-tar czf "$WORK/stack-config.tgz" -C "$STACK_DIR" "${config_present[@]}"
+docker run --rm -u 0 -v "$STACK_DIR:/stack:ro" --entrypoint tar "$VOLUME_IMAGE" czf - -C /stack "${config_present[@]}" >"$WORK/stack-config.tgz"
+[ -s "$WORK/stack-config.tgz" ] || fail "stack-config.tgz is empty"
 tar tzf "$WORK/stack-config.tgz" >/dev/null || fail "stack-config.tgz cannot be read back"
 encrypt "$WORK/stack-config.tgz"
 

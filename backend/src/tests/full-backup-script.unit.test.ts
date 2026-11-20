@@ -194,3 +194,15 @@ test("[full-backup] keeps only the newest BACKUP_KEEP backups", async () => {
     await box.cleanup();
   }
 });
+
+test("[full-backup] the stack config is archived as root so root-owned secret files are included", async () => {
+  const box = await sandbox();
+  try {
+    await box.run();
+    const archiveCall = (await box.log()).split("\n").find((line) => line.includes(":/stack:ro"));
+    assert(archiveCall !== undefined, "config was not archived through the helper container");
+    assert(archiveCall.includes("-u 0"));
+  } finally {
+    await box.cleanup();
+  }
+});
