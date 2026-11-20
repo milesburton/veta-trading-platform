@@ -87,7 +87,7 @@ const tooltip = `Docs built ${
     display: none;
     position: absolute;
     top: 50%;
-    right: calc(var(--sl-nav-pad-x) + 9rem);
+    right: calc(var(--sl-nav-pad-x) + 10.5rem);
     transform: translateY(-50%);
     align-items: center;
     gap: 0.75rem;
@@ -124,7 +124,7 @@ const tooltip = `Docs built ${
     flex-shrink: 0;
   }
   .veta-secondary-link {
-    display: inline-flex;
+    display: none;
     align-items: center;
     padding: 0.25rem 0.6rem;
     border-radius: 4px;
@@ -133,6 +133,11 @@ const tooltip = `Docs built ${
     text-decoration: none;
     white-space: nowrap;
     transition: color 0.15s, background-color 0.15s;
+  }
+  @media (min-width: 75rem) {
+    .veta-secondary-link {
+      display: inline-flex;
+    }
   }
   .veta-secondary-link:hover {
     color: var(--sl-color-white);
@@ -143,7 +148,7 @@ const tooltip = `Docs built ${
     outline-offset: 2px;
   }
   .veta-build-chip {
-    display: inline-flex;
+    display: none;
     align-items: center;
     gap: 0.4rem;
     padding: 0.15rem 0.55rem;
@@ -155,6 +160,11 @@ const tooltip = `Docs built ${
     text-decoration: none;
     white-space: nowrap;
     transition: color 0.15s, border-color 0.15s;
+  }
+  @media (min-width: 100rem) {
+    .veta-build-chip {
+      display: inline-flex;
+    }
   }
   .veta-build-chip:hover {
     color: var(--sl-color-white);
