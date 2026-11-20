@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.115.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.115.0...veta-trading-platform-v1.115.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **openbao:** recover admin access with the recovery key on 2.7.1 ([#1211](https://github.com/milesburton/veta-trading-platform/issues/1211)) ([e9b6ecd](https://github.com/milesburton/veta-trading-platform/commit/e9b6ecd91a80ad35b2cf4f478c3cc9fbf77cea2b)), closes [#1169](https://github.com/milesburton/veta-trading-platform/issues/1169) [#1154](https://github.com/milesburton/veta-trading-platform/issues/1154)
+
 ## [1.115.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.114.3...veta-trading-platform-v1.115.0) (2026-11-20)
 
 
