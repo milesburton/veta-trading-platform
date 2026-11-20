@@ -23,6 +23,7 @@ CONFIG_PATHS=(
     "scripts/full-backup.sh"
     "scripts/host-prune.sh"
     "scripts/openbao-rebuild.py"
+    "scripts/openbao-recover-admin.py"
     "scripts/postgres-health.py"
     "scripts/disk-monitor.py"
     "scripts/loadgen/"

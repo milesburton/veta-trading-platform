@@ -125,7 +125,7 @@ Run `scripts/openbao-bootstrap.py` on the server as the deploy user, from the sy
 
 Move the recovery key into your password manager and shred the init file, then deploy and check the log for `exported N secrets from veta/platform`.
 
-Rerunning the script is safe. It leaves an existing key, server, admin user and credentials alone and never overwrites a KV path that already exists. Configuring an already initialised OpenBao needs a root token (`bao operator generate-root` with the recovery key).
+Rerunning the script is safe. It leaves an existing key, server, admin user and credentials alone and never overwrites a KV path that already exists. Configuring an already initialised OpenBao needs a root token (see [Recovering admin access](/veta-trading-platform/platform/supporting/openbao/#recovering-admin-access)).
 
 A deploy that finds no AppRole credentials aborts before touching any container. There is no fallback to `.env`.
 
