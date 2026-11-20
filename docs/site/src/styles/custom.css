@@ -262,5 +262,9 @@
     color: var(--sl-color-gray-3);
     white-space: nowrap;
     margin-inline-end: 0.15rem;
+    padding-inline-start: calc(0.875rem + 0.25rem);
+  }
+  header starlight-theme-select select {
+    padding-inline-start: 0.25rem;
   }
 }
