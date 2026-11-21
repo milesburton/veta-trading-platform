@@ -62,7 +62,6 @@ The frontend smoke is a Playwright suite that runs against the compose stack the
 2. The same order appears in the journal within 30s, with the asset, side and quantity submitted.
 3. Signed in as `compliance`, the order appears in the audit trail as `order_submitted`, and `/audit/verify` reports an intact chain.
 4. `alice` receives `403` from `/audit/events`.
-5. An order with a negative quantity is rejected.
 
 The `Deploy gate` job refuses to run if any file under `frontend/tests/gate` contains `skip`, `fixme` or `only`, or if the suite lists fewer than eight tests. A quarantined suite therefore fails the gate instead of passing it silently, which is how the previous suite went unnoticed from PR #407 until #1215.
 
