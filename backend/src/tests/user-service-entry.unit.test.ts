@@ -392,6 +392,21 @@ test("[user-service] accepts the shared secret for users without their own secre
   assertEquals((await json(res)).scope, "custom");
 });
 
+test("[user-service] a machine account never accepts the shared secret", async () => {
+  assertEquals(
+    (await authorize({ username: "loadgen", password: "shared-secret-value" })).status,
+    401
+  );
+});
+
+test("[user-service] the personas query leaves out the loadgen machine account", async () => {
+  when(/FROM users\.users u\s+LEFT JOIN/, () => []);
+  await call("/personas", { cookie: false });
+  const query = h.queries.find((q) => q.sql.includes("LEFT JOIN users.trading_limits"));
+  assert(query);
+  assert(query.sql.includes("u.id <> 'loadgen'"));
+});
+
 test("[user-service] verifies stored password hashes before falling back to secrets", async () => {
   const { hashPassword } = await import("../user-service/credentials.ts");
   const hash = await hashPassword("a-long-password");

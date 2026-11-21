@@ -39,6 +39,7 @@ cat "$in" >>"$out"
 
 interface Sandbox {
   backups: string;
+  metrics: () => Promise<string>;
   log: () => Promise<string>;
   run: (env?: Record<string, string>) => Promise<{ code: number | null; stdout: string }>;
   cleanup: () => Promise<void>;
@@ -70,6 +71,7 @@ async function sandbox(withRecipient = true): Promise<Sandbox> {
   await writeFile(logFile, "");
   return {
     backups,
+    metrics: () => readFile(join(stack, "state", "full-backup.prom"), "utf8"),
     log: () => readFile(logFile, "utf8"),
     run: async (env = {}) => {
       const result = await runCommand("bash", [SCRIPT], {
@@ -202,6 +204,43 @@ test("[full-backup] the stack config is archived as root so root-owned secret fi
     const archiveCall = (await box.log()).split("\n").find((line) => line.includes(":/stack:ro"));
     assert(archiveCall !== undefined, "config was not archived through the helper container");
     assert(archiveCall.includes("-u 0"));
+  } finally {
+    await box.cleanup();
+  }
+});
+
+test("[full-backup] a successful run publishes a fresh success timestamp and status 1", async () => {
+  const box = await sandbox();
+  try {
+    assertEquals((await box.run()).code, 0);
+    const metrics = await box.metrics();
+    assert(metrics.includes("veta_full_backup_last_status 1"));
+    const stamp = Number(/last_success_timestamp_seconds (\d+)/.exec(metrics)?.[1]);
+    assert(Math.abs(Date.now() / 1000 - stamp) < 120);
+  } finally {
+    await box.cleanup();
+  }
+});
+
+test("[full-backup] a failed run publishes status 0 and keeps the previous success time", async () => {
+  const box = await sandbox();
+  try {
+    assertEquals((await box.run()).code, 0);
+    const before = /last_success_timestamp_seconds (\d+)/.exec(await box.metrics())?.[1];
+    assert((await box.run({ FAKE_DUMP_EMPTY: "1" })).code !== 0);
+    const metrics = await box.metrics();
+    assert(metrics.includes("veta_full_backup_last_status 0"));
+    assertEquals(/last_success_timestamp_seconds (\d+)/.exec(metrics)?.[1], before);
+  } finally {
+    await box.cleanup();
+  }
+});
+
+test("[full-backup] a run refused before the lock still publishes status 0", async () => {
+  const box = await sandbox(false);
+  try {
+    assert((await box.run()).code !== 0);
+    assert((await box.metrics()).includes("veta_full_backup_last_status 0"));
   } finally {
     await box.cleanup();
   }

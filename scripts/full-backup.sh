@@ -15,6 +15,7 @@ VAULT_DATA_VOLUME="${VAULT_DATA_VOLUME:-veta-openbao_openbao-data}"
 VAULT_UNSEAL_VOLUME="${VAULT_UNSEAL_VOLUME:-veta-openbao-unseal}"
 VAULT_APPROLE_FILE="${VAULT_APPROLE_FILE:-$HOME/.config/veta/openbao-approle.json}"
 VAULT_WAIT_SECONDS="${VAULT_WAIT_SECONDS:-60}"
+METRICS_FILE="${METRICS_FILE:-$STACK_DIR/state/full-backup.prom}"
 VOLUMES="${BACKUP_VOLUMES:-veta_market-data-state veta_minio-data veta_opensearch-data observability_grafana-data veta-authentik_authentik-data}"
 CONFIG_ITEMS="${BACKUP_CONFIG_ITEMS:-.env .env.loadgen secrets}"
 
@@ -27,6 +28,49 @@ fail() {
   exit 1
 }
 
+STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+WORK="$BACKUP_ROOT/.work-$STAMP"
+FINAL="$BACKUP_ROOT/full-$STAMP"
+PARTIAL="$FINAL.partial"
+VAULT_STOPPED=0
+ATTEMPT_STARTED="$(date -u +%s)"
+
+write_metrics() {
+  local status="$1" last_success=0 size=0
+  [ -s "$BACKUP_ROOT/last-success" ] && last_success="$(cat "$BACKUP_ROOT/last-success")"
+  [ -d "$FINAL" ] && size="$(du -sb "$FINAL" | cut -f1)"
+  mkdir -p "$(dirname "$METRICS_FILE")"
+  {
+    echo "# TYPE veta_full_backup_last_success_timestamp_seconds gauge"
+    echo "veta_full_backup_last_success_timestamp_seconds $last_success"
+    echo "# TYPE veta_full_backup_last_attempt_timestamp_seconds gauge"
+    echo "veta_full_backup_last_attempt_timestamp_seconds $ATTEMPT_STARTED"
+    echo "# TYPE veta_full_backup_last_status gauge"
+    echo "veta_full_backup_last_status $status"
+    echo "# TYPE veta_full_backup_last_size_bytes gauge"
+    echo "veta_full_backup_last_size_bytes $size"
+  } >"$METRICS_FILE.tmp" && chmod 644 "$METRICS_FILE.tmp" && mv "$METRICS_FILE.tmp" "$METRICS_FILE"
+}
+
+restart_vault() {
+  if [ "$VAULT_STOPPED" = "1" ]; then
+    docker start "$VAULT_CONTAINER" >/dev/null 2>&1 || true
+    VAULT_STOPPED=0
+  fi
+}
+
+cleanup() {
+  local code=$?
+  restart_vault
+  rm -rf "$WORK" "$PARTIAL"
+  if [ "$code" -eq 0 ]; then
+    write_metrics 1 || true
+  else
+    write_metrics 0 || true
+  fi
+}
+trap cleanup EXIT
+
 command -v age >/dev/null 2>&1 || fail "age is not installed"
 command -v docker >/dev/null 2>&1 || fail "docker is not installed"
 [ -s "$AGE_RECIPIENT_FILE" ] || fail "no age recipient file at $AGE_RECIPIENT_FILE"
@@ -38,24 +82,6 @@ flock -w "$LOCK_WAIT_SECONDS" 9 || fail "could not take the deploy lock within $
 
 umask 077
 mkdir -p "$BACKUP_ROOT"
-STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-WORK="$BACKUP_ROOT/.work-$STAMP"
-FINAL="$BACKUP_ROOT/full-$STAMP"
-PARTIAL="$FINAL.partial"
-VAULT_STOPPED=0
-
-restart_vault() {
-  if [ "$VAULT_STOPPED" = "1" ]; then
-    docker start "$VAULT_CONTAINER" >/dev/null 2>&1 || true
-    VAULT_STOPPED=0
-  fi
-}
-
-cleanup() {
-  restart_vault
-  rm -rf "$WORK" "$PARTIAL"
-}
-trap cleanup EXIT
 
 mkdir -p "$WORK" "$PARTIAL"
 

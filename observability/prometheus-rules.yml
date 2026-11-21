@@ -113,6 +113,32 @@ groups:
             The job retries every 15 minutes. Read the postgres-backup
             container logs for the error.
 
+      - alert: FullBackupStale
+        expr: time() - veta_full_backup_last_success_timestamp_seconds > 93600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: No successful full platform backup for over 26h
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/full-backup-alert.md
+          description: |
+            The scheduled full backup has not completed for more than 26
+            hours, or has never succeeded. Read the veta-full-backup unit
+            journal on the server and fix the cause, then start the unit.
+
+      - alert: FullBackupFailing
+        expr: veta_full_backup_last_status == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: The latest full platform backup attempt failed
+          runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/full-backup-alert.md
+          description: |
+            The most recent run of the veta-full-backup unit exited with an
+            error. The previous good backup is still in place. Read the
+            unit journal for the failing step.
+
       - alert: PostgresBackupScrapeDown
         expr: up{job="postgres-backup"} == 0
         for: 10m

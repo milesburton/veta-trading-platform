@@ -32,7 +32,7 @@ function stubFetch(handler: (url: string) => Response | Promise<Response>) {
     Promise.resolve(handler(input instanceof Request ? input.url : String(input)))) as typeof fetch;
 }
 
-function makeContext(role = "admin", options: { ready?: boolean } = {}) {
+function makeContext(role = "admin", options: { ready?: boolean; userId?: string } = {}) {
   const sent: SentOrder[] = [];
   const accessEvents: Record<string, unknown>[] = [];
   const producer = {
@@ -44,7 +44,9 @@ function makeContext(role = "admin", options: { ready?: boolean } = {}) {
   };
   const ctx = {
     requireAuth: () =>
-      Promise.resolve({ user: { id: "admin-1", name: "Admin", role, avatar_emoji: "A" } }),
+      Promise.resolve({
+        user: { id: options.userId ?? "admin-1", name: "Admin", role, avatar_emoji: "A" },
+      }),
     producer,
     publishAccessEvent: (event: Record<string, unknown>) => accessEvents.push(event),
     urls: { marketSim: "http://market-sim.example" },
@@ -106,6 +108,24 @@ test("/load-test rejects unauthenticated, non-admin and bus-down requests", asyn
     );
     assertEquals(down.status, 503);
     assertEquals((await down.json()).error, "Bus unavailable");
+  } finally {
+    restore();
+  }
+});
+
+test("/load-test accepts the dedicated loadgen account but no other oncall user", async () => {
+  try {
+    setEnv({ LOAD_TEST_USER_IDS: "u1" });
+    stubFetch(() => new Response(JSON.stringify({}), { status: 200 }));
+    const loadgen = makeContext("oncall", { userId: "loadgen" });
+    assertEquals(
+      (await call(post("/load-test", { orderCount: 1 }), "/load-test", loadgen.ctx)).status,
+      202
+    );
+    const rin = makeContext("oncall", { userId: "rin" });
+    assertEquals((await call(post("/load-test", {}), "/load-test", rin.ctx)).status, 403);
+    const imposter = makeContext("trader", { userId: "loadgen" });
+    assertEquals((await call(post("/load-test", {}), "/load-test", imposter.ctx)).status, 403);
   } finally {
     restore();
   }

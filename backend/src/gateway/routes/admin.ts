@@ -22,6 +22,13 @@ function requireAdmin(auth: AuthResult): Response | null {
   return null;
 }
 
+const LOADGEN_ACCOUNT_ID = "loadgen";
+
+function requireLoadTestCaller(auth: AuthResult): Response | null {
+  const isLoadgen = auth.user.id === LOADGEN_ACCOUNT_ID && auth.user.role === "oncall";
+  return isLoadgen ? null : requireAdmin(auth);
+}
+
 function requireAdminOrOncall(auth: AuthResult): Response | null {
   if (auth.user.role !== "admin" && auth.user.role !== "oncall") {
     return new Response(JSON.stringify({ error: "Admin or oncall role required" }), {
@@ -120,7 +127,7 @@ function makeWave(
 async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
-  const adminRej = requireAdmin(auth);
+  const adminRej = requireLoadTestCaller(auth);
   if (adminRej) return adminRej;
   const busRej = busUnavailable(ctx.producer.isReady());
   if (busRej) return busRej;

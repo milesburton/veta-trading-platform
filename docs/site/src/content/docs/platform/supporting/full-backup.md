@@ -106,10 +106,20 @@ age -d -i veta-backup.key -o veta-postgres.dump veta-postgres.dump.age
 5. Volumes: extract each `volume-*.tgz` into its named volume.
 6. Run the normal deploy.
 
+## Monitoring
+
+Each run writes `state/full-backup.prom` in the stack directory: the last success time, the last attempt time, the last status (`1` or `0`) and the size of the newest backup. A run that is refused or fails still writes status `0` and keeps the previous success time. The disk monitor serves those lines on its `/metrics` endpoint, filtered to the `veta_full_backup_` names, and Prometheus scrapes them with the disk metrics.
+
+| Alert | Fires when | Severity |
+| --- | --- | --- |
+| `FullBackupStale` | The last success is over 26 hours old, for 15 minutes | critical |
+| `FullBackupFailing` | The latest run failed, for 30 minutes | warning |
+
+The [runbook](https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/full-backup-alert.md) lists the usual causes.
+
 ## Limits
 
-- A failed run exits non-zero, so the systemd unit shows as failed and
-  `journalctl` holds the reason. There is no Prometheus alert for a stale
-  full backup yet.
 - The retention window is local only. Without a copy off the server, loss of
-  the disk loses every backup.
+  the disk loses every backup. An off-server copy is a manual `rsync`, as
+  above, until a destination is chosen.
+- Restores are tested by hand. No scheduled drill decrypts the newest backup.
