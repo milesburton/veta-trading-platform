@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.115.1...veta-trading-platform-v1.116.0) (2026-11-21)
+
+
+### Features
+
+* loadgen machine account and full backup alerts ([#1213](https://github.com/milesburton/veta-trading-platform/issues/1213)) ([7688318](https://github.com/milesburton/veta-trading-platform/commit/7688318a2f8c64bb1215b6ca436162b6c61ffb38)), closes [#1166](https://github.com/milesburton/veta-trading-platform/issues/1166) [#1173](https://github.com/milesburton/veta-trading-platform/issues/1173)
+
 ## [1.115.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.115.0...veta-trading-platform-v1.115.1) (2026-11-20)
 
 
