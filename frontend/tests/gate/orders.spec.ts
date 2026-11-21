@@ -123,6 +123,15 @@ interface JournalOrder {
 }
 
 test.describe("deploy-gate order flow", () => {
+  test.beforeAll(async ({ browser }) => {
+    const admin = await signInAs(browser, "admin");
+    const res = await admin.request.put(`${API}/risk-engine/config`, {
+      data: { marketHoursEnforced: false, maxConcentrationPct: 100 },
+    });
+    expect(res.status(), await res.text()).toBe(200);
+    await admin.close();
+  });
+
   test("a trader's limit order is acknowledged, journalled and audited", async ({ browser }) => {
     const trader = await signInAs(browser, "alice");
     const price = await livePrice(trader, "AAPL");

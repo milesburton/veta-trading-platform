@@ -56,7 +56,7 @@ The frontend smoke is a Playwright suite that runs against the compose stack the
 4. Logging in as `alice` reaches the dashboard.
 5. A WebSocket to the gateway emits at least one `marketUpdate` frame within 20s (real-time data is flowing).
 
-`orders.spec.ts`:
+`orders.spec.ts` (first signs in as `admin` and relaxes the risk engine's market-hours and concentration limits on the throwaway gate stack, because the gateway acknowledges an order before risk checks it and a first order from an empty portfolio would otherwise be rejected):
 
 1. A limit order submitted by `alice` over the gateway WebSocket is acknowledged, not rejected.
 2. The same order appears in the journal within 30s, with the asset, side and quantity submitted.
