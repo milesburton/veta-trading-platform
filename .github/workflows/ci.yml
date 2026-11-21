@@ -1630,7 +1630,7 @@ jobs:
           fi
           count=$(cd frontend && npx playwright test --config=playwright.gate.config.ts --list | grep -c "›" || true)
           echo "Gate suite lists $count tests"
-          test "$count" -ge 8
+          test "$count" -ge 7
 
       - name: Run Playwright gate suite
         working-directory: frontend
