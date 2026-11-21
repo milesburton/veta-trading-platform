@@ -153,7 +153,7 @@ test.describe("deploy-gate order flow", () => {
     const journalled = orders?.find((o) => JSON.stringify(o).includes(submitted.clientOrderId));
     expect(journalled).toMatchObject({ asset: "AAPL", side: "BUY", quantity: 1 });
     await trader.close();
-
+  });
 
   test("a privileged risk change is audited and the audit chain verifies", async ({ browser }) => {
     const compliance = await signInAs(browser, "compliance");
