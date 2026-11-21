@@ -47,7 +47,7 @@ async function submitOrder(
     ({ order, clientOrderId }) =>
       new Promise<{ event: string; detail: unknown }>((resolve, reject) => {
         const scheme = location.protocol === "https:" ? "wss" : "ws";
-        const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        const ws = new WebSocket(`${scheme}://${location.host}/ws/gateway`);
         const timer = setTimeout(() => {
           ws.close();
           reject(new Error("no order response within 20s"));
