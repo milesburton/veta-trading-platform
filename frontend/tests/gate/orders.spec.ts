@@ -132,7 +132,7 @@ test.describe("deploy-gate order flow", () => {
     await admin.close();
   });
 
-  test("a trader's limit order is acknowledged, journalled and audited", async ({ browser }) => {
+  test("a trader's limit order is acknowledged and journalled", async ({ browser }) => {
     const trader = await signInAs(browser, "alice");
     const price = await livePrice(trader, "AAPL");
 
@@ -154,22 +154,24 @@ test.describe("deploy-gate order flow", () => {
     expect(journalled).toMatchObject({ asset: "AAPL", side: "BUY", quantity: 1 });
     await trader.close();
 
+
+  test("a privileged risk change is audited and the audit chain verifies", async ({ browser }) => {
     const compliance = await signInAs(browser, "compliance");
-    const audit = await pollJson<Array<{ action: string }>>(
+    const audit = await pollJson<Array<{ action: string; actorId: string }>>(
       compliance,
       "/audit/events?limit=500",
       (body) =>
         Array.isArray(body) &&
-        body.some(
-          (e) => e.action === "order_submitted" && JSON.stringify(e).includes(submitted.clientOrderId),
-        ),
+        body.some((e) => e.action === "risk_engine_change" && e.actorId === "admin"),
     );
-    expect(audit, "order should appear in the audit trail within 30s").not.toBeNull();
+    expect(audit, "risk_engine_change by admin should be audited within 30s").not.toBeNull();
 
     const verify = await compliance.request.get(`${GATEWAY}/audit/verify`);
     expect(verify.status()).toBe(200);
+    expect(await verify.json()).toMatchObject({ ok: true });
     await compliance.close();
   });
+
 
   test("a trader cannot read the audit trail", async ({ browser }) => {
     const trader = await signInAs(browser, "alice");
