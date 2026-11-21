@@ -300,6 +300,8 @@ async function derivePkceChallenge(verifier: string): Promise<string> {
     .replace(/=+$/g, "");
 }
 
+const MACHINE_ACCOUNT_IDS: ReadonlySet<string> = new Set(["loadgen"]);
+
 const localAdminSignIn = (): boolean =>
   (process.env.LOCAL_ADMIN_SIGN_IN ?? "false").toLowerCase() === "true";
 
@@ -328,6 +330,7 @@ async function verifyOAuthCredentials(
 
   const userSecret = OAUTH_USER_SECRETS.get(userId);
   if (userSecret) return userSecret === candidate;
+  if (MACHINE_ACCOUNT_IDS.has(userId)) return false;
 
   if (!OAUTH_SHARED_SECRET) return false;
   return OAUTH_SHARED_SECRET === candidate;
@@ -494,6 +497,7 @@ async function handle(req: Request): Promise<Response> {
          LEFT JOIN users.trading_limits l ON l.user_id = u.id
          WHERE u.role = ANY($1::text[])
            AND u.auth_source = 'local'
+           AND u.id <> 'loadgen'
            AND (u.id NOT LIKE 'synthetic-trader-%'
                 OR (u.id LIKE 'synthetic-trader-%-viewer' AND u.role = 'viewer'))
          ORDER BY

@@ -393,6 +393,56 @@ tests:
         alertname: PostgresBackupStale
         exp_alerts: []
 
+  - name: FullBackupStale fires when the last success is over 26h old
+    interval: 4m
+    input_series:
+      - series: 'veta_full_backup_last_success_timestamp_seconds'
+        values: '0x500'
+    alert_rule_test:
+      - eval_time: 30h
+        alertname: FullBackupStale
+        exp_alerts:
+          - exp_labels:
+              alertname: FullBackupStale
+              severity: critical
+            exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/full-backup-alert.md
+              summary: No successful full platform backup for over 26h
+              description: |
+                The scheduled full backup has not completed for more than 26
+                hours, or has never succeeded. Read the veta-full-backup unit
+                journal on the server and fix the cause, then start the unit.
+
+  - name: FullBackupStale stays quiet while backups are fresh
+    interval: 4m
+    input_series:
+      - series: 'veta_full_backup_last_success_timestamp_seconds'
+        values: '0+240x500'
+    alert_rule_test:
+      - eval_time: 30h
+        alertname: FullBackupStale
+        exp_alerts: []
+
+  - name: FullBackupFailing fires after 30m of failed attempts
+    interval: 1m
+    input_series:
+      - series: 'veta_full_backup_last_status'
+        values: '0x45'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: FullBackupFailing
+        exp_alerts:
+          - exp_labels:
+              alertname: FullBackupFailing
+              severity: warning
+            exp_annotations:
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/full-backup-alert.md
+              summary: The latest full platform backup attempt failed
+              description: |
+                The most recent run of the veta-full-backup unit exited with an
+                error. The previous good backup is still in place. Read the
+                unit journal for the failing step.
+
   - name: PostgresBackupFailing fires after 30m of failed attempts
     interval: 1m
     input_series:

@@ -35,25 +35,23 @@ Loadgen tests throughput, not liveness.
 ## One-time setup
 
 ```bash
-# On the server, store the credential in OpenBao at secret/veta/loadgen
+# On the server, as the OpenBao admin
 ssh <user>@<server-host>
 docker exec -it veta-openbao sh
 bao login -method=userpass username=admin
-admin_pw=$(bao kv get -field=OAUTH2_USER_SECRETS secret/veta/platform \
-  | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
-printf %s "$admin_pw" | bao kv put secret/veta/loadgen LOADGEN_OAUTH_PASSWORD=-
+pw=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+current=$(bao kv get -field=OAUTH2_USER_SECRETS secret/veta/platform)
+printf %s "${current};loadgen:${pw}" | bao kv patch secret/veta/platform OAUTH2_USER_SECRETS=-
+printf %s "$pw" | bao kv put secret/veta/loadgen LOADGEN_OAUTH_PASSWORD=-
 ```
 
-The password is read from `OAUTH2_USER_SECRETS` (per-user) for the `admin`
-account, **not** from `OAUTH2_SHARED_SECRET`. The two diverged in 2026-05
-and loadgen broke for 5 days before this was diagnosed. See the history
-note below.
+Loadgen signs in as the `loadgen` machine account, created by migration 0035 with the `oncall` role. The gateway accepts that one account on `POST /load-test` and nobody else with that role. The account never accepts `OAUTH2_SHARED_SECRET` and is left out of the demo persona list, so until its own secret exists it simply cannot sign in. The password lives in two places that must match: the `loadgen:` entry in `OAUTH2_USER_SECRETS` and `LOADGEN_OAUTH_PASSWORD`. The `admin` account is not used, because local administrator sign-in is refused by default.
 
 See [Secrets](/veta-trading-platform/development/deployment/#secrets) for OpenBao access. Optional tuning vars go in the same KV path, for example `bao kv patch secret/veta/loadgen LOADGEN_SOAK_VUS=20`:
 
 | Env                        | Default                                                            | Effect                                     |
 | --- | --- | --- |
-| `LOADGEN_OAUTH_USERNAME`   | `admin`                                                            | Which user the load runs as                |
+| `LOADGEN_OAUTH_USERNAME`   | `loadgen`                                                          | Which user the load runs as                |
 | `LOADGEN_SOAK_VUS`         | `50`                                                               | Steady VUs on soak                         |
 | `LOADGEN_SOAK_DURATION`    | `50m`                                                              | Soak iteration length before token refresh |
 | `LOADGEN_MATRIX_SLEEP`     | `30`                                                               | Pause (seconds) between matrix iterations  |
@@ -103,8 +101,7 @@ the gateway logged as `auth_failure` ~1,100 lines/sec, contributing to the
 2026-05-14 disk-fill incident.
 
 Fix landed in PR #234's gateway log-throttle plus a one-off rotation of the
-loadgen credential on the server. The post-fix install command above extracts the
-correct per-user password automatically.
+loadgen credential on the server. Loadgen now has its own account and password, so the two can no longer drift apart silently.
 
 ## Discord start/stop announcements
 

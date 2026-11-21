@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 216,
-      "cases": 2227,
+      "files": 217,
+      "cases": 2235,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -25,7 +25,7 @@
         "abuse-tracker.unit.test.ts": 10,
         "access-log-throttle.test.ts": 5,
         "account-audit.unit.test.ts": 4,
-        "admin-route-load-and-demo.unit.test.ts": 12,
+        "admin-route-load-and-demo.unit.test.ts": 13,
         "admin-route.unit.test.ts": 16,
         "alert-router.unit.test.ts": 18,
         "alert-rule-runbooks.unit.test.ts": 1,
@@ -69,6 +69,7 @@
         "discord-bot-dispatch.unit.test.ts": 17,
         "discord-bot.unit.test.ts": 60,
         "discord-notifier.unit.test.ts": 18,
+        "disk-monitor-backup-metrics.unit.test.ts": 2,
         "docs-drift.unit.test.ts": 10,
         "docs-sidebar.unit.test.ts": 3,
         "duration-ladder.unit.test.ts": 9,
@@ -87,7 +88,7 @@
         "fix-venue-registry.unit.test.ts": 7,
         "fixParser.test.ts": 19,
         "frontend-image-files.unit.test.ts": 1,
-        "full-backup-script.unit.test.ts": 7,
+        "full-backup-script.unit.test.ts": 10,
         "gateway-analytics-llm-routes.unit.test.ts": 12,
         "gateway-compliance-routes.unit.test.ts": 6,
         "gateway-entry.unit.test.ts": 30,
@@ -211,7 +212,7 @@
         "trigger-rules.unit.test.ts": 17,
         "unit.test.ts": 16,
         "user-schema.unit.test.ts": 14,
-        "user-service-entry.unit.test.ts": 28,
+        "user-service-entry.unit.test.ts": 30,
         "user-service-oidc-routes.unit.test.ts": 15,
         "user-service-oidc.unit.test.ts": 25,
         "venue-router.unit.test.ts": 8,

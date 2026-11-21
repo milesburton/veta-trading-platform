@@ -19,10 +19,23 @@ host filesystem write access.
 import http.server
 import json
 import os
+import re
 import shutil
 import time
 
 WARN_PCT = int(os.getenv("WARN_PCT", "85"))
+BACKUP_METRICS_FILE = os.getenv("BACKUP_METRICS_FILE", "/host/opt/stacks/veta/state/full-backup.prom")
+BACKUP_METRIC_LINE = re.compile(r"^(# TYPE veta_full_backup_[a-z_]+ gauge|veta_full_backup_[a-z_]+ [0-9]+)$")
+MAX_BACKUP_METRICS_BYTES = 4096
+
+
+def read_backup_metrics() -> list:
+    try:
+        with open(BACKUP_METRICS_FILE, "rb") as handle:
+            raw = handle.read(MAX_BACKUP_METRICS_BYTES).decode("utf-8", "replace")
+    except OSError:
+        return []
+    return [line for line in raw.splitlines() if BACKUP_METRIC_LINE.match(line)]
 
 
 def get_disk() -> dict:
@@ -53,6 +66,7 @@ def render_metrics(disk: dict) -> bytes:
         "# HELP disk_total_bytes Host root filesystem total bytes.",
         "# TYPE disk_total_bytes gauge",
         f"disk_total_bytes {disk['total_bytes']}",
+        *read_backup_metrics(),
         "",
     ]
     return "\n".join(lines).encode()
