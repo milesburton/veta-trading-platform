@@ -46,17 +46,25 @@ Both files use the same testcontainers helpers (`startStack`, `login` from `./te
 **Run:** `cd frontend && npx playwright test --config playwright.gate.config.ts`
 **Checks:** {testInventory.frontend.gateSmoke.cases} end-user-flow assertions
 
-:::caution[Quarantined]
-The whole `deploy-gate smoke` block is currently wrapped in `test.describe.skip` (since PR #407) because it was environment-sensitive under the CI Playwright setup. Until it is re-enabled, the `Deploy gate (compose + smoke)` CI job proves only that the full compose stack boots and passes `scripts/wait-for-stack.sh`; none of the assertions below run.
-:::
+The frontend smoke is a Playwright suite that runs against the compose stack the `Deploy gate` CI job brings up, not the dev server. It lives in two files and verifies the user-visible surface and the order path:
 
-The frontend smoke is a small Playwright suite that runs against the compose stack the `Deploy gate` CI job brings up, not the dev server. When enabled, it verifies the user-visible surface is wired up:
+`smoke.spec.ts`:
 
 1. Login page renders (homepage is reachable, no 502).
 2. `/sessions/me` returns 401 for an anonymous request (the user-service is routable through the gateway and is gating on auth).
 3. The gateway-proxied market-sim `/prices` endpoint returns price data within 30s.
 4. Logging in as `alice` reaches the dashboard.
-5. A WebSocket to the gateway emits at least one `marketUpdate` frame within 10s (real-time data is flowing).
+5. A WebSocket to the gateway emits at least one `marketUpdate` frame within 20s (real-time data is flowing).
+
+`orders.spec.ts`:
+
+1. A limit order submitted by `alice` over the gateway WebSocket is acknowledged, not rejected.
+2. The same order appears in the journal within 30s, with the asset, side and quantity submitted.
+3. Signed in as `compliance`, the order appears in the audit trail as `order_submitted`, and `/audit/verify` reports an intact chain.
+4. `alice` receives `403` from `/audit/events`.
+5. An order with a negative quantity is rejected.
+
+The `Deploy gate` job refuses to run if any file under `frontend/tests/gate` contains `skip`, `fixme` or `only`, or if the suite lists fewer than eight tests. A quarantined suite therefore fails the gate instead of passing it silently, which is how the previous suite went unnoticed from PR #407 until #1215.
 
 This is designed to be the gate that decides whether a build is fit to publish. If the backend smoke passes but this fails, the deployment's plumbing (Traefik routes, OAuth client config, WebSocket upgrade headers) is wrong: the services are up but the user-facing path is broken.
 
