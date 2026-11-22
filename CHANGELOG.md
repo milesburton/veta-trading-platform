@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.2...veta-trading-platform-v1.116.3) (2026-11-22)
+
+
+### Bug Fixes
+
+* **frontend:** keep the login footer pinned to the bottom of the viewport ([#1226](https://github.com/milesburton/veta-trading-platform/issues/1226)) ([fc46575](https://github.com/milesburton/veta-trading-platform/commit/fc465755d97c1e25aca10ac40fad5c57b3a5e1c3))
+
 ## [1.116.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.1...veta-trading-platform-v1.116.2) (2026-11-22)
 
 
