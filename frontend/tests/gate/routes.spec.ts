@@ -98,19 +98,28 @@ async function signInAs(browser: Browser, persona: string): Promise<BrowserConte
   return context;
 }
 
+const RATE_LIMIT_RETRIES = 6;
+const RATE_LIMIT_BACKOFF_MS = 600;
+
 async function statusOf(context: BrowserContext, [method, path]: Route): Promise<number> {
-  const res = await context.request.fetch(`${GATEWAY}${path}`, {
-    method,
-    data: method === "GET" ? undefined : {},
-    failOnStatusCode: false,
-  });
-  return res.status();
+  for (let attempt = 0; attempt < RATE_LIMIT_RETRIES; attempt++) {
+    const res = await context.request.fetch(`${GATEWAY}${path}`, {
+      method,
+      data: method === "GET" ? undefined : {},
+      failOnStatusCode: false,
+    });
+    if (res.status() !== 429) return res.status();
+    await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_BACKOFF_MS));
+  }
+  return 429;
 }
 
 async function statuses(context: BrowserContext, routes: readonly Route[]) {
-  return Promise.all(
-    routes.map(async (route) => ({ route: `${route[0]} ${route[1]}`, status: await statusOf(context, route) })),
-  );
+  const results: { route: string; status: number }[] = [];
+  for (const route of routes) {
+    results.push({ route: `${route[0]} ${route[1]}`, status: await statusOf(context, route) });
+  }
+  return results;
 }
 
 test.describe("deploy-gate gateway access control", () => {
