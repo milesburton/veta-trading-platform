@@ -330,7 +330,7 @@ function LoginFooter() {
   return (
     <footer
       data-testid="login-footer"
-      className="flex items-center justify-between gap-4 px-4 h-8 bg-surface border-t border-panel text-[10px] text-label"
+      className="sticky bottom-0 z-10 mt-auto flex items-center justify-between gap-4 px-4 h-8 shrink-0 bg-surface border-t border-panel text-[10px] text-label"
     >
       <span className="shrink-0">VETA</span>
       <span className="flex items-center gap-3 min-w-0">
