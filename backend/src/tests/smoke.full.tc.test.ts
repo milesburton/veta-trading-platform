@@ -409,59 +409,63 @@ test({
           assert(Object.keys(msg.data.prices).length > 0);
         });
 
-        await t.step("unauthenticated submitOrder is acknowledged or rejected", async () => {
+        await t.step("unauthenticated submitOrder is rejected", async () => {
           const wsUrl = `${GW.replace(/^http/, "ws")}/ws`;
           const ws = new WebSocket(wsUrl);
           const closed = new Promise<void>((r) => {
             ws.onclose = () => r();
           });
-          let ack: { event: string } | null = null;
+          let ack: { event: string; data?: { reason?: string } } | null = null;
           try {
-            ack = await new Promise<{ event: string }>((resolve, reject) => {
-              const t2 = setTimeout(() => {
-                ws.close();
-                reject(new Error("timeout"));
-              }, 5_000);
-              ws.onopen = () => {
-                ws.send(
-                  JSON.stringify({
-                    type: "submitOrder",
-                    payload: {
-                      clientOrderId: `smoke-${Date.now()}`,
-                      asset: "AAPL",
-                      side: "BUY",
-                      quantity: 100,
-                      limitPrice: 200.0,
-                      expiresAt: 60,
-                      strategy: "LIMIT",
-                      algoParams: { strategy: "LIMIT" },
-                    },
-                  })
-                );
-              };
-              ws.onmessage = (ev) => {
-                const parsed = JSON.parse(ev.data as string) as {
-                  event: string;
+            ack = await new Promise<{ event: string; data?: { reason?: string } }>(
+              (resolve, reject) => {
+                const t2 = setTimeout(() => {
+                  ws.close();
+                  reject(new Error("timeout"));
+                }, 5_000);
+                ws.onopen = () => {
+                  ws.send(
+                    JSON.stringify({
+                      type: "submitOrder",
+                      payload: {
+                        clientOrderId: `smoke-${Date.now()}`,
+                        asset: "AAPL",
+                        side: "BUY",
+                        quantity: 100,
+                        limitPrice: 200.0,
+                        expiresAt: 60,
+                        strategy: "LIMIT",
+                        algoParams: { strategy: "LIMIT" },
+                      },
+                    })
+                  );
                 };
-                if (["orderAck", "orderRejected", "error"].includes(parsed.event)) {
+                ws.onmessage = (ev) => {
+                  const parsed = JSON.parse(ev.data as string) as {
+                    event: string;
+                    data?: { reason?: string };
+                  };
+                  if (["orderAck", "orderRejected", "error"].includes(parsed.event)) {
+                    clearTimeout(t2);
+                    ws.close();
+                    resolve(parsed);
+                  }
+                };
+                ws.onerror = () => {
                   clearTimeout(t2);
                   ws.close();
-                  resolve(parsed);
-                }
-              };
-              ws.onerror = () => {
-                clearTimeout(t2);
-                ws.close();
-                reject(new Error("WS error"));
-              };
-            });
+                  reject(new Error("WS error"));
+                };
+              }
+            );
           } finally {
             await closed;
           }
           assert(ack !== null);
+          assertEquals(ack.event, "orderRejected", `Expected orderRejected, got: ${ack.event}`);
           assert(
-            ["orderAck", "orderRejected", "error"].includes(ack.event),
-            `Expected orderAck/orderRejected/error, got: ${ack.event}`
+            /unauthenticated/i.test(ack.data?.reason ?? ""),
+            `Expected an unauthenticated reason, got: ${ack.data?.reason}`
           );
         });
 
@@ -521,7 +525,7 @@ test({
           assertEquals(event, "orderAck", `Expected orderAck, got ${event}`);
         });
 
-        await t.step("option order returns orderAck or orderRejected from OMS", async () => {
+        await t.step("option order is acknowledged by the gateway", async () => {
           const response = await submitOrder("alice", {
             asset: "AAPL",
             side: "BUY",
@@ -530,10 +534,7 @@ test({
             strategy: "LIMIT",
             instrumentType: "option",
           });
-          assert(
-            response.event === "orderAck" || response.event === "orderRejected",
-            `Expected orderAck or orderRejected, got ${response.event}`
-          );
+          assertEquals(response.event, "orderAck", `Expected orderAck, got ${response.event}`);
         });
 
         await t.step("GET /shared-workspaces returns 401 without auth", async () => {
@@ -909,10 +910,7 @@ test({
             algoParams: { strategy: "ICEBERG", visibleQty: 30 },
             expiresAt: 30,
           });
-          assert(
-            event === "orderAck" || event === "orderRejected",
-            `Expected orderAck or orderRejected from gateway, got ${event}`
-          );
+          assertEquals(event, "orderAck", `Expected orderAck from gateway, got ${event}`);
         });
 
         await t.step("SNIPER order reaches filled or expired within 60s", async () => {
