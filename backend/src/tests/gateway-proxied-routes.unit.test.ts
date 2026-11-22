@@ -163,7 +163,7 @@ test("[proxied] GET /orders scopes ordinary users to their own orders", async ()
 
   upstream = [];
   await call("trader", "GET", "/orders?userId=u-9");
-  assertEquals(upstream[0].url, "http://journal/orders?userId=u-9");
+  assertEquals(upstream[0].url, "http://journal/orders?userId=u-1");
 });
 
 test("[proxied] GET /orders leaves admin and compliance queries unscoped", async () => {
@@ -187,11 +187,23 @@ test("[proxied] CCP margin is limited to the owner, admin and compliance", async
   );
 });
 
-test("[proxied] GET /rfq defaults userId to the caller and keeps an explicit one", async () => {
+test("[proxied] GET /rfq scopes ordinary users to their own RFQs, whatever userId they send", async () => {
   await call("trader", "GET", "/rfq?status=open");
   await call("trader", "GET", "/rfq?userId=u-7");
   assertEquals(upstream[0].url, "http://rfq/rfq?status=open&userId=u-1");
-  assertEquals(upstream[1].url, "http://rfq/rfq?userId=u-7");
+  assertEquals(upstream[1].url, "http://rfq/rfq?userId=u-1");
+});
+
+test("[proxied] GET /rfq lets admin and compliance choose the user", async () => {
+  await call("admin", "GET", "/rfq?userId=u-7");
+  await call("compliance", "GET", "/rfq?userId=u-8");
+  assertEquals(upstream[0].url, "http://rfq/rfq?userId=u-7");
+  assertEquals(upstream[1].url, "http://rfq/rfq?userId=u-8");
+});
+
+test("[proxied] GET /orders ignores a repeated userId parameter from an ordinary user", async () => {
+  await call("trader", "GET", "/orders?userId=u-9&userId=u-8");
+  assertEquals(upstream[0].url, "http://journal/orders?userId=u-1");
 });
 
 test("[proxied] GET /rfq answers 502 when the upstream is unreachable", async () => {

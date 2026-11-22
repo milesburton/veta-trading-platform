@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 217,
-      "cases": 2235,
+      "cases": 2237,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -93,7 +93,7 @@
         "gateway-compliance-routes.unit.test.ts": 6,
         "gateway-entry.unit.test.ts": 30,
         "gateway-logs-route.unit.test.ts": 7,
-        "gateway-proxied-routes.unit.test.ts": 19,
+        "gateway-proxied-routes.unit.test.ts": 21,
         "gateway-role-matrix.unit.test.ts": 2,
         "gateway-route-auth-inventory.unit.test.ts": 4,
         "gateway-scenarios-route.unit.test.ts": 11,
