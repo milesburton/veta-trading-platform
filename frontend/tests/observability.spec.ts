@@ -58,37 +58,37 @@ test.describe("Observability layout", () => {
   });
 });
 
-// Temporary quarantine: the Pipeline Monitor assertions are still flaky under
-// the current browser/server load and will be revisited in a dedicated pass.
-test.describe.skip("Pipeline Monitor layout", () => {
+test.describe("Pipeline Monitor layout", () => {
   test("switching to Pipeline Monitor shows Algo Monitor and Order Blotter tabs", async ({
     page,
   }) => {
     const app = new AppPage(page);
-    await app.gotoAsTrader();
+    await app.gotoAsAlgoTrader();
 
     await switchLayout(app, "Pipeline Monitor");
 
     await expect(page.getByTestId("algo-monitor-panel")).toBeVisible({ timeout: 15_000 });
   });
 
-  test("Pipeline Monitor shows Child Orders, Executions, and Decision Log", async ({ page }) => {
+  test("Pipeline Monitor shows Order Progress, Executions, and Decision Log", async ({ page }) => {
     const app = new AppPage(page);
-    await app.gotoAsTrader();
+    await app.gotoAsAlgoTrader();
 
     await switchLayout(app, "Pipeline Monitor");
 
-    await expect(page.getByTestId("order-progress-panel")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("child-orders-list")).toBeVisible({ timeout: 15_000 });
+    await app.panelByTitle(/Order Progress/i);
+    await expect(page.getByText("Select an order in the blotter")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Waiting for algo activity")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("executions-panel")).toBeVisible({ timeout: 10_000 });
   });
 
   test("Pipeline Monitor does not show order-ticket or market-ladder", async ({ page }) => {
     const app = new AppPage(page);
-    await app.gotoAsTrader();
+    await app.gotoAsAlgoTrader();
 
     await switchLayout(app, "Pipeline Monitor");
 
+    await expect(page.getByTestId("algo-monitor-panel")).toBeVisible({ timeout: 15_000 });
     await expect(
       page.locator(".flexlayout__tab_button", { hasText: /place trades/i })
     ).not.toBeVisible();

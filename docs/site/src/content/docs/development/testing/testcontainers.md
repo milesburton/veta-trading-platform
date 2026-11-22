@@ -76,6 +76,8 @@ Every file matching `*.tc.test.ts` or `testcontainers.*.test.ts` runs as part of
 | `typed-consumer.integration.tc.test.ts` | redpanda | Per-topic Zod schema validation on consume |
 | `registration.integration.tc.test.ts` | user-service | Registration persists the trader archetype to `trading_limits` |
 | `preferences.integration.tc.test.ts` | user-service + gateway | User preferences and saved workspaces |
+| `oidc-signin.integration.tc.test.ts` | user-service + gateway, in-process fake identity provider | Single sign-on end to end against real Postgres: start, callback, user provisioning, gateway session, single-use state, missing second factor, wrong audience, issuer or nonce, and role change revoking earlier sessions |
+| `gateway-data-routes.integration.tc.test.ts` | user-service + gateway + journal | Role-checked reads through the gateway: orders, audit trail and chain verification, transaction reports (validation and CSV), and the signed-in profile |
 | `trading-limits-lookup.integration.tc.test.ts` | user-service | Service-token access to the per-user trading limits route |
 | `fix.integration.tc.test.ts` | market-sim, fix-exchange, fix-gateway, fix-archive, risk-engine | FIX Logon and NewOrderSingle over real TCP, plus the pre-trade risk check |
 | `venues.integration.tc.test.ts` | RFQ, dark pool, CCP stack | RFQ sell-side, dark-pool crossing, CCP novation |
