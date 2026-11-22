@@ -862,7 +862,10 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   return (next) => (action: unknown) => {
     const result = next(action);
 
-    if (setUser.match(action as Parameters<typeof setUser.match>[0])) {
+    if (
+      setUser.match(action as Parameters<typeof setUser.match>[0]) ||
+      setUserWithLimits.match(action as Parameters<typeof setUserWithLimits.match>[0])
+    ) {
       startGateway();
     }
 

@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { setUser } from "@veta/frontend/store/authSlice";
+import { setUser, setUserWithLimits } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { gatewayMiddleware, parseCandles } from "@veta/frontend/store/middleware/gatewayMiddleware";
 import { newsApi } from "@veta/frontend/store/newsApi";
@@ -77,6 +77,42 @@ describe("gatewayMiddleware – startup", () => {
   it("opens a WebSocket on setUser", async () => {
     const { store } = makeStore();
     store.dispatch(setUser({ id: "alice", name: "Alice", role: "trader", avatar_emoji: "👩" }));
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it("opens a WebSocket when a stored session is restored", () => {
+    const { store } = makeStore();
+    store.dispatch(
+      setUserWithLimits({
+        user: { id: "alice", name: "Alice", role: "trader", avatar_emoji: "👩" },
+        limits: {
+          max_order_qty: 100,
+          max_daily_notional: 1_000_000,
+          allowed_strategies: ["LIMIT"],
+          allowed_desks: ["equity"],
+          dark_pool_access: false,
+        },
+      })
+    );
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it("does not start twice when a login follows a restored session", () => {
+    const { store } = makeStore();
+    const user = { id: "alice", name: "A", role: "trader", avatar_emoji: "🙂" } as const;
+    store.dispatch(
+      setUserWithLimits({
+        user,
+        limits: {
+          max_order_qty: 100,
+          max_daily_notional: 1_000_000,
+          allowed_strategies: ["LIMIT"],
+          allowed_desks: ["equity"],
+          dark_pool_access: false,
+        },
+      })
+    );
+    store.dispatch(setUser(user));
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
 

@@ -127,6 +127,9 @@ To exercise the live gateway instead, omit `GatewayMock.attach()`; the dev serve
 
 The Vite dev server starts automatically before tests run.
 
+- **Gate specs excluded:** `tests/gate` needs the real compose stack, so the default config ignores it. It runs only through `playwright.gate.config.ts` in the deploy gate.
+- **Restored sessions:** the gateway WebSocket starts on both `setUser` (login page) and `setUserWithLimits` (session restored from the cookie by `AuthGate`). Specs that load the app with a mocked `/sessions/me` depend on the second path. Before it was added, a page load with a valid session never connected the feed.
+
 ## Test selection
 
 Specs are grouped by fixture (`traderTest`, `algoTest`, `fiTest`, `adminTest`, `ladderTest`) rather than by tag. No `@flaky` or `@a11y` tags are used.
