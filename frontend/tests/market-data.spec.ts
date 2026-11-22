@@ -55,20 +55,20 @@ ladderTest.describe("Market Ladder, live price updates", () => {
 
 ladderTest.describe("Market Ladder, symbol selection", () => {
   ladderTest("clicking marks symbol as selected", async ({ ladder }) => {
-    await ladder.selectSymbol("AAPL");
-    await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute("aria-pressed", "true", {
+    await ladder.selectSymbol("MSFT");
+    await expect(ladder.rowForSymbol("MSFT")).toHaveAttribute("aria-pressed", "true", {
       timeout: 3_000,
     });
   });
 
   ladderTest("clicking again deselects", async ({ ladder }) => {
-    await ladder.selectSymbol("AAPL");
-    await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute("aria-pressed", "true", {
+    await ladder.selectSymbol("MSFT");
+    await expect(ladder.rowForSymbol("MSFT")).toHaveAttribute("aria-pressed", "true", {
       timeout: 3_000,
     });
 
-    await ladder.selectSymbol("AAPL");
-    await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute("aria-pressed", "false", {
+    await ladder.selectSymbol("MSFT");
+    await expect(ladder.rowForSymbol("MSFT")).toHaveAttribute("aria-pressed", "false", {
       timeout: 3_000,
     });
   });

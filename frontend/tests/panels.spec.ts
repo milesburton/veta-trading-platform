@@ -1,4 +1,5 @@
 import { test as base, expect } from "@playwright/test";
+import { DERIVATIVES_TRADER_LIMITS } from "./helpers/authFixtures.ts";
 import { adminTest, traderTest } from "./helpers/fixtures.ts";
 import { DEFAULT_ADMIN, DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
@@ -46,11 +47,15 @@ traderTest.describe("Trading workspace panels (injected orders)", () => {
 base.describe("Options workspace", () => {
   base("Option Pricing panel renders in options workspace", async ({ page }) => {
     const app = new AppPage(page);
-    await app.goto({ assets: DEFAULT_ASSETS, url: "/?ws=ws-options" });
+    await app.goto({
+      assets: DEFAULT_ASSETS,
+      limits: DERIVATIVES_TRADER_LIMITS,
+      url: "/?ws=ws-options",
+    });
     await app.waitForDashboard();
     app.gateway.sendAuthIdentity({
       user: { id: "trader-1", name: "Alice Chen", role: "trader", avatar_emoji: "AL" },
-      limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+      limits: DERIVATIVES_TRADER_LIMITS,
     });
     app.gateway.sendMarketUpdate({ AAPL: 185.5, MSFT: 390 });
 

@@ -6,6 +6,7 @@ const PORT = 5173;
 export default defineConfig({
   testDir: "./tests",
   testIgnore: "**/gate/**",
+  globalSetup: "./playwright.global-setup.ts",
   timeout: 30_000,
   // Fail the build if test.only is accidentally left in source.
   forbidOnly: !!process.env.CI,

@@ -36,6 +36,16 @@ describe("ProductBookPanel", () => {
     vi.restoreAllMocks();
   });
 
+  it("shows the empty state instead of crashing when the API returns null", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () => new Response("null", { status: 200 })
+    );
+
+    render(<ProductBookPanel />);
+
+    expect(await screen.findByText("No products found")).toBeTruthy();
+  });
+
   it("loads products, expands legs, and sells an issued product", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
       const url = String(input);

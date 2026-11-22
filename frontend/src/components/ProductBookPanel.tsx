@@ -76,7 +76,8 @@ export function ProductBookPanel() {
         error.value = data.error ?? `HTTP ${res.status}`;
         return;
       }
-      products.value = (await res.json()) as Product[];
+      const body: unknown = await res.json();
+      products.value = Array.isArray(body) ? (body as Product[]) : [];
     } catch (err) {
       error.value = (err as Error).message;
     } finally {

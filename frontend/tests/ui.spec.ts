@@ -15,10 +15,7 @@ traderTest("services dropdown layout does not overflow", async ({ page, app }) =
   await servicesBtn.click();
 
   // Wait for the dropdown panel to appear with the Service Health header
-  const dropdownPanel = page
-    .locator(".z-20")
-    .filter({ hasText: /Service Health/ })
-    .first();
+  const dropdownPanel = page.getByTestId("service-health-dropdown");
   await expect(dropdownPanel).toBeVisible();
 
   // Verify table headers are present using more specific selectors
