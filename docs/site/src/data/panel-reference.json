@@ -1,7 +1,7 @@
 {
   "totalPanels": 57,
-  "rendered": 55,
-  "skipped": 2,
+  "rendered": 56,
+  "skipped": 1,
   "panels": [
     {
       "panelId": "market-ladder",
@@ -447,9 +447,9 @@
       "panelId": "fix-sessions",
       "title": "FIX Sessions",
       "description": "Live FIX counterparty sessions and recent execution reports",
-      "rendered": false,
-      "notes": "not yet captured by walkthrough",
-      "screenshot": null
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/fix-sessions.png"
     },
     {
       "panelId": "regulatory-reports",
