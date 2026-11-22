@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.0...veta-trading-platform-v1.116.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **frontend:** connect the live feed when a stored session is restored ([#1218](https://github.com/milesburton/veta-trading-platform/issues/1218)) ([ea062b8](https://github.com/milesburton/veta-trading-platform/commit/ea062b8596bacbcafb4e66c09ca204495c009713))
+
 ## [1.116.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.115.1...veta-trading-platform-v1.116.0) (2026-11-21)
 
 
