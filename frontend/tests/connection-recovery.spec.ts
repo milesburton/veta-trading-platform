@@ -8,8 +8,8 @@ ladderTest.describe("Connection recovery, UI must surface stuck state", () => {
       await ladder.waitForSymbol("AAPL");
 
       app.gateway.sendMarketUpdate({ AAPL: 200 });
-      await page.waitForTimeout(400);
-      expect(await ladder.rowForSymbol("AAPL").textContent()).not.toContain("n/a");
+      await expect(ladder.rowForSymbol("AAPL")).toContainText("200.00");
+      await expect(ladder.rowForSymbol("AAPL")).not.toContainText("n/a");
 
       app.gateway.refuseNextConnections(true);
       await app.gateway.dropConnection({ code: 1006 });
