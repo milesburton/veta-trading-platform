@@ -39,6 +39,14 @@ async function forwardWithCookie(
 
 const ADMIN_ONLY = new Set(["admin"]);
 const AUDIT_READERS = new Set(["admin", "compliance"]);
+const RECORD_VIEWERS = new Set(["admin", "compliance"]);
+
+function scopeToCaller(
+  search: URLSearchParams,
+  auth: { user: { id: string; role: string } }
+): void {
+  if (!RECORD_VIEWERS.has(auth.user.role)) search.set("userId", auth.user.id);
+}
 const SALES_ROLES = new Set(["sales", "admin"]);
 const RFQ_CLIENT_ROLES = new Set(["external-client", "sales", "admin"]);
 const CLIENT_RFQ_ACTIONS = new Set(["confirm", "reject"]);
@@ -90,11 +98,7 @@ export async function handleProxiedRoutes(
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const url = new URL(req.url);
-    const role = auth.user.role;
-    const canSeeAll = role === "admin" || role === "compliance";
-    if (!canSeeAll && !url.searchParams.has("userId")) {
-      url.searchParams.set("userId", auth.user.id);
-    }
+    scopeToCaller(url.searchParams, auth);
     return proxyGet(`${ctx.urls.journal}/orders`, req, url.search);
   }
 
@@ -149,7 +153,7 @@ export async function handleProxiedRoutes(
     if (isResponse(auth)) return auth;
     const target = new URL(`${ctx.urls.rfqService}/rfq`);
     target.search = url.search;
-    if (!target.searchParams.has("userId")) target.searchParams.set("userId", auth.user.id);
+    scopeToCaller(target.searchParams, auth);
     try {
       const res = await fetch(target.toString(), { signal: AbortSignal.timeout(8_000) });
       const body = await res.arrayBuffer();
