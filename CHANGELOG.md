@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.1...veta-trading-platform-v1.116.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* **gateway:** scope orders and RFQs to the caller whatever userId they send ([#1224](https://github.com/milesburton/veta-trading-platform/issues/1224)) ([569456d](https://github.com/milesburton/veta-trading-platform/commit/569456da98e1ec92a7548b7feadb176b731c1702))
+
 ## [1.116.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.0...veta-trading-platform-v1.116.1) (2026-11-22)
 
 
