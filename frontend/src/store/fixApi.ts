@@ -47,6 +47,8 @@ export const fixApi = createApi({
         url: "/fix-archive/executions",
         params: args ? { symbol: args.symbol, limit: args.limit } : {},
       }),
+      transformResponse: (response: FixExecution[] | null) =>
+        Array.isArray(response) ? response : [],
       providesTags: ["Executions"],
     }),
   }),

@@ -8,7 +8,7 @@ async function mockAuth(page: Page) {
     avatar_emoji: "👩‍💼",
   };
 
-  await page.route("/api/user-service/sessions/me", (route) =>
+  await page.route("**/api/user-service/sessions/me", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -16,7 +16,7 @@ async function mockAuth(page: Page) {
     })
   );
 
-  await page.route("/api/user-service/sessions", (route) =>
+  await page.route("**/api/user-service/sessions", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -26,7 +26,7 @@ async function mockAuth(page: Page) {
 }
 
 async function stubBackend(page: Page) {
-  await page.route("/api/**", (route) =>
+  await page.route("**/api/**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -34,7 +34,7 @@ async function stubBackend(page: Page) {
     })
   );
 
-  await page.route("/api/gateway/ready", (route) =>
+  await page.route("**/api/gateway/ready", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",

@@ -98,6 +98,7 @@ export function ServiceStatus({ services }: Props) {
             />
 
             <div
+              data-testid="service-health-dropdown"
               style={panelStyle()}
               className="w-[28rem] bg-surface border border-divider rounded shadow-xl text-xs flex flex-col overflow-hidden"
             >

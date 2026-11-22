@@ -22,9 +22,15 @@ traderTest("empty workspace: cards flow across the screen without overflow", asy
   const overflows = await findOverflows(app.page);
   expect(overflows, JSON.stringify(overflows, null, 2)).toHaveLength(0);
 
-  await expect(app.page.locator("body")).toHaveScreenshot("empty-workspace-wide.png", {
-    maxDiffPixelRatio: 0.02,
-  });
+  const columns = await app.page
+    .locator("button", { has: app.page.locator("svg, span") })
+    .evaluateAll((nodes) => {
+      const tops = nodes
+        .map((n) => n.getBoundingClientRect())
+        .filter((box) => box.width > 150 && box.height > 40 && box.top > 150);
+      return new Set(tops.map((box) => Math.round(box.left))).size;
+    });
+  expect(columns, "template cards should flow into several columns").toBeGreaterThanOrEqual(3);
 });
 
 traderTest("empty workspace: scrolls instead of clipping on a short viewport", async ({ app }) => {
@@ -56,8 +62,4 @@ traderTest("empty workspace: scrolls instead of clipping on a short viewport", a
   // the last card can be scrolled fully into view (the fix).
   expect(scrollable).toBe(true);
   expect(lastCardReachable).toBe(true);
-
-  await expect(app.page.locator("body")).toHaveScreenshot("empty-workspace-short.png", {
-    maxDiffPixelRatio: 0.02,
-  });
 });

@@ -87,6 +87,8 @@ The runner and production are kept apart at the CPU level with systemd slices. T
 - Installs Chromium once per shard
 - Runs the E2E tests headless against Vite dev server
 - GatewayMock provides deterministic backend responses
+- Fails the job when any test fails. The test step pipes through `tee` with `pipefail`, because without it the exit code is that of `tee` and a failing suite reports success. That gap hid 92 failing tests until it was found
+- A global setup loads the app once before the tests so the first test of a shard does not pay for the Vite compile
 - Generates `docs/badges/e2e-tests.json`
 
 ### docker-services (~3 to 5 minutes per image, parallel)

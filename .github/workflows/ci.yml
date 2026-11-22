@@ -756,6 +756,7 @@ jobs:
           CI: true
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}
         run: |
+          set -o pipefail
           npx playwright test --reporter=list --shard=${PLAYWRIGHT_SHARD} 2>&1 | tee /tmp/e2e-test-output.txt
           PASSED=$(grep -oP '\d+(?= passed)' /tmp/e2e-test-output.txt | tail -1 || echo 0)
           echo "passed=${PASSED}" >> "$GITHUB_OUTPUT"
