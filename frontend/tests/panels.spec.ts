@@ -53,7 +53,6 @@ base.describe("Options workspace", () => {
       limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
     });
     app.gateway.sendMarketUpdate({ AAPL: 185.5, MSFT: 390 });
-    await page.waitForTimeout(400);
 
     await expect(
       page
@@ -72,7 +71,6 @@ base.describe("Research workspace", () => {
     await app.waitForDashboard();
     app.gateway.sendAuthIdentity();
     app.gateway.sendMarketUpdate({ AAPL: 185.5 });
-    await page.waitForTimeout(400);
 
     await expect(
       page
@@ -91,7 +89,6 @@ base.describe("Market feeds workspace", () => {
     await app.waitForDashboard();
     app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
     app.gateway.sendMarketUpdate({ AAPL: 185.5, MSFT: 390 });
-    await page.waitForTimeout(600);
 
     await expect(
       page
@@ -109,7 +106,6 @@ base.describe("Admin system-status workspace", () => {
     await app.goto({ user: DEFAULT_ADMIN, assets: DEFAULT_ASSETS, url: "/?ws=ws-system-status" });
     await app.waitForDashboard();
     app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
-    await page.waitForTimeout(400);
 
     await expect(
       page
@@ -138,7 +134,6 @@ base.describe("FI workspace", () => {
     const app = new AppPage(page);
     await app.gotoAsFiTrader(DEFAULT_ASSETS, "ws-fi-analysis");
     app.gateway.sendMarketUpdate({ AAPL: 185.5 });
-    await page.waitForTimeout(400);
 
     await expect(
       page
@@ -153,7 +148,6 @@ base.describe("FI workspace", () => {
     const app = new AppPage(page);
     await app.gotoAsFiTrader(DEFAULT_ASSETS, "ws-fi-analysis");
     app.gateway.sendMarketUpdate({ AAPL: 185.5 });
-    await page.waitForTimeout(400);
 
     await expect(
       page
@@ -170,7 +164,6 @@ base.describe("Algo workspace", () => {
     const app = new AppPage(page);
     await app.gotoAsAlgoTrader(DEFAULT_ASSETS);
     app.gateway.sendMarketUpdate({ AAPL: 185.5 });
-    await page.waitForTimeout(400);
 
     await expect(page.locator(".flexlayout__tab").first()).toBeVisible({ timeout: 8_000 });
   });

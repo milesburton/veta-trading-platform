@@ -147,6 +147,27 @@
   --semantic-status-warning: 154 52 18;
 }
 
+[data-theme="high-contrast"] [data-testid^="asset-row-"] .text-emerald-400 {
+  color: rgb(var(--semantic-status-success));
+}
+
+[data-theme="high-contrast"] [data-testid^="asset-row-"] .text-red-400 {
+  color: rgb(var(--semantic-status-critical));
+}
+
+[data-theme="high-contrast"] [data-testid^="asset-row-"] .text-sky-400 {
+  color: rgb(var(--semantic-status-info));
+}
+
+[data-theme="high-contrast"] [data-testid^="asset-row-"] .text-subtle {
+  color: rgb(var(--gray-500));
+}
+
+[data-theme="high-contrast"] [data-testid^="asset-row-"] .font-semibold.leading-tight,
+[data-theme="high-contrast"] [data-testid^="asset-row-"] span.font-mono.font-bold {
+  color: rgb(var(--gray-100)) !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

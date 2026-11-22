@@ -11,9 +11,16 @@ traderTest.describe("Price formatting", () => {
       await ladder.waitForSymbol("AAPL");
 
       gateway.sendMarketUpdate({ AAPL: 185, MSFT: 412.3, GOOGL: 176.5, NVDA: 889, AMZN: 228 });
-      await app.page.waitForTimeout(500);
 
-      for (const symbol of ["AAPL", "MSFT", "GOOGL", "NVDA", "AMZN"]) {
+      const expected = {
+        AAPL: "185.00",
+        MSFT: "412.30",
+        GOOGL: "176.50",
+        NVDA: "889.00",
+        AMZN: "228.00",
+      };
+      for (const [symbol, price] of Object.entries(expected)) {
+        await expect(ladder.rowForSymbol(symbol)).toContainText(price);
         const text = (await ladder.getPriceText(symbol)).trim();
         expect(text, `${symbol} price "${text}" must match XXX.XX`).toMatch(TWO_DECIMAL);
       }
@@ -25,7 +32,8 @@ traderTest.describe("Price formatting", () => {
     await ladder.waitForSymbol("AAPL");
 
     gateway.sendMarketUpdate({ AAPL: 100 });
-    await app.page.waitForTimeout(200);
+
+    await expect(ladder.rowForSymbol("AAPL")).toContainText("100.00");
 
     const text = (await ladder.getPriceText("AAPL")).trim();
     expect(text).toMatch(TWO_DECIMAL);
