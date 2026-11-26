@@ -12,6 +12,22 @@ type CacheEntry =
 
 const authCache = new Map<string, CacheEntry>();
 const recentlyLoggedFailures = new Map<string, number>();
+const revocations = new Map<string, number>();
+let revocationCount = 0;
+
+const SESSION_ENDING_EVENTS: ReadonlySet<unknown> = new Set(["logout", "revoked"]);
+
+export function forgetUserSessions(userId: string): void {
+  revocations.set(userId, ++revocationCount);
+  for (const [token, entry] of authCache) {
+    if (entry.kind === "ok" && entry.result.user.id === userId) authCache.delete(token);
+  }
+}
+
+export function handleSessionEvent(value: unknown): void {
+  const { event, userId } = (value ?? {}) as { event?: unknown; userId?: unknown };
+  if (SESSION_ENDING_EVENTS.has(event) && typeof userId === "string") forgetUserSessions(userId);
+}
 
 setInterval(() => {
   const now = Date.now();
@@ -46,6 +62,7 @@ export function makeValidateToken(
       }
       authCache.delete(token);
     }
+    const revocationsBefore = revocationCount;
     try {
       const res = await fetch(`${userServiceUrl}/sessions/validate`, {
         method: "POST",
@@ -69,11 +86,14 @@ export function makeValidateToken(
         return null;
       }
       const result = (await res.json()) as AuthResult;
-      authCache.set(token, {
-        kind: "ok",
-        result,
-        expiresAt: now + AUTH_CACHE_TTL_MS,
-      });
+      // An answer that raced a revocation of the same user must not be cached.
+      if ((revocations.get(result.user.id) ?? 0) <= revocationsBefore) {
+        authCache.set(token, {
+          kind: "ok",
+          result,
+          expiresAt: now + AUTH_CACHE_TTL_MS,
+        });
+      }
       return result;
     } catch (err) {
       maybeLogFailure(

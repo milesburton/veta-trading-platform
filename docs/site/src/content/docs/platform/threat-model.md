@@ -166,8 +166,13 @@ hurdles in order.
 1. Attacker obtains a valid token, then the user logs out.
 2. They replay the token.
    - **Control**: `user-service` is the source of truth for token
-     validity; every request validates against it. A revoked token
-     fails immediately, not at TTL expiry.
+     validity and refuses a revoked token at once. The gateway caches a
+     successful validation for up to 60 seconds, and drops a user's
+     cached entries when `user-service` publishes a `logout` or
+     `revoked` event on `user.session`.
+   - **Residual**: if the message bus is unavailable the cached entry
+     lasts until its 60 second expiry, and a WebSocket opened before
+     the revocation stays open.
 3. They try to forge a new token from the old one.
    - **Control**: tokens are opaque; the server-side store is the only
      authority.

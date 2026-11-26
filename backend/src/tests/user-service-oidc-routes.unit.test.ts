@@ -120,6 +120,9 @@ const when = (pattern: RegExp, rows: (params: unknown[]) => unknown[][]) => {
 const USER_LOOKUP = /SELECT role, auth_source FROM users\.users WHERE id = \$1 FOR UPDATE/;
 const SESSION_USER = /SELECT id, name, role, avatar_emoji, firm FROM users\.users/;
 
+const revocationEvents = () =>
+  h.send.mock.calls.filter(([, value]) => (value as { event?: string }).event === "revoked");
+
 const start = async () => {
   const res = await call("POST", "/oauth/oidc/start");
   const { authorization_url: authorizationUrl } = (await res.json()) as {
@@ -158,6 +161,7 @@ const completeSignIn = async (overrides: Record<string, unknown> = {}) => {
 const sqlMatching = (pattern: RegExp) => h.queries.filter(({ sql }) => pattern.test(sql));
 
 beforeEach(() => {
+  h.send.mockClear();
   h.rules.length = 0;
   h.queries.length = 0;
   h.backChannel.length = 0;
@@ -215,6 +219,7 @@ test("[oidc-routes] a returning user has the role refreshed and old sessions end
   assertEquals(update.params, ["carol", "admin", "Carol Example"]);
   assertEquals(sqlMatching(/DELETE FROM users\.sessions WHERE user_id/).length, 1);
   assertEquals(sqlMatching(/INSERT INTO users\.users/).length, 0);
+  assertEquals(revocationEvents().length, 1);
 });
 
 test("[oidc-routes] a returning user with the same role keeps existing sessions", async () => {
@@ -223,6 +228,7 @@ test("[oidc-routes] a returning user with the same role keeps existing sessions"
   const res = await completeSignIn();
   assertEquals(res.status, 200);
   assertEquals(sqlMatching(/DELETE FROM users\.sessions WHERE user_id/).length, 0);
+  assertEquals(revocationEvents().length, 0);
 });
 
 test("[oidc-routes] a name already held by a local account is refused", async () => {

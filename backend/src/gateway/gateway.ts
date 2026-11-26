@@ -24,7 +24,7 @@ import {
   createAuditAnchorWatch,
   createS3AnchorStore,
 } from "./audit-anchor.ts";
-import { makeValidateToken } from "./auth.ts";
+import { handleSessionEvent, makeValidateToken } from "./auth.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
   type AuthenticatedUser,
@@ -563,6 +563,11 @@ function startAlertRouting(): void {
 
 function startConsumers(): void {
   startAlertRouting();
+  createConsumer("gateway-sessions", ["user.session"])
+    .then((c) => {
+      c.onMessage((_topic, value) => handleSessionEvent(value));
+    })
+    .catch((err) => logger.warn("session revocation consumer unavailable", { err }));
   let lastKafkaTick = 0;
   createConsumer("gateway-market", ["market.ticks"]).then((c) => {
     c.onMessage((_topic, value) => {

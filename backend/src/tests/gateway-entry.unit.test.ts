@@ -81,7 +81,10 @@ vi.mock("../gateway/connections.ts", () => ({
   broadcastToUser: h.broadcastToUser,
   broadcastToRoles: h.broadcastToRoles,
 }));
-vi.mock("../gateway/auth.ts", () => ({ makeValidateToken: () => h.validateToken }));
+vi.mock("../gateway/auth.ts", () => ({
+  makeValidateToken: () => h.validateToken,
+  handleSessionEvent: vi.fn(),
+}));
 vi.mock("../gateway/load-agent.ts", () => ({ LoadAgent: class {} }));
 vi.mock("../gateway/ref-prices.ts", () => ({
   createRefPriceCache: () => ({ refPriceFor: vi.fn() }),
