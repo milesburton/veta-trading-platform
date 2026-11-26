@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.3...veta-trading-platform-v1.116.4) (2026-11-26)
+
+
+### Bug Fixes
+
+* **clock:** serve NTP from chronyd on egress-proxy instead of a socat relay ([#1243](https://github.com/milesburton/veta-trading-platform/issues/1243)) ([376cf21](https://github.com/milesburton/veta-trading-platform/commit/376cf21197341349eb3ee1d5f356f071c7e4e96e))
+
 ## [1.116.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.2...veta-trading-platform-v1.116.3) (2026-11-22)
 
 
