@@ -307,7 +307,7 @@ services:
     networks:
       - proxied-net
       - internet-net
-    mem_limit: 64m
+    mem_limit: 128m
     cpus: 0.25
     cap_drop:
       - ALL
@@ -1830,7 +1830,7 @@ services:
     <<: *node-medium
     # Needs proxied-net in addition to the anchor's trading-net: the Discord
     # webhook notifier (discord-notifier.ts) runs inside this service and the
-    # SNTP clock check goes to the UDP relay on egress-proxy.
+    # SNTP clock check goes to the NTP server on egress-proxy.
     networks:
       - trading-net
       - proxied-net

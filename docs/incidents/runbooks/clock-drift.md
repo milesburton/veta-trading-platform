@@ -1,21 +1,24 @@
 # Runbook: clock drift
 
-Raised by the `ClockDriftHigh` and `ClockSyncUnavailable` alerts. The gateway
-sends an SNTP query every minute to the UDP relay on `egress-proxy`, which
-forwards it to the server in `NTP_SERVER` (default `pool.ntp.org`), and
-records `veta_clock_offset_microseconds` and `veta_clock_sync_healthy`.
+Raised by the `ClockDriftHigh` and `ClockSyncUnavailable` alerts. Every minute
+the gateway takes four SNTP samples from `chronyd` on `egress-proxy`, keeps the
+one with the lowest round trip, and records `veta_clock_offset_microseconds` and
+`veta_clock_sync_healthy`. `chronyd` synchronises against the pool in
+`NTP_SERVER` (default `pool.ntp.org`) and never sets the system clock.
 
 MiFID II RTS 25 allows 1 ms of divergence from UTC for algorithmic trading
 (100 microseconds for high frequency techniques, one second for other
-activity). This platform alerts at 1 ms. SNTP over the public internet has
-millisecond-level error, so a value near the threshold can be measurement noise
-rather than drift. A sustained offset of several milliseconds is real.
+activity). This platform alerts at 1 ms. The reference is only as good as the
+path to the upstream sources, so a value near the threshold can be measurement
+error. Confirm it against a second source before correcting any clock.
 
 ## ClockDriftHigh
 
 1. Check the current offset in Grafana or by querying `veta_clock_offset_microseconds`.
    Positive means the host clock is behind the reference.
-2. On the host, check the synchroniser: `timedatectl status` and
+2. A container host (for example LXC) shares its kernel clock with the machine
+   underneath and cannot set it. Run the following checks on that machine.
+   Check the synchroniser: `timedatectl status` and
    `chronyc tracking` (or `systemctl status systemd-timesyncd`). The
    "System clock synchronized" line should read `yes`.
 3. Restart the synchroniser if it is stopped. If the offset is large, step the
@@ -31,8 +34,10 @@ rather than drift. A sustained offset of several milliseconds is real.
 
 ## ClockSyncUnavailable
 
-1. Check `egress-proxy` is healthy; the gateway's query goes through its UDP
-   relay. Then confirm outbound UDP port 123 is allowed from that container.
+1. Check `egress-proxy` is healthy and its log shows `chronyd` selecting a
+   source. Then confirm outbound UDP port 123 is allowed from that container.
+   The alert also fires when `chronyd` has not updated its reference for an
+   hour.
 2. Try a different server by setting `NTP_SERVER` and redeploying
    `egress-proxy`.
 3. Until measurement resumes, treat timestamps as unverified. Record the window

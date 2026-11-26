@@ -3,6 +3,8 @@ import { createSocket } from "node:dgram";
 const NTP_EPOCH_OFFSET_SECONDS = 2_208_988_800;
 const NTP_PACKET_BYTES = 48;
 const TWO_POW_32 = 4_294_967_296;
+const MAX_REFERENCE_AGE_MS = 3_600_000;
+const SNTP_SAMPLES_PER_CHECK = 4;
 
 export interface ClockSource {
   nowMs: () => number;
@@ -15,6 +17,7 @@ const systemSource: ClockSource = {
 };
 
 export const RE_ANCHOR_THRESHOLD_MS = 5;
+const WALL_RESOLUTION_MS = 1;
 
 export function createMicrosClock(source: ClockSource = systemSource): () => number {
   let anchorWallMs = source.nowMs();
@@ -24,9 +27,12 @@ export function createMicrosClock(source: ClockSource = systemSource): () => num
     const monotonicMs = source.monotonicMs();
     const wallMs = source.nowMs();
     const projectedMs = anchorWallMs + (monotonicMs - anchorMonotonicMs);
-    if (Math.abs(wallMs - projectedMs) > RE_ANCHOR_THRESHOLD_MS) {
+    const behindMs = wallMs - projectedMs;
+    if (Math.abs(behindMs) > RE_ANCHOR_THRESHOLD_MS) {
       anchorWallMs = wallMs;
       anchorMonotonicMs = monotonicMs;
+    } else if (behindMs > 0 && behindMs < WALL_RESOLUTION_MS) {
+      anchorWallMs += behindMs;
     }
     const micros = Math.round((anchorWallMs + (monotonicMs - anchorMonotonicMs)) * 1000);
     lastMicros = Math.max(lastMicros, micros);
@@ -75,6 +81,7 @@ export function parseSntpResponse(
   if (leapIndicator === 3 || mode !== 4 || stratum === 0 || stratum >= 16) return null;
   const receiveMs = readNtpTimestampMs(packet, 32);
   const transmitMs = readNtpTimestampMs(packet, 40);
+  if (transmitMs - readNtpTimestampMs(packet, 16) > MAX_REFERENCE_AGE_MS) return null;
   const offsetMs = (receiveMs - originateMs + (transmitMs - destinationMs)) / 2;
   const roundTripMs = destinationMs - originateMs - (transmitMs - receiveMs);
   return {
@@ -87,7 +94,7 @@ export function querySntp(
   server: string,
   options: { port?: number; timeoutMs?: number; nowMs?: () => number } = {}
 ): Promise<SntpResult> {
-  const nowMs = options.nowMs ?? Date.now;
+  const nowMs = options.nowMs ?? (() => nowMicros() / 1000);
   return new Promise((resolve, reject) => {
     const socket = createSocket("udp4");
     let originateMs = 0;
@@ -139,11 +146,26 @@ export interface ClockMonitor {
   stop: () => void;
 }
 
+async function lowestRoundTrip(
+  query: (server: string) => Promise<SntpResult>,
+  server: string
+): Promise<SntpResult> {
+  const attempts: PromiseSettledResult<SntpResult>[] = [];
+  for (let attempt = 0; attempt < SNTP_SAMPLES_PER_CHECK; attempt++) {
+    attempts.push(...(await Promise.allSettled([query(server)])));
+  }
+  const replies = attempts.flatMap((a) => (a.status === "fulfilled" ? [a.value] : []));
+  if (replies.length === 0) throw (attempts[0] as PromiseRejectedResult).reason;
+  return replies.reduce((best, next) =>
+    next.roundTripMicros < best.roundTripMicros ? next : best
+  );
+}
+
 export function startClockMonitor(options: ClockMonitorOptions): ClockMonitor {
   const query = options.query ?? ((server: string) => querySntp(server));
   const sample = async (): Promise<void> => {
     try {
-      const result = await query(options.server);
+      const result = await lowestRoundTrip(query, options.server);
       await options.record("veta_clock_offset_microseconds", result.offsetMicros, {
         server: options.server,
       });

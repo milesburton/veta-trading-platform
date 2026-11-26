@@ -10,7 +10,12 @@ import {
 
 const NTP_EPOCH = 2_208_988_800;
 
-function response(receiveMs: number, transmitMs: number, stratum = 2): Uint8Array {
+function response(
+  receiveMs: number,
+  transmitMs: number,
+  stratum = 2,
+  referenceMs = receiveMs
+): Uint8Array {
   const packet = new Uint8Array(48);
   packet[0] = 0x24;
   packet[1] = stratum;
@@ -19,6 +24,7 @@ function response(receiveMs: number, transmitMs: number, stratum = 2): Uint8Arra
     view.setUint32(offset, Math.floor(ms / 1000) + NTP_EPOCH);
     view.setUint32(offset + 4, Math.floor(((ms % 1000) / 1000) * 4_294_967_296));
   };
+  write(16, referenceMs);
   write(32, receiveMs);
   write(40, transmitMs);
   return packet;
@@ -63,6 +69,18 @@ test("[clock] micros clock never runs backwards after a backward host clock step
   assertEquals(micros(), first + 11_000);
 });
 
+test("[clock] micros clock closes the sub-millisecond gap left by a truncated wall reading", () => {
+  let wall = 1_700_000_000_000;
+  let mono = 10;
+  const micros = createMicrosClock({ nowMs: () => wall, monotonicMs: () => mono });
+  const first = micros();
+  mono += 0.25;
+  wall += 1;
+  assertEquals(micros() - first, 1000);
+  mono += 0.5;
+  assertEquals(micros() - first, 1500);
+});
+
 test("[clock] request is a 48 byte client-mode packet carrying the transmit time", () => {
   const packet = buildSntpRequest(1_700_000_000_000);
   assertEquals(packet.length, 48);
@@ -93,6 +111,41 @@ test("[clock] rejects short packets, kiss-of-death and unsynchronised or non-ser
   clientMode[0] = 0x23;
   assertEquals(parseSntpResponse(clientMode, 0, 0), null);
   assert(parseSntpResponse(response(1000, 1000, 15), 0, 0));
+});
+
+test("[clock] rejects a server whose reference has not been updated for over an hour", () => {
+  const now = 1_700_000_000_000;
+  assertEquals(parseSntpResponse(response(now, now, 2, now - 3_601_000), now, now), null);
+  assert(parseSntpResponse(response(now, now, 2, now - 3_599_000), now, now));
+});
+
+test("[clock] monitor records the reply with the lowest round trip, tolerating lost ones", async () => {
+  const recorded: Array<[string, number]> = [];
+  const replies = [
+    { offsetMicros: 9_000, roundTripMicros: 20_000 },
+    null,
+    { offsetMicros: 120, roundTripMicros: 200 },
+    { offsetMicros: -4_000, roundTripMicros: 8_000 },
+  ];
+  let calls = 0;
+  const monitor = startClockMonitor({
+    server: "ntp.test",
+    intervalMs: 3_600_000,
+    query: async () => {
+      const reply = replies[calls++ % replies.length];
+      if (!reply) throw new Error("timeout");
+      return reply;
+    },
+    record: async (name, value) => {
+      recorded.push([name, value]);
+    },
+  });
+  monitor.stop();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assertEquals(recorded, [
+    ["veta_clock_offset_microseconds", 120],
+    ["veta_clock_sync_healthy", 1],
+  ]);
 });
 
 test("[clock] monitor records offset and health, and flags failures", async () => {
