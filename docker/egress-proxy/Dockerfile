@@ -1,12 +1,12 @@
 FROM alpine:3.22
 
-RUN apk add --no-cache squid socat curl
+RUN apk add --no-cache squid chrony curl
 
 COPY docker/egress-proxy/squid.conf /etc/squid/squid.conf
 COPY docker/egress-proxy/allowlist.txt /etc/squid/allowlist.txt
 COPY docker/egress-proxy/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 0755 /usr/local/bin/entrypoint.sh \
-  && mkdir -p /var/cache/squid /var/log/squid /run/squid \
+  && mkdir -p /var/cache/squid /var/log/squid /run/squid /run/chrony-relay \
   && touch /var/log/squid/access.log /var/log/squid/cache.log \
   && chown -R squid:squid /var/cache/squid /var/log/squid /run/squid \
   && chmod 0644 /var/log/squid/access.log /var/log/squid/cache.log

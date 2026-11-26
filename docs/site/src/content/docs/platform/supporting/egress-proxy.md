@@ -1,11 +1,11 @@
 ---
 title: Egress proxy
-description: Allowlisting HTTP proxy and NTP relay that is the only route to the internet for application containers.
+description: Allowlisting HTTP proxy and NTP server that is the only route to the internet for application containers.
 ---
 
 The `egress-proxy` container is the single point through which application
-services reach the internet. It runs Squid with a destination allowlist and a
-UDP relay for the gateway's SNTP clock check. Everything that is not on the
+services reach the internet. It runs Squid with a destination allowlist and
+chrony as the NTP server for the gateway's SNTP clock check. Everything that is not on the
 allowlist is refused with `403`.
 
 ## Networks
@@ -76,12 +76,23 @@ variable behave as before.
 cover, so it also receives `HTTPS_PROXY`, `NO_PROXY=localhost,127.0.0.1` and
 `NODE_USE_ENV_PROXY=1`.
 
-## NTP relay
+## NTP server
 
 The gateway's RTS 25 clock check is UDP, which an HTTP proxy cannot carry.
-The proxy container runs `socat` forwarding UDP port 123 to the server named
-in `NTP_SERVER` (default `pool.ntp.org`), and the gateway's `NTP_SERVER` is
-set to `egress-proxy`. The relay forwards only to that one upstream.
+The proxy container runs `chronyd`, which synchronises against the pool named
+in `NTP_SERVER` (default `pool.ntp.org`) and answers on UDP port 123 to
+clients on the networks the container is attached to at start. The gateway's `NTP_SERVER` is set to `egress-proxy`.
+The port is not published on the host.
+
+`chronyd` runs with `-x`: it never sets the system clock and needs no
+`SYS_TIME` capability. It tracks how far the system clock is from its sources
+and serves the corrected time, so the gateway's reading is the error of the
+host clock.
+
+A packet relay is not suitable here. SNTP assumes the request and the reply
+take equal time, and any delay added in one direction appears as clock offset,
+at half its size. Serving time next to the gateway keeps that path short and
+symmetric, and the delay to the upstream sources is filtered by `chronyd`.
 
 ## Health and logs
 
