@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.6...veta-trading-platform-v1.116.7) (2026-11-28)
+
+
+### Bug Fixes
+
+* **clock:** re-anchor the microsecond clock on steps over 1 ms ([#1250](https://github.com/milesburton/veta-trading-platform/issues/1250)) ([0124056](https://github.com/milesburton/veta-trading-platform/commit/01240568f70d2684a02e93ec73009cbab8d2efa9))
+
 ## [1.116.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.5...veta-trading-platform-v1.116.6) (2026-11-28)
 
 
