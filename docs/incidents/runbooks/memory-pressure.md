@@ -6,7 +6,10 @@ Covers `ServiceMemoryGrowthSustained`, `ServiceMemoryHigh`, `ServiceMemoryCritic
 ## Services
 
 1. The alert names the `job`. Check its heap trend in Grafana over the last day to tell a
-   leak (steady climb) from a spike (workload).
+   leak (steady climb) from a spike (workload). `ServiceMemoryGrowthSustained` uses the
+   15-minute `deriv()` slope of the heap gauge, so the normal garbage-collection sawtooth does
+   not trigger it. `rate()` must not be used on this gauge: it reads each collection as a
+   counter reset and reports constant growth.
 2. `ServiceMemoryCritical` (3 GiB) is close to an out-of-memory kill. Restart the service
    container to recover, then investigate.
 3. Capture a heap snapshot before restarting if the leak is not yet understood.
