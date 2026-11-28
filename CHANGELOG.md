@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.116.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.5...veta-trading-platform-v1.116.6) (2026-11-28)
+
+
+### Bug Fixes
+
+* **alerts:** measure heap growth with deriv, not rate ([#1270](https://github.com/milesburton/veta-trading-platform/issues/1270)) ([5399fca](https://github.com/milesburton/veta-trading-platform/commit/5399fcaa5a72013effb6b0b4cc1427b929230cd0))
+* **risk:** stop the 5s asset refresh overwriting live prices with seed prices ([#1266](https://github.com/milesburton/veta-trading-platform/issues/1266)) ([b135f24](https://github.com/milesburton/veta-trading-platform/commit/b135f245d8d4760de11817593d3789039273b44d))
+
 ## [1.116.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.4...veta-trading-platform-v1.116.5) (2026-11-28)
 
 
