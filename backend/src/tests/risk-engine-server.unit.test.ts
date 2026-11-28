@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({
   listeners: {} as Record<string, Listener>,
   sent: [] as Array<{ topic: string; payload: Record<string, unknown> }>,
   assets: [] as unknown[],
+  livePrices: {} as Record<string, number>,
   store: {
     load: vi.fn(),
     current: vi.fn(),
@@ -82,7 +83,10 @@ beforeEach(() => {
     { symbol: "MSFT", initialPrice: 400, dailyVolume: 500_000 },
     { symbol: "DEAD", price: 0 },
   ];
-  vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify(h.assets))));
+  h.livePrices = {};
+  vi.stubGlobal("fetch", (url: string) =>
+    Promise.resolve(new Response(JSON.stringify(url.endsWith("/prices") ? h.livePrices : h.assets)))
+  );
   for (const fn of Object.values(h.store)) fn.mockReset();
   h.store.load.mockResolvedValue(undefined);
   h.store.current.mockReturnValue({ id: 3, config: { haltMovePercent: 15 } });
@@ -237,6 +241,27 @@ test("[risk-engine] market ticks update prices and trip the market-move breaker 
   assertEquals((await (await call("GET", "/breakers")).json()).active.length, 0);
   ticks("market.ticks", { prices: { AAPL: 130 } });
   assertEquals(h.sent.length, 4);
+});
+
+test("[risk-engine] the periodic market-sim refresh never replaces a live price with a seed price", async () => {
+  await load({ RISK_ENGINE_TEST_MODE: "1" });
+  const ticks = h.listeners["risk-engine-ticks"];
+  ticks("market.ticks", { prices: { AAPL: 150 }, openPrices: { AAPL: 150 } });
+
+  await vi.advanceTimersByTimeAsync(5_000);
+  ticks("market.ticks", { volumes: { AAPL: 5 } });
+  assertEquals(h.sent.length, 0);
+});
+
+test("[risk-engine] the periodic market-sim refresh takes live prices from /prices", async () => {
+  await load({ RISK_ENGINE_TEST_MODE: "1" });
+  const ticks = h.listeners["risk-engine-ticks"];
+  ticks("market.ticks", { prices: { AAPL: 150 }, openPrices: { AAPL: 150 } });
+
+  h.livePrices = { AAPL: 180, BAD: -1 };
+  await vi.advanceTimersByTimeAsync(5_000);
+  ticks("market.ticks", { volumes: { AAPL: 5 } });
+  assertEquals(topics(), ["orders.kill", "risk.breaker"]);
 });
 
 test("[risk-engine] the user P&L breaker kills a user's orders after a heavy loss", async () => {
