@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 218,
-      "cases": 2244,
+      "cases": 2246,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
@@ -169,7 +169,7 @@
         "risk-bypass.test.ts": 2,
         "risk-checks.unit.test.ts": 38,
         "risk-client.unit.test.ts": 10,
-        "risk-engine-server.unit.test.ts": 16,
+        "risk-engine-server.unit.test.ts": 18,
         "risk-schema.unit.test.ts": 20,
         "rng.test.ts": 9,
         "route-exposure.unit.test.ts": 3,

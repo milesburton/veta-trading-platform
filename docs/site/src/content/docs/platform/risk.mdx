@@ -58,7 +58,7 @@ The <Svc name="risk-engine" /> tracks positions from `orders.filled` bus events 
 
 ### P&L calculation
 
-- **Unrealised**: `netQty * (markPrice - avgPrice)`, updated on every price refresh (5s)
+- **Unrealised**: `netQty * (markPrice - avgPrice)`, updated on every `market.ticks` message and on a 5s refresh from <Svc name="market-sim" />'s live `GET /prices`. The static asset list (`GET /assets`) only seeds a symbol that has no price yet, so a seed price never replaces a live one.
 - **Realised**: accumulated when fills reduce or flip a position
 - **Total**: unrealised + realised
 

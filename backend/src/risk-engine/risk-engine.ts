@@ -1,4 +1,5 @@
 import "#veta/bootstrap";
+import { z } from "zod";
 import { corsOptions, json, parseBody, serveFetch } from "#veta/http";
 import { logger } from "#veta/logger";
 import { createConsumer, createProducer, type MsgProducer } from "#veta/messaging";
@@ -94,7 +95,7 @@ const riskState: RiskState = {
   onPnlBreaker: (userId, observedPnl) => fireUserPnlBreaker(userId, observedPnl),
 };
 
-async function fetchPrices(): Promise<void> {
+async function fetchAssets(): Promise<void> {
   try {
     const res = await fetch(`http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/assets`, {
       signal: AbortSignal.timeout(3_000),
@@ -111,7 +112,7 @@ async function fetchPrices(): Promise<void> {
       }>;
       for (const a of assets) {
         const p = a.price ?? a.initialPrice ?? 0;
-        if (p > 0) prices[a.symbol] = p;
+        if (p > 0 && prices[a.symbol] === undefined) prices[a.symbol] = p;
         const v = a.volume ?? a.dailyVolume ?? 0;
         if (v > 0) volumes[a.symbol] = v;
         assetMeta.set(a.symbol, { exchange: a.exchange, assetClass: a.assetClass });
@@ -120,6 +121,29 @@ async function fetchPrices(): Promise<void> {
   } catch {
     // best-effort
   }
+}
+
+const LivePricesSchema = z.record(z.string(), z.number());
+
+async function fetchLivePrices(): Promise<void> {
+  try {
+    const res = await fetch(`http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/prices`, {
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!res.ok) return;
+    const parsed = LivePricesSchema.safeParse(await res.json());
+    if (!parsed.success) return;
+    for (const [s, p] of Object.entries(parsed.data)) {
+      if (p > 0) prices[s] = p;
+    }
+  } catch (err) {
+    logger.debug("Live price refresh from market-sim failed", { err: err as Error });
+  }
+}
+
+async function refreshMarketState(): Promise<void> {
+  await fetchAssets();
+  await fetchLivePrices();
 }
 
 function trackOrderCounts() {
@@ -391,8 +415,8 @@ function formatPosition(p: Position) {
   };
 }
 
-fetchPrices();
-setInterval(fetchPrices, 5_000);
+refreshMarketState();
+setInterval(refreshMarketState, 5_000);
 trackOrderCounts();
 consumeMarketTicks();
 createProducer("risk-engine")
