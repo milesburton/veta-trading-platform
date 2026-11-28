@@ -536,3 +536,39 @@ tests:
               description: |
                 The gateway could not complete an SNTP query to the configured NTP server, so
                 clock drift is not being measured. Check NTP_SERVER and outbound UDP port 123.
+
+  - name: ServiceMemoryGrowthSustained ignores a garbage-collection sawtooth
+    interval: 1m
+    input_series:
+      - series: 'v8js_memory_heap_size_bytes{job="gateway"}'
+        values: '40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000 40000000 120000000'
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: ServiceMemoryGrowthSustained
+        exp_alerts: []
+
+  - name: ServiceMemoryGrowthSustained fires on sustained heap growth
+    interval: 1m
+    input_series:
+      - series: 'v8js_memory_heap_size_bytes{job="gateway"}'
+        values: '50000000+120000000x45'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ServiceMemoryGrowthSustained
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: ServiceMemoryGrowthSustained
+        exp_alerts:
+          - exp_labels:
+              alertname: ServiceMemoryGrowthSustained
+              job: gateway
+              severity: warning
+            exp_annotations:
+              summary: "gateway heap growing >1 MiB/s for 15m"
+              runbook_url: https://github.com/milesburton/veta-trading-platform/blob/main/docs/incidents/runbooks/memory-pressure.md
+              description: |
+                v8js_memory_heap_size_bytes for gateway has been
+                growing at 2M bytes/s for 15 minutes.
+                Likely a leak similar to the Firefox/Redux .push case on
+                2026-05-18. Check unbounded slice growth, missing
+                clearInterval / clearTimeout, or accumulating event handlers.

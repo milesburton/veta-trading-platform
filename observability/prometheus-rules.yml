@@ -154,7 +154,7 @@ groups:
   - name: memory
     rules:
       - alert: ServiceMemoryGrowthSustained
-        expr: rate(v8js_memory_heap_size_bytes[5m]) > 1048576
+        expr: deriv(v8js_memory_heap_size_bytes[15m]) > 1048576
         for: 15m
         labels:
           severity: warning
