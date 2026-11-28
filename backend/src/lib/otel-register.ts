@@ -1,8 +1,13 @@
-import { deriveServiceName } from "./service-name.ts";
+import { hostname } from "node:os";
+import { deriveServiceName, withInstanceId } from "./service-name.ts";
 
 if ((process.env.OTEL_ENABLED ?? "").toLowerCase() === "true") {
   process.env.OTEL_SERVICE_NAME ||= deriveServiceName();
   process.env.OTEL_SEMCONV_STABILITY_OPT_IN ||= "http";
+  process.env.OTEL_RESOURCE_ATTRIBUTES = withInstanceId(
+    process.env.OTEL_RESOURCE_ATTRIBUTES,
+    hostname()
+  );
   const { NodeSDK } = await import("@opentelemetry/sdk-node");
   const { HttpInstrumentation } = await import("@opentelemetry/instrumentation-http");
   const { UndiciInstrumentation } = await import("@opentelemetry/instrumentation-undici");
