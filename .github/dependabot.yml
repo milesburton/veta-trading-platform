@@ -23,3 +23,5 @@ updates:
       separator: "/"
     allow:
       - dependency-type: "all"
+    ignore:
+      - dependency-name: "@vitest/coverage-v8"
