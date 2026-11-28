@@ -79,7 +79,7 @@ Order events for a specific user are additionally broadcast to `compliance` and 
 
 ## Health check refresh
 
-<Source path="backend/src/gateway/gateway.ts" line={753} label="HEALTH_REFRESH_MS" />
+<Source path="backend/src/gateway/gateway.ts" line={758} label="HEALTH_REFRESH_MS" />
 
 The gateway polls `/health` on every service in `shared/serviceRegistry.ts`. Fetching health from all of them on every request would mean dozens of concurrent fetches per call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
 

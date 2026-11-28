@@ -2,12 +2,12 @@
   "backend": {
     "unit": {
       "files": 218,
-      "cases": 2244,
+      "cases": 2248,
       "perFile": {
         "checkMigrationsSafe.test.ts": 11,
         "cancellation-tracker.unit.test.ts": 7,
         "algo-controls.unit.test.ts": 3,
-        "auth.unit.test.ts": 3,
+        "auth.unit.test.ts": 7,
         "ref-prices.unit.test.ts": 4,
         "fill-reconciliation.unit.test.ts": 4,
         "regulatory-export.unit.test.ts": 6,

@@ -557,12 +557,13 @@ async function handle(req: Request): Promise<Response> {
           "SELECT user_id FROM users.sessions WHERE token = $1",
           [token]
         );
+        await client.queryArray("DELETE FROM users.sessions WHERE token = $1", [token]);
+        // Published after the delete so a consumer cannot revalidate the old token.
         if (rows.length > 0) {
           producer
             ?.send("user.session", { event: "logout", userId: rows[0][0], ts: Date.now() })
             .catch(() => {});
         }
-        await client.queryArray("DELETE FROM users.sessions WHERE token = $1", [token]);
       } finally {
         client.release();
       }
@@ -1130,6 +1131,11 @@ async function handle(req: Request): Promise<Response> {
         return jsonError("user not found", 404);
       }
       await client.queryArray("COMMIT");
+      if (outcome === "role_changed") {
+        producer
+          ?.send("user.session", { event: "revoked", userId, ts: Date.now() })
+          .catch(() => {});
+      }
       return json(
         {
           access_token: session.token,
