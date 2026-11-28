@@ -1,5 +1,7 @@
+import { US_EQUITY_CALENDAR } from "#veta/market-calendars";
 import { test } from "#veta/test";
 import { assert, assertEquals } from "#veta/test-assert";
+import { resolveCurrentSession } from "#veta/trading-calendar";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
@@ -290,21 +292,10 @@ test({
             assertEquals(enabledRes.status, 200);
             const enabled = (await enabledRes.json()) as { allowed: boolean; reasons: string[] };
 
-            const now = new Date();
-            const etParts = new Intl.DateTimeFormat("en-US", {
-              timeZone: "America/New_York",
-              hourCycle: "h23",
-              weekday: "short",
-              hour: "numeric",
-              minute: "numeric",
-            }).formatToParts(now);
-            const weekday = etParts.find((p) => p.type === "weekday")?.value;
-            const hour = Number(etParts.find((p) => p.type === "hour")?.value ?? "0");
-            const minute = Number(etParts.find((p) => p.type === "minute")?.value ?? "0");
-            const minutesSinceMidnight = hour * 60 + minute;
-            const isWeekday = weekday !== "Sat" && weekday !== "Sun";
-            const isRegularSession =
-              isWeekday && minutesSinceMidnight >= 9 * 60 + 30 && minutesSinceMidnight < 16 * 60;
+            const isRegularSession = resolveCurrentSession(
+              US_EQUITY_CALENDAR,
+              new Date()
+            ).allowsOrderEntry;
 
             const hasMarketClosed = enabled.reasons.some((r) => r.includes("MARKET_CLOSED"));
             assertEquals(
