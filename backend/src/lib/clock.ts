@@ -16,8 +16,7 @@ const systemSource: ClockSource = {
   monotonicMs: () => performance.now(),
 };
 
-export const RE_ANCHOR_THRESHOLD_MS = 5;
-const WALL_RESOLUTION_MS = 1;
+export const RE_ANCHOR_THRESHOLD_MS = 1;
 
 export function createMicrosClock(source: ClockSource = systemSource): () => number {
   let anchorWallMs = source.nowMs();
@@ -31,7 +30,7 @@ export function createMicrosClock(source: ClockSource = systemSource): () => num
     if (Math.abs(behindMs) > RE_ANCHOR_THRESHOLD_MS) {
       anchorWallMs = wallMs;
       anchorMonotonicMs = monotonicMs;
-    } else if (behindMs > 0 && behindMs < WALL_RESOLUTION_MS) {
+    } else if (behindMs > 0) {
       anchorWallMs += behindMs;
     }
     const micros = Math.round((anchorWallMs + (monotonicMs - anchorMonotonicMs)) * 1000);

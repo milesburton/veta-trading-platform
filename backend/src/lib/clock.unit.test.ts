@@ -36,9 +36,50 @@ test("[clock] micros clock advances with the monotonic source and ignores sub-th
   const micros = createMicrosClock({ nowMs: () => wall, monotonicMs: () => mono });
   const first = micros();
   mono += 2.5;
-  wall += 2.5 + RE_ANCHOR_THRESHOLD_MS - 1;
+  wall += 2.5 - RE_ANCHOR_THRESHOLD_MS;
   assertEquals(micros() - first, 2500);
 });
+
+function truncatedClock() {
+  let trueMs = 1_700_000_000_000.4;
+  let offsetMs = 0;
+  let mono = 10;
+  const micros = createMicrosClock({
+    nowMs: () => Math.floor(trueMs + offsetMs),
+    monotonicMs: () => mono,
+  });
+  return {
+    advance: (ms: number) => {
+      trueMs += ms;
+      mono += ms;
+    },
+    step: (ms: number) => {
+      offsetMs += ms;
+    },
+    errorMs: () => micros() / 1000 - (trueMs + offsetMs),
+  };
+}
+
+for (const stepMs of [1.5, 2, 3, 4.9, -1.5, -2, -3, -4.9]) {
+  test(`[clock] micros clock is back within 1 ms of the wall clock after a ${stepMs} ms step`, () => {
+    const clock = truncatedClock();
+    for (let call = 0; call < 50; call++) {
+      clock.advance(0.37);
+      assert(Math.abs(clock.errorMs()) <= 1);
+    }
+    clock.step(stepMs);
+    // A backward step holds the last value until the corrected clock passes it.
+    for (let call = 0; call < 50; call++) {
+      clock.advance(0.37);
+      clock.errorMs();
+    }
+    for (let call = 0; call < 200; call++) {
+      clock.advance(0.37);
+      const error = clock.errorMs();
+      assert(Math.abs(error) <= 1, `error ${error} ms after a ${stepMs} ms step`);
+    }
+  });
+}
 
 test("[clock] micros clock re-anchors after a forward host clock step", () => {
   let wall = 1_700_000_000_000;
