@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.116.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.4...veta-trading-platform-v1.116.5) (2026-11-28)
+
+
+### Bug Fixes
+
+* **otel:** use the container hostname as service.instance.id ([#1245](https://github.com/milesburton/veta-trading-platform/issues/1245)) ([0087d01](https://github.com/milesburton/veta-trading-platform/commit/0087d01fdc4fafd113ed166b888c0d15cba92702))
+
 ## [1.116.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.116.3...veta-trading-platform-v1.116.4) (2026-11-26)
 
 
